@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('role_has__permissions', {
+    await queryInterface.createTable('role_has_permissions', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -22,6 +22,6 @@ module.exports = {
     });
   },
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('role_has__permissions');
+    await queryInterface.dropTable('role_has_permissions');
   }
 };
