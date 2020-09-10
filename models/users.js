@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       users.hasMany(models.user_logins, {foreignKey: 'userId'});
       users.hasMany(models.auth_tokens, {foreignKey: 'userId'});
       users.hasMany(models.roles, {through: 'user_roles', foreignKey: 'userId'});
-      users.hasMany(models.permission, {through: 'user_permissions', foreignKey:'userId'})
+      users.hasMany(models.user_permissions, { foreignKey: 'userId' });
     }
   };
   users.init({
