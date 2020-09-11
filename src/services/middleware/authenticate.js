@@ -1,5 +1,5 @@
 import { verifyToken } from "../auth/auth";
-import { ERROR_CODE } from "../../utils/errorCode";
+import { DEFAULT_CODES } from "../../utils/defaultCode";
 
 export const authenticateJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -7,7 +7,7 @@ export const authenticateJWT = (req, res, next) => {
     let options = {
         issuer: process.env.HOST,
         audience: audience,
-        algorithm:  ["RS256"],
+        algorithm:  "RS256",
     }
     if (authHeader) {
         const token = authHeader.split(' ')[1];
@@ -17,17 +17,17 @@ export const authenticateJWT = (req, res, next) => {
             next();
         } else {
             return res.status(200).send({
-                code:ERROR_CODE.INVALID_TOKEN.code,
+                code:DEFAULT_CODES.INVALID_TOKEN.code,
                 success:false,
-                message: ERROR_CODE.INVALID_TOKEN.message,
+                message: DEFAULT_CODES.INVALID_TOKEN.message,
                 data: {}
             })   
         }
     } else {
         return res.status(200).send({
-            code:ERROR_CODE.INVALID_TOKEN.code,
+            code:DEFAULT_CODES.INVALID_TOKEN.code,
             success:false,
-            message: ERROR_CODE.INVALID_TOKEN.message,
+            message: DEFAULT_CODES.INVALID_TOKEN.message,
             data: {}
         })   
     }

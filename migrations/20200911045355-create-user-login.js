@@ -1,33 +1,36 @@
 'use strict';
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('permissions', {
+  up: (queryInterface, Sequelize) => {
+    return queryInterface.createTable('user_logins', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      priority: {
+      userId: {
         type: Sequelize.INTEGER
       },
-      name: {
+      email: {
         type: Sequelize.STRING
       },
-      permissionGroup: {
+      phone: {
         type: Sequelize.STRING
       },
-      permissionFact: {
+      password: {
         type: Sequelize.STRING
       },
-      factValue: {
+      provider: {
         type: Sequelize.STRING
       },
-      accessType: {
+      providerId: {
         type: Sequelize.STRING
       },
-      otherConditions: {
+      providerData: {
         type: Sequelize.JSON
+      },
+      loginType: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -39,7 +42,7 @@ module.exports = {
       }
     });
   },
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('permissions');
+  down: (queryInterface, Sequelize) => {
+    return queryInterface.dropTable('user_logins');
   }
 };

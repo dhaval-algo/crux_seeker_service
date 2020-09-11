@@ -1,21 +1,24 @@
 'use strict';
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('user_permissions', {
+  up: (queryInterface, Sequelize) => {
+    return queryInterface.createTable('otps', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      status: {
+      username: {
         type: Sequelize.STRING
       },
-      conditionValues: {
-        type: Sequelize.JSON
+      attempt: {
+        type: Sequelize.INTEGER
       },
-      validTill: {
-        type: Sequelize.DATE
+      otpType: {
+        type: Sequelize.STRING
+      },
+      inValid: {
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,
@@ -27,7 +30,7 @@ module.exports = {
       }
     });
   },
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('user_permissions');
+  down: (queryInterface, Sequelize) => {
+    return queryInterface.dropTable('otps');
   }
 };

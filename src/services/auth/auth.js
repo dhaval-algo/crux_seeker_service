@@ -2,15 +2,14 @@
 
 const fs   = require('fs');
 const jwt  = require('jsonwebtoken');
-
-let privateKEY  = fs.readFileSync('../../../keys/private.key', 'utf8');
-let publicKEY  = fs.readFileSync('../../../keys/public.key', 'utf8'); 
+let privateKEY  = fs.readFileSync(appRoot+'/keys/private.key', 'utf8');
+let publicKEY  = fs.readFileSync(appRoot+'/keys/public.key', 'utf8'); 
 
 const signToken = (payload,options) => {
     let signOptions = {
         issuer: '',
         audience: '',
-        expiresIn: '2d',
+        // expiresIn: '2d',
         algorithm:  "RS256",
         ...options
     }
