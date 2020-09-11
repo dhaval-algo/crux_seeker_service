@@ -19,5 +19,12 @@
     "database": "database_production",
     "host": "127.0.0.1",
     "dialect": "postgres"
-  }
+  },
+  "staging":{
+    "username": "crux_dev",
+    "password": "Ajency#123",
+    "database": "crux_seeker_dev",
+    "host": "127.0.0.1",
+    "dialect": "postgres"
+  } 
 }
