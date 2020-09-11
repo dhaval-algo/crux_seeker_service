@@ -22,6 +22,7 @@
     "sequelize-cli": "^6.2.0"
   },
   "scripts": {
+    "staging": "NODE_ENV=staging node server.js",
     "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
