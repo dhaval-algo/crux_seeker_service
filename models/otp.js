@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
   const otp = sequelize.define('otp', {
     username: DataTypes.STRING,
     attempt: DataTypes.INTEGER,
+    otp:DataTypes.STRING,
     otpType: DataTypes.STRING,
     inValid: DataTypes.BOOLEAN
   }, {});

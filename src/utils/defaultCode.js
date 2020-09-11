@@ -27,6 +27,26 @@ const DEFAULT_CODES =
     LOGIN_SUCCESS:{
         code:"LOGIN_SUCCESS",
         message:"Login Success"
+    },
+    OTP_SENT: {
+        code:"OTP_SENT",
+        message:"Otp has been sent."
+    },
+    INVALID_OTP: {
+        code:"INVALID_OTP",
+        message:"Incorrect OTP entered. Please retry again."
+    },
+    OTP_EXPIRED: {
+        code:"OTP_EXPIRED",
+        message:"OTP has expired. Please generate a new OTP."
+    },
+    MAX_OTP_ATTEMPS: {
+        code:"MAX_OTP_ATTEMPS",
+        message:"Otp has been sent."
+    },
+    VALID_OTP: {
+        code:"VALID_OTP",
+        message:"OTP is verifed"
     }
 }
 const LOGIN_TYPES = {
@@ -40,4 +60,9 @@ const TOKEN_TYPES = {
     RESETPASSWORD:'reset password'
 }
 
-module.exports = { LOGIN_TYPES, DEFAULT_CODES, TOKEN_TYPES}
+const OTP_TYPES = {
+    SIGNIN:'signin',
+    RESETPASSWORD:'reset password'
+}
+
+module.exports = { LOGIN_TYPES, DEFAULT_CODES, TOKEN_TYPES, OTP_TYPES}
