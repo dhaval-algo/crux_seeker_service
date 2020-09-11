@@ -440,12 +440,13 @@ const validateOtp = async (username,otp,otpType) => {
                                 username: {
                                     [Op.like]: username
                                 }
-                            },
-                            {
-                                createdAt: {
-                                    [Op.lt]: new Date(new Date().getTime() - 1 * defaults.getValue('otpSpan') * 60 * 1000)
-                                }
                             }
+                            //,
+                            /// {
+                            //     createdAt: {
+                            //         [Op.lt]: new Date(new Date().getTime() - 1 * defaults.getValue('otpSpan') * 60 * 1000)
+                            //     }
+                            // }
                         ]
                     }
                 });
