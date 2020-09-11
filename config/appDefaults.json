@@ -1,0 +1,14 @@
+{
+    "development": {
+      "tokenExpiry": 518400,
+      "resetPasswordTokenExpiry": 1440
+    },
+    "production": {
+      "tokenExpiry": 518400,
+      "resetPasswordTokenExpiry": 1440
+    },
+    "staging": {
+        "tokenExpiry": 518400,
+        "resetPasswordTokenExpiry": 1440
+      }
+  }

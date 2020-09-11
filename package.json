@@ -4,6 +4,7 @@
   "description": "Backend for Crux Seeker",
   "main": "server.js",
   "dependencies": {
+    "base64url": "^3.0.1",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "cryptr": "^6.0.2",
@@ -11,6 +12,7 @@
     "express": "^4.17.1",
     "fs": "0.0.1-security",
     "jsonwebtoken": "^8.5.1",
+    "moment": "^2.27.0",
     "nodemon": "^2.0.4",
     "path": "^0.12.7",
     "pg": "^8.3.3",

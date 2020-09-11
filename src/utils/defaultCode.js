@@ -35,4 +35,9 @@ const LOGIN_TYPES = {
     LINKEDID:'linkedin'
 }
 
-module.exports = { LOGIN_TYPES, DEFAULT_CODES}
+const TOKEN_TYPES = {
+    SIGNIN:'signin',
+    RESETPASSWORD:'reset password'
+}
+
+module.exports = { LOGIN_TYPES, DEFAULT_CODES, TOKEN_TYPES}
