@@ -1,7 +1,11 @@
 const { encryptStr, isEmail, decryptStr } = require("../../utils/helper");
-const { DEFAULT_CODES, LOGIN_TYPES } = require("../../utils/defaultCode");
+const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES } = require("../../utils/defaultCode");
+const b64 = require("base64url");
 
 const models = require("../../../models");
+const { verifyToken } = require("../auth/auth");
+const defaults = require("../defaults/defaults");
+const moment = require("moment");
 const signToken = require('../../services/auth/auth').signToken;
 const login = async (req, res, next) => {
     try {
@@ -193,11 +197,12 @@ const checkPassword = (userObj, resPwd) => {
     }
 };
 
-const getLoginToken = (userObj) => {
+const getLoginToken = async (userObj) => {
     try {       
         const signOptions = {
             audience:userObj.audience,
             issuer:process.env.HOST,
+            expiresIn:parseInt(defaults.getValue('tokenExpiry'))
         }
         const payload ={
             user: {
@@ -208,6 +213,16 @@ const getLoginToken = (userObj) => {
             }
         }
         const token = signToken(payload,signOptions);
+        let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
+        validTill = moment().add(defaults.getValue('tokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
+        let userAuthToken = {
+            tokenId: b64.encode(JSON.stringify(verifyToken(token,signOptions))),
+            userId: userObj.userId,
+            tokenType: TOKEN_TYPES.SIGNIN,
+            inValid: false,
+            validTill: validTill
+        };
+        await models.auth_token.create(userAuthToken);
 
         return {
             code:DEFAULT_CODES.LOGIN_SUCCESS.code,
@@ -229,7 +244,9 @@ const getLoginToken = (userObj) => {
     }
 }
 
+const generateOtp = async (userObj) => {
 
+}
 
 
 
