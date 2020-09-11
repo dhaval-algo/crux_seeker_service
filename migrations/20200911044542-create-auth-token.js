@@ -20,8 +20,8 @@ module.exports = {
       inValid: {
         type: Sequelize.BOOLEAN
       },
-      additionalData: {
-        type: Sequelize.JSON
+      validTill: {
+        type: Sequelize.DATE
       },
       createdAt: {
         allowNull: false,
