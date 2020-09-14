@@ -1,7 +1,7 @@
-import { verifyToken } from "../auth/auth";
-import { DEFAULT_CODES } from "../../utils/defaultCode";
 
-export const authenticateJWT = (req, res, next) => {
+const DEFAULT_CODES = require("../../../utils/defaultCode").DEFAULT_CODES;
+
+module.exports  = (req, res, next) => {
     const authHeader = req.headers.authorization;
     const audience = req.headers.host;
     let options = {
@@ -11,7 +11,7 @@ export const authenticateJWT = (req, res, next) => {
     }
     if (authHeader) {
         const token = authHeader.split(' ')[1];
-        const verifiedToken = verifyToken(token, options);
+        const verifiedToken = require("../auth/auth").verifyToken(token, options);
         if(verifiedToken) {
             req.user = verifyToken.user
             next();
