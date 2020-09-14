@@ -1,4 +1,4 @@
-const { encryptStr, isEmail, decryptStr, getOtp } = require("../../../utils/helper");
+const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const b64 = require("base64url");
 const bcrypt = require('bcrypt');
@@ -11,6 +11,8 @@ const moment = require("moment");
 const { resolve } = require("path");
 const SEND_OTP = !!process.env.SEND_OTP;
 const signToken = require('../auth/auth').signToken;
+
+const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDID];
 const login = async (req, res, next) => {
     try {
         const body = req.body;
@@ -71,7 +73,7 @@ const sendOtp = async (req, res, next) => {
             });
 
         }
-        
+
         /* 
         * Check if user exists or resgistered user
         */
@@ -105,7 +107,7 @@ const verifyOtp = async (req, res, next) => {
     try {
         const body = req.body;
         const audience = req.headers.origin;
-        const { otp = "" ,username=""} = body;
+        const { otp = "", username = "" } = body;
         // validate input
         if (!otp.trim()) {
             return res.status(200).json({
@@ -115,26 +117,88 @@ const verifyOtp = async (req, res, next) => {
             });
 
         }
-        
-        const response = await startVerifyOtp({username, otp, audience, provider: LOGIN_TYPES.LOCAL });
+
+        const response = await startVerifyOtp({ username, otp, audience, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
         return res.status(500).json({
             'code': DEFAULT_CODES.SYSTEM_ERROR.code,
             'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-            success:false
+            success: false
         });
     }
 }
 
-const verifyUserToken = (req,res) => {
+const verifyUserToken = (req, res) => {
     let resp = {
-        code:DEFAULT_CODES.VALID_TOKEN.code,
+        code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
-        success:true
+        success: true
     }
     return res.status(200).json(resp);
+}
+/* 
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            x_token:""
+        }
+    }
+*/
+
+const socialSignIn = async (req, res, next) => {
+    const { provider = "", tokenId = "" } = req.body;
+    try {
+        if (!SOCIAL_PROVIDER.includes(provider)) {
+            return res.status(200).json({
+                code: DEFAULT_CODES.INVALID_PROVIDER.code,
+                message: DEFAULT_CODES.INVALID_PROVIDER.message,
+                success: false,
+                data: {
+                    provider
+                }
+            })
+        }
+
+        if (!tokenId) {
+            return res.status(200).json({
+                code: DEFAULT_CODES.INVALID_TOKEN.code,
+                message: DEFAULT_CODES.INVALID_TOKEN.message,
+                success: false,
+                data: {
+                    provider
+                }
+            })
+        }
+
+        //verify token 
+        const providerRes = await verifySocialToken({ provider, tokenId })
+        if (!providerRes.success) {
+            return res.status(200).json(providerRes)
+        }
+
+        //check if user exists
+        const verificationRes = await userExist(providerRes.data.username, providerRes.data.provider);
+        if (!verificationRes.success) {
+            return res.status(200).json(verificationRes)
+        }
+
+        //create token
+        const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience:req.headers.origin, provider: providerRes.data.provider });
+        console.log(tokenRes);
+        return res.status(200).json(tokenRes);
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            'code': DEFAULT_CODES.SYSTEM_ERROR.code,
+            'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+            success: false
+        });
+    }
 }
 /* 
     {
@@ -312,10 +376,10 @@ const getLoginToken = async (userObj) => {
         };
         await models.auth_token.create(userAuthToken);
         await models.user.update({
-            lastLogin:new Date(),
+            lastLogin: new Date(),
         }, {
             where: {
-               id:userObj.userId
+                id: userObj.userId
             }
         });
 
@@ -338,23 +402,23 @@ const getLoginToken = async (userObj) => {
         }
     }
 }
-   // check if valid user
-            /* 
-                {
-                    code:'',
-                    success:true/false,
-                    message:'',
-                    data:{
-                        otp: xxxxxx
-                    }
-                }
-            */
+// check if valid user
+/* 
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            otp: xxxxxx
+        }
+    }
+*/
 const generateOtp = async (resData) => {
     let { username } = resData;
     return new Promise(async (resolve, reject) => {
         try {
 
-              // check if valid user
+            // check if valid user
             /* 
                 {
                     code:'',
@@ -371,7 +435,7 @@ const generateOtp = async (resData) => {
             }
 
 
-        // Get all otp generated for past X(10 ,mins) time span
+            // Get all otp generated for past X(10 ,mins) time span
             return models.otp.findAndCountAll({
                 where: {
                     [Op.and]: [
@@ -397,7 +461,7 @@ const generateOtp = async (resData) => {
                     }
                     if (result.count >= defaults.getValue('otpMaxSent')) {
                         return resolve({ "success": false, "code": "error", "message": "Too many verification SMS sent. Please try after " + Math.round((init_time.getTime() - current_date.getTime()) / (60 * 1000)) + " minutes." });
-                    } 
+                    }
 
                     // else if (result.count > 0 && (result.rows[result.count - 1].attempts >= defaults.getValue('otp_invalid_tries')) && (span_time.getTime() >= current_date.getTime())) {
                     //     return resolve({ "success": false, "code": "error", "message": "Too many failed login attempts. Please try again in " + Math.round((span_time.getTime() - current_date.getTime()) / (60 * 1000)) + " minutes." });
@@ -413,7 +477,7 @@ const generateOtp = async (resData) => {
                         await models.otp.create({
                             username,
                             otp: hash,
-                            otpType:OTP_TYPES.SIGNIN
+                            otpType: OTP_TYPES.SIGNIN
                         });
                         return resolve({
                             success: true,
@@ -446,11 +510,11 @@ const generateOtp = async (resData) => {
 
 }
 const startVerifyOtp = async (resData) => {
-    return new Promise(async (resolve,reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
-            let {username="",otp=""} = resData
-            let otpRes = await  validateOtp(username, otp, OTP_TYPES.SIGNIN);
-            if(!otpRes.success) {
+            let { username = "", otp = "" } = resData
+            let otpRes = await validateOtp(username, otp, OTP_TYPES.SIGNIN);
+            if (!otpRes.success) {
                 return resolve(otpRes);
             }
 
@@ -463,7 +527,7 @@ const startVerifyOtp = async (resData) => {
              * Generate Token for login session
              input => audience- origin(client), provider-> (google facebook or linked in or local)
              */
-            const tokenRes =await getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
+            const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
             console.log(tokenRes);
             return resolve(tokenRes);
         } catch (error) {
@@ -478,8 +542,7 @@ const startVerifyOtp = async (resData) => {
     })
 }
 
-
-const validateOtp = async (username,otp,otpType) => {
+const validateOtp = async (username, otp, otpType) => {
     try {
         let result = await models.otp.findAll({
             where: {
@@ -498,14 +561,14 @@ const validateOtp = async (username,otp,otpType) => {
             var expiry_time = new Date(new Date(result[0].createdAt).getTime() + 1 * defaults.getValue('otpExpiry') * 60 * 1000);
             // var span_time = new Date(new Date(result[0].updatedAt).getTime() + 1 * defaults.getValue('otpSpan') * 60 * 1000);
             if (expiry_time.getTime() < current_date.getTime()) {
-                return { "code": DEFAULT_CODES.OTP_EXPIRED.code, "message": DEFAULT_CODES.OTP_EXPIRED.message,success:false, data:{} };
+                return { "code": DEFAULT_CODES.OTP_EXPIRED.code, "message": DEFAULT_CODES.OTP_EXPIRED.message, success: false, data: {} };
             }
             //  else if ((result[0].attempts >= defaults.getValue('otp_invalid_tries'))) {
             //     let lockout = Math.round((span_time.getTime() - current_date.getTime()) / (60 * 1000));
             //     let message = (lockout > 0) ? "Too many failed login attempts. Please try again in " + lockout + " minutes." : "Too many failed login attempts. Please try sending OTP again."
             //     return { "code": "max_failed_attempts", "message": message }
             // }
-             else if (!bcrypt.compareSync(otp, result[0].otp)) {
+            else if (!bcrypt.compareSync(otp, result[0].otp)) {
                 try {
                     let uresult = await models.otp.update({
                         attempts: result[0].attempts + 1,
@@ -514,14 +577,14 @@ const validateOtp = async (username,otp,otpType) => {
                             username: {
                                 [Op.like]: username,
                             },
-                            otpType:otpType
+                            otpType: otpType
                         }
                     });
                     // let code =  (defaults.getValue('otp_invalid_tries') > (result[0].attempts + 1)) ? "incorrect_otp" : "max_failed_attempts";
                     // let message = (defaults.getValue('otp_invalid_tries') > (result[0].attempts + 1)) ? "Incorrect OTP entered. Please retry again" : "Too many failed login attempts. Please try again in " + defaults.getValue('otp_span') + " minutes"
-                    return { "code": DEFAULT_CODES.INVALID_OTP.code, "message": DEFAULT_CODES.INVALID_OTP.message,success:false,data:{} };
+                    return { "code": DEFAULT_CODES.INVALID_OTP.code, "message": DEFAULT_CODES.INVALID_OTP.message, success: false, data: {} };
                 } catch (error) {
-                    return { "code": DEFAULT_CODES.INVALID_OTP.code, "message": DEFAULT_CODES.INVALID_OTP.message,success:false,data:{} };
+                    return { "code": DEFAULT_CODES.INVALID_OTP.code, "message": DEFAULT_CODES.INVALID_OTP.message, success: false, data: {} };
                 }
             } else {
                 console.log(moment().subtract(defaults.getValue('otpSpan'), "minutes").toISOString());
@@ -535,7 +598,7 @@ const validateOtp = async (username,otp,otpType) => {
                                 }
                             }
                             ,
-                             {
+                            {
                                 createdAt: {
                                     [Op.lt]: new Date(new Date().getTime() - 1 * defaults.getValue('otpSpan') * 60 * 1000)
                                 }
@@ -543,29 +606,29 @@ const validateOtp = async (username,otp,otpType) => {
                         ]
                     }
                 });
-                return { "code": DEFAULT_CODES.VALID_OTP.code, "message": DEFAULT_CODES.VALID_OTP.message,success:true,data:{} };
-    
+                return { "code": DEFAULT_CODES.VALID_OTP.code, "message": DEFAULT_CODES.VALID_OTP.message, success: true, data: {} };
+
             }
         } else {
             console.log('No otp for user');
             return {
-                code:DEFAULT_CODES.OTP_EXPIRED.code,
-                message:DEFAULT_CODES.OTP_EXPIRED.message,
-                success:false,
+                code: DEFAULT_CODES.OTP_EXPIRED.code,
+                message: DEFAULT_CODES.OTP_EXPIRED.message,
+                success: false,
                 data: {}
 
             }
         }
-        
-    } catch (error) {
-        console.log('No users',error);
-            return {
-                code:DEFAULT_CODES.SYSTEM_ERROR.code,
-                message:DEFAULT_CODES.SYSTEM_ERROR.message,
-                success:false,
-                data: {}
 
-            }
+    } catch (error) {
+        console.log('No users', error);
+        return {
+            code: DEFAULT_CODES.SYSTEM_ERROR.code,
+            message: DEFAULT_CODES.SYSTEM_ERROR.message,
+            success: false,
+            data: {}
+
+        }
     }
 }
 
@@ -573,5 +636,6 @@ module.exports = {
     login,
     verifyOtp,
     sendOtp,
-    verifyUserToken
+    verifyUserToken,
+    socialSignIn
 }

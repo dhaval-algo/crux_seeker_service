@@ -55,6 +55,10 @@ const DEFAULT_CODES =
     INVALID_TOKEN: {
         code:"INVALID_TOKEN",
         message:"Token is invalid",
+    },
+    INVALID_PROVIDER:{
+        code:"INVALID_PROVIDER",
+        message:"Does not support provided social login",
     }
 }
 const LOGIN_TYPES = {
