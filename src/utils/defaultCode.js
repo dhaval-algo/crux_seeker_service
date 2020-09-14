@@ -47,6 +47,14 @@ const DEFAULT_CODES =
     VALID_OTP: {
         code:"VALID_OTP",
         message:"OTP is verifed"
+    },
+    VALID_TOKEN: {
+        code:"VALID_TOKEN",
+        message:"Token is valid",
+    },
+    INVALID_TOKEN: {
+        code:"INVALID_TOKEN",
+        message:"Token is invalid",
     }
 }
 const LOGIN_TYPES = {
