@@ -127,6 +127,15 @@ const verifyOtp = async (req, res, next) => {
         });
     }
 }
+
+const verifyUserToken = (req,res) => {
+    let resp = {
+        code:DEFAULT_CODES.VALID_TOKEN.code,
+        message: DEFAULT_CODES.VALID_TOKEN.message,
+        success:true
+    }
+    return res.status(200).json(resp);
+}
 /* 
     {
         code:'',
@@ -137,6 +146,7 @@ const verifyOtp = async (req, res, next) => {
         }
     }
 */
+
 const signInUser = async (resData) => {
     const response = {
         code: DEFAULT_CODES.LOGIN_SUCCESS.code,
@@ -561,5 +571,6 @@ const validateOtp = async (username,otp,otpType) => {
 module.exports = {
     login,
     verifyOtp,
-    sendOtp
+    sendOtp,
+    verifyUserToken
 }

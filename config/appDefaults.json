@@ -1,6 +1,6 @@
 {
     "development": {
-      "tokenExpiry": 20,
+      "tokenExpiry": 600,
       "resetPasswordTokenExpiry": 1440,
       "otpLength": 6,
       "otpExpiry": 10,
@@ -18,7 +18,7 @@
       "otpInvalidTries": 3
     },
     "staging": {
-        "tokenExpiry": 518400,
+        "tokenExpiry": 600,
         "resetPasswordTokenExpiry": 1440,
         "otpLength": 6,
         "otpExpiry": 10,
