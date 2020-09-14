@@ -45,7 +45,17 @@ const login = async (req, res, next) => {
         });
     }
 }
-
+/* 
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            otp:""
+        }
+    }
+*/
+//send otp api endpoint
 const sendOtp = async (req, res, next) => {
     try {
         const body = req.body;
@@ -61,6 +71,11 @@ const sendOtp = async (req, res, next) => {
             });
 
         }
+        
+        /* 
+        * Check if user exists or resgistered user
+        */
+        console.log(hash);
         const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).json(response);
     } catch (error) {
@@ -72,7 +87,21 @@ const sendOtp = async (req, res, next) => {
     }
 }
 
+//Verify otp 
+/* 
+* req.body = username , otp 
 
+*/
+/* 
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            x_token:""
+        }
+    }
+*/
 const verifyOtp = async (req, res, next) => {
     try {
         const body = req.body;
@@ -88,7 +117,7 @@ const verifyOtp = async (req, res, next) => {
 
         }
         
-        const response = await startVerfiOtp({username, otp, audience, provider: LOGIN_TYPES.LOCAL });
+        const response = await startVerifyOtp({username, otp, audience, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
@@ -99,7 +128,16 @@ const verifyOtp = async (req, res, next) => {
         });
     }
 }
-
+/* 
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            x_token:""
+        }
+    }
+*/
 const signInUser = async (resData) => {
     const response = {
         code: DEFAULT_CODES.LOGIN_SUCCESS.code,
@@ -225,6 +263,19 @@ const checkPassword = (userObj, resPwd) => {
     }
 };
 
+/* 
+    * Generate Token for login session
+    input => audience- origin(client), provider-> (google facebook or linked in or local)    
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            x_token:""
+        }
+    }
+*/
+
 const getLoginToken = async (userObj) => {
     try {
         const signOptions = {
@@ -278,17 +329,40 @@ const getLoginToken = async (userObj) => {
         }
     }
 }
-
+   // check if valid user
+            /* 
+                {
+                    code:'',
+                    success:true/false,
+                    message:'',
+                    data:{
+                        otp: xxxxxx
+                    }
+                }
+            */
 const generateOtp = async (resData) => {
     let { username } = resData;
     return new Promise(async (resolve, reject) => {
         try {
 
+              // check if valid user
+            /* 
+                {
+                    code:'',
+                    success:true/false,
+                    message:'',
+                    data:{
+                        user: {}
+                    }
+                }
+            */
             const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
             if (!verificationRes.success) {
                 return resolve(verificationRes)
             }
 
+
+        // Get all otp generated for past X(10 ,mins) time span
             return models.otp.findAndCountAll({
                 where: {
                     [Op.and]: [
@@ -315,14 +389,18 @@ const generateOtp = async (resData) => {
                     if (result.count >= defaults.getValue('otpMaxSent')) {
                         return resolve({ "success": false, "code": "error", "message": "Too many verification SMS sent. Please try after " + Math.round((init_time.getTime() - current_date.getTime()) / (60 * 1000)) + " minutes." });
                     } 
+
                     // else if (result.count > 0 && (result.rows[result.count - 1].attempts >= defaults.getValue('otp_invalid_tries')) && (span_time.getTime() >= current_date.getTime())) {
                     //     return resolve({ "success": false, "code": "error", "message": "Too many failed login attempts. Please try again in " + Math.round((span_time.getTime() - current_date.getTime()) / (60 * 1000)) + " minutes." });
                     // } 
                     else {
-                        var otp = (SEND_OTP) ? getOtp(defaults.getValue('otpLength')) : "000000";
+                        /* 
+                            * generates otp and stores in Db
+                        */
+                        var otp = (SEND_OTP) ? getOtp(defaults.getValue('otpLength')) : "000000"; // generate 6 digit otp, configurable 
 
                         let hash = bcrypt.hashSync(otp, 10);
-                        console.log(hash);
+
                         await models.otp.create({
                             username,
                             otp: hash,
@@ -358,7 +436,7 @@ const generateOtp = async (resData) => {
     })
 
 }
-const startVerfiOtp = async (resData) => {
+const startVerifyOtp = async (resData) => {
     return new Promise(async (resolve,reject) => {
         try {
             let {username="",otp=""} = resData
@@ -367,11 +445,15 @@ const startVerfiOtp = async (resData) => {
                 return resolve(otpRes);
             }
 
+            //Verify 
             const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
             if (!verificationRes.success) {
                 return resolve(verificationRes)
             }
-            console.log("tokenRes-------------------");
+            /*
+             * Generate Token for login session
+             input => audience- origin(client), provider-> (google facebook or linked in or local)
+             */
             const tokenRes =await getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
             console.log(tokenRes);
             return resolve(tokenRes);
@@ -386,6 +468,7 @@ const startVerfiOtp = async (resData) => {
 
     })
 }
+
 
 const validateOtp = async (username,otp,otpType) => {
     try {
