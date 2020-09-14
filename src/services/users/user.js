@@ -75,7 +75,6 @@ const sendOtp = async (req, res, next) => {
         /* 
         * Check if user exists or resgistered user
         */
-        console.log(hash);
         const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).json(response);
     } catch (error) {
