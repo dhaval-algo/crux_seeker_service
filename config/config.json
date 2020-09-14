@@ -4,27 +4,43 @@
     "password": "postgres",
     "database": "crux_seeker_dev",
     "host": "127.0.0.1",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "timezone": "+05:30"
   },
   "test": {
     "username": "root",
     "password": null,
     "database": "database_test",
     "host": "127.0.0.1",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "timezone": "+05:30"
   },
   "production": {
     "username": "root",
     "password": null,
     "database": "database_production",
     "host": "127.0.0.1",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "timezone": "+05:30"
   },
   "staging":{
     "username": "crux_dev",
     "password": "Ajency#123",
     "database": "crux_seeker_dev",
     "host": "127.0.0.1",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "timezone": "+05:30"
   } 
 }

@@ -524,6 +524,7 @@ const validateOtp = async (username,otp,otpType) => {
                     return { "code": DEFAULT_CODES.INVALID_OTP.code, "message": DEFAULT_CODES.INVALID_OTP.message,success:false,data:{} };
                 }
             } else {
+                console.log(moment().subtract(defaults.getValue('otpSpan'), "minutes").toISOString());
                 /** Clear out old otps */
                 models.otp.destroy({
                     where: {
@@ -533,12 +534,12 @@ const validateOtp = async (username,otp,otpType) => {
                                     [Op.like]: username
                                 }
                             }
-                            //,
-                            /// {
-                            //     createdAt: {
-                            //         [Op.lt]: new Date(new Date().getTime() - 1 * defaults.getValue('otpSpan') * 60 * 1000)
-                            //     }
-                            // }
+                            ,
+                             {
+                                createdAt: {
+                                    [Op.lt]: new Date(new Date().getTime() - 1 * defaults.getValue('otpSpan') * 60 * 1000)
+                                }
+                            }
                         ]
                     }
                 });
@@ -557,7 +558,7 @@ const validateOtp = async (username,otp,otpType) => {
         }
         
     } catch (error) {
-        console.log('No users');
+        console.log('No users',error);
             return {
                 code:DEFAULT_CODES.SYSTEM_ERROR.code,
                 message:DEFAULT_CODES.SYSTEM_ERROR.message,
