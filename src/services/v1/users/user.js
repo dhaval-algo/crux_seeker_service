@@ -1,4 +1,4 @@
-const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken } = require("../../../utils/helper");
+const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const b64 = require("base64url");
 const bcrypt = require('bcrypt');
@@ -9,10 +9,11 @@ const { verifyToken } = require("../auth/auth");
 const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
+const { default: Axios } = require("axios");
+const { stringify } = require("querystring");
 const SEND_OTP = !!process.env.SEND_OTP;
 const signToken = require('../auth/auth').signToken;
-
-const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDID];
+const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const login = async (req, res, next) => {
     try {
         const body = req.body;
@@ -150,7 +151,7 @@ const verifyUserToken = (req, res) => {
 */
 
 const socialSignIn = async (req, res, next) => {
-    const { provider = "", tokenId = "" } = req.body;
+    const { provider = "", tokenId = "", redirectUri = "" } = req.body;
     try {
         if (!SOCIAL_PROVIDER.includes(provider)) {
             return res.status(200).json({
@@ -175,19 +176,28 @@ const socialSignIn = async (req, res, next) => {
         }
 
         //verify token 
-        const providerRes = await verifySocialToken({ provider, tokenId })
+        const providerRes = await verifySocialToken(req.body)
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
 
         //check if user exists
-        const verificationRes = await userExist(providerRes.data.username, providerRes.data.provider);
+        let verificationRes = await userExist(providerRes.data.username, providerRes.data.provider);
         if (!verificationRes.success) {
-            return res.status(200).json(verificationRes)
+            // return res.status(200).json(verificationRes)
+            const newUserRes = await createUser(providerRes.data);
+            if (!newUserRes.success) {
+                return res.status(500).json({
+                    'code': DEFAULT_CODES.SYSTEM_ERROR.code,
+                    'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+                    success: false
+                })
+            }
+            verificationRes.data.user = newUserRes.data.user;
         }
 
         //create token
-        const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience:req.headers.origin, provider: providerRes.data.provider });
+        const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience: req.headers.origin, provider: providerRes.data.provider });
         console.log(tokenRes);
         return res.status(200).json(tokenRes);
 

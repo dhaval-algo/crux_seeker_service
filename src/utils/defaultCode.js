@@ -59,12 +59,16 @@ const DEFAULT_CODES =
     INVALID_PROVIDER:{
         code:"INVALID_PROVIDER",
         message:"Does not support provided social login",
+    },
+    USER_CREATED: {
+        code:"USER_CREATED",
+        message:"New user created."
     }
 }
 const LOGIN_TYPES = {
     LOCAL:'local',
     GOOGLE:'google',
-    LINKEDID:'linkedin'
+    LINKEDIN:'linkedin'
 }
 
 const TOKEN_TYPES = {

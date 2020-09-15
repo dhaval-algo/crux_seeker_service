@@ -4,6 +4,7 @@
   "description": "Backend for Crux Seeker",
   "main": "server.js",
   "dependencies": {
+    "axios": "^0.20.0",
     "base64url": "^3.0.1",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
@@ -15,10 +16,12 @@
     "google-auth-library": "^6.0.6",
     "jsonwebtoken": "^8.5.1",
     "moment": "^2.27.0",
+    "node-linkedin": "^0.5.6",
     "nodemon": "^2.0.4",
     "path": "^0.12.7",
     "pg": "^8.3.3",
     "pg-hstore": "^2.3.3",
+    "querystring": "^0.2.0",
     "sequelize": "^5.21.10",
     "sequelize-cli": "^5.5.1"
   },
