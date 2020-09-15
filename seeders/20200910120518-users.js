@@ -15,7 +15,7 @@ module.exports = {
 
     await queryInterface.bulkInsert('users', [{
       fullName: 'latesh kudnekar',
-      accountEmail: 'latesh@ajency.in',
+      email: 'latesh@ajency.in',
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date()
@@ -29,7 +29,7 @@ module.exports = {
     },
     {
       fullName: 'Nutan',
-      accountEmail: 'nutan@ajency.in',
+      email: 'nutan@ajency.in',
       phone: '8806458310',
       status: 'active',
       createdAt: new Date(),
