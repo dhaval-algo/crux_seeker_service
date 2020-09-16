@@ -1,7 +1,7 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const auth_token = sequelize.define('auth_token', {
-    tokenId: DataTypes.STRING,
+    tokenId: DataTypes.TEXT,
     userId: DataTypes.STRING,
     tokenType: DataTypes.STRING,
     inValid: DataTypes.BOOLEAN,
