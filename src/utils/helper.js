@@ -189,7 +189,7 @@ const createUser = async (userObj) => {
                     const userLogin =  await models.user_login.create({
                         userId:newUser.id,
                         email: userObj.email || "",
-                        password:userOb.password || "",
+                        password:userObj.password || "",
                         phone: userObj.phone || "",
                         provider: userObj.provider || "",
                         providerId:  userObj.providerId || "",
