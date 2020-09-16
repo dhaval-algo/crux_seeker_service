@@ -88,7 +88,9 @@ const verifyLinkedInToken = async (resData) => {
                     'Authorization': 'Bearer ' + resp.data.access_token
                 }
             })
-            if(!userProfileRes.data.localizedLastname) {
+            console.log(userProfileRes);
+            if(!userProfileRes.data.localizedLastName) {
+                console.log("ffffffff");
                 return resolve({
                     code: DEFAULT_CODES.SYSTEM_ERROR.code,
                     message: DEFAULT_CODES.SYSTEM_ERROR.message,
@@ -104,7 +106,7 @@ const verifyLinkedInToken = async (resData) => {
                     data: { provider: resData.provider }
                 })
             }
-            let fullName = userProfileRes.data.localizedFirstName +" "+ userProfileRes.data.localizedLastname
+            let fullName = userProfileRes.data.localizedFirstName +" "+ userProfileRes.data.localizedLastName
 
             return resolve({
                 code: DEFAULT_CODES.VALID_TOKEN.code,
