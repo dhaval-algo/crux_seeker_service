@@ -88,7 +88,14 @@ const verifyLinkedInToken = async (resData) => {
                     'Authorization': 'Bearer ' + resp.data.access_token
                 }
             })
-            let full_name = ""
+            if(!userProfileRes.data.localizedLastname) {
+                return resolve({
+                    code: DEFAULT_CODES.SYSTEM_ERROR.code,
+                    message: DEFAULT_CODES.SYSTEM_ERROR.message,
+                    success: false,
+                    data: { provider: resData.provider }
+                })
+            }
             if (!userEmailRes.data.elements.length) {
                 return resolve({
                     code: DEFAULT_CODES.SYSTEM_ERROR.code,
@@ -97,6 +104,8 @@ const verifyLinkedInToken = async (resData) => {
                     data: { provider: resData.provider }
                 })
             }
+            let fullName = userProfileRes.data.localizedFirstName +" "+ userProfileRes.data.localizedLastname
+
             return resolve({
                 code: DEFAULT_CODES.VALID_TOKEN.code,
                 message: DEFAULT_CODES.VALID_TOKEN.message,
@@ -104,6 +113,8 @@ const verifyLinkedInToken = async (resData) => {
                 data: {
                     email: userEmailRes.data.elements[0]['handle~'].emailAddress || "",
                     username: userEmailRes.data.elements[0]['handle~'].emailAddress,
+                    fullName:fullName,
+                    phone:'',
                     provider: LOGIN_TYPES.LINKEDIN
                 }
             })
@@ -164,9 +175,10 @@ const createUser = async (userObj) => {
                         fullName: userObj.fullName || "",
                     })
                     console.log(newUser);
-                   const userLogin =  await models.user_login.create({
+                    const userLogin =  await models.user_login.create({
                         userId:newUser.id,
                         email: userObj.email || "",
+                        password:userOb.password || "",
                         phone: userObj.phone || "",
                         provider: userObj.provider || "",
                         providerId:  userObj.providerId || "",
