@@ -175,6 +175,17 @@ const createUser = async (userObj) => {
                         fullName: userObj.fullName || "",
                     })
                     console.log(newUser);
+                    if(userObj.provider != LOGIN_TYPES.LOCAL) {
+                          await models.user_login.create({
+                            userId:newUser.id,
+                            email: userObj.email || "",
+                            password:"",
+                            phone: userObj.phone || "",
+                            provider:LOGIN_TYPES.LOCAL,
+                            providerId: "",
+                            providerData:{},
+                        })
+                    }
                     const userLogin =  await models.user_login.create({
                         userId:newUser.id,
                         email: userObj.email || "",
