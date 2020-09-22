@@ -1,7 +1,8 @@
 'use strict';
-
+const models = require("../../../../models");
 const fs   = require('fs');
 const jwt  = require('jsonwebtoken');
+const b64 = require("base64url");
 let privateKEY  = fs.readFileSync(appRoot+'/keys/private.key', 'utf8');
 let publicKEY  = fs.readFileSync(appRoot+'/keys/public.key', 'utf8'); 
 
@@ -16,7 +17,7 @@ const signToken = (payload,options) => {
     return jwt.sign(payload, privateKEY, signOptions);
 }
 
-const verifyToken = (token, options) => {
+const verifyToken = async (token, options) => {
     let verifyOptions = {
         issuer: '',
         audience: '',
@@ -24,6 +25,19 @@ const verifyToken = (token, options) => {
         ...options
     }
     try{
+        let authToken = await models.auth_token.findOne({ where: {tokenId: b64.encode(JSON.stringify(payload))} });
+        /** Check verify if this token was generated */
+        if(authToken === null) {
+            return false;
+        }
+
+        /** Verify if the token is valid */
+        if(authToken.get("inValid")) {
+            return false;
+        }
+        if(new Date(authToken.get("validTill")) < new Date()) {
+            return false;
+        }
         return jwt.verify(token, publicKEY, verifyOptions);
     } catch (err){
         return false;
