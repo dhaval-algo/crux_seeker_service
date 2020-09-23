@@ -1,24 +1,30 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('users', {
+    return queryInterface.createTable('form_submissions', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      verified: {
-        type: Sequelize.BOOLEAN
+      userId: {
+        type: Sequelize.INTEGER
       },
-      userType: {
+      targetEntityType: {
         type: Sequelize.STRING
       },
-      status: {
+      targetEntityId: {
         type: Sequelize.STRING
       },
-      lastLogin: {
-        type: Sequelize.DATE
+      formType: {
+        type: Sequelize.STRING
+      },
+      formTypeSource: {
+        type: Sequelize.STRING
+      },
+      otherInfo: {
+        type: Sequelize.JSON
       },
       createdAt: {
         allowNull: false,
@@ -31,6 +37,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('users');
+    return queryInterface.dropTable('form_submissions');
   }
 };

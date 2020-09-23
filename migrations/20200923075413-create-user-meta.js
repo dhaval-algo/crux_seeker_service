@@ -1,24 +1,24 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('users', {
+    return queryInterface.createTable('user_meta', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      verified: {
-        type: Sequelize.BOOLEAN
+      userId: {
+        type: Sequelize.INTEGER
       },
-      userType: {
+      key: {
         type: Sequelize.STRING
       },
-      status: {
-        type: Sequelize.STRING
+      value: {
+        type: Sequelize.TEXT
       },
-      lastLogin: {
-        type: Sequelize.DATE
+      metaType: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -31,6 +31,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('users');
+    return queryInterface.dropTable('user_meta');
   }
 };
