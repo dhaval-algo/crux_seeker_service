@@ -8,15 +8,16 @@ const fetchFormvalue = (req, res) => {
 const submitForm = async (req,res) => {
     const {user ={}} = req;
     const { formType, formTypeSource} = req.body;
+    if(!formType || !formTypeSource) {
+        res.status(500).json({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
+    }
     req.body.user = user
-    console.log(req.body.user);
     switch (formType) {
         case FORM_TYPES.ENQUIRIES:
             let enquiryResponse = await handleEnquirySubmission(req.body,req)
             if(!enquiryResponse.success){ 
                return res.status(200).json(sendSystemError)
             }
-         
             console.log(enquiryResponse);
             return res.status(200).json(enquiryResponse)
         break;

@@ -23,6 +23,10 @@ const handleCallBack = (resBody,req) => {
     return new Promise(async (resolve, reject) => {
         const {user, targetEntityType, targetEntityId,otherInfo={},formData, formType, formTypeSource } = resBody;
         let userObj = {...user};
+        if(!targetEntityType || !targetEntityType) {
+            res.status(500).json({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
+        }
+        
         console.log(user);
         try {
             

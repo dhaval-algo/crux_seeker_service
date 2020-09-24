@@ -67,6 +67,10 @@ const DEFAULT_CODES =
     CALLBACK_INQUIRY_SUCCESS: {
         code:"CALLBACK_INQUIRY_SUCCESS",
         message:"Successfully placed an enquiry, Our representative will be in touch soon"
+    },
+    FAILED_ENQUIRY: {
+        code:"FAILED_ENQUIRY",
+        message:"Unable to process your request at moment. Please try in sometime."
     }
 }
 const LOGIN_TYPES = {
