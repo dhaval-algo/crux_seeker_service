@@ -14,23 +14,16 @@ module.exports = {
     */
 
     await queryInterface.bulkInsert('users', [{
-      fullName: 'latesh kudnekar',
-      email: 'latesh@ajency.in',
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
-      fullName: 'hazel colaco',
-      phone: '7875077425',
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
-      fullName: 'Nutan',
-      email: 'nutan@ajency.in',
-      phone: '8806458310',
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date()
