@@ -1,7 +1,7 @@
 
 const DEFAULT_CODES = require("../../../utils/defaultCode").DEFAULT_CODES;
 
-module.exports  = (req, res, next) => {
+module.exports  = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const audience = req.headers.origin;
     let options = {
@@ -11,7 +11,7 @@ module.exports  = (req, res, next) => {
     }
     if (authHeader) {
         const token = authHeader.split(' ')[1];
-        const verifiedToken = require("../auth/auth").verifyToken(token, options);
+        const verifiedToken = await require("../auth/auth").verifyToken(token, options);
         if(verifiedToken) {
             req.user = verifiedToken.user
             next();
