@@ -25,7 +25,11 @@ const verifyToken = async (token, options) => {
         ...options
     }
     try{
-        let authToken = await models.auth_token.findOne({ where: {tokenId: b64.encode(JSON.stringify(payload))} });
+        let authTokenRes =  await jwt.verify(token, publicKEY, verifyOptions);
+        if(!authTokenRes) {
+            return false;
+        }
+        let authToken = await models.auth_token.findOne({ where: {tokenId: token }});
         /** Check verify if this token was generated */
         if(authToken === null) {
             return false;
@@ -38,7 +42,7 @@ const verifyToken = async (token, options) => {
         if(new Date(authToken.get("validTill")) < new Date()) {
             return false;
         }
-        return jwt.verify(token, publicKEY, verifyOptions);
+        return authTokenRes
     } catch (err){
         return false;
     }
