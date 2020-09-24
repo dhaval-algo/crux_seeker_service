@@ -4,7 +4,7 @@ const injectTokenPayload = require("../../../services/v1/middleware/injectTokenP
 
 const router = express.Router()
 
-router.post('/get-form-values', forms.fetchFormvalue)
+router.post('/get-form-values',injectTokenPayload, forms.getFormValues)
 router.post('/submit-forms', injectTokenPayload, forms.submitForm)
 
 module.exports = router

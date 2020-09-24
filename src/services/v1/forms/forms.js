@@ -1,5 +1,5 @@
 const { FORM_TYPES, DEFAULT_CODES } = require("../../../utils/defaultCode");
-const { handleEnquirySubmission } = require("./enquirySubmission");
+const { handleEnquirySubmission, fetchFormValues } = require("./enquirySubmission");
 
 const fetchFormvalue = (req, res) => {
     res.status(200).json({})
@@ -29,6 +29,23 @@ const submitForm = async (req,res) => {
     }
 }
 
+const getFormValues = async (req,res) => {
+    const { user } = req
+    if(!user) {
+        return res.status(200).send({
+            success:false,
+            code:DEFAULT_CODES.INVALID_TOKEN.code,
+            data:{
+                
+            }
+        })
+    } else {
+        req.body.user = user
+        let fields =  await fetchFormValues(req.body);
+       return res.status(200).send(fields)
+    }
+}
+
 const sendSystemError = {
     code:DEFAULT_CODES.SYSTEM_ERROR.code,
     message:DEFAULT_CODES.SYSTEM_ERROR.message,
@@ -37,5 +54,6 @@ const sendSystemError = {
 
 module.exports = {
     fetchFormvalue,
-    submitForm
+    submitForm,
+    getFormValues
 }

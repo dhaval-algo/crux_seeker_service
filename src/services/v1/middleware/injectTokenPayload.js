@@ -8,7 +8,7 @@ module.exports = async (req, res, next) => {
     const audience = req.headers.origin || "";
     let options = {
         issuer: process.env.HOST,
-        // audience: audience,
+        audience: audience || "",
         algorithm:  ["RS256"],
     }
     // return res.status(200).send({})

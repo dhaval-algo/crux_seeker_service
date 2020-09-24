@@ -1,7 +1,8 @@
 const models = require("../../../../models");
 const {FORM_TYPE_SOURCE, USER_DEFAULTS, DEFAULT_CODES} = require('../../../utils/defaultCode')
 const {getLoginToken} = require('../users/user')
-
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 const handleEnquirySubmission = async (resBody,req) => {
     const { formTypeSource } = resBody;
 
@@ -92,6 +93,45 @@ const handleCallBack = (resBody,req) => {
     })
 }
 
+const fetchFormValues =  (reqBody) => {
+    return new Promise(async (resolve,reject) => {
+
+        const { requestFieldMetaType="", requestFields = [], user } = reqBody;
+        console.log(reqBody);
+        if(requestFields.length) {
+            let fieldsRes = await models.user_meta.findAll({
+                where: {
+                    userId:user.userId,
+                    key: {[Op.in]:requestFields},
+                    metaType: requestFieldMetaType || null
+                }
+            })
+            const formValues = fieldsRes.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                for (var key in x) acc[key] = x[key];
+                return acc;
+            }, {});
+            resolve({
+                success:true,
+                data:{
+                    requestFieldValues: {
+                        ...formValues
+                    }
+            
+                }
+            })
+        } else {
+            console.log("here");
+            resolve({
+                success:false,
+                data:{
+    
+                }
+            })
+        }
+    })
+}
+
 module.exports = {
-    handleEnquirySubmission
+    handleEnquirySubmission,
+    fetchFormValues
 }
