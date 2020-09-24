@@ -63,6 +63,10 @@ const DEFAULT_CODES =
     USER_CREATED: {
         code:"USER_CREATED",
         message:"New user created."
+    },
+    CALLBACK_INQUIRY_SUCCESS: {
+        code:"CALLBACK_INQUIRY_SUCCESS",
+        message:"Successfully placed an enquiry, Our representative will be in touch soon"
     }
 }
 const LOGIN_TYPES = {
@@ -81,4 +85,26 @@ const OTP_TYPES = {
     RESETPASSWORD:'reset password'
 }
 
-module.exports = { LOGIN_TYPES, DEFAULT_CODES, TOKEN_TYPES, OTP_TYPES}
+const FORM_TYPES = {
+    ENQUIRIES: "enquiry",
+    SIGNUP:"signup"
+}
+
+const FORM_TYPE_SOURCE = {
+    CALLBACK:"callback"
+}
+
+const USER_DEFAULTS = {
+    ACTIVE:'active',
+    GUEST:'guest',
+    REGISTERED:"registered"
+}
+module.exports = { 
+    LOGIN_TYPES,
+    DEFAULT_CODES,
+    TOKEN_TYPES,
+    OTP_TYPES,
+    FORM_TYPES,
+    FORM_TYPE_SOURCE,
+    USER_DEFAULTS
+}
