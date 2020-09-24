@@ -378,7 +378,7 @@ const getLoginToken = async (userObj) => {
         let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
         validTill = moment().add(defaults.getValue('tokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
         let userAuthToken = {
-            tokenId: b64.encode(JSON.stringify(verifyToken(token, signOptions))),
+            tokenId: token,
             userId: userObj.userId,
             tokenType: TOKEN_TYPES.SIGNIN,
             inValid: false,
