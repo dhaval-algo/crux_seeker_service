@@ -371,7 +371,7 @@ const getLoginToken = async (userObj) => {
                 email: userObj.email || "",
                 phone: userObj.phone || "",
                 userId: userObj.userId,
-                provider: userObj.provider
+                provider: userObj.provider || ""
             }
         }
         const token = signToken(payload, signOptions);
@@ -647,5 +647,6 @@ module.exports = {
     verifyOtp,
     sendOtp,
     verifyUserToken,
-    socialSignIn
+    socialSignIn,
+    getLoginToken
 }
