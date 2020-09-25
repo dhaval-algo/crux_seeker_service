@@ -7,6 +7,7 @@ const Linkedin = require('node-linkedin');
 const { stringify } = require('querystring');
 const models = require("../../models");
 crypt = new Cryptr(process.env.CRYPT_SALT);
+
 const encryptStr = (str) => {
     return crypt.encrypt(str);
 };
@@ -318,10 +319,11 @@ const handleLocalSignUP = async (userObj) => {
                  return f 
             })
             await createUserMeta(userMeta)
+            const encryptedPWD = encryptStr(userObj.password);
             await createUserLogin([{
                 userId,
                 email: userObj.username || "",
-                password: userObj.password || null,
+                password: encryptedPWD || null,
                 phone: userObj.phone || null,
                 provider: LOGIN_TYPES.LOCAL,
                 providerId: null,
