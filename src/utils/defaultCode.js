@@ -71,6 +71,14 @@ const DEFAULT_CODES =
     FAILED_ENQUIRY: {
         code:"FAILED_ENQUIRY",
         message:"Unable to process your request at moment. Please try in sometime."
+    },
+    USER_ALREADY_REGISTERED:{
+        code:"USER_ALREADY_REGISTERED",
+        message:"User already registered with this email."
+    },
+    USER_REGISTERED: {
+        code:"USER_REGISTERED",
+        message:"Please verify your account. We have sent a verification on your email id."
     }
 }
 const LOGIN_TYPES = {
@@ -98,10 +106,13 @@ const FORM_TYPE_SOURCE = {
     CALLBACK:"callback"
 }
 
-const USER_DEFAULTS = {
-    ACTIVE:'active',
+const USER_TYPE = {
     GUEST:'guest',
     REGISTERED:"registered"
+}
+const USER_STATUS = {
+    ACTIVE:'active',
+    INACTIVE:'inactive'
 }
 module.exports = { 
     LOGIN_TYPES,
@@ -110,5 +121,6 @@ module.exports = {
     OTP_TYPES,
     FORM_TYPES,
     FORM_TYPE_SOURCE,
-    USER_DEFAULTS
+    USER_TYPE,
+    USER_STATUS
 }

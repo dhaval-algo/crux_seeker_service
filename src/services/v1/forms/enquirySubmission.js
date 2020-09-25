@@ -1,5 +1,5 @@
 const models = require("../../../../models");
-const {FORM_TYPE_SOURCE, USER_DEFAULTS, DEFAULT_CODES} = require('../../../utils/defaultCode')
+const {FORM_TYPE_SOURCE,  DEFAULT_CODES, USER_STATUS, USER_TYPE} = require('../../../utils/defaultCode')
 const {getLoginToken} = require('../users/user')
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
@@ -39,8 +39,8 @@ const handleCallBack = (resBody,req) => {
             } else {
                 const data = {
                     verified:false,
-                    status:USER_DEFAULTS.ACTIVE,
-                    userType:USER_DEFAULTS.GUEST
+                    status:USER_STATUS.ACTIVE,
+                    userType:USER_TYPE.GUEST
                 }
                 const resUser = await models.user.create(data)
                 userObj = {...userObj,userId:resUser.id, ...data};

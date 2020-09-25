@@ -139,6 +139,47 @@ const verifyUserToken = (req, res) => {
     }
     return res.status(200).json(resp);
 }
+
+const signUp = async (req,res) => {
+    const audience = req.headers.origin;
+    const { username = "", password = "", } = req.body;
+    if (username.trim() == '') {
+        return res.status(200).json({
+            'success': false,
+            'message': 'Email is required',
+            'data': {}
+        });
+    }
+
+    if (password.trim() == '') {
+        return res.status(200).json({
+            'success': false,
+            'message': 'Password is required',
+            'data': {}
+        });
+    }
+    const verificationRes = await userExist(req.body.username, LOGIN_TYPES.LOCAL);
+    if (verificationRes.success) {
+        verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
+        verificationRes.message =  DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
+        verificationRes.data= {}
+        return res.status(200).json(verificationRes)
+    }
+    req.body.tokenPayload = req.user;
+    req.body.provider = LOGIN_TYPES.LOCAL
+    let userres = await createUser(req.body)
+    console.log(userres);
+    if(!userres.success) {
+        return res.status(500).send(userres)
+    }
+    const tokenRes = await getLoginToken({ ...userres.data.user, audience:audience || "", provider: LOGIN_TYPES.LOCAL });
+    tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
+    tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
+    delete userres.data.user.userId
+    delete userres.data.user.id
+    tokenRes.data['user'] = userres.data.user
+    res.status(200).send(tokenRes)
+}
 /* 
     {
         code:'',
@@ -290,15 +331,16 @@ const userExist = (username, provider) => {
         }
 
         try {
-            let dbCol = 'phone';
+            let dbCol = 'email';
             // determine is username is email or phone
-            if (isEmail(username)) {
-                dbCol = 'email';
+            if (!isEmail(username)) {
+                dbCol = 'phone';
             }
 
             //check in db
             models.user_login.findOne({ where: { [dbCol]: username, provider: provider } }).then(async function (userLogin) {
                 if (userLogin != null) {
+                    const user = await models.user.findOne({ where: { id: userLogin.userId } });
                     const { userId, email = "", password = "", phone = "" } = userLogin;
                     response.success = true;
                     response.code = DEFAULT_CODES.VALID_USER;
@@ -307,7 +349,8 @@ const userExist = (username, provider) => {
                         email,
                         password,
                         phone,
-                        userId
+                        userId,
+                        userType: user.userType
                     }
                     return resolve(response)
                 } else {
@@ -369,9 +412,10 @@ const getLoginToken = async (userObj) => {
         const payload = {
             user: {
                 email: userObj.email || "",
-                phone: userObj.phone || "",
+                // phone: userObj.phone || "",
                 userId: userObj.userId,
-                provider: userObj.provider || ""
+                provider: userObj.provider || "",
+                userType: userObj.userType 
             }
         }
         const token = signToken(payload, signOptions);
@@ -648,5 +692,6 @@ module.exports = {
     sendOtp,
     verifyUserToken,
     socialSignIn,
-    getLoginToken
+    getLoginToken,
+    signUp
 }

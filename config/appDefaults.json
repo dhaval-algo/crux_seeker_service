@@ -1,6 +1,6 @@
 {
     "development": {
-      "tokenExpiry": 200,
+      "tokenExpiry": 518400,
       "resetPasswordTokenExpiry": 1440,
       "otpLength": 6,
       "otpExpiry": 10,
