@@ -24,8 +24,8 @@ const handleCallBack = (resBody,req) => {
     return new Promise(async (resolve, reject) => {
         const {user, targetEntityType, targetEntityId,otherInfo={},formData, formType, formTypeSource } = resBody;
         let userObj = {...user};
-        if(!targetEntityType || !targetEntityType) {
-            res.status(500).json({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
+        if(!targetEntityType || !targetEntityId) {
+           return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
         }
         
         console.log(user);
@@ -97,7 +97,7 @@ const fetchFormValues =  (reqBody) => {
     return new Promise(async (resolve,reject) => {
 
         const { requestFieldMetaType="", requestFields = [], user } = reqBody;
-        console.log(reqBody);
+        console.log(reqBody, "-----------------------");
         if(requestFields.length) {
             let fieldsRes = await models.user_meta.findAll({
                 where: {
