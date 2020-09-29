@@ -99,12 +99,15 @@ const fetchFormValues =  (reqBody) => {
         const { requestFieldMetaType="", requestFields = [], user } = reqBody;
         console.log(reqBody, "-----------------------");
         if(requestFields.length) {
+            let where = {
+                userId:user.userId,
+                key: {[Op.in]:requestFields},
+            }
+            if(requestFieldMetaType) {
+                where["metaType"] = requestFieldMetaType 
+            }
             let fieldsRes = await models.user_meta.findAll({
-                where: {
-                    userId:user.userId,
-                    key: {[Op.in]:requestFields},
-                    metaType: requestFieldMetaType || null
-                }
+                where
             })
             const formValues = fieldsRes.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
                 for (var key in x) acc[key] = x[key];

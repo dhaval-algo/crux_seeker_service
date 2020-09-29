@@ -135,7 +135,10 @@ const verifyUserToken = (req, res) => {
     let resp = {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
-        success: true
+        success: true,
+        data:{
+            user:req.user
+        }
     }
     return res.status(200).json(resp);
 }
@@ -160,6 +163,7 @@ const signUp = async (req,res) => {
     }
     const verificationRes = await userExist(req.body.username, LOGIN_TYPES.LOCAL);
     if (verificationRes.success) {
+        verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
         verificationRes.message =  DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
         verificationRes.data= {}
@@ -319,8 +323,10 @@ const signInUser = async (resData) => {
 
 }
 const userExist = (username, provider) => {
-    return new Promise((resolve, reject) => {
-        console.log(username);
+
+    return new Promise(async(resolve, reject) => {
+        console.log(username, provider);
+        // return resolve({success:true})
         let response = {
             code: DEFAULT_CODES.INVALID_USER.code,
             message: DEFAULT_CODES.INVALID_USER.message,
@@ -338,26 +344,27 @@ const userExist = (username, provider) => {
             }
 
             //check in db
-            models.user_login.findOne({ where: { [dbCol]: username, provider: provider } }).then(async function (userLogin) {
-                if (userLogin != null) {
-                    const user = await models.user.findOne({ where: { id: userLogin.userId } });
-                    const { userId, email = "", password = "", phone = "" } = userLogin;
-                    response.success = true;
-                    response.code = DEFAULT_CODES.VALID_USER;
-                    response.message = DEFAULT_CODES.VALID_USER.message;
-                    response.data.user = {
-                        email,
-                        password,
-                        phone,
-                        userId,
-                        userType: user.userType
-                    }
-                    return resolve(response)
-                } else {
-                    return resolve(response)
+            let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
+            if (userLogin != null) {
+                const user = await models.user.findOne({ where: { id: userLogin.userId } });
+                console.log(user);
+                const { userId, email = "", password = "", phone = "" } = userLogin;
+                response.success = true;
+                response.code = DEFAULT_CODES.VALID_USER;
+                response.message = DEFAULT_CODES.VALID_USER.message;
+                response.data.user = {
+                    email,
+                    password,
+                    phone,
+                    userId,
+                    userType: user.userType
                 }
-            });
+                return resolve(response)
+            } else {
+                return resolve(response)
+            }
         } catch (error) {
+            console.log(error);
             response = {
                 code: DEFAULT_CODES.INVALID_USER.code,
                 message: DEFAULT_CODES.INVALID_USER.message,

@@ -287,13 +287,17 @@ const createUser = async (userObj) => {
     })
 }
 const handleLocalSignUP = async (userObj) => {
-    const { tokenPayload } = userObj
+    const { tokenPayload ={} } = userObj
+    // return ({success:false})
     return new Promise(async (resolve, reject) => {
-        let userId
+        let userId, userType;
         try {
-            if (tokenPayload) {
-                if (tokenPayload.userType == USER_TYPE.GUEST) {
-                    userId = tokenPayload.userId;
+            if(tokenPayload.hasOwnProperty(userType) && tokenPayload.hasOwnProperty(userId)) {
+                userId = tokenPayload.userId;
+                userType = tokenPayload.userType;
+            }
+            if ( userId && userType) {
+                if (userType == USER_TYPE.GUEST) {
                     await models.user.update(
                         {
                             userType: USER_TYPE.REGISTERED,
@@ -338,7 +342,7 @@ const handleLocalSignUP = async (userObj) => {
                     user: {
                         username: userObj.username,
                         userId,
-                        email: userObj.email,
+                        email: userObj.username,
                         phone: userObj.phone,
                         userType: USER_TYPE.REGISTERED,
                         provider: LOGIN_TYPES.LOCAL
