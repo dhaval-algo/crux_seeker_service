@@ -12,6 +12,7 @@ module.exports  = async (req, res, next) => {
     if (authHeader) {
         const token = authHeader.split(' ')[1];
         const verifiedToken = await require("../auth/auth").verifyToken(token, options);
+        console.log(verifiedToken, "------- token");
         if(verifiedToken) {
             req.user = verifiedToken.user
             next();
