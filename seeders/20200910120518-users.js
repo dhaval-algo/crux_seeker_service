@@ -15,16 +15,15 @@ module.exports = {
 
     await queryInterface.bulkInsert('users', [{
       status: 'active',
+      userType:"registered",
+      verified:true,
       createdAt: new Date(),
       updatedAt: new Date()
     },
     {
       status: 'active',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    },
-    {
-      status: 'active',
+      userType:"registered",
+      verified:true,
       createdAt: new Date(),
       updatedAt: new Date()
     }], {});
@@ -40,66 +39,10 @@ module.exports = {
         updatedAt: new Date()
       },
       {
-        phone: '7875077425', provider, password, userId: usersRows[1].id, createdAt: new Date(),
+        phone: 'hazel@ajency.in', provider, password, userId: usersRows[1].id, createdAt: new Date(),
         updatedAt: new Date()
       },
-      {
-        email: 'nutan@ajency.in', phone: '8806458310', provider, password, userId: usersRows[2].id, createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        userId: 1,
-        email: 'latesh@ajency.in',
-        phone: '',
-        provider: 'google',
-        providerId: '107083360479601848678',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        userId: 2,
-        email: 'hazel@ajency.in',
-        phone: '',
-        provider: 'google',
-        providerId: '107083360479601848671',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        userId: 3,
-        email: 'nutan@ajency.in',
-        phone: '',
-        provider: 'google',
-        providerId: '107083360479601848674',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }, {
-        userId: 1,
-        email: 'latesh@ajency.in',
-        phone: '',
-        provider: 'linkedin',
-        providerId: '107083360479601848678',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        userId: 2,
-        email: 'hazel@ajency.in',
-        phone: '',
-        provider: 'linkedin',
-        providerId: '107083360479601848671',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        userId: 3,
-        email: 'nutan@ajency.in',
-        phone: '',
-        provider: 'linkedin',
-        providerId: '107083360479601848674',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
+     
     ], {});
 
   },
