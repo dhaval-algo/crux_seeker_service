@@ -159,7 +159,6 @@ const verifyGoogleToken = async (tokenId) => {
 
 const createUser = async (userObj) => {
     console.log(userObj.provider, "tokenPayload");
-    // return {}
     return new Promise(async (resolve, reject) => {
         try {
             switch (userObj.provider) {
@@ -290,12 +289,10 @@ const handleLocalSignUP = async (userObj) => {
     const { tokenPayload ={} } = userObj
     // return ({success:false})
     return new Promise(async (resolve, reject) => {
-        let userId, userType;
+        let {userId, userType} =tokenPayload;
         try {
-            if(tokenPayload.hasOwnProperty(userType) && tokenPayload.hasOwnProperty(userId)) {
-                userId = tokenPayload.userId;
-                userType = tokenPayload.userType;
-            }
+            console.log(userId, userType);
+            // return resolve({success:false})
             if ( userId && userType) {
                 if (userType == USER_TYPE.GUEST) {
                     await models.user.update(
