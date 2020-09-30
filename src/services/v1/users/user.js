@@ -357,7 +357,8 @@ const userExist = (username, provider) => {
                     password,
                     phone,
                     userId,
-                    userType: user.userType
+                    userType: user.userType,
+                    verified:user.verified
                 }
                 return resolve(response)
             } else {
@@ -422,7 +423,8 @@ const getLoginToken = async (userObj) => {
                 // phone: userObj.phone || "",
                 userId: userObj.userId,
                 provider: userObj.provider || "",
-                userType: userObj.userType 
+                userType: userObj.userType ,
+                isVerified: userObj.verified || false,
             }
         }
         const token = signToken(payload, signOptions);
