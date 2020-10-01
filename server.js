@@ -13,6 +13,8 @@ const routes = require('./src/routes');
 // create 
 const app = express();
 app.use(bodyParser.json()); 
+
+app.use(require('express-useragent').express())
 // for parsing application/xwww-
 app.use(bodyParser.urlencoded({ extended: true })); 
 //form-urlencoded
