@@ -41,12 +41,17 @@ module.exports = class learnContentService {
             what_will_learn: result.what_will_learn,
             target_students: result.target_students,
             prerequisites: result.prerequisites,
+            content: result.content,
             course_details: {
                 duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null, 
                 effort: (result.recommended_effort_per_week) ? result.recommended_effort_per_week+" "+effort_unit  : null,
                 language: result.languages.join(", "),
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
                 level: (result.level) ? result.level : null,
+                medium: (result.medium) ? result.medium : null,
+                instruction_type: (result.instruction_type) ? result.instruction_type : null,
+                accessibilities: (result.accessibilities && result.accessibilities.length > 0) ? result.accessibilities.join(", ") : null,
+                availabilities: (result.availabilities && result.availabilities.length > 0) ? result.availabilities.join(", ") : null,
                 tags: [],
                 pricing: {
                     pricing_type: result.pricing_type,
@@ -58,6 +63,7 @@ module.exports = class learnContentService {
                     conditional_price: result.conditional_price
                 }                
             },
+            provider_course_url: result.provider_course_url,
             reviews: []
         };
         if(result.instructors && result.instructors.length > 0){
