@@ -13,6 +13,8 @@ const routes = require('./src/routes');
 // create 
 const app = express();
 app.use(bodyParser.json()); 
+
+app.use(require('express-useragent').express())
 // for parsing application/xwww-
 app.use(bodyParser.urlencoded({ extended: true })); 
 //form-urlencoded
@@ -20,7 +22,6 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(upload.array()); 
 app.use(express.json());
 app.use(cors({ origin: true }));
-
 
 // Set up routes
 routes.init(app);
