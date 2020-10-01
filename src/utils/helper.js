@@ -6,6 +6,7 @@ const { default: Axios } = require('axios');
 const Linkedin = require('node-linkedin');
 const { stringify } = require('querystring');
 const models = require("../../models");
+const defaults = require('../services/v1/defaults/defaults');
 crypt = new Cryptr(process.env.CRYPT_SALT);
 
 const encryptStr = (str) => {
@@ -190,7 +191,7 @@ const createUser = async (userObj) => {
             // } else {
 
             // }
-           
+
             // if (user == null) {
             //     try {
             //         const newUser = await models.user.create({
@@ -286,14 +287,14 @@ const createUser = async (userObj) => {
     })
 }
 const handleLocalSignUP = async (userObj) => {
-    const { tokenPayload ={} } = userObj
+    const { tokenPayload = {} } = userObj
     // return ({success:false})
     return new Promise(async (resolve, reject) => {
-        let {userId, userType} =tokenPayload;
+        let { userId, userType } = tokenPayload;
         try {
             console.log(userId, userType);
             // return resolve({success:false})
-            if ( userId && userType) {
+            if (userId && userType) {
                 if (userType == USER_TYPE.GUEST) {
                     await models.user.update(
                         {
@@ -314,10 +315,10 @@ const handleLocalSignUP = async (userObj) => {
                 })
                 userId = newUser.id
             }
-            const userMeta = userObj.userMeta.filter((f) => { 
-                 f['userId'] = userId 
-                 f['metaType'] = "primary" 
-                 return f 
+            const userMeta = userObj.userMeta.filter((f) => {
+                f['userId'] = userId
+                f['metaType'] = "primary"
+                return f
             })
             await createUserMeta(userMeta)
             const encryptedPWD = encryptStr(userObj.password);
@@ -429,7 +430,7 @@ const handleSocialSignUp = (userObj) => {
                         email: userObj.email,
                         phone: userObj.phone,
                         userType: USER_TYPE.REGISTERED,
-                        provider:  userObj.provider
+                        provider: userObj.provider
                     }
                 }
             })
@@ -469,11 +470,57 @@ const createUserLogin = (userObject) => {
     })
 }
 
+const createVerificationToken = (userObj) => {
+    const signOptions = {
+        audience: userObj.audience,
+        issuer: process.env.HOST,
+        expiresIn: parseInt(defaults.getValue('verificaitonTokenExpiry'))
+    }
+    const payload = {
+        user: {
+            email: userObj.email || "",
+            userId: userObj.userId
+        }
+    }
+
+
+    const token = signToken(payload, signOptions);
+    //
+    let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
+    validTill = moment().add(defaults.getValue('verificaitonTokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
+    
+    let userAuthToken = {
+        tokenId: token,
+        userId: userObj.userId,
+        tokenType: TOKEN_TYPES.VERIFICATION,
+        inValid: false,
+        validTill: validTill
+    };
+    await models.auth_token.create(userAuthToken);
+  
+    return {
+        code: DEFAULT_CODES.LOGIN_SUCCESS.code,
+        message: DEFAULT_CODES.LOGIN_SUCCESS.message,
+        success: true,
+        data: {
+            x_token: token
+        }
+    }
+
+
+    return token
+}
+
+const sendEmail = () => {
+
+}
+
 module.exports = {
     encryptStr,
     decryptStr,
     isEmail,
     getOtp,
     verifySocialToken,
-    createUser
+    createUser,
+    createVerificationToken
 }
