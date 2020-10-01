@@ -512,7 +512,7 @@ const createVerificationToken = (userObj) => {
 }
 
 const sendEmail = () => {
-
+    
 }
 
 module.exports = {
