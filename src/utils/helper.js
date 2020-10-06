@@ -7,6 +7,7 @@ const Linkedin = require('node-linkedin');
 const { stringify } = require('querystring');
 const models = require("../../models");
 const defaults = require('../services/v1/defaults/defaults');
+const communication = require('../communication/v1/communication');
 crypt = new Cryptr(process.env.CRYPT_SALT);
 
 const encryptStr = (str) => {
@@ -331,6 +332,22 @@ const handleLocalSignUP = async (userObj) => {
                 providerId: null,
                 providerData: {},
             }])
+            let reducedObj = userMeta.filter(t => {
+                if (t.key == "firstName" || t.key == "lastName") {
+                    return t
+                }
+
+            }).reduce(((r, c) => Object.assign(r, c)), {})
+
+            sendVerifcationLink({
+                username: userObj.username,
+                userId,
+                email: userObj.username,
+                phone: userObj.phone,
+                userType: USER_TYPE.REGISTERED,
+                provider: LOGIN_TYPES.LOCAL,
+                ...reducedObj
+            })
 
             return resolve({
                 success: true,
@@ -347,6 +364,7 @@ const handleLocalSignUP = async (userObj) => {
                     }
                 }
             })
+
         } catch (error) {
             console.log(error);
             return resolve({
@@ -470,49 +488,74 @@ const createUserLogin = (userObject) => {
     })
 }
 
-const createVerificationToken = (userObj) => {
-    const signOptions = {
-        audience: userObj.audience,
-        issuer: process.env.HOST,
-        expiresIn: parseInt(defaults.getValue('verificaitonTokenExpiry'))
-    }
-    const payload = {
-        user: {
-            email: userObj.email || "",
-            userId: userObj.userId
+const createVerificationToken = async (userObj) => {
+    try {
+
+        const signOptions = {
+            audience: userObj.audience,
+            issuer: process.env.HOST,
+            expiresIn: parseInt(defaults.getValue('verificaitonTokenExpiry'))
         }
-    }
-
-
-    const token = signToken(payload, signOptions);
-    //
-    let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
-    validTill = moment().add(defaults.getValue('verificaitonTokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
-    
-    let userAuthToken = {
-        tokenId: token,
-        userId: userObj.userId,
-        tokenType: TOKEN_TYPES.VERIFICATION,
-        inValid: false,
-        validTill: validTill
-    };
-    await models.auth_token.create(userAuthToken);
-  
-    return {
-        code: DEFAULT_CODES.LOGIN_SUCCESS.code,
-        message: DEFAULT_CODES.LOGIN_SUCCESS.message,
-        success: true,
-        data: {
-            x_token: token
+        const payload = {
+            user: {
+                email: userObj.email || "",
+                userId: userObj.userId
+            }
         }
+
+
+        const token = signToken(payload, signOptions);
+        //
+        let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
+        validTill = moment().add(defaults.getValue('verificaitonTokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
+
+        let userAuthToken = {
+            tokenId: token,
+            userId: userObj.userId,
+            tokenType: TOKEN_TYPES.VERIFICATION,
+            inValid: false,
+            validTill: validTill
+        };
+        await models.auth_token.create(userAuthToken);
+
+        return {
+            code: DEFAULT_CODES.LOGIN_SUCCESS.code,
+            message: DEFAULT_CODES.LOGIN_SUCCESS.message,
+            success: true,
+            data: {
+                x_token: token
+            }
+        }
+    } catch (error) {
+        console.log(error);
     }
 
 
-    return token
 }
 
-const sendEmail = () => {
-    
+const sendVerifcationLink = async (userObj) => {
+    try {
+        let tokenRes = await createVerificationToken(userObj)
+        let params = {
+            redirect_url = '',
+            verifcation_token = token.data.x_token
+        }
+        let link = `${defaults.getValue('verificationUrl')}${stringify(params)}`
+        let emailPayload = {
+            fromemail:userObj.email,
+            toemail:userObj.email,
+            email_type:"activiation_mail",
+            email_data:{
+                verification_link:link,
+                account_email:userObj.email,
+                full_name:userObj.firstName + ' ' + userObj.lastName,
+            }
+        }
+        communication.sendEmail(emailPayload)
+    } catch (error) {
+
+    }
+
 }
 
 module.exports = {

@@ -49,7 +49,7 @@ module.exports = {
                     emailProviders.mailGunEmail(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SES'){
-                    awsService.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)
+                    emailProviders.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SANDGRID'){
                     

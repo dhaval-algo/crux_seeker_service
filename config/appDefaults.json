@@ -8,7 +8,9 @@
     "otpExpiry": 10,
     "otpSpan": 10,
     "otpMaxSent": 3,
-    "otpInvalidTries": 3
+    "otpInvalidTries": 3,
+    "verificationUrl":"http://localhost:3000/verify-account",
+    "redirectUrl":"/"
   },
   "production": {
     "tokenExpiry": 518400,
@@ -19,7 +21,9 @@
     "otpExpiry": 10,
     "otpSpan": 10,
     "otpMaxSent": 3,
-    "otpInvalidTries": 3
+    "otpInvalidTries": 3,
+    "verificationUrl":"",
+    "redirectUrl":"/"
   },
   "staging": {
     "tokenExpiry": 518400,
@@ -30,6 +34,8 @@
     "otpExpiry": 10,
     "otpSpan": 10,
     "otpMaxSent": 3,
-    "otpInvalidTries": 3
+    "otpInvalidTries": 3,
+    "verificationUrl":"https://crux.ajency.in/verify-account",
+    "redirectUrl":"/"
   }
 }
