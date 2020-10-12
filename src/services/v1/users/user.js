@@ -170,6 +170,7 @@ const signUp = async (req,res) => {
         return res.status(200).json(verificationRes)
     }
     req.body.tokenPayload = req.user;
+    req.body.audience = audience;
     req.body.provider = LOGIN_TYPES.LOCAL
     let userres = await createUser(req.body)
     console.log(userres);

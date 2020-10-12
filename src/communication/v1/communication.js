@@ -1,8 +1,7 @@
 const emalTemplate = require("./template.js");
-const awsService = require("../aws/awsService");
-const emailConfig = require("../../../config/email");
+// const emailConfig = require("../../../config/email");
 const emailProviders = require("./emailProviders");
-const SEND_USER_EMAIL = (process.env.SEND_USER_EMAIL == 'true');
+// const SEND_USER_EMAIL = (process.env.SEND_USER_EMAIL == 'true');
 
 module.exports = {
 
@@ -17,7 +16,7 @@ module.exports = {
     }
     *///
 
-    sendEmail:function(payload){
+    sendEmail:function(payload,useQueue=false){
         console.log("payload",payload)
         let thatObj = this
         return new Promise(async (resolve, reject) => { 
@@ -33,20 +32,20 @@ module.exports = {
                 let subject = getTemplate.subject
                 let message = getTemplate.message
 
-                console.log(SEND_USER_EMAIL)
+                // console.log(SEND_USER_EMAIL)
                 //test mail mode
-                if(!SEND_USER_EMAIL){
-                    fromemail = emailConfig.test.fromemail
-                    toemail = emailConfig.test.toemail
-                    ccaddress = emailConfig.test.ccaddress
-                    bccaddress = emailConfig.test.bccaddress
-                }
+                // if(!SEND_USER_EMAIL){
+                //     fromemail = emailConfig.test.fromemail
+                //     toemail = emailConfig.test.toemail
+                //     ccaddress = emailConfig.test.ccaddress
+                //     bccaddress = emailConfig.test.bccaddress
+                // }
                 console.log("fromemail",fromemail)
                 console.log("toemail",toemail)
                 console.log("ccaddress",ccaddress)
 
                 if(process.env.MAIL_PROVIDER == 'MAILGUN'){
-                    emailProviders.mailGunEmail(subject,message,fromemail,toemail,ccaddress,bccaddress)
+                    // emailProviders.mailGunEmail(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SES'){
                     emailProviders.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)

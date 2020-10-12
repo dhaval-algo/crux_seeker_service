@@ -1,14 +1,16 @@
 const OAuth2Client = require('google-auth-library').OAuth2Client;
 const Cryptr = require('cryptr');
 const { resolve } = require('path');
-const { DEFAULT_CODES, LOGIN_TYPES, USER_STATUS, USER_TYPE } = require('./defaultCode');
+const { DEFAULT_CODES, LOGIN_TYPES, USER_STATUS, USER_TYPE, TOKEN_TYPES } = require('./defaultCode');
 const { default: Axios } = require('axios');
 const Linkedin = require('node-linkedin');
 const { stringify } = require('querystring');
 const models = require("../../models");
 const defaults = require('../services/v1/defaults/defaults');
 const communication = require('../communication/v1/communication');
+const { signToken } = require('../services/v1/auth/auth');
 crypt = new Cryptr(process.env.CRYPT_SALT);
+const moment = require("moment");
 
 const encryptStr = (str) => {
     return crypt.encrypt(str);
@@ -43,7 +45,6 @@ const verifySocialToken = (resData) => {
                     break;
                 case LOGIN_TYPES.LINKEDIN:
                     const verificationLink = await verifyLinkedInToken(resData)
-                    console.log(verificationLink, "dddddddddddddddddd");
                     return resolve(verificationLink)
                     break;
                 default:
@@ -160,7 +161,6 @@ const verifyGoogleToken = async (tokenId) => {
 }
 
 const createUser = async (userObj) => {
-    console.log(userObj.provider, "tokenPayload");
     return new Promise(async (resolve, reject) => {
         try {
             switch (userObj.provider) {
@@ -293,7 +293,6 @@ const handleLocalSignUP = async (userObj) => {
     return new Promise(async (resolve, reject) => {
         let { userId, userType } = tokenPayload;
         try {
-            console.log(userId, userType);
             // return resolve({success:false})
             if (userId && userType) {
                 if (userType == USER_TYPE.GUEST) {
@@ -337,16 +336,20 @@ const handleLocalSignUP = async (userObj) => {
                     return t
                 }
 
-            }).reduce(((r, c) => Object.assign(r, c)), {})
-
-            sendVerifcationLink({
+            }).map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                for (var key in x) acc[key] = x[key];
+                return acc;
+            }, {});
+            console.log(reducedObj, "--------------------------------------------");
+            await sendVerifcationLink({
                 username: userObj.username,
                 userId,
                 email: userObj.username,
                 phone: userObj.phone,
                 userType: USER_TYPE.REGISTERED,
                 provider: LOGIN_TYPES.LOCAL,
-                ...reducedObj
+                ...reducedObj,
+                ...userObj
             })
 
             return resolve({
@@ -490,7 +493,7 @@ const createUserLogin = (userObject) => {
 
 const createVerificationToken = async (userObj) => {
     try {
-
+        console.log(userObj);
         const signOptions = {
             audience: userObj.audience,
             issuer: process.env.HOST,
@@ -533,28 +536,31 @@ const createVerificationToken = async (userObj) => {
 
 }
 
-const sendVerifcationLink = async (userObj) => {
-    try {
-        let tokenRes = await createVerificationToken(userObj)
-        let params = {
-            redirect_url = '',
-            verifcation_token = token.data.x_token
-        }
-        let link = `${defaults.getValue('verificationUrl')}${stringify(params)}`
-        let emailPayload = {
-            fromemail:userObj.email,
-            toemail:userObj.email,
-            email_type:"activiation_mail",
-            email_data:{
-                verification_link:link,
-                account_email:userObj.email,
-                full_name:userObj.firstName + ' ' + userObj.lastName,
+const sendVerifcationLink = (userObj, useQueue = false) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let tokenRes = await createVerificationToken(userObj)
+            let params = {
+                redirect_url: '/',
+                verifcation_token: tokenRes.data.x_token
             }
+            let link = `${defaults.getValue('verificationUrl')}/${stringify(params)}`
+            let emailPayload = {
+                fromemail: "latesh@ajency.in",
+                toemail: userObj.email,
+                email_type: "activiation_mail",
+                email_data: {
+                    verification_link: link,
+                    account_email: userObj.email,
+                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                }
+            }
+            await communication.sendEmail(emailPayload, useQueue)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
         }
-        communication.sendEmail(emailPayload)
-    } catch (error) {
-
-    }
+    })
 
 }
 
