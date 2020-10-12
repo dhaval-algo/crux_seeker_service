@@ -1,5 +1,6 @@
 const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser, sendVerifcationLink } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
+const { fetchFormValues } = require("../forms/enquirySubmission");
 const b64 = require("base64url");
 const bcrypt = require('bcrypt');
 const Sequelize = require('sequelize');
@@ -11,9 +12,9 @@ const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
 const { stringify } = require("querystring");
-const { getFormValues } = require("../forms/forms");
 const SEND_OTP = !!process.env.SEND_OTP;
 const signToken = require('../auth/auth').signToken;
+
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 
@@ -707,16 +708,17 @@ const resendVerificationLink = async (req, res) => {
         user
     }
 
-    let resForm = await getFormValues(payload)
+    let resForm = await fetchFormValues(payload)
 
     let userObj = {
         ...user,
-        ...resForm.requestFieldValues
+        ...resForm.data.requestFieldValues,
+        audience: req.headers.origin
     }
     await sendVerifcationLink(userObj)
-    res.status(200).send({
+    return res.status(200).json({
         success: true,
-        message: DEFAULT_CODES.USER_REGISTERED
+        message: DEFAULT_CODES.USER_REGISTERED.message
     })
 }
 module.exports = {
