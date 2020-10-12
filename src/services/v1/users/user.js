@@ -234,16 +234,16 @@ const socialSignIn = async (req, res, next) => {
         //check if user exists
         let verificationRes = await userExist(providerRes.data.username, providerRes.data.provider);
         if (!verificationRes.success) {
-            // return res.status(200).json(verificationRes)
-            const newUserRes = await createUser(providerRes.data);
-            if (!newUserRes.success) {
-                return res.status(500).json({
-                    'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-                    'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-                    success: false
-                })
-            }
-            verificationRes.data.user = newUserRes.data.user;
+            return res.status(200).json(verificationRes)
+            // const newUserRes = await createUser(providerRes.data);
+            // if (!newUserRes.success) {
+            //     return res.status(500).json({
+            //         'code': DEFAULT_CODES.SYSTEM_ERROR.code,
+            //         'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+            //         success: false
+            //     })
+            // }
+            // verificationRes.data.user = newUserRes.data.user;
         }
 
         //create token
@@ -352,6 +352,16 @@ const userExist = (username, provider) => {
             let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
+                if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
+
+                    await models.user.update({
+                        verified: true,
+                    }, {
+                        where: {
+                            id: userLogin.userId
+                        }
+                    });
+                }
                 console.log(user);
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
@@ -363,7 +373,7 @@ const userExist = (username, provider) => {
                     phone,
                     userId,
                     userType: user.userType,
-                    verified: user.verified
+                    verified: provider != LOGIN_TYPES.LOCAL? true: user.verified
                 }
                 return resolve(response)
             } else {
