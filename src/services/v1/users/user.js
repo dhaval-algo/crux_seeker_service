@@ -1,4 +1,4 @@
-const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser } = require("../../../utils/helper");
+const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser, sendVerifcationLink } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const b64 = require("base64url");
 const bcrypt = require('bcrypt');
@@ -11,9 +11,12 @@ const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
 const { stringify } = require("querystring");
+const { getFormValues } = require("../forms/forms");
 const SEND_OTP = !!process.env.SEND_OTP;
 const signToken = require('../auth/auth').signToken;
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
+
+
 const login = async (req, res, next) => {
     try {
         const body = req.body;
@@ -136,14 +139,14 @@ const verifyUserToken = (req, res) => {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
         success: true,
-        data:{
-            user:req.user
+        data: {
+            user: req.user
         }
     }
     return res.status(200).json(resp);
 }
 
-const signUp = async (req,res) => {
+const signUp = async (req, res) => {
     const audience = req.headers.origin;
     const { username = "", password = "", } = req.body;
     if (username.trim() == '') {
@@ -165,8 +168,8 @@ const signUp = async (req,res) => {
     if (verificationRes.success) {
         verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
-        verificationRes.message =  DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
-        verificationRes.data= {}
+        verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
+        verificationRes.data = {}
         return res.status(200).json(verificationRes)
     }
     req.body.tokenPayload = req.user;
@@ -174,10 +177,10 @@ const signUp = async (req,res) => {
     req.body.provider = LOGIN_TYPES.LOCAL
     let userres = await createUser(req.body)
     console.log(userres);
-    if(!userres.success) {
+    if (!userres.success) {
         return res.status(500).send(userres)
     }
-    const tokenRes = await getLoginToken({ ...userres.data.user, audience:audience || "", provider: LOGIN_TYPES.LOCAL });
+    const tokenRes = await getLoginToken({ ...userres.data.user, audience: audience || "", provider: LOGIN_TYPES.LOCAL });
     tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
     tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
     delete userres.data.user.userId
@@ -325,7 +328,7 @@ const signInUser = async (resData) => {
 }
 const userExist = (username, provider) => {
 
-    return new Promise(async(resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         console.log(username, provider);
         // return resolve({success:true})
         let response = {
@@ -359,7 +362,7 @@ const userExist = (username, provider) => {
                     phone,
                     userId,
                     userType: user.userType,
-                    verified:user.verified
+                    verified: user.verified
                 }
                 return resolve(response)
             } else {
@@ -424,7 +427,7 @@ const getLoginToken = async (userObj) => {
                 // phone: userObj.phone || "",
                 userId: userObj.userId,
                 provider: userObj.provider || "",
-                userType: userObj.userType ,
+                userType: userObj.userType,
                 isVerified: userObj.verified || false,
             }
         }
@@ -696,6 +699,26 @@ const validateOtp = async (username, otp, otpType) => {
     }
 }
 
+const resendVerificationLink = async (req, res) => {
+    const { user } = req
+    const payload = {
+        requestFieldMetaType: "primary",
+        requestFields: ["firstName", "lastName"],
+        user
+    }
+
+    let resForm = await getFormValues(payload)
+
+    let userObj = {
+        ...user,
+        ...resForm.requestFieldValues
+    }
+    await sendVerifcationLink(userObj)
+    res.status(200).send({
+        success: true,
+        message: DEFAULT_CODES.USER_REGISTERED
+    })
+}
 module.exports = {
     login,
     verifyOtp,
@@ -703,5 +726,6 @@ module.exports = {
     verifyUserToken,
     socialSignIn,
     getLoginToken,
-    signUp
+    signUp,
+    resendVerificationLink
 }

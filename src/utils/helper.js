@@ -571,5 +571,6 @@ module.exports = {
     getOtp,
     verifySocialToken,
     createUser,
-    createVerificationToken
+    createVerificationToken,
+    sendVerifcationLink
 }
