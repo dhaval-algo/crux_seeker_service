@@ -1,6 +1,6 @@
 const models = require("../../../../models");
 const {FORM_TYPE_SOURCE,  DEFAULT_CODES, USER_STATUS, USER_TYPE} = require('../../../utils/defaultCode')
-const {getLoginToken} = require('../users/user')
+const {getLoginToken} = require('../../../utils/helper')
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const handleEnquirySubmission = async (resBody,req) => {

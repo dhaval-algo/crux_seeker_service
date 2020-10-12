@@ -1,4 +1,4 @@
-const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser, sendVerifcationLink } = require("../../../utils/helper");
+const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser, sendVerifcationLink, getLoginToken } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
 const b64 = require("base64url");
@@ -402,74 +402,7 @@ const checkPassword = (userObj, resPwd) => {
     }
 };
 
-/* 
-    * Generate Token for login session
-    input => audience- origin(client), provider-> (google facebook or linked in or local)    
-    {
-        code:'',
-        success:true/false,
-        message:'',
-        data:{
-            x_token:""
-        }
-    }
-*/
 
-const getLoginToken = async (userObj) => {
-    try {
-        const signOptions = {
-            audience: userObj.audience,
-            issuer: process.env.HOST,
-            expiresIn: parseInt(defaults.getValue('tokenExpiry'))
-        }
-        const payload = {
-            user: {
-                email: userObj.email || "",
-                // phone: userObj.phone || "",
-                userId: userObj.userId,
-                provider: userObj.provider || "",
-                userType: userObj.userType,
-                isVerified: userObj.verified || false,
-            }
-        }
-        const token = signToken(payload, signOptions);
-        let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
-        validTill = moment().add(defaults.getValue('tokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
-        let userAuthToken = {
-            tokenId: token,
-            userId: userObj.userId,
-            tokenType: TOKEN_TYPES.SIGNIN,
-            inValid: false,
-            validTill: validTill
-        };
-        await models.auth_token.create(userAuthToken);
-        await models.user.update({
-            lastLogin: new Date(),
-        }, {
-            where: {
-                id: userObj.userId
-            }
-        });
-
-        return {
-            code: DEFAULT_CODES.LOGIN_SUCCESS.code,
-            message: DEFAULT_CODES.LOGIN_SUCCESS.message,
-            success: true,
-            data: {
-                x_token: token
-            }
-        }
-
-    } catch (error) {
-        console.log(error);
-        return {
-            code: DEFAULT_CODES.SYSTEM_ERROR.code,
-            message: DEFAULT_CODES.SYSTEM_ERROR.message,
-            success: false,
-            data: {}
-        }
-    }
-}
 // check if valid user
 /* 
     {
