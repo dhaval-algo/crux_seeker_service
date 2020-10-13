@@ -647,14 +647,19 @@ const invalidateTokens = (userObj) => {
 
 const sendWelcomeEmail  = (userObj) => {
     return new Promise(async(resolve,reject) => {
-
-        let emailPayload = {
-            fromemail: "latesh@ajency.in",
-            toemail: userObj.email,
-            email_type: "welcome_mail",
+        try {
+            console.log(userObj);
+            let emailPayload = {
+                fromemail: "latesh@ajency.in",
+                toemail: userObj.email,
+                email_type: "welcome_mail",
+            }
+            await communication.sendEmail(emailPayload)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+            resolve(true)
         }
-        await communication.sendEmail(emailPayload)
-        resolve(true)
     })
 }
 

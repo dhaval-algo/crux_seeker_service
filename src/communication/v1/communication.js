@@ -48,7 +48,7 @@ module.exports = {
                     // emailProviders.mailGunEmail(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SES'){
-                    emailProviders.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)
+                    await emailProviders.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SANDGRID'){
                     
