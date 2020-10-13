@@ -78,7 +78,11 @@ const DEFAULT_CODES =
     },
     USER_REGISTERED: {
         code:"USER_REGISTERED",
-        message:"Please verify your account. We have sent a verification on your email id."
+        message:"Please verify your account. We have sent a verification link on your email id."
+    },
+    VERIFICATION_FAILED: {
+        code:"VERIFICATION_FAILED",
+        message:"Verification link expired, Please Login to resend the verification link"
     }
 }
 const LOGIN_TYPES = {

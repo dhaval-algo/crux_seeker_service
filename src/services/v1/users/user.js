@@ -373,7 +373,7 @@ const userExist = (username, provider) => {
                     phone,
                     userId,
                     userType: user.userType,
-                    verified: provider != LOGIN_TYPES.LOCAL? true: user.verified
+                    verified: provider != LOGIN_TYPES.LOCAL ? true : user.verified
                 }
                 return resolve(response)
             } else {
@@ -664,13 +664,66 @@ const resendVerificationLink = async (req, res) => {
         message: DEFAULT_CODES.USER_REGISTERED.message
     })
 }
+
+const verifyAccount = async (req, res) => {
+    const { verification_token } = req.body;
+
+    let options = {
+        issuer: process.env.HOST,
+        audience: req.headers.origin,
+        algorithm: "RS256",
+    }
+
+    const verifiedToken = await require("../auth/auth").verifyToken(verification_token, options);
+    if (verifiedToken) {
+        let { user } = verifiedToken;
+        let userres = await models.user.update({
+            verified: false
+        }, {
+            where: {
+                id: user.userId
+            }
+        });
+        const payload = {
+            requestFieldMetaType: "primary",
+            requestFields: ["firstName", "lastName"],
+            user
+        }
+
+        let resForm = await fetchFormValues(payload)
+
+        let newUserObj = { ...user, userType: "registered", verified: true, ...resForm.data.requestFieldValues }
+        await invalidateTokens(newUserObj)
+        const tokenRes = await getLoginToken({ ...newUserObj, audience: resData.audience, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send(tokenRes)
+    } else {
+        return res.status(200).send({
+            code: DEFAULT_CODES.VERIFICATION_FAILED.code,
+            success: false,
+            message: DEFAULT_CODES.VERIFICATION_FAILED.message,
+            data: {}
+        })
+    }
+    
+}
+const invalidateTokens = (userObj) => {
+    return new Promise((resolve,reject) => {
+
+        await models.auth_token.destroy({
+            where: {
+               id:userObj.userId
+            }
+        });
+        resolve(true)
+    })
+}
 module.exports = {
     login,
     verifyOtp,
     sendOtp,
     verifyUserToken,
     socialSignIn,
-    getLoginToken,
     signUp,
-    resendVerificationLink
+    resendVerificationLink,
+    verifyAccount
 }

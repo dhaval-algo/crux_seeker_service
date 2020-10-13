@@ -542,9 +542,9 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
             let tokenRes = await createVerificationToken(userObj)
             let params = {
                 redirect_url: '/',
-                verifcation_token: tokenRes.data.x_token
+                verification_token: tokenRes.data.x_token
             }
-            let link = `${defaults.getValue('verificationUrl')}/${stringify(params)}`
+            let link = `${defaults.getValue('verificationUrl')}?${stringify(params)}`
             let emailPayload = {
                 fromemail: "latesh@ajency.in",
                 toemail: userObj.email,
