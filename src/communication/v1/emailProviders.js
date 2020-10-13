@@ -72,6 +72,7 @@ module.exports = {
                 return resolve(data);
               }).catch(
                 function(err) {
+                    console.log("-----------------",err)
                 console.error(err, err.stack);
                 return reject(err, err.stack);
               });
