@@ -13,6 +13,8 @@ const routes = require('./src/routes');
 // create 
 const app = express();
 app.use(bodyParser.json()); 
+//resource path 
+app.use(express.static(path.join(__dirname, '/public')));
 
 app.use(require('express-useragent').express())
 // for parsing application/xwww-
