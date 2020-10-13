@@ -19,6 +19,18 @@ module.exports = {
          
     },
    
+    welcomeEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/welcome-mail.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Welcome To Crux',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
 
 }
 

@@ -1,4 +1,14 @@
-const { encryptStr, isEmail, decryptStr, getOtp, verifySocialToken, createUser, sendVerifcationLink, getLoginToken } = require("../../../utils/helper");
+const {
+    isEmail,
+    decryptStr,
+    getOtp,
+    verifySocialToken,
+    createUser,
+    sendVerifcationLink,
+    getLoginToken,
+    invalidateTokens,
+    sendWelcomeEmail 
+} = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
 const b64 = require("base64url");
@@ -314,7 +324,6 @@ const signInUser = async (resData) => {
             if (!credVerificationRes.success) {
                 return resolve(credVerificationRes);
             }
-            console.log(resData);
             const tokenRes = getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
             return resolve(tokenRes);
         } catch (error) {
@@ -673,50 +682,46 @@ const verifyAccount = async (req, res) => {
         audience: req.headers.origin,
         algorithm: "RS256",
     }
-
-    const verifiedToken = await require("../auth/auth").verifyToken(verification_token, options);
-    if (verifiedToken) {
-        let { user } = verifiedToken;
-        let userres = await models.user.update({
-            verified: false
-        }, {
-            where: {
-                id: user.userId
+    try {
+        const verifiedToken = await require("../auth/auth").verifyToken(verification_token, options);
+        if (verifiedToken) {
+            let { user } = verifiedToken;
+            let userres = await models.user.update({
+                verified: false
+            }, {
+                where: {
+                    id: user.userId
+                }
+            });
+            const payload = {
+                requestFieldMetaType: "primary",
+                requestFields: ["firstName", "lastName"],
+                user
             }
-        });
-        const payload = {
-            requestFieldMetaType: "primary",
-            requestFields: ["firstName", "lastName"],
-            user
+
+            let resForm = await fetchFormValues(payload)
+
+            let newUserObj = { ...user, userType: "registered", verified: true, ...resForm.data.requestFieldValues }
+            await invalidateTokens(newUserObj)
+            await sendWelcomeEmail(newUserObj)
+            const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+            return res.status(200).send(tokenRes)
+        } else {
+            return res.status(200).send({
+                code: DEFAULT_CODES.VERIFICATION_FAILED.code,
+                success: false,
+                message: DEFAULT_CODES.VERIFICATION_FAILED.message,
+                data: {}
+            })
         }
-
-        let resForm = await fetchFormValues(payload)
-
-        let newUserObj = { ...user, userType: "registered", verified: true, ...resForm.data.requestFieldValues }
-        await invalidateTokens(newUserObj)
-        const tokenRes = await getLoginToken({ ...newUserObj, audience: resData.audience, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send(tokenRes)
-    } else {
-        return res.status(200).send({
-            code: DEFAULT_CODES.VERIFICATION_FAILED.code,
-            success: false,
-            message: DEFAULT_CODES.VERIFICATION_FAILED.message,
-            data: {}
-        })
+    } catch (error) {
+        console.log(error);
     }
-    
-}
-const invalidateTokens = (userObj) => {
-    return new Promise((resolve,reject) => {
 
-        await models.auth_token.destroy({
-            where: {
-               id:userObj.userId
-            }
-        });
-        resolve(true)
-    })
+
+
 }
+
 module.exports = {
     login,
     verifyOtp,

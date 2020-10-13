@@ -633,6 +633,31 @@ const getLoginToken = async (userObj) => {
     }
 }
 
+const invalidateTokens = (userObj) => {
+    return new Promise(async (resolve,reject) => {
+
+        await models.auth_token.destroy({
+            where: {
+               userId:userObj.userId
+            }
+        });
+        resolve(true)
+    })
+}
+
+const sendWelcomeEmail  = (userObj) => {
+    return new Promise(async(resolve,reject) => {
+
+        let emailPayload = {
+            fromemail: "latesh@ajency.in",
+            toemail: userObj.email,
+            email_type: "welcome_mail",
+        }
+        await communication.sendEmail(emailPayload)
+        resolve(true)
+    })
+}
+
 module.exports = {
     encryptStr,
     decryptStr,
@@ -642,5 +667,7 @@ module.exports = {
     createUser,
     createVerificationToken,
     sendVerifcationLink,
-    getLoginToken
+    getLoginToken,
+    invalidateTokens,
+    sendWelcomeEmail
 }
