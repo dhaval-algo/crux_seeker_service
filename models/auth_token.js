@@ -2,7 +2,7 @@
 module.exports = (sequelize, DataTypes) => {
   const auth_token = sequelize.define('auth_token', {
     tokenId: DataTypes.TEXT,
-    userId: DataTypes.STRING,
+    userId: DataTypes.INTEGER,
     tokenType: DataTypes.STRING,
     inValid: DataTypes.BOOLEAN,
     validTill: DataTypes.DATE

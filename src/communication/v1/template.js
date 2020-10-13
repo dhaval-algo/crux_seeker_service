@@ -13,12 +13,24 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({ full_name: messagData.full_name,account_email: messagData.account_email,verification_link: messagData.verification_link, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Welcome To Crux',message:emailTemplate};
+        let templateData = {subject:'Verify your crux account',message:emailTemplate};
  
         return templateData 
          
     },
    
+    welcomeEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/welcome-mail.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Welcome To Crux',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
 
 }
 

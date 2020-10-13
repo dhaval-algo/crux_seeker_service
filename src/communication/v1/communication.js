@@ -72,11 +72,16 @@ module.exports = {
 
     getTemplateData: (type,templateData) => {
         let template = false
-        if(type == 'activiation_mail'){
-            template =  emalTemplate.activiationLink(templateData)
+        switch (type) {
+            case 'activiation_mail':
+                return emalTemplate.activiationLink(templateData)
+            case 'welcome_mail':
+                return emalTemplate.welcomeEmail(templateData)
+            default:
+                return false
+                break;
         }
-        
-        return template;
+
 
     },
 
