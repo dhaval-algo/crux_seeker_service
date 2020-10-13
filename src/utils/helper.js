@@ -1,12 +1,16 @@
 const OAuth2Client = require('google-auth-library').OAuth2Client;
 const Cryptr = require('cryptr');
 const { resolve } = require('path');
-const { DEFAULT_CODES, LOGIN_TYPES, USER_STATUS, USER_TYPE } = require('./defaultCode');
+const { DEFAULT_CODES, LOGIN_TYPES, USER_STATUS, USER_TYPE, TOKEN_TYPES } = require('./defaultCode');
 const { default: Axios } = require('axios');
 const Linkedin = require('node-linkedin');
 const { stringify } = require('querystring');
 const models = require("../../models");
+const defaults = require('../services/v1/defaults/defaults');
+const communication = require('../communication/v1/communication');
+const { signToken } = require('../services/v1/auth/auth');
 crypt = new Cryptr(process.env.CRYPT_SALT);
+const moment = require("moment");
 
 const encryptStr = (str) => {
     return crypt.encrypt(str);
@@ -41,7 +45,6 @@ const verifySocialToken = (resData) => {
                     break;
                 case LOGIN_TYPES.LINKEDIN:
                     const verificationLink = await verifyLinkedInToken(resData)
-                    console.log(verificationLink, "dddddddddddddddddd");
                     return resolve(verificationLink)
                     break;
                 default:
@@ -158,7 +161,6 @@ const verifyGoogleToken = async (tokenId) => {
 }
 
 const createUser = async (userObj) => {
-    console.log(userObj.provider, "tokenPayload");
     return new Promise(async (resolve, reject) => {
         try {
             switch (userObj.provider) {
@@ -190,7 +192,7 @@ const createUser = async (userObj) => {
             // } else {
 
             // }
-           
+
             // if (user == null) {
             //     try {
             //         const newUser = await models.user.create({
@@ -286,14 +288,13 @@ const createUser = async (userObj) => {
     })
 }
 const handleLocalSignUP = async (userObj) => {
-    const { tokenPayload ={} } = userObj
+    const { tokenPayload = {} } = userObj
     // return ({success:false})
     return new Promise(async (resolve, reject) => {
-        let {userId, userType} =tokenPayload;
+        let { userId, userType } = tokenPayload;
         try {
-            console.log(userId, userType);
             // return resolve({success:false})
-            if ( userId && userType) {
+            if (userId && userType) {
                 if (userType == USER_TYPE.GUEST) {
                     await models.user.update(
                         {
@@ -314,10 +315,10 @@ const handleLocalSignUP = async (userObj) => {
                 })
                 userId = newUser.id
             }
-            const userMeta = userObj.userMeta.filter((f) => { 
-                 f['userId'] = userId 
-                 f['metaType'] = "primary" 
-                 return f 
+            const userMeta = userObj.userMeta.filter((f) => {
+                f['userId'] = userId
+                f['metaType'] = "primary"
+                return f
             })
             await createUserMeta(userMeta)
             const encryptedPWD = encryptStr(userObj.password);
@@ -330,6 +331,26 @@ const handleLocalSignUP = async (userObj) => {
                 providerId: null,
                 providerData: {},
             }])
+            let reducedObj = userMeta.filter(t => {
+                if (t.key == "firstName" || t.key == "lastName") {
+                    return t
+                }
+
+            }).map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                for (var key in x) acc[key] = x[key];
+                return acc;
+            }, {});
+            console.log(reducedObj, "--------------------------------------------");
+            await sendVerifcationLink({
+                username: userObj.username,
+                userId,
+                email: userObj.username,
+                phone: userObj.phone,
+                userType: USER_TYPE.REGISTERED,
+                provider: LOGIN_TYPES.LOCAL,
+                ...reducedObj,
+                ...userObj
+            })
 
             return resolve({
                 success: true,
@@ -346,6 +367,7 @@ const handleLocalSignUP = async (userObj) => {
                     }
                 }
             })
+
         } catch (error) {
             console.log(error);
             return resolve({
@@ -429,7 +451,7 @@ const handleSocialSignUp = (userObj) => {
                         email: userObj.email,
                         phone: userObj.phone,
                         userType: USER_TYPE.REGISTERED,
-                        provider:  userObj.provider
+                        provider: userObj.provider
                     }
                 }
             })
@@ -469,11 +491,156 @@ const createUserLogin = (userObject) => {
     })
 }
 
+const createVerificationToken = async (userObj) => {
+    try {
+        console.log(userObj);
+        const signOptions = {
+            audience: userObj.audience,
+            issuer: process.env.HOST,
+            expiresIn: parseInt(defaults.getValue('verificaitonTokenExpiry'))
+        }
+        const payload = {
+            user: {
+                email: userObj.email || "",
+                userId: userObj.userId
+            }
+        }
+
+
+        const token = signToken(payload, signOptions);
+        //
+        let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
+        validTill = moment().add(defaults.getValue('verificaitonTokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
+
+        let userAuthToken = {
+            tokenId: token,
+            userId: userObj.userId,
+            tokenType: TOKEN_TYPES.VERIFICATION,
+            inValid: false,
+            validTill: validTill
+        };
+        await models.auth_token.create(userAuthToken);
+
+        return {
+            code: DEFAULT_CODES.LOGIN_SUCCESS.code,
+            message: DEFAULT_CODES.LOGIN_SUCCESS.message,
+            success: true,
+            data: {
+                x_token: token
+            }
+        }
+    } catch (error) {
+        console.log(error);
+    }
+
+
+}
+
+const sendVerifcationLink = (userObj, useQueue = false) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let tokenRes = await createVerificationToken(userObj)
+            let params = {
+                redirect_url: '/',
+                verifcation_token: tokenRes.data.x_token
+            }
+            let link = `${defaults.getValue('verificationUrl')}/${stringify(params)}`
+            let emailPayload = {
+                fromemail: "latesh@ajency.in",
+                toemail: userObj.email,
+                email_type: "activiation_mail",
+                email_data: {
+                    verification_link: link,
+                    account_email: userObj.email,
+                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                }
+            }
+            await communication.sendEmail(emailPayload, useQueue)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+        }
+    })
+
+}
+/* 
+    * Generate Token for login session
+    input => audience- origin(client), provider-> (google facebook or linked in or local)    
+    {
+        code:'',
+        success:true/false,
+        message:'',
+        data:{
+            x_token:""
+        }
+    }
+*/
+
+const getLoginToken = async (userObj) => {
+    try {
+        const signOptions = {
+            audience: userObj.audience,
+            issuer: process.env.HOST,
+            expiresIn: parseInt(defaults.getValue('tokenExpiry'))
+        }
+        const payload = {
+            user: {
+                email: userObj.email || "",
+                // phone: userObj.phone || "",
+                userId: userObj.userId,
+                provider: userObj.provider || "",
+                userType: userObj.userType,
+                isVerified: userObj.verified || false,
+            }
+        }
+        const token = signToken(payload, signOptions);
+        let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
+        validTill = moment().add(defaults.getValue('tokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
+        let userAuthToken = {
+            tokenId: token,
+            userId: userObj.userId,
+            tokenType: TOKEN_TYPES.SIGNIN,
+            inValid: false,
+            validTill: validTill
+        };
+        await models.auth_token.create(userAuthToken);
+        await models.user.update({
+            lastLogin: new Date(),
+        }, {
+            where: {
+                id: userObj.userId
+            }
+        });
+
+        return {
+            code: DEFAULT_CODES.LOGIN_SUCCESS.code,
+            message: DEFAULT_CODES.LOGIN_SUCCESS.message,
+            success: true,
+            data: {
+                x_token: token,
+                user:payload.user
+            }
+        }
+
+    } catch (error) {
+        console.log(error);
+        return {
+            code: DEFAULT_CODES.SYSTEM_ERROR.code,
+            message: DEFAULT_CODES.SYSTEM_ERROR.message,
+            success: false,
+            data: {}
+        }
+    }
+}
+
 module.exports = {
     encryptStr,
     decryptStr,
     isEmail,
     getOtp,
     verifySocialToken,
-    createUser
+    createUser,
+    createVerificationToken,
+    sendVerifcationLink,
+    getLoginToken
 }

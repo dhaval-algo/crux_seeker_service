@@ -89,12 +89,13 @@ const LOGIN_TYPES = {
 
 const TOKEN_TYPES = {
     SIGNIN:'signin',
-    RESETPASSWORD:'reset password'
+    RESETPASSWORD:'reset_password',
+    VERIFICATION:"verification"
 }
 
 const OTP_TYPES = {
     SIGNIN:'signin',
-    RESETPASSWORD:'reset password'
+    RESETPASSWORD:'reset_password'
 }
 
 const FORM_TYPES = {

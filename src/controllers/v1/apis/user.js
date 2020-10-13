@@ -10,6 +10,7 @@ router.post('/verify-otp', userService.verifyOtp);
 router.get('/verify-token', authenticateJWT, userService.verifyUserToken);
 router.post('/social-signin', userService.socialSignIn);
 router.post('/sign-up', injectTokenPayload, userService.signUp);
+router.post('/resend-verification-link',authenticateJWT, userService.resendVerificationLink);
 
 //require.post()
 module.exports = router;            
