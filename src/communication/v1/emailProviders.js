@@ -33,7 +33,6 @@ module.exports = {
 
     sendEmailSES: function(subject,message,fromemail,toemail,ccaddress=[],bccaddress=[],replytoaddress=[]){
         return new Promise(async (resolve, reject) => {
-            console.log(subject);
             var AWS = require('aws-sdk');      
             let app_env = process.env.ENV
 
@@ -62,27 +61,20 @@ module.exports = {
                 Source: fromemail, /* required */
                 ReplyToAddresses: replytoaddress,
             };
-            console.log(params);
-            try {
-                
-                var sendPromise = new AWS.SES({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY}).sendEmail(params).promise();
-    
-                // Handle promise's fulfilled/rejected states
-                sendPromise.then(
-                  function(data) {
-                    console.log(data);
-                    return resolve(data);
-                  }).catch(
-                    function(err) {
-                        console.log("-----------------",err)
-                    console.error(err, err.stack);
-                    return reject(err, err.stack);
-                  });
-            } catch (error) {
-                console.log(error);
-                return resolve(error);
-            }
+
             // Create the promise and SES service object
+            var sendPromise = new AWS.SES({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY}).sendEmail(params).promise();
+
+            // Handle promise's fulfilled/rejected states
+            sendPromise.then(
+              function(data) {
+                console.log(data);
+                return resolve(data);
+              }).catch(
+                function(err) {
+                console.error(err, err.stack);
+                return reject(err, err.stack);
+              });
         });
     },
 
