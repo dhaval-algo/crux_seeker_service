@@ -35,6 +35,7 @@ module.exports = class learnContentService {
 
         let data = {
             title: result.title,
+            subtitle: result.subtitle,
             provider: {
                 name: result.provider_name,
                 currency: result.provider_currency
@@ -83,9 +84,9 @@ module.exports = class learnContentService {
         if(result.instructors && result.instructors.length > 0){
             for(let instructor of result.instructors){
                 if(instructor.instructor_image){
-                    instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;
-                    data.instructors.push(instructor);
+                    instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
                 }
+                data.instructors.push(instructor);
             }
         }
         if(result.instruction_type){
@@ -102,9 +103,9 @@ module.exports = class learnContentService {
             for(let review of result.reviews){
                 totalRating += review.rating;
                 if(review.photo){
-                    review.photo = process.env.ASSET_URL+review.photo.thumbnail;
-                    data.reviews.push(review);
+                    review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
                 }
+                data.reviews.push(review);
                 if(ratings[review.rating]){
                     ratings[review.rating] += 1; 
                 }else{
