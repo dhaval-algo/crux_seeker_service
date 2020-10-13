@@ -63,7 +63,7 @@ module.exports = {
             };
 
             // Create the promise and SES service object
-            var sendPromise = new AWS.SES({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY, secretAccessKey: process.env.AWS_SECRET_KEY}).sendEmail(params).promise();
+            var sendPromise = new AWS.SES({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY}).sendEmail(params).promise();
 
             // Handle promise's fulfilled/rejected states
             sendPromise.then(
