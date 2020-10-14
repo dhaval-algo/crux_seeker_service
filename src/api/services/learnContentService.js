@@ -61,6 +61,7 @@ module.exports = class learnContentService {
                 accessibilities: (result.accessibilities && result.accessibilities.length > 0) ? result.accessibilities.join(", ") : null,
                 availabilities: (result.availabilities && result.availabilities.length > 0) ? result.availabilities.join(", ") : null,
                 learn_type: (result.learn_type) ? result.learn_type : null,
+                topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,
                 tags: [],
                 pricing: {
                     pricing_type: result.pricing_type,
@@ -128,6 +129,28 @@ module.exports = class learnContentService {
             });
             data.ratings.rating_distribution = rating_distribution.reverse();
         }
+
+        //Ignore default values in ui
+        if(data.course_details.learn_type == 'Others'){
+            data.course_details.learn_type = null;
+        }
+        if(data.course_details.topics == 'Others'){
+            data.course_details.topics = null;
+        }
+        if(data.course_details.medium == 'Not Specified'){
+            data.course_details.medium = null;
+        }
+        if(data.course_details.instruction_type == 'Not Specified'){
+            data.course_details.instruction_type = null;
+        }
+        if(data.course_details.language == 'Not Specified'){
+            data.course_details.language = null;
+        }
+        if(data.course_details.pricing.pricing_type == 'Not_Specified'){
+            data.course_details.pricing.pricing_type = null;
+        }
+
+
         
         return data;
     }
