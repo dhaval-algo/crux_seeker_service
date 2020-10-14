@@ -108,7 +108,8 @@ const FORM_TYPES = {
 }
 
 const FORM_TYPE_SOURCE = {
-    CALLBACK:"callback"
+    CALLBACK:"callback",
+    GENERAL_ENQUIRY:"general_enquiry"
 }
 
 const USER_TYPE = {

@@ -8,9 +8,11 @@ const handleEnquirySubmission = async (resBody,req) => {
 
     switch (formTypeSource) {
         case FORM_TYPE_SOURCE.CALLBACK:
-            return await handleCallBack(resBody,req);
+            return await handleCallBackEnquiry(resBody,req);
         break;
-    
+        case FORM_TYPE_SOURCE.GENERAL_ENQUIRY:
+            return await handleGeneralEnquiry(resBody,req);
+        break;
         default:
             break;
     }
@@ -20,7 +22,7 @@ const handleEnquirySubmission = async (resBody,req) => {
 }
 
 
-const handleCallBack = (resBody,req) => {
+const handleCallBackEnquiry = (resBody,req) => {
     return new Promise(async (resolve, reject) => {
         const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource } = resBody;
         let userObj = {...user};
@@ -79,6 +81,78 @@ const handleCallBack = (resBody,req) => {
                 data :{
                 }
             })
+            // if(user.id) {
+            //     resolve({resBody})
+            // }
+        } catch (error) {
+            console.log(error);
+            resolve({
+                success:false,
+                data :{
+                }
+            })
+        }
+    })
+}
+
+const handleGeneralEnquiry = (resBody,req) => {
+    return new Promise(async (resolve, reject) => {
+        const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType } = resBody;
+        let { formSubmissionId } = resBody;
+        let userObj = {...user};
+        if(!targetEntityType || !targetEntityId) {
+           return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
+        }
+        
+        try {
+            
+            //user meta {key:"", value:"", metaType:""}
+            // prepare entries in for user_meta and make entries
+            formData.map((f) => { 
+                f['userId'] = userObj.userId
+                if(actionType == "signup") {
+                    f['metaType'] = "primary"
+                }
+                return 
+            })
+            const resMeta = await models.user_meta.bulkCreate(formData)
+            if(formType !="signup") {
+                if(!formSubmissionId) {
+                    // entries in form_submission
+                    const form_submission = {
+                        userId:userObj.userId,
+                        formType,
+                        formTypeSource,
+                        targetEntityType,
+                        targetEntityId,
+                        otherInfo
+                    }
+        
+                    const formSub = await models.form_submission.create(form_submission)
+                    formSubmissionId = formSub.id
+                }
+    
+                let form_submission_values = []
+                form_submission_values = resMeta.map((meta) => {  return {objectId:meta.id, objectType:'user_meta', userId:userObj.userId, formSubmissionId:formSubmissionId }})
+                //entries in form_submission_values
+                const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
+                return resolve({
+                    success:true,
+                    code:DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code,
+                    message:DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.message,
+                    data :{
+                        formSubmissionId
+                    }
+                })
+            } else {
+                return resolve({
+                    success:true,
+                    message:"Data save succesfully",
+                    data :{
+                    }
+                })
+            }
+          
             // if(user.id) {
             //     resolve({resBody})
             // }

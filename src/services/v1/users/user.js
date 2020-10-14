@@ -687,7 +687,7 @@ const verifyAccount = async (req, res) => {
         if (verifiedToken) {
             let { user } = verifiedToken;
             let userres = await models.user.update({
-                verified: false
+                verified: true
             }, {
                 where: {
                     id: user.userId
