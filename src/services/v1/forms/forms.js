@@ -12,6 +12,7 @@ const submitForm = async (req,res) => {
         res.status(500).json({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
     }
     req.body.user = user
+    console.log(formType);
     switch (formType) {
         case FORM_TYPES.ENQUIRIES:
             let enquiryResponse = await handleEnquirySubmission(req.body,req)
@@ -24,7 +25,7 @@ const submitForm = async (req,res) => {
 
        
         default:
-           res.status(500).json({...sendSystemError})
+           return res.status(500).json({...sendSystemError})
         break;
     }
 }
