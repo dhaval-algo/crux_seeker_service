@@ -16,9 +16,7 @@ const handleEnquirySubmission = async (resBody,req) => {
         default:
             break;
     }
-    return {
-        ok:"ok"
-    }
+
 }
 
 
@@ -96,6 +94,7 @@ const handleCallBackEnquiry = (resBody,req) => {
 }
 
 const handleGeneralEnquiry = (resBody,req) => {
+    console.log("hereeeeeeeeeee");
     return new Promise(async (resolve, reject) => {
         const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType } = resBody;
         let { formSubmissionId } = resBody;
