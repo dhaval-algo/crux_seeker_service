@@ -115,6 +115,7 @@ const handleGeneralEnquiry = (resBody,req) => {
                 return 
             })
             const resMeta = await models.user_meta.bulkCreate(formData)
+            console.log(resMeta);
             if(formType !="signup") {
                 if(!formSubmissionId) {
                     // entries in form_submission
@@ -207,6 +208,16 @@ const fetchFormValues =  (reqBody) => {
     })
 }
 
+
+const getDefaultValues = async (key, searchString) => {
+    let where = {
+        optionType:key,
+        key: {[Op.in]:requestFields},
+    }
+    let fieldsRes = await models.user_meta.findAll({
+        where
+    })
+}
 module.exports = {
     handleEnquirySubmission,
     fetchFormValues

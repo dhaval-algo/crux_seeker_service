@@ -32,10 +32,6 @@ module.exports = {
       { value: "Hospality", label: "Hospality", slug:"Hospality", optionType:"industry",createdAt: new Date(),updatedAt: new Date() },
 
 
-      { value: "Standford University", label: "Standford University", slug:"Standford University", optionType:"institue",createdAt: new Date(),updatedAt: new Date() },
-      { value: "Princeton University", label: "Princeton University", slug:"Princeton University", optionType:"institue",createdAt: new Date(),updatedAt: new Date() },
-      { value: "Columbia", label: "Columbia", slug:"Columbia", optionType:"institue",createdAt: new Date(),updatedAt: new Date() },
-
       { value: "B.Tech", label: "B.Tech", slug:"B.Tech", optionType:"degree",createdAt: new Date(),updatedAt: new Date() },
       { value: "BBA", label: "BBA", slug:"BBA", optionType:"degree",createdAt: new Date(),updatedAt: new Date() },
       { value: "Phd", label: "Phd", slug:"Phd", optionType:"degree",createdAt: new Date(),updatedAt: new Date() },

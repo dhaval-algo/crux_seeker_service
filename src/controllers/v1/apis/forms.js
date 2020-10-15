@@ -6,5 +6,6 @@ const router = express.Router()
 
 router.post('/get-form-values',injectTokenPayload, forms.getFormValues)
 router.post('/submit-forms', injectTokenPayload, forms.submitForm)
+router.post('/default-values', forms.getDefaultValues)
 
 module.exports = router
