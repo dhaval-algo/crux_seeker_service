@@ -65,7 +65,7 @@ module.exports = class learnContentService {
 
         let effort = null;
         if(result.recommended_effort_per_week){
-            let efforUnit = (recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
+            let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
         }
 
