@@ -1,5 +1,5 @@
 const { FORM_TYPES, DEFAULT_CODES } = require("../../../utils/defaultCode");
-const { handleEnquirySubmission, fetchFormValues } = require("./enquirySubmission");
+const { handleEnquirySubmission, fetchFormValues,handleUserProfileSubmission } = require("./enquirySubmission");
 
 const fetchFormvalue = (req, res) => {
     res.status(200).json({})
@@ -19,11 +19,16 @@ const submitForm = async (req, res) => {
             if (!enquiryResponse.success) {
                 return res.status(200).json(sendSystemError)
             }
-            console.log(enquiryResponse);
             return res.status(200).json(enquiryResponse)
             break;
 
-
+        case FORM_TYPES.SIGNUP:
+            let signupResponse = await handleUserProfileSubmission(req.body, req)
+            if (!signupResponse.success) {
+                return res.status(200).json(sendSystemError)
+            }
+            return res.status(200).json(signupResponse)
+            break;
         default:
             return res.status(500).json({ ...sendSystemError })
             break;
@@ -49,7 +54,7 @@ const getFormValues = async (req, res) => {
 
 const getDefaultValues = (res, req) => {
     const { optionTypes } = req.body
-    
+
     return res.status(200).json(
         {
             success: true,

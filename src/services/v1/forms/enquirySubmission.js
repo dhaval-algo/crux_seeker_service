@@ -28,7 +28,6 @@ const handleCallBackEnquiry = (resBody,req) => {
            return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
         }
         
-        console.log(user);
         try {
             
             //check if request is from logged in user or non
@@ -94,7 +93,6 @@ const handleCallBackEnquiry = (resBody,req) => {
 }
 
 const handleGeneralEnquiry = (resBody,req) => {
-    console.log("hereeeeeeeeeee");
     return new Promise(async (resolve, reject) => {
         const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType } = resBody;
         let { formSubmissionId } = resBody;
@@ -115,7 +113,6 @@ const handleGeneralEnquiry = (resBody,req) => {
                 return 
             })
             const resMeta = await models.user_meta.bulkCreate(formData)
-            console.log(resMeta);
             if(formType !="signup") {
                 if(!formSubmissionId) {
                     // entries in form_submission
@@ -152,6 +149,44 @@ const handleGeneralEnquiry = (resBody,req) => {
                     }
                 })
             }
+          
+            // if(user.id) {
+            //     resolve({resBody})
+            // }
+        } catch (error) {
+            console.log(error);
+            resolve({
+                success:false,
+                data :{
+                }
+            })
+        }
+    })
+}
+
+const handleUserProfileSubmission = (resBody,req) => {
+    return new Promise(async (resolve, reject) => {
+        const {user,formData  } = resBody;
+        let { formSubmissionId } = resBody;
+        let userObj = {...user};
+
+        try {
+            
+            //user meta {key:"", value:"", metaType:""}
+            // prepare entries in for user_meta and make entries
+            formData.map((f) => { 
+                f['userId'] = userObj.userId
+                f['metaType'] = "primary"
+                return 
+            })
+            const resMeta = await models.user_meta.bulkCreate(formData)
+
+                return resolve({
+                    success:true,
+                    data :{
+                    }
+                })
+           
           
             // if(user.id) {
             //     resolve({resBody})
@@ -220,5 +255,6 @@ const getDefaultValues = async (key, searchString) => {
 }
 module.exports = {
     handleEnquirySubmission,
-    fetchFormValues
+    fetchFormValues,
+    handleUserProfileSubmission
 }
