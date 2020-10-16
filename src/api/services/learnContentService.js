@@ -44,6 +44,21 @@ const calculateDuration = (total_duration_in_hrs) => {
 
 module.exports = class learnContentService {
 
+    async getLearnContentList(req, callback){
+        const query = { "bool": {
+            "must": [
+              {term: { "status.keyword": 'published' }}
+            ]
+        }};
+        const result = await elasticService.search('learn-content', query);
+        if(result && result.length > 0){
+            const data = await this.generateListViewData(result);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            callback({status: 'failed', message: 'No record found!'}, null);
+        }        
+    }
+
     async getLearnContent(slug, callback){
         const query = { "bool": {
             "must": [
@@ -185,11 +200,21 @@ module.exports = class learnContentService {
         }
         if(data.course_details.pricing.pricing_type == 'Not_Specified'){
             data.course_details.pricing.pricing_type = null;
-        }
-
-
-        
+        }        
         return data;
     }
+
+
+
+    async generateListViewData(rows){
+        let datas = [];
+        for(const row of rows){
+            const result = row._source;
+            let data = result;
+            datas.push(data);
+        }
+        return datas;
+    }
+
 
 }
