@@ -4,7 +4,43 @@ const round = (value, step) => {
     step || (step = 1.0);
     var inv = 1.0 / step;
     return Math.round(value * inv) / inv;
-}
+};
+
+
+const calculateDuration = (total_duration_in_hrs) => {
+    const hourse_in_day = 8;
+    const days_in_week = 5;
+    let duration = null;
+        if(total_duration_in_hrs){
+            let totaDuration = null;
+            let durationUnit = null;
+            if(total_duration_in_hrs < (hourse_in_day*days_in_week)){
+                totalDuration = total_duration_in_hrs;
+                durationUnit = (totalDuration > 1) ? 'hours': 'hour';
+                return `${totaDuration} ${durationUnit}`;
+            }
+
+            const week = Math.floor((hourse_in_day*days_in_week)/7);
+            if(week < 4){
+                totalDuration = week;
+                durationUnit = (week > 1) ? 'weeks': 'week';
+                return `${totaDuration} ${durationUnit}`;
+            }
+
+            const month = Math.floor(week/4);
+            if(month < 12){
+                totalDuration = month;
+                durationUnit = (month > 1) ? 'months': 'month';
+                return `${totaDuration} ${durationUnit}`;
+            }
+
+            const year = Math.floor(month/12);
+            totalDuration = year;
+            durationUnit = (year > 1) ? 'years': 'year';
+            return `${totaDuration} ${durationUnit}`;
+        }
+        return duration;
+};
 
 module.exports = class learnContentService {
 
@@ -26,11 +62,11 @@ module.exports = class learnContentService {
 
 
     async generateSingleViewData(result){
-        let duration_divider;
-        let duration_unit = 'weeks';
-        let effort_unit = 'hours per week';
-        if(duration_unit == 'weeks'){
-            duration_divider = 7;
+
+        let effort = null;
+        if(result.recommended_effort_per_week){
+            let efforUnit = (recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
+            effort = `${result.recommended_effort_per_week} ${efforUnit}`
         }
 
         let data = {
@@ -50,8 +86,9 @@ module.exports = class learnContentService {
             prerequisites: result.prerequisites,
             content: result.content,
             course_details: {
-                duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null, 
-                effort: (result.recommended_effort_per_week) ? result.recommended_effort_per_week+" "+effort_unit  : null,
+                //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
+                duration: calculateDuration(result.total_duration_in_hrs), 
+                effort: effort,
                 total_video_content: result.total_video_content_in_hrs,
                 language: result.languages.join(", "),
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
