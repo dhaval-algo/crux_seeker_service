@@ -12,32 +12,32 @@ const calculateDuration = (total_duration_in_hrs) => {
     const days_in_week = 5;
     let duration = null;
         if(total_duration_in_hrs){
-            let totaDuration = null;
+            let totalDuration = null;
             let durationUnit = null;
             if(total_duration_in_hrs < (hourse_in_day*days_in_week)){
                 totalDuration = total_duration_in_hrs;
                 durationUnit = (totalDuration > 1) ? 'hours': 'hour';
-                return `${totaDuration} ${durationUnit}`;
+                return `${totalDuration} ${durationUnit}`;
             }
 
             const week = Math.floor((hourse_in_day*days_in_week)/7);
             if(week < 4){
                 totalDuration = week;
                 durationUnit = (week > 1) ? 'weeks': 'week';
-                return `${totaDuration} ${durationUnit}`;
+                return `${totalDuration} ${durationUnit}`;
             }
 
             const month = Math.floor(week/4);
             if(month < 12){
                 totalDuration = month;
                 durationUnit = (month > 1) ? 'months': 'month';
-                return `${totaDuration} ${durationUnit}`;
+                return `${totalDuration} ${durationUnit}`;
             }
 
             const year = Math.floor(month/12);
             totalDuration = year;
             durationUnit = (year > 1) ? 'years': 'year';
-            return `${totaDuration} ${durationUnit}`;
+            return `${totalDuration} ${durationUnit}`;
         }
         return duration;
 };
