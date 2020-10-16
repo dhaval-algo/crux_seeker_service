@@ -8,7 +8,7 @@ const fetchFormvalue = (req, res) => {
 const submitForm = async (req, res) => {
     const { user = {} } = req;
     const { formType, formTypeSource } = req.body;
-    if ((!formType || !formTypeSource) && formType != FORM_TYPES.SIGNUP ) {
+    if ((!formType || !formTypeSource)) {
         return res.status(500).json({ success: false, code: DEFAULT_CODES.FAILED_ENQUIRY.code, message: DEFAULT_CODES.FAILED_ENQUIRY.message })
     }
     req.body.user = user
