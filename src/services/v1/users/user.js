@@ -194,7 +194,7 @@ const signUp = async (req, res) => {
     const tokenRes = await getLoginToken({ ...userres.data.user, audience: audience || "", provider: LOGIN_TYPES.LOCAL });
     tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
     tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
-    delete userres.data.user.userId
+    userres.data.user.userId
     delete userres.data.user.id
     tokenRes.data['user'] = userres.data.user
     res.status(200).send(tokenRes)

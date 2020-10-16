@@ -363,7 +363,8 @@ const handleLocalSignUP = async (userObj) => {
                         email: userObj.username,
                         phone: userObj.phone,
                         userType: USER_TYPE.REGISTERED,
-                        provider: LOGIN_TYPES.LOCAL
+                        provider: LOGIN_TYPES.LOCAL,
+                        verified:userObj.verified || false
                     }
                 }
             })
