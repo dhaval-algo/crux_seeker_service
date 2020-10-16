@@ -76,12 +76,16 @@ module.exports = class learnContentService {
     }
 
 
-    async generateSingleViewData(result){
+    async generateSingleViewData(result, isList = false){
 
         let effort = null;
         if(result.recommended_effort_per_week){
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
+        }
+        let coverImageSize = 'small';
+        if(isList){
+            coverImageSize = 'thumbnail';
         }
 
         let data = {
@@ -93,13 +97,13 @@ module.exports = class learnContentService {
             },
             instructors: [],
             cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-            cover_image: (result.images) ? process.env.ASSET_URL+result.images.small : null,
-            description: result.description,
-            skills: result.skills_gained,
-            what_will_learn: result.what_will_learn,
-            target_students: result.target_students,
-            prerequisites: result.prerequisites,
-            content: result.content,
+            cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+            description: (!isList) ? result.description : null,
+            skills: (!isList) ? result.skills_gained : null,
+            what_will_learn: (!isList) ? result.what_will_learn : null,
+            target_students: (!isList) ? result.target_students : null,
+            prerequisites: (!isList) ? result.prerequisites  : null,
+            content: (!isList) ? result.content : null,
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: calculateDuration(result.total_duration_in_hrs), 
@@ -129,24 +133,28 @@ module.exports = class learnContentService {
             provider_course_url: result.provider_course_url,
             reviews: [],
             ratings: {
+                total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
             }
         };
-        if(result.instructors && result.instructors.length > 0){
-            for(let instructor of result.instructors){
-                if(instructor.instructor_image){
-                    instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+
+        if(!isList){
+            if(result.instructors && result.instructors.length > 0){
+                for(let instructor of result.instructors){
+                    if(instructor.instructor_image){
+                        instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+                    }
+                    data.instructors.push(instructor);
                 }
-                data.instructors.push(instructor);
             }
-        }
-        if(result.instruction_type){
-            data.course_details.tags.push(result.instruction_type);
-        }
-        if(result.medium){
-            data.course_details.tags.push(result.medium);
+            if(result.instruction_type){
+                data.course_details.tags.push(result.instruction_type);
+            }
+            if(result.medium){
+                data.course_details.tags.push(result.medium);
+            }
         }
 
         
@@ -155,10 +163,14 @@ module.exports = class learnContentService {
             let ratings = {};
             for(let review of result.reviews){
                 totalRating += review.rating;
-                if(review.photo){
-                    review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                
+                if(!isList){
+                    if(review.photo){
+                        review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                    }
+                    data.reviews.push(review);
                 }
-                data.reviews.push(review);
+
                 if(ratings[review.rating]){
                     ratings[review.rating] += 1; 
                 }else{
@@ -209,8 +221,7 @@ module.exports = class learnContentService {
     async generateListViewData(rows){
         let datas = [];
         for(const row of rows){
-            const result = row._source;
-            let data = result;
+            const data = await this.generateSingleViewData(row._source, true);
             datas.push(data);
         }
         return datas;
