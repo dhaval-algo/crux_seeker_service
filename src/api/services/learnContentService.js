@@ -155,10 +155,18 @@ module.exports = class learnContentService {
             data.ratings.average_rating = round(average_rating, 0.5);
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
+
+            
+
+            //add missing ratings
+            for(let i=0; i<5; i++){
+                if(!ratings[i+1]){
+                    ratings[i+1] = 0;
+                }                
+            }
             Object.keys(ratings)
             .sort()
             .forEach(function(v, i) {
-                console.log(v, ratings[v]);
                 rating_distribution.push({
                     rating: v,
                     percent: Math.round((ratings[v] * 100) / result.reviews.length)
