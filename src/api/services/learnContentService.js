@@ -94,7 +94,7 @@ module.exports = class learnContentService {
             //queryPayload.sort = ["title.keyword:desc"];
             queryPayload.sort = [sort];
         }else{
-            queryPayload.sort = ["created_at:desc"];
+            queryPayload.sort = ["published_date:desc"];
         }
        
 
