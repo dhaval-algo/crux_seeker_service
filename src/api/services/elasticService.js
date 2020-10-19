@@ -28,16 +28,31 @@ const elasticClient = () => {
 
 module.exports = {
 
-  search: async (index, query) => {
+  search: async (index, query, payload={}) => {
     const client = elasticClient();
-    const result = await client.search({
-        index: index,
-        body: {
-          query: query
-        }
-    })
+    let finalQuery = {
+      index: index,
+      body: {
+        query: query
+      }
+    };
+      
+    if(payload.from !== null){
+      finalQuery.from = payload.from;
+    } 
+    if(payload.size !== null){
+      finalQuery.size = payload.size;
+    } 
+    if(payload.sort !== null){
+      finalQuery.sort = payload.sort;
+    } 
+    
+    console.log("payload <> ", payload);
+
+    const result = await client.search(finalQuery);
     if(result && result.body){
-        return result.body.hits.hits;
+        //return result.body.hits.hits;
+        return result.body.hits;
     }else{
         return [];
     } 

@@ -6,6 +6,26 @@ const round = (value, step) => {
     return Math.round(value * inv) / inv;
 };
 
+const getPaginationQuery = (query) => {
+    let page = 1;
+    let size = 10;
+    let from = 0;
+    if(query['page']){
+      page = parseInt(query['page']);
+    }
+    if(query['size']){
+      size = parseInt(query['size']);
+    }      
+    if(page > 1){
+      from = page*size;
+    }
+    return {
+      from,
+      size,
+      page
+    };
+};
+
 
 const calculateDuration = (total_duration_in_hrs) => {
     const hourse_in_day = 8;
@@ -50,9 +70,52 @@ module.exports = class learnContentService {
               {term: { "status.keyword": 'published' }}
             ]
         }};
-        const result = await elasticService.search('learn-content', query);
-        if(result && result.length > 0){
-            const data = await this.generateListViewData(result);
+
+        let queryPayload = {};
+        let paginationQuery = await getPaginationQuery(req.query);
+        queryPayload.from = paginationQuery.from;
+        queryPayload.size = paginationQuery.size;
+        console.log("req.query <> ", req.query);
+
+        //queryPayload.sort = [{"title.keyword": 'asc'}];
+        if(req.query['sort']){
+            const keywordFields = ['title'];
+            let sort = req.query['sort'];
+            let splitSort = sort.split(":");
+            if(keywordFields.includes(splitSort[0])){
+                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            }
+            /* Newest - The courses added recently.  Most recent date to oldest
+            Highest rated - Courses with highest rating to show up first
+            Price low to high
+            Price high to low
+            Top 20 skills
+            Top 20 roles */
+            //queryPayload.sort = ["title.keyword:desc"];
+            queryPayload.sort = [sort];
+        }else{
+            queryPayload.sort = ["created_at:desc"];
+        }
+       
+
+
+        const result = await elasticService.search('learn-content', query, queryPayload);
+        if(result.hits && result.hits.length > 0){
+
+            const list = await this.generateListViewData(result.hits);
+
+            let pagination = {
+                page: paginationQuery.page,
+                count: list.length,
+                perPage: paginationQuery.size,
+                totalCount: result.total.value
+              }
+              let data = {
+                list: list,
+                pagination: pagination
+              };
+
+            
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'No record found!'}, null);
@@ -67,8 +130,8 @@ module.exports = class learnContentService {
             ]
         }};
         const result = await elasticService.search('learn-content', query);
-        if(result && result.length > 0){
-            const data = await this.generateSingleViewData(result[0]._source);
+        if(result.hits && result.hits.length > 0){
+            const data = await this.generateSingleViewData(result.hits[0]._source);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
