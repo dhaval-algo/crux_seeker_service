@@ -3,6 +3,16 @@ const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
+const getFilterConfigs = async () => {
+    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
+    if (response.ok) {
+    let json = await response.json();
+    return json;
+    } else {
+        return [];
+    }
+};
+
 const round = (value, step) => {
     step || (step = 1.0);
     var inv = 1.0 / step;
@@ -27,6 +37,20 @@ const getPaginationQuery = (query) => {
       size,
       page
     };
+};
+
+const parseQueryFilters = (filter) => {
+    let query_filters = [];
+    const filterArray = filter.split("::");
+    for(const qf of filterArray){
+        const qfilters = qf.split(":");
+        query_filters.push({
+            key: qfilters[0],
+            value: qfilters[1].split(",")
+        });
+    }
+    console.log("query_filters <> ", query_filters);
+    return query_filters;
 };
 
 
@@ -65,14 +89,8 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
-const getFilters = async (data) => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
-    if (response.ok) {
-    let json = await response.json();
-    return formatFilters(data, json);
-    } else {
-        return [];
-    }
+const getFilters = async (data, filterConfigs) => {
+    return formatFilters(data, filterConfigs);
 };
 
 const formatFilters = async (data, filterData) => {
@@ -135,13 +153,24 @@ const getFilterOption = (data, filter) => {
     return options;
 };
 
+const getFilterAttributeName = (attribute_name) => {
+    const keywordFields = ['topics','categories','title','level','learn_type','languages'];
+    if(keywordFields.includes(attribute_name)){
+        return `${attribute_name}.keyword`;
+    }else{
+        return attribute_name;
+    }
+};
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
+        const filterConfigs = await getFilterConfigs();
         const query = { "bool": {
             "must": [
               {term: { "status.keyword": 'published' }}
-            ]
+            ],
+            "filter": []
         }};
 
         let queryPayload = {};
@@ -170,6 +199,21 @@ module.exports = class learnContentService {
             queryPayload.sort = ["published_date:desc"];
         }
 
+        if(req.query['f']){
+            let parsedFilters = parseQueryFilters(req.query['f']);
+            for(const filter of parsedFilters){
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+                    query.bool.filter.push({
+                        "terms": {[attribute_name]: filter.value}
+                    })
+                }
+            }
+        }
+
+        console.log("Elastic Query <> ", query.bool.filter);
+
         const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.hits && result.hits.length > 0){
 
@@ -182,7 +226,7 @@ module.exports = class learnContentService {
                 totalCount: result.total.value
               }
 
-            let filters = await getFilters(result.hits);
+            let filters = await getFilters(result.hits, filterConfigs);
 
               let data = {
                 list: list,
