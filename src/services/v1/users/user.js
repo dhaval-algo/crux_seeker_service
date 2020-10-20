@@ -727,6 +727,22 @@ const verifyAccount = async (req, res) => {
 //send forgot password link
 const forgotPassword = async (req,res) => {
     const { email } = req.body
+    const authHeader = req.headers.authorization;
+    let options = {
+        issuer: process.env.HOST,
+        audience: req.headers.origin,
+        algorithm: "RS256",
+    }
+    if (authHeader) {
+        const token = authHeader.split(' ')[1];
+        const verifiedToken = await require("../auth/auth").verifyToken(token, options);
+        if(verifiedToken) {
+            return res.status(200).json({
+                success:false,
+                message:"Invalid request"
+            })
+        }
+    }
     const userRes = await userExist(email, LOGIN_TYPES.LOCAL)
     if(!userRes) {
         return res.status(200).json({
@@ -745,13 +761,25 @@ const forgotPassword = async (req,res) => {
 
 const resetPassword = async (req,res) => {
     const { reset_token, password } = req.body
-
+    const authHeader = req.headers.authorization;
+    const audience = req.headers.origin;
     let options = {
         issuer: process.env.HOST,
         audience: req.headers.origin,
         algorithm: "RS256",
     }
     try {
+        if (authHeader) {
+            const token = authHeader.split(' ')[1];
+            const verifiedToken = await require("../auth/auth").verifyToken(token, options);
+            if(verifiedToken) {
+                return res.status(200).json({
+                    success:false,
+                    message:"Invalid request"
+                })
+            }
+        }
+       
         const verifiedToken = await require("../auth/auth").verifyToken(reset_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
@@ -765,7 +793,7 @@ const resetPassword = async (req,res) => {
 
                 }
             });
-            
+            await invalidateTokens(user)
             return res.status(200).send({
                 success:true
             })
