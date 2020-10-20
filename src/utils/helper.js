@@ -491,13 +491,24 @@ const createUserLogin = (userObject) => {
     })
 }
 
-const createVerificationToken = async (userObj) => {
+const createToken = async (userObj, tokenType) => {
     try {
-        console.log(userObj);
+        let tokenExpiry = 86400
+        switch (tokenType) {
+            case TOKEN_TYPES.VERIFICATION:
+                tokenExpiry = parseInt(defaults.getValue('verificaitonTokenExpiry'))
+                break;
+            case TOKEN_TYPES.RESETPASSWORD:
+                tokenExpiry = parseInt(defaults.getValue('resetPasswordTokenExpiry'))
+                break;
+            default:
+                tokenExpiry = 86400
+                break;
+        }
         const signOptions = {
             audience: userObj.audience,
             issuer: process.env.HOST,
-            expiresIn: parseInt(defaults.getValue('verificaitonTokenExpiry'))
+            expiresIn: tokenExpiry
         }
         const payload = {
             user: {
@@ -510,12 +521,12 @@ const createVerificationToken = async (userObj) => {
         const token = signToken(payload, signOptions);
         //
         let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
-        validTill = moment().add(defaults.getValue('verificaitonTokenExpiry'), "seconds").format("YYYY/MM/DD HH:mm:ss");
+        validTill = moment().add(tokenExpiry, "seconds").format("YYYY/MM/DD HH:mm:ss");
 
         let userAuthToken = {
             tokenId: token,
             userId: userObj.userId,
-            tokenType: TOKEN_TYPES.VERIFICATION,
+            tokenType: tokenType || TOKEN_TYPES.VERIFICATION,
             inValid: false,
             validTill: validTill
         };
@@ -532,14 +543,12 @@ const createVerificationToken = async (userObj) => {
     } catch (error) {
         console.log(error);
     }
-
-
 }
 
 const sendVerifcationLink = (userObj, useQueue = false) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let tokenRes = await createVerificationToken(userObj)
+            let tokenRes = await createToken(userObj, TOKEN_TYPES.VERIFICATION)
             let params = {
                 redirect_url: '/',
                 verification_token: tokenRes.data.x_token
@@ -663,6 +672,34 @@ const sendWelcomeEmail  = (userObj) => {
     })
 }
 
+const sendResetPassowrdLink = (userObj, useQueue) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let tokenRes = await createToken(userObj, TOKEN_TYPES.RESETPASSWORD)
+            console.log(tokenRes);
+            let params = {
+                redirect_url: '/',
+                reset_token: tokenRes.data.x_token
+            }
+            let link = `${defaults.getValue('resetPasswordUrl')}?${stringify(params)}`
+            let emailPayload = {
+                fromemail: "latesh@ajency.in",
+                toemail: userObj.email,
+                email_type: "resetpassword_mail",
+                email_data: {
+                    reset_link: link,
+                    account_email: userObj.email,
+                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                }
+            }
+            await communication.sendEmail(emailPayload, useQueue)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+        }
+    })
+}
+
 module.exports = {
     encryptStr,
     decryptStr,
@@ -670,9 +707,10 @@ module.exports = {
     getOtp,
     verifySocialToken,
     createUser,
-    createVerificationToken,
+    createToken,
     sendVerifcationLink,
     getLoginToken,
     invalidateTokens,
-    sendWelcomeEmail
+    sendWelcomeEmail,
+    sendResetPassowrdLink
 }
