@@ -7,7 +7,9 @@ const {
     sendVerifcationLink,
     getLoginToken,
     invalidateTokens,
-    sendWelcomeEmail 
+    sendWelcomeEmail ,
+    sendResetPassowrdLink,
+    encryptStr
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -722,6 +724,97 @@ const verifyAccount = async (req, res) => {
 
 }
 
+//send forgot password link
+const forgotPassword = async (req,res) => {
+    const { email } = req.body
+    const authHeader = req.headers.authorization;
+    let options = {
+        issuer: process.env.HOST,
+        audience: req.headers.origin,
+        algorithm: "RS256",
+    }
+    if (authHeader) {
+        const token = authHeader.split(' ')[1];
+        const verifiedToken = await require("../auth/auth").verifyToken(token, options);
+        if(verifiedToken) {
+            return res.status(200).json({
+                success:false,
+                message:"Invalid request"
+            })
+        }
+    }
+    const userRes = await userExist(email, LOGIN_TYPES.LOCAL)
+    if(!userRes) {
+        return res.status(200).json({
+            success:false,
+            message:"Email Id is not registered."
+        })
+    }
+    //generate reset token
+    userRes.data.user['audience'] = req.headers.origin || "";
+    const resetLink = await sendResetPassowrdLink(userRes.data.user, false)
+
+    res.status(200).json({
+        success:true
+    })   
+}
+
+const resetPassword = async (req,res) => {
+    const { reset_token, password } = req.body
+    const authHeader = req.headers.authorization;
+    const audience = req.headers.origin;
+    let options = {
+        issuer: process.env.HOST,
+        audience: req.headers.origin,
+        algorithm: "RS256",
+    }
+    try {
+        if (authHeader) {
+            const token = authHeader.split(' ')[1];
+            const verifiedToken = await require("../auth/auth").verifyToken(token, options);
+            if(verifiedToken) {
+                return res.status(200).json({
+                    success:false,
+                    message:"Invalid request"
+                })
+            }
+        }
+       
+        const verifiedToken = await require("../auth/auth").verifyToken(reset_token, options);
+        if (verifiedToken) {
+            let { user } = verifiedToken;
+            const encryptedPWD = encryptStr(password);
+            let userres = await models.user_login.update({
+                password: encryptedPWD
+            }, {
+                where: {
+                    userId: user.userId,
+                    provider:LOGIN_TYPES.LOCAL
+
+                }
+            });
+            await invalidateTokens(user)
+            return res.status(200).send({
+                success:true
+            })
+        } else {
+            return res.status(200).send({
+                code: DEFAULT_CODES.INVALID_TOKEN.code,
+                success: false,
+                message: "Token expired please generate token again",
+                data: {}
+            })
+        }
+    } catch (error) {
+        console.log(error);
+        return res.status(200).send({
+            code: DEFAULT_CODES.INVALID_TOKEN.code,
+            success: false,
+            message: "Something went wrong, Please try in sometime.",
+            data: {}
+        })
+    }  
+}
 module.exports = {
     login,
     verifyOtp,
@@ -730,5 +823,7 @@ module.exports = {
     socialSignIn,
     signUp,
     resendVerificationLink,
-    verifyAccount
+    verifyAccount,
+    resetPassword,
+    forgotPassword
 }

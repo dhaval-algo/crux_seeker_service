@@ -1,4 +1,4 @@
-const emalTemplate = require("./template.js");
+const emailTemplate = require("./template.js");
 // const emailConfig = require("../../../config/email");
 const emailProviders = require("./emailProviders");
 // const SEND_USER_EMAIL = (process.env.SEND_USER_EMAIL == 'true');
@@ -74,9 +74,11 @@ module.exports = {
         let template = false
         switch (type) {
             case 'activiation_mail':
-                return emalTemplate.activiationLink(templateData)
+                return emailTemplate.activiationLink(templateData)
             case 'welcome_mail':
-                return emalTemplate.welcomeEmail(templateData)
+                return emailTemplate.welcomeEmail(templateData);
+            case 'resetpassword_mail':
+                return emailTemplate.resetPasswordEmail(templateData)
             default:
                 return false
                 break;

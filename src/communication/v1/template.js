@@ -32,6 +32,21 @@ module.exports = {
          
     },
 
+    resetPasswordEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/resetpassword-email.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({reset_link:messagData.reset_link });
+         
+        let templateData = {subject:'Crux- reset password',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
+    
+
 }
 
  

@@ -12,6 +12,8 @@ router.post('/social-signin', userService.socialSignIn);
 router.post('/sign-up', injectTokenPayload, userService.signUp);
 router.post('/resend-verification-link',authenticateJWT, userService.resendVerificationLink);
 router.post('/verify-account', userService.verifyAccount);
+router.post('/forgot-password', userService.forgotPassword);
+router.post('/reset-password', userService.resetPassword);
 
 //require.post()
 module.exports = router;            
