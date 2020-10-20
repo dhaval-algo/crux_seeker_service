@@ -10,7 +10,7 @@ const DEFAULT_CODES =
     },
     INVALID_USER: {
         code:"INVALID_USER",
-        message: "The email address or phone number that you've entered does not match any account. Sign Up for an account."
+        message: "The email address that you've entered does not match any account. Sign Up for an account."
     },
     SYSTEM_ERROR: {
         code: "SYSTEM_ERROR",
