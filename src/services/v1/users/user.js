@@ -744,11 +744,8 @@ const forgotPassword = async (req,res) => {
         }
     }
     const userRes = await userExist(email, LOGIN_TYPES.LOCAL)
-    if(!userRes) {
-        return res.status(200).json({
-            success:false,
-            message:"Email Id is not registered."
-        })
+    if(!userRes.success) {
+        return res.status(200).json(userRes)
     }
     //generate reset token
     userRes.data.user['audience'] = req.headers.origin || "";
