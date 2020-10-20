@@ -1,4 +1,7 @@
 const elasticService = require("./elasticService");
+const fetch = require("node-fetch");
+
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -62,6 +65,76 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
+const getFilters = async (data) => {
+    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
+    if (response.ok) {
+    let json = await response.json();
+    return formatFilters(data, json);
+    } else {
+        return [];
+    }
+};
+
+const formatFilters = async (data, filterData) => {
+    let filters = [];
+    for(const filter of filterData){
+        filters.push({
+            label: filter.label,
+            filterable: filter.filterable,
+            sortable: filter.sortable,
+            order: filter.order,
+            is_singleton: filter.is_singleton,
+            is_collapsed: filter.is_collapsed,
+            display_count: filter.display_count,
+            disable_at_zero_count: filter.disable_at_zero_count,
+            is_attribute_param: filter.is_attribute_param,
+            filter_type: filter.filter_type,
+            is_essential: filter.is_essential,
+            sort_on: filter.sort_on,
+            sort_order: filter.sort_order,
+            false_facet_value: filter.false_facet_value,
+            implicit_filter_skip: filter.implicit_filter_skip,
+            implicit_filter_default_value: filter.implicit_filter_default_value,
+            options: filter.is_collapsed ? getFilterOption(data, filter)  : []
+        });
+    }
+    return filters;    
+};
+
+const getFilterOption = (data, filter) => {
+    let options = [];
+    for(const esData of data){
+        const entity = esData._source;
+        let entityData = entity[filter.elastic_attribute_name];
+        if(entityData){
+            if(Array.isArray(entityData)){
+                for(const entry of entityData){
+                    let existing = options.find(o => o.label === entry);
+                    if(existing){
+                        existing.count++;
+                    }else{
+                        options.push({
+                            label: entry,
+                            count: 1
+                        });
+                    }
+                }
+            }else{
+                let existing = options.find(o => o.label === entityData);
+                if(existing){
+                    existing.count++;
+                }else{
+                    options.push({
+                        label: entityData,
+                        count: 1
+                    });
+                }
+            }
+        }
+    }
+    return options;
+};
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
@@ -96,8 +169,6 @@ module.exports = class learnContentService {
         }else{
             queryPayload.sort = ["published_date:desc"];
         }
-       
-
 
         const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.hits && result.hits.length > 0){
@@ -110,8 +181,12 @@ module.exports = class learnContentService {
                 perPage: paginationQuery.size,
                 totalCount: result.total.value
               }
+
+            let filters = await getFilters(result.hits);
+
               let data = {
                 list: list,
+                filters: filters,
                 pagination: pagination
               };
 
