@@ -13,6 +13,20 @@ const getFilterConfigs = async () => {
     }
 };
 
+const getEntityLabelBySlug = async (entity, slug) => {
+    let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
+    if (response.ok) {
+    let json = await response.json();
+    if(json && json.length){
+        return json[0].default_display_label;
+    }else{
+        return null;
+    }    
+    } else {
+        return null;
+    }
+};
+
 const round = (value, step) => {
     step || (step = 1.0);
     var inv = 1.0 / step;
@@ -199,6 +213,39 @@ module.exports = class learnContentService {
             queryPayload.sort = ["published_date:desc"];
         }
 
+        /* if(req.query['category_slug']){
+            let categoryLabel = await getEntityLabelBySlug('categories', req.query['category_slug']);
+            if(!categoryLabel){
+                categoryLabel = req.query['category_slug'];                
+            }
+            query.bool.must.push({
+                "terms": {"categories.keyword": [categoryLabel]}
+            });
+        }
+        if(req.query['subcategory_slug']){
+            let subcategoryLabel = await getEntityLabelBySlug('sub-categories', req.query['subcategory_slug']);
+            if(!subcategoryLabel){
+                subcategoryLabel = req.query['subcategory_slug'];                
+            }
+            query.bool.must.push({
+                "terms": {"sub_categories.keyword": [subcategoryLabel]}
+            });
+        } */
+
+        if(req.query['slug']){
+            const slugs = req.query['slug'].split(",");
+            const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            for(let i=0; i<slugs.length; i++){
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                if(!slugLabel){
+                    slugLabel = slugs[i];                
+                }
+                query.bool.must.push({
+                    "terms": {[`${slugMapping[i].elastic_key}.keyword`]: [slugLabel]}
+                });
+            }           
+        }
+
         if(req.query['f']){
             let parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){
@@ -210,12 +257,12 @@ module.exports = class learnContentService {
                     })
                 }
             }
-        }
+        }        
 
-        console.log("Elastic Query <> ", query.bool.filter);
+        console.log("Elastic Query <> ", query.bool.must);
 
         const result = await elasticService.search('learn-content', query, queryPayload);
-        if(result.hits && result.hits.length > 0){
+        if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits);
 
@@ -237,7 +284,7 @@ module.exports = class learnContentService {
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
-            callback({status: 'failed', message: 'No record found!'}, null);
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
         }        
     }
 
