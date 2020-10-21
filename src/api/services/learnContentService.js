@@ -380,6 +380,8 @@ module.exports = class learnContentService {
 
         let data = {
             title: result.title,
+            slug: result.slug,
+            id: `LRN_CNT_PUB__${result.id}`,
             subtitle: result.subtitle,
             provider: {
                 name: result.provider_name,
@@ -388,7 +390,7 @@ module.exports = class learnContentService {
             instructors: [],
             cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
             cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
-            description: (!isList) ? result.description : null,
+            description: result.description,
             skills: (!isList) ? result.skills_gained : null,
             what_will_learn: (!isList) ? result.what_will_learn : null,
             target_students: (!isList) ? result.target_students : null,
