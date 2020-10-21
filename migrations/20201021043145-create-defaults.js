@@ -8,10 +8,10 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      value: {
+      dataValue: {
         type: Sequelize.TEXT
       },
-      default_type: {
+      dataType: {
         type: Sequelize.STRING
       },
       createdAt: {
