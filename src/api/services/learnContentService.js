@@ -2,6 +2,7 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
+const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
@@ -147,7 +148,8 @@ const getFilterOption = (data, filter) => {
                     }else{
                         options.push({
                             label: entry,
-                            count: 1
+                            count: 1,
+                            selected: false
                         });
                     }
                 }
@@ -158,7 +160,8 @@ const getFilterOption = (data, filter) => {
                 }else{
                     options.push({
                         label: entityData,
-                        count: 1
+                        count: 1,
+                        selected: false
                     });
                 }
             }
@@ -176,16 +179,33 @@ const getFilterAttributeName = (attribute_name) => {
     }
 };
 
+const updateSelectedFilters = (filters, parsedFilters) => {
+    for(const filter of parsedFilters){
+        let seleteddFilter = filters.find(o => o.label === filter.key);
+        if(seleteddFilter && seleteddFilter.options){
+            for(let option of seleteddFilter.options){
+                if(filter.value.includes(option.label)){
+                    option.selected = true;
+                }
+            }
+        }
+    }
+    return filters;
+};
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
         const filterConfigs = await getFilterConfigs();
-        const query = { "bool": {
-            "must": [
-              {term: { "status.keyword": 'published' }}
-            ],
-            "filter": []
-        }};
+        const query = { 
+            "bool": {
+                //"should": [],
+                "must": [
+                {term: { "status.keyword": 'published' }}
+                ],
+                "filter": []
+            }
+        };
 
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
@@ -213,28 +233,10 @@ module.exports = class learnContentService {
             queryPayload.sort = ["published_date:desc"];
         }
 
-        /* if(req.query['category_slug']){
-            let categoryLabel = await getEntityLabelBySlug('categories', req.query['category_slug']);
-            if(!categoryLabel){
-                categoryLabel = req.query['category_slug'];                
-            }
-            query.bool.must.push({
-                "terms": {"categories.keyword": [categoryLabel]}
-            });
-        }
-        if(req.query['subcategory_slug']){
-            let subcategoryLabel = await getEntityLabelBySlug('sub-categories', req.query['subcategory_slug']);
-            if(!subcategoryLabel){
-                subcategoryLabel = req.query['subcategory_slug'];                
-            }
-            query.bool.must.push({
-                "terms": {"sub_categories.keyword": [subcategoryLabel]}
-            });
-        } */
-
+        let slugs = [];
         if(req.query['slug']){
-            const slugs = req.query['slug'].split(",");
-            const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            slugs = req.query['slug'].split(",");
+            //const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
             for(let i=0; i<slugs.length; i++){
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
                 if(!slugLabel){
@@ -246,22 +248,67 @@ module.exports = class learnContentService {
             }           
         }
 
+        let parsedFilters = [];
+
         if(req.query['f']){
-            let parsedFilters = parseQueryFilters(req.query['f']);
+            parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
                     query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
-                    })
+                    });
                 }
             }
-        }        
+        } 
+        
+        let queryString = null;
+        if(req.query['q']){
+            /* query.match_phrase = {
+                "title.keyword": {
+                    query: req.query['q'],
+                    operator: "and",
+                    fuzziness: "auto"
+              }
+            } */
+            /* query.bool.must.push( {match: {
+                "title.keyword": {
+                    "query": "python",
+                    "type":  "phrase"
+                }
+            }}) */
+            /* query.wildcard = {
+                "title.keyword" : `*${req.query['q']}*`
+              }; */
+              //queryString = req.query['q'];
+
+             /*  query.match = {
+                "title.keyword": "Python"
+            }; */
+
+            /* query.bool.should.push({
+                "match": {
+                "title.keyword": {
+                    "query": req.query['q'],
+                    "operator": "or"
+                 } 
+                }
+            }); */
+
+            query.bool.filter.push({
+                
+                "match": {
+                    "title.keyword": {
+                        "query": req.query['q']
+                     } 
+                    }
+            })
+        }
 
         console.log("Elastic Query <> ", query.bool.must);
 
-        const result = await elasticService.search('learn-content', query, queryPayload);
+        const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits);
@@ -274,6 +321,20 @@ module.exports = class learnContentService {
               }
 
             let filters = await getFilters(result.hits, filterConfigs);
+            
+            //update selected flags
+            if(parsedFilters.length > 0){
+                filters = updateSelectedFilters(filters, parsedFilters);
+            }
+
+            //Remove filters if requested by slug
+            for(let i=0; i<slugs.length; i++){
+                const config = filterConfigs.find(o => o.elastic_attribute_name === slugMapping[i].elastic_key);
+                if(config){
+                    filters = filters.filter(o => o.label !== config.label);
+                }
+            }
+
 
               let data = {
                 list: list,
