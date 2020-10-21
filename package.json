@@ -33,7 +33,9 @@
     "sequelize-cli": "^5.5.1"
   },
   "devDependencies": {
-    "sequelize-cli": "^6.2.0"
+    "sequelize-cli": "^6.2.0",
+    "node-fetch": "^2.6.1",
+    "nodemon": "^2.0.4"
   },
   "scripts": {
     "staging": "NODE_ENV=staging node server.js",

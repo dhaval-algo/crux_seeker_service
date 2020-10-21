@@ -1,9 +1,71 @@
 const elasticService = require("./elasticService");
+const fetch = require("node-fetch");
+
+const apiBackendUrl = process.env.API_BACKEND_URL;
+const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+
+const getFilterConfigs = async () => {
+    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
+    if (response.ok) {
+    let json = await response.json();
+    return json;
+    } else {
+        return [];
+    }
+};
+
+const getEntityLabelBySlug = async (entity, slug) => {
+    let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
+    if (response.ok) {
+    let json = await response.json();
+    if(json && json.length){
+        return json[0].default_display_label;
+    }else{
+        return null;
+    }    
+    } else {
+        return null;
+    }
+};
 
 const round = (value, step) => {
     step || (step = 1.0);
     var inv = 1.0 / step;
     return Math.round(value * inv) / inv;
+};
+
+const getPaginationQuery = (query) => {
+    let page = 1;
+    let size = 10;
+    let from = 0;
+    if(query['page']){
+      page = parseInt(query['page']);
+    }
+    if(query['size']){
+      size = parseInt(query['size']);
+    }      
+    if(page > 1){
+      from = page*size;
+    }
+    return {
+      from,
+      size,
+      page
+    };
+};
+
+const parseQueryFilters = (filter) => {
+    let query_filters = [];
+    const filterArray = filter.split("::");
+    for(const qf of filterArray){
+        const qfilters = qf.split(":");
+        query_filters.push({
+            key: qfilters[0],
+            value: qfilters[1].split(",")
+        });
+    }
+    console.log("query_filters <> ", query_filters);
+    return query_filters;
 };
 
 
@@ -42,7 +104,250 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
+const getFilters = async (data, filterConfigs) => {
+    return formatFilters(data, filterConfigs);
+};
+
+const formatFilters = async (data, filterData) => {
+    let filters = [];
+    for(const filter of filterData){
+        filters.push({
+            label: filter.label,
+            filterable: filter.filterable,
+            sortable: filter.sortable,
+            order: filter.order,
+            is_singleton: filter.is_singleton,
+            is_collapsed: filter.is_collapsed,
+            display_count: filter.display_count,
+            disable_at_zero_count: filter.disable_at_zero_count,
+            is_attribute_param: filter.is_attribute_param,
+            filter_type: filter.filter_type,
+            is_essential: filter.is_essential,
+            sort_on: filter.sort_on,
+            sort_order: filter.sort_order,
+            false_facet_value: filter.false_facet_value,
+            implicit_filter_skip: filter.implicit_filter_skip,
+            implicit_filter_default_value: filter.implicit_filter_default_value,
+            options: filter.is_collapsed ? getFilterOption(data, filter)  : []
+        });
+    }
+    return filters;    
+};
+
+const getFilterOption = (data, filter) => {
+    let options = [];
+    for(const esData of data){
+        const entity = esData._source;
+        let entityData = entity[filter.elastic_attribute_name];
+        if(entityData){
+            if(Array.isArray(entityData)){
+                for(const entry of entityData){
+                    let existing = options.find(o => o.label === entry);
+                    if(existing){
+                        existing.count++;
+                    }else{
+                        options.push({
+                            label: entry,
+                            count: 1,
+                            selected: false
+                        });
+                    }
+                }
+            }else{
+                let existing = options.find(o => o.label === entityData);
+                if(existing){
+                    existing.count++;
+                }else{
+                    options.push({
+                        label: entityData,
+                        count: 1,
+                        selected: false
+                    });
+                }
+            }
+        }
+    }
+    return options;
+};
+
+const getFilterAttributeName = (attribute_name) => {
+    const keywordFields = ['topics','categories','title','level','learn_type','languages'];
+    if(keywordFields.includes(attribute_name)){
+        return `${attribute_name}.keyword`;
+    }else{
+        return attribute_name;
+    }
+};
+
+const updateSelectedFilters = (filters, parsedFilters) => {
+    for(const filter of parsedFilters){
+        let seleteddFilter = filters.find(o => o.label === filter.key);
+        if(seleteddFilter && seleteddFilter.options){
+            for(let option of seleteddFilter.options){
+                if(filter.value.includes(option.label)){
+                    option.selected = true;
+                }
+            }
+        }
+    }
+    return filters;
+};
+
 module.exports = class learnContentService {
+
+    async getLearnContentList(req, callback){
+        const filterConfigs = await getFilterConfigs();
+        const query = { 
+            "bool": {
+                //"should": [],
+                "must": [
+                {term: { "status.keyword": 'published' }}
+                ],
+                "filter": []
+            }
+        };
+
+        let queryPayload = {};
+        let paginationQuery = await getPaginationQuery(req.query);
+        queryPayload.from = paginationQuery.from;
+        queryPayload.size = paginationQuery.size;
+        console.log("req.query <> ", req.query);
+
+        //queryPayload.sort = [{"title.keyword": 'asc'}];
+        if(req.query['sort']){
+            const keywordFields = ['title'];
+            let sort = req.query['sort'];
+            let splitSort = sort.split(":");
+            if(keywordFields.includes(splitSort[0])){
+                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            }
+            /* Newest - The courses added recently.  Most recent date to oldest
+            Highest rated - Courses with highest rating to show up first
+            Price low to high
+            Price high to low
+            Top 20 skills
+            Top 20 roles */
+            //queryPayload.sort = ["title.keyword:desc"];
+            queryPayload.sort = [sort];
+        }else{
+            queryPayload.sort = ["published_date:desc"];
+        }
+
+        let slugs = [];
+        if(req.query['slug']){
+            slugs = req.query['slug'].split(",");
+            //const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            for(let i=0; i<slugs.length; i++){
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                if(!slugLabel){
+                    slugLabel = slugs[i];                
+                }
+                query.bool.must.push({
+                    "terms": {[`${slugMapping[i].elastic_key}.keyword`]: [slugLabel]}
+                });
+            }           
+        }
+
+        let parsedFilters = [];
+
+        if(req.query['f']){
+            parsedFilters = parseQueryFilters(req.query['f']);
+            for(const filter of parsedFilters){
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+                    query.bool.filter.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+                }
+            }
+        } 
+        
+        let queryString = null;
+        if(req.query['q']){
+            /* query.match_phrase = {
+                "title.keyword": {
+                    query: req.query['q'],
+                    operator: "and",
+                    fuzziness: "auto"
+              }
+            } */
+            /* query.bool.must.push( {match: {
+                "title.keyword": {
+                    "query": "python",
+                    "type":  "phrase"
+                }
+            }}) */
+            /* query.wildcard = {
+                "title.keyword" : `*${req.query['q']}*`
+              }; */
+              //queryString = req.query['q'];
+
+             /*  query.match = {
+                "title.keyword": "Python"
+            }; */
+
+            /* query.bool.should.push({
+                "match": {
+                "title.keyword": {
+                    "query": req.query['q'],
+                    "operator": "or"
+                 } 
+                }
+            }); */
+
+            query.bool.filter.push({
+                
+                "match": {
+                    "title.keyword": {
+                        "query": req.query['q']
+                     } 
+                    }
+            })
+        }
+
+        console.log("Elastic Query <> ", query.bool.must);
+
+        const result = await elasticService.search('learn-content', query, queryPayload, queryString);
+        if(result.total && result.total.value > 0){
+
+            const list = await this.generateListViewData(result.hits);
+
+            let pagination = {
+                page: paginationQuery.page,
+                count: list.length,
+                perPage: paginationQuery.size,
+                totalCount: result.total.value
+              }
+
+            let filters = await getFilters(result.hits, filterConfigs);
+            
+            //update selected flags
+            if(parsedFilters.length > 0){
+                filters = updateSelectedFilters(filters, parsedFilters);
+            }
+
+            //Remove filters if requested by slug
+            for(let i=0; i<slugs.length; i++){
+                const config = filterConfigs.find(o => o.elastic_attribute_name === slugMapping[i].elastic_key);
+                if(config){
+                    filters = filters.filter(o => o.label !== config.label);
+                }
+            }
+
+
+              let data = {
+                list: list,
+                filters: filters,
+                pagination: pagination
+              };
+
+            
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+        }        
+    }
 
     async getLearnContent(slug, callback){
         const query = { "bool": {
@@ -52,8 +357,8 @@ module.exports = class learnContentService {
             ]
         }};
         const result = await elasticService.search('learn-content', query);
-        if(result && result.length > 0){
-            const data = await this.generateSingleViewData(result[0]._source);
+        if(result.hits && result.hits.length > 0){
+            const data = await this.generateSingleViewData(result.hits[0]._source);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
@@ -61,12 +366,16 @@ module.exports = class learnContentService {
     }
 
 
-    async generateSingleViewData(result){
+    async generateSingleViewData(result, isList = false){
 
         let effort = null;
         if(result.recommended_effort_per_week){
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
+        }
+        let coverImageSize = 'small';
+        if(isList){
+            coverImageSize = 'thumbnail';
         }
 
         let data = {
@@ -78,13 +387,13 @@ module.exports = class learnContentService {
             },
             instructors: [],
             cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-            cover_image: (result.images) ? process.env.ASSET_URL+result.images.small : null,
-            description: result.description,
-            skills: result.skills_gained,
-            what_will_learn: result.what_will_learn,
-            target_students: result.target_students,
-            prerequisites: result.prerequisites,
-            content: result.content,
+            cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+            description: (!isList) ? result.description : null,
+            skills: (!isList) ? result.skills_gained : null,
+            what_will_learn: (!isList) ? result.what_will_learn : null,
+            target_students: (!isList) ? result.target_students : null,
+            prerequisites: (!isList) ? result.prerequisites  : null,
+            content: (!isList) ? result.content : null,
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: calculateDuration(result.total_duration_in_hrs), 
@@ -114,24 +423,28 @@ module.exports = class learnContentService {
             provider_course_url: result.provider_course_url,
             reviews: [],
             ratings: {
+                total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
             }
         };
-        if(result.instructors && result.instructors.length > 0){
-            for(let instructor of result.instructors){
-                if(instructor.instructor_image){
-                    instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+
+        if(!isList){
+            if(result.instructors && result.instructors.length > 0){
+                for(let instructor of result.instructors){
+                    if(instructor.instructor_image){
+                        instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+                    }
+                    data.instructors.push(instructor);
                 }
-                data.instructors.push(instructor);
             }
-        }
-        if(result.instruction_type){
-            data.course_details.tags.push(result.instruction_type);
-        }
-        if(result.medium){
-            data.course_details.tags.push(result.medium);
+            if(result.instruction_type){
+                data.course_details.tags.push(result.instruction_type);
+            }
+            if(result.medium){
+                data.course_details.tags.push(result.medium);
+            }
         }
 
         
@@ -140,10 +453,14 @@ module.exports = class learnContentService {
             let ratings = {};
             for(let review of result.reviews){
                 totalRating += review.rating;
-                if(review.photo){
-                    review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                
+                if(!isList){
+                    if(review.photo){
+                        review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                    }
+                    data.reviews.push(review);
                 }
-                data.reviews.push(review);
+
                 if(ratings[review.rating]){
                     ratings[review.rating] += 1; 
                 }else{
@@ -193,11 +510,20 @@ module.exports = class learnContentService {
         }
         if(data.course_details.pricing.pricing_type == 'Not_Specified'){
             data.course_details.pricing.pricing_type = null;
-        }
-
-
-        
+        }        
         return data;
     }
+
+
+
+    async generateListViewData(rows){
+        let datas = [];
+        for(const row of rows){
+            const data = await this.generateSingleViewData(row._source, true);
+            datas.push(data);
+        }
+        return datas;
+    }
+
 
 }
