@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('defaults', {
+    return queryInterface.createTable('global_defaults', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -13,6 +13,9 @@ module.exports = {
       },
       dataType: {
         type: Sequelize.STRING
+      },
+      metaData: {
+        type: Sequelize.TEXT
       },
       createdAt: {
         allowNull: false,
