@@ -45,7 +45,7 @@ const getPaginationQuery = (query) => {
       size = parseInt(query['size']);
     }      
     if(page > 1){
-      from = page*size;
+      from = (page-1)*size;
     }
     return {
       from,
@@ -108,6 +108,20 @@ const calculateDuration = (total_duration_in_hrs) => {
 
 const getFilters = async (data, filterConfigs) => {
     return formatFilters(data, filterConfigs);
+};
+
+const getAllFilters = async (query, queryPayload, filterConfigs) => {
+        if(queryPayload.from !== null && queryPayload.size !== null){
+            delete queryPayload['from'];
+            delete queryPayload['size'];
+        }
+        console.log("queryPayload <> ", queryPayload);
+        const result = await elasticService.search('learn-content', query, queryPayload);
+        if(result.total && result.total.value > 0){
+            return formatFilters(result.hits, filterConfigs);
+        }else{
+            return [];
+        }
 };
 
 const formatFilters = async (data, filterData) => {
@@ -213,7 +227,7 @@ module.exports = class learnContentService {
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
-        console.log("req.query <> ", req.query);
+        console.log("paginationQuery <> ", paginationQuery);
 
         //queryPayload.sort = [{"title.keyword": 'asc'}];
         if(req.query['sort']){
@@ -322,7 +336,8 @@ module.exports = class learnContentService {
                 totalCount: result.total.value
               }
 
-            let filters = await getFilters(result.hits, filterConfigs);
+            //let filters = await getFilters(result.hits, filterConfigs);
+            let filters = await getAllFilters(query, queryPayload, filterConfigs);
             
             //update selected flags
             if(parsedFilters.length > 0){
