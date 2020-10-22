@@ -36,7 +36,7 @@ const round = (value, step) => {
 
 const getPaginationQuery = (query) => {
     let page = 1;
-    let size = 10;
+    let size = 25;
     let from = 0;
     if(query['page']){
       page = parseInt(query['page']);
@@ -55,8 +55,10 @@ const getPaginationQuery = (query) => {
 };
 
 const parseQueryFilters = (filter) => {
+    const parsedFilterString = decodeURIComponent(filter);
+    console.log("parsedFilterString <> ", parsedFilterString);
     let query_filters = [];
-    const filterArray = filter.split("::");
+    const filterArray = parsedFilterString.split("::");
     for(const qf of filterArray){
         const qfilters = qf.split(":");
         query_filters.push({
