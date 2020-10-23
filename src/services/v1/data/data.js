@@ -32,7 +32,7 @@ const insertDegree = async (req, res) => {
     res.status(200).json(jsonArray)
     for(let i=0; i<jsonArray.length;i++){
         console.log(jsonArray[i]);
-        await models.default_select_options.create(json[i])
+        await models.default_select_options.create(jsonArray[i])
     }
 }
 
