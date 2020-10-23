@@ -29,10 +29,6 @@ const fetchSuggestions = async (req,res) => {
 const insertDegree = async (req, res) => {
     let json = csvToJson.getJsonFromCsv(`${global.appRoot}/data_files/default_select_options.csv`);
     for(let i=0; i<json.length;i++){
-        json[i].value = json[i].label.trim().toLowerCase().replace('"',"");
-        json[i].slug = json[i].label.toLowerCase().replace(/ /g,'-').replace(/[^\w-]+/g,'').replace('"',"");
-        json[i].label = json[i].label.trim().replace('"',"");
-        json[i].optionType = "job_title";
         await models.default_select_options.create(json[i])
     }
     res.status(200).json(json)
