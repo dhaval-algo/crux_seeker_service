@@ -29,11 +29,11 @@ const fetchSuggestions = async (req,res) => {
 const insertDegree = async (req, res) => {
 
     const jsonArray=await csv().fromFile(`${global.appRoot}/data_files/default_select_options.csv`);
+    res.status(200).json(jsonArray)
     for(let i=0; i<jsonArray.length;i++){
         console.log(jsonArray[i]);
         await models.default_select_options.create(json[i])
     }
-    res.status(200).json(jsonArray)
 }
 
 module.exports = { fetchSuggestions, insertDegree }
