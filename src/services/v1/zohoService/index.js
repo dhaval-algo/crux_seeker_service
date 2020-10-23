@@ -168,6 +168,7 @@ const prepareLeadData = (enquiry_id) => {
             Graduation_Year:'',
             City:'',
             Country:'',
+            Current_Company:false,
             Lead_Origin_or_Source:''
         }
         try {
@@ -223,6 +224,10 @@ const prepareLeadData = (enquiry_id) => {
 
                 if(metaObjVal.company) {
                     leadObj.Company = JSON.parse(metaObjVal.company).label
+                }
+
+                if(metaObjVal.currentCompany) {
+                    leadObj.Current_Company = Boolean(metaObjVal.currentCompany)
                 }
 
             }
