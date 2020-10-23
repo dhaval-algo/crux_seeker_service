@@ -2,7 +2,7 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
-const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+let slugMapping = [];
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
@@ -212,6 +212,16 @@ const updateSelectedFilters = (filters, parsedFilters) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
+
+        if(req.query['pageType']){
+            if(req.query['pageType'] == "category"){
+                slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            }
+            if(req.query['pageType'] == "topic"){
+                slugMapping = [{elastic_key: "topics" , entity_key: "topics"}];
+            }            
+        }
+
         const filterConfigs = await getFilterConfigs();
         const query = { 
             "bool": {
