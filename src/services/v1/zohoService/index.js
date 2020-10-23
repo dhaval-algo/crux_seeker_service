@@ -157,7 +157,7 @@ const prepareLeadData = (enquiry_id) => {
             Gender:"",
             Phone:"",
             Created_On:moment().format(),
-            Title:'',
+            Job_Title:'',
             Company:'',
             Company_Industry:'',
             Experience:'',
@@ -215,7 +215,7 @@ const prepareLeadData = (enquiry_id) => {
                 }
 
                 if(metaObjVal.jobTitle) {
-                    leadObj.Designation = JSON.parse(metaObjVal.jobTitle).label
+                    leadObj.Job_Title = JSON.parse(metaObjVal.jobTitle).label
                 }
 
                 if(metaObjVal.industry) {
