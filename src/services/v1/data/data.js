@@ -33,8 +33,8 @@ const insertDegree = async (req, res) => {
         json[i].slug = json[i].label.toLowerCase().replace(/ /g,'-').replace(/[^\w-]+/g,'').replace('"',"");
         json[i].label = json[i].label.trim().replace('"',"");
         json[i].optionType = "job_title";
+        await models.default_select_options.create(json[i])
     }
-    await models.default_select_options.bulkCreate(json)
     res.status(200).json(json)
 }
 
