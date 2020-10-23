@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
-let csvToJson = require('convert-csv-to-json');
+const csv =require("csvtojson/v2");
 const models = require("../../../../models");
 
 const fetchSuggestions = async (req,res) => {
@@ -27,11 +27,13 @@ const fetchSuggestions = async (req,res) => {
 }
 
 const insertDegree = async (req, res) => {
-    let json = csvToJson.getJsonFromCsv(`${global.appRoot}/data_files/default_select_options.csv`);
-    for(let i=0; i<json.length;i++){
+
+    const jsonArray=await csv().fromFile(`${global.appRoot}/data_files/default_select_options.csv`);
+    for(let i=0; i<jsonArray.length;i++){
+        console.log(jsonArray[i]);
         await models.default_select_options.create(json[i])
     }
-    res.status(200).json(json)
+    res.status(200).json(jsonArray)
 }
 
 module.exports = { fetchSuggestions, insertDegree }
