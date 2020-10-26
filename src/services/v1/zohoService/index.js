@@ -230,6 +230,14 @@ const prepareLeadData = (enquiry_id) => {
                     leadObj.Current_Company = Boolean(metaObjVal.currentCompany)
                 }
 
+                if(metaObjVal.city) {
+                    leadObj.City = JSON.parse(metaObjVal.city).city
+                }
+
+                if(metaObjVal.city) {
+                    leadObj.Country = JSON.parse(metaObjVal.city).country
+                }
+
             }
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
