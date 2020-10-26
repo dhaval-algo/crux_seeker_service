@@ -96,7 +96,7 @@ const handleCallBackEnquiry = (resBody,req) => {
 
 const handleGeneralEnquiry = (resBody,req) => {
     return new Promise(async (resolve, reject) => {
-        const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType, lastStep } = resBody;
+        const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType,updateProfile } = resBody;
         let { formSubmissionId } = resBody;
         insertInCRM = !!lastStep
         let userObj = {...user};
@@ -110,7 +110,7 @@ const handleGeneralEnquiry = (resBody,req) => {
             // prepare entries in for user_meta and make entries
             formData.map((f) => { 
                 f['userId'] = userObj.userId
-                if(actionType == "signup") {
+                if((actionType == "signup" || updateProfile) && f['key']!='email' ) {
                     f['metaType'] = "primary"
                 }
                 return 
