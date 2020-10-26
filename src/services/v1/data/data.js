@@ -64,6 +64,7 @@ const placesAutoComplete = async (req, res) => {
                city.state = citySplit[1].trim();
             } else {
                 city.country = citySplit[citySplit.length-1].trim();
+                city.value = city.city = citySplit[0].trim();
             }
             resResult.push(city)
         })
