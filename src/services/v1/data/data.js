@@ -43,10 +43,11 @@ const insertDegree = async (req, res) => {
 
 const placesAutoComplete = async (req, res) => {
     let resResult = []
-    let url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?types=(cities)&input="+ req.query.input +"&key="+process.env.GOOGLE_API_KR
+    let url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?types=(cities)&input="+ req.query.input +"&key="+process.env.GOOGLE_API_KEY
   
     axios.get(url)
       .then(function (response) {
+          console.log(response.data);
           response.data.predictions.map((p) => {
             let city = {
                 value:'',
