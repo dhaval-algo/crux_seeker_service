@@ -39,11 +39,11 @@ const insertDegree = async (req, res) => {
         await models.default_select_options.create(jsonArray[i])
     }
 }
-//AIzaSyCoLXhU722mcOyhVlyHKrCuOhxE3WsQa1M
+//
 
 const placesAutoComplete = async (req, res) => {
     let resResult = []
-    let url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?types=(cities)&input="+ req.query.input +"&key=AIzaSyCoLXhU722mcOyhVlyHKrCuOhxE3WsQa1M"
+    let url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?types=(cities)&input="+ req.query.input +"&key="+process.env.GOOGLE_API_KR
   
     axios.get(url)
       .then(function (response) {
