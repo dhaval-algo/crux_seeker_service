@@ -107,7 +107,7 @@ const handleGeneralEnquiry = (resBody, req) => {
             // prepare entries in for user_meta and make entries
             formData.map((f) => {
                 f['userId'] = userObj.userId
-                if ((actionType == "signup" || updateProfile) && f['key'] != 'email') {
+                if (actionType == "signup" ) {
                     f['metaType'] = "primary"
                 }
                 return
@@ -133,6 +133,9 @@ const handleGeneralEnquiry = (resBody, req) => {
                 form_submission_values = resMeta.map((meta) => { return { objectId: meta.id, objectType: 'user_meta', userId: userObj.userId, formSubmissionId: formSubmissionId } })
                 //entries in form_submission_values
                 const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
+                if(updateProfile) {
+                    updateProfileMeta(formData, userObj)
+                }
                 return resolve({
                     success: true,
                     code: DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code,
@@ -173,9 +176,36 @@ const handleUserProfileSubmission = (resBody, req) => {
         let { formSubmissionId } = resBody;
         let userObj = { ...user };
 
-        try {
+        try {         
+            await updateProfileMeta(formData, userObj)
 
-            //user meta {key:"", value:"", metaType:""}
+            const progress = await calculateProfileCompletion(userObj)
+            return resolve({
+                success: true,
+                data: {
+                    profileProgress: progress
+                }
+            })
+
+
+            // if(user.id) {
+            //     resolve({resBody})
+            // }
+        } catch (error) {
+            console.log(error);
+            resolve({
+                success: false,
+                data: {
+                }
+            })
+        }
+    })
+}
+
+const updateProfileMeta = (formData, userObj) => {
+    return new Promise(async (resolve) => {
+        try {
+              //user meta {key:"", value:"", metaType:""}
             // prepare entries in for user_meta and make entries
             for(let key in formData ) {
                 formData[key]['userId'] = userObj.userId
@@ -202,26 +232,9 @@ const handleUserProfileSubmission = (resBody, req) => {
 
                 }
             }
-
-            const progress = await calculateProfileCompletion(userObj)
-            return resolve({
-                success: true,
-                data: {
-                    profileProgress: progress
-                }
-            })
-
-
-            // if(user.id) {
-            //     resolve({resBody})
-            // }
+            resolve(true)
         } catch (error) {
-            console.log(error);
-            resolve({
-                success: false,
-                data: {
-                }
-            })
+            resolve(true)
         }
     })
 }
