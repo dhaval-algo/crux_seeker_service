@@ -3,6 +3,7 @@ const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 let slugMapping = [];
+const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
@@ -127,7 +128,8 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
 const formatFilters = async (data, filterData) => {
     let filters = [];
     for(const filter of filterData){
-        filters.push({
+
+        let formatedFilters = {
             label: filter.label,
             filterable: filter.filterable,
             sortable: filter.sortable,
@@ -144,10 +146,63 @@ const formatFilters = async (data, filterData) => {
             false_facet_value: filter.false_facet_value,
             implicit_filter_skip: filter.implicit_filter_skip,
             implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: filter.is_collapsed ? getFilterOption(data, filter)  : []
-        });
+            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : []
+        };
+
+        if(rangeFilterTypes.includes(filter.filter_type)){
+            if(filter.filter_type == 'RangeSlider'){
+                const maxValue = getMaxValue(data, filter.elastic_attribute_name);
+                formatedFilters.min = 0;
+                formatedFilters.max = maxValue;
+                formatedFilters.minValue = 0;
+                formatedFilters.maxValue = getMaxValue(data, filter.elastic_attribute_name);
+            }
+
+            if(filter.filter_type == 'RangeOptions'){
+                if(filter.elastic_attribute_name == 'average_rating'){
+                    formatedFilters.options = getRangeOptions(data, filter.elastic_attribute_name);
+                }
+            }
+        }        
+        filters.push(formatedFilters);
     }
     return filters;    
+};
+
+const getMaxValue = (data, attribute) => {
+    let maxValue = 0;
+    for(const esData of data){
+        const entity = esData._source;
+        if(entity.regular_price > maxValue){
+            maxValue = entity.regular_price;
+        }
+    }
+    return maxValue;
+};
+
+
+const getRangeOptions = (data, attribute) => {
+    let predefinedOptions = [4.5,4.0,3.5,3.0];
+    let options = [];
+    for(let i=0; i<predefinedOptions.length; i++){
+        count = 0;
+        for(const esData of data){
+            const entity = esData._source;
+            if(entity[attribute] >= predefinedOptions[i]){
+                count++;
+            }
+        }
+
+        let option = {
+            label: `${predefinedOptions[i].toString()} & up`,
+            count: count,
+            selected: false,
+            start: predefinedOptions[i],
+            end: 'MAX'
+        };
+        options.push(option);
+    }
+    return options;
 };
 
 const getFilterOption = (data, filter) => {
@@ -240,8 +295,14 @@ module.exports = class learnContentService {
         console.log("paginationQuery <> ", paginationQuery);
 
         //queryPayload.sort = [{"title.keyword": 'asc'}];
+
+        if(!req.query['sort']){
+            req.query['sort'] = "published_date:desc";
+        }
+
         if(req.query['sort']){
-            const keywordFields = ['title'];
+            console.log("Sort requested <> ", req.query['sort']);
+            const keywordFields = ['title', 'average_rating_actual'];
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             if(keywordFields.includes(splitSort[0])){
@@ -255,9 +316,17 @@ module.exports = class learnContentService {
             Top 20 roles */
             //queryPayload.sort = ["title.keyword:desc"];
             queryPayload.sort = [sort];
-        }else{
-            queryPayload.sort = ["published_date:desc"];
         }
+
+
+       /*  queryPayload.sort = {
+            "average_rating": {
+                "unmapped_type": "float",
+                "order": "desc"
+            }
+        }; */
+
+
 
         let slugs = [];
         if(req.query['slug']){
@@ -347,7 +416,7 @@ module.exports = class learnContentService {
               }
 
             //let filters = await getFilters(result.hits, filterConfigs);
-            let filters = await getAllFilters(query, queryPayload, filterConfigs);
+            let filters = await getAllFilters(query, queryPayload, filterConfigs);            
             
             //update selected flags
             if(parsedFilters.length > 0){
@@ -366,7 +435,8 @@ module.exports = class learnContentService {
               let data = {
                 list: list,
                 filters: filters,
-                pagination: pagination
+                pagination: pagination,
+                sort: req.query['sort']
               };
 
             
