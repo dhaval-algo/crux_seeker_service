@@ -61,4 +61,20 @@ module.exports = {
     } 
   }, 
 
+
+  plainSearch: async (index, queryBody) => {
+    const client = elasticClient();
+    let finalQuery = {
+      index: index,
+      body: queryBody
+    };
+
+    const result = await client.search(finalQuery);
+    if(result && result.body){
+        return result.body;
+    }else{
+        return null;
+    } 
+  }, 
+
 };

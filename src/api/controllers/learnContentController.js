@@ -24,5 +24,15 @@ module.exports = {
         });        
     },
 
+    getCategoryList: async (req, res) => {
+        LearnContentService.getCategories((err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
+
 
 };
