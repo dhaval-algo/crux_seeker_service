@@ -1,6 +1,11 @@
-const userController = require('../../controllers/apis/user');
-
+const userController = require('../../controllers/v1/apis/user');
+const courseController = require('../../controllers/v1/apis/courses');
+const formsConstroller = require('../../controllers/v1/apis/forms');
+const dataConstroller = require('../../controllers/v1/apis/data');
 const express = require('express');
 let router = express.Router();
 router.use('/users', userController);
+router.use('/courses',courseController);
+router.use('/forms', formsConstroller);
+router.use('/data', dataConstroller);
 module.exports = router;
