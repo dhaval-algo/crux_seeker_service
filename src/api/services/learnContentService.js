@@ -170,6 +170,9 @@ const formatFilters = async (data, filterData) => {
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
                 const maxValue = getMaxValue(data, filter.elastic_attribute_name);
+                if(maxValue <= 0){
+                    continue;
+                }
                 formatedFilters.min = 0;
                 formatedFilters.max = maxValue;
                 formatedFilters.minValue = 0;
@@ -268,19 +271,41 @@ const getFilterAttributeName = (attribute_name) => {
     }
 };
 
-const updateSelectedFilters = (filters, parsedFilters) => {
-    for(const filter of parsedFilters){
+const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
+    for(let filter of filters){
         if(filter.filter_type == "Checkboxes"){
-            let seleteddFilter = filters.find(o => o.label === filter.key);
-            if(seleteddFilter && seleteddFilter.options){
-                for(let option of seleteddFilter.options){
-                    if(filter.value.includes(option.label)){
+            let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
+            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
+            if(seleteddFilter && filter.options){
+                for(let option of filter.options){
+                    if(seleteddFilter.value.includes(option.label)){
                         option.selected = true;
                     }
                 }
             }
         }
+        if(filter.filter_type == "RangeOptions"){
+            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
+            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
+            if(seleteddFilter && filter.options){
+                for(let option of filter.options){
+                    if((option.start ==  seleteddFilter.start) && (option.end ==  seleteddFilter.end)){
+                        option.selected = true;
+                    }
+                }
+            }
+        }
+        if(filter.filter_type == "RangeSlider"){
+            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
+            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
+            if(seleteddFilter){
+                filter.min = seleteddFilter.start;
+                filter.max = seleteddFilter.end;
+            }
+        }
     }
+    console.log("parsedRangedFilters <> ", parsedRangeFilters);
+
     return filters;
 };
 
@@ -365,6 +390,7 @@ module.exports = class learnContentService {
         }
 
         let parsedFilters = [];
+        let parsedRangeFilters = [];
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -380,7 +406,7 @@ module.exports = class learnContentService {
         }
         
         if(req.query['rf']){
-            let parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
             for(const filter of parsedRangeFilters){
                 console.log("Applying filters <> ", filter);
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
@@ -470,8 +496,8 @@ module.exports = class learnContentService {
             let filters = await getAllFilters(query, queryPayload, filterConfigs);            
             
             //update selected flags
-            if(parsedFilters.length > 0){
-                filters = updateSelectedFilters(filters, parsedFilters);
+            if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
             //Remove filters if requested by slug
