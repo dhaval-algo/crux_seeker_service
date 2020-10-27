@@ -6,4 +6,6 @@ const learnContentController = require('../../../controllers/learnContentControl
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
 
+router.get('/categories/', learnContentController.getCategoryList);
+
 module.exports = router;

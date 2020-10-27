@@ -71,6 +71,24 @@ const parseQueryFilters = (filter) => {
     return query_filters;
 };
 
+const parseQueryRangeFilters = (filter) => {
+    const parsedFilterString = decodeURIComponent(filter);
+    console.log("parsedRangeFilterString <> ", parsedFilterString);
+    let query_filters = [];
+    const filterArray = parsedFilterString.split("::");
+    for(const qf of filterArray){
+        const qfilters = qf.split(":");
+        const splitRange = qfilters[1].split("_");
+        query_filters.push({
+            key: qfilters[0],
+            start: (splitRange[0] == "MIN") ? splitRange[0] : parseFloat(splitRange[0]),
+            end: (splitRange[1] == "MAX") ? splitRange[1] : parseFloat(splitRange[1])
+        });
+    }
+    console.log("query_range_filters <> ", query_filters);
+    return query_filters;
+};
+
 
 const calculateDuration = (total_duration_in_hrs) => {
     const hourse_in_day = 8;
@@ -252,11 +270,13 @@ const getFilterAttributeName = (attribute_name) => {
 
 const updateSelectedFilters = (filters, parsedFilters) => {
     for(const filter of parsedFilters){
-        let seleteddFilter = filters.find(o => o.label === filter.key);
-        if(seleteddFilter && seleteddFilter.options){
-            for(let option of seleteddFilter.options){
-                if(filter.value.includes(option.label)){
-                    option.selected = true;
+        if(filter.filter_type == "Checkboxes"){
+            let seleteddFilter = filters.find(o => o.label === filter.key);
+            if(seleteddFilter && seleteddFilter.options){
+                for(let option of seleteddFilter.options){
+                    if(filter.value.includes(option.label)){
+                        option.selected = true;
+                    }
                 }
             }
         }
@@ -264,25 +284,32 @@ const updateSelectedFilters = (filters, parsedFilters) => {
     return filters;
 };
 
+
+const getSlugMapping = (req) => {
+    slugMapping = [];
+    if(req.query['pageType'] !== null){
+        if(req.query['pageType'] == "category"){
+            slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+        }
+        if(req.query['pageType'] == "topic"){
+            slugMapping = [{elastic_key: "topics" , entity_key: "topics"}];
+        }            
+    }
+    return slugMapping;
+};
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
 
-        if(req.query['pageType']){
-            if(req.query['pageType'] == "category"){
-                slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
-            }
-            if(req.query['pageType'] == "topic"){
-                slugMapping = [{elastic_key: "topics" , entity_key: "topics"}];
-            }            
-        }
+        slugMapping = getSlugMapping(req);
 
         const filterConfigs = await getFilterConfigs();
         const query = { 
             "bool": {
                 //"should": [],
                 "must": [
-                {term: { "status.keyword": 'published' }}
+                    {term: { "status.keyword": 'published' }}                
                 ],
                 "filter": []
             }
@@ -308,13 +335,6 @@ module.exports = class learnContentService {
             if(keywordFields.includes(splitSort[0])){
                 sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
             }
-            /* Newest - The courses added recently.  Most recent date to oldest
-            Highest rated - Courses with highest rating to show up first
-            Price low to high
-            Price high to low
-            Top 20 skills
-            Top 20 roles */
-            //queryPayload.sort = ["title.keyword:desc"];
             queryPayload.sort = [sort];
         }
 
@@ -332,6 +352,7 @@ module.exports = class learnContentService {
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
             //const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            console.log("slugMapping <> ", slugMapping);
             for(let i=0; i<slugs.length; i++){
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
                 if(!slugLabel){
@@ -356,7 +377,34 @@ module.exports = class learnContentService {
                     });
                 }
             }
-        } 
+        }
+        
+        if(req.query['rf']){
+            let parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            for(const filter of parsedRangeFilters){
+                console.log("Applying filters <> ", filter);
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+
+                    let rangeQuery = {};
+                    if(filter.start !== "MIN"){
+                        rangeQuery["gte"] = filter.start;
+                    }
+                    if(filter.end !== "MAX"){
+                        rangeQuery["lte"] = filter.end;
+                    }
+
+                    query.bool.must.push({
+                        "range": {
+                            [attribute_name]: rangeQuery
+                         }
+                    });                 
+                }
+            }
+        }
+
+        
         
         let queryString = null;
         if(req.query['q']){
@@ -401,7 +449,10 @@ module.exports = class learnContentService {
             })
         }
 
-        console.log("Elastic Query <> ", query.bool.filter);
+        if(query.bool.must[2]){
+            console.log("Elastic must range Query <> ", query.bool.must[2]);
+        }
+        console.log("Elastic must Query <> ", query.bool.must);
 
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -460,6 +511,47 @@ module.exports = class learnContentService {
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
         }        
+    }
+
+
+    async getCategories(callback){
+        let categories = [];
+
+        const queryBody = {
+            "query": {
+              "bool": {
+                "must": [
+                  {
+                    "term": {
+                      "status.keyword": "published"
+                    }
+                  }
+                ]
+              }
+            },
+            "size": 0,
+            "aggs": {
+              "categories": {
+                "terms": {
+                  "field": "categories.keyword",
+                  "size": 100
+                }
+              }
+            }
+          };
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        console.log("elastic result <> ", result);
+
+        if(result.aggregations){
+            let categoriesData = result.aggregations.categories.buckets;
+            console.log("categoriesData <> ", categoriesData);
+            //categories = categoriesData.map(o => {"label": o['key'], "value": o['key']} );
+            categories = categoriesData.map(function(obj) {
+                return {"label": obj['key'], "value": obj['key']};
+              });
+        }
+
+        callback(null, {status: 'success', message: 'Fetched successfully!', data: categories});
     }
 
 

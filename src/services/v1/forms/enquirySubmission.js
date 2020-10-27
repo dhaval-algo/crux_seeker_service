@@ -96,7 +96,7 @@ const handleCallBackEnquiry = (resBody, req) => {
 
 const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
-        const { user, targetEntityType, targetEntityId, otherInfo = { ...req.useragent }, formData, formType, formTypeSource, actionType, updateProfile } = resBody;
+        const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
         let { formSubmissionId } = resBody;
         insertInCRM = !!lastStep
         let userObj = {...user};
@@ -248,8 +248,8 @@ const updateProfileMeta = (formData, userObj) => {
 const fetchFormValues = (reqBody) => {
     return new Promise(async (resolve, reject) => {
 
-        const { requestFieldMetaType = "", requestFields = [], user } = reqBody;
-        if (requestFields.length) {
+        const { requestFieldMetaType="", requestFields = [], user } = reqBody;
+        if(requestFields.length) {
             let where = {
                 userId: user.userId,
                 key: { [Op.in]: requestFields },

@@ -359,7 +359,7 @@ const handleLocalSignUP = async (userObj) => {
                 message: DEFAULT_CODES.USER_CREATED.message,
                 data: {
                     user: {
-                        name:reducedObj.firstName | "",
+                        name:reducedObj.firstName || "",
                         username: userObj.username,
                         userId,
                         email: userObj.username,
@@ -598,7 +598,7 @@ const getLoginToken = async (userObj) => {
         const payload = {
             user: {
                 email: userObj.email || "",
-                name: userObj.firstName || "",
+                name: userObj.name || userObj.firstName || "",
                 userId: userObj.userId,
                 provider: userObj.provider || "",
                 userType: userObj.userType,
