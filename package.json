@@ -1,18 +1,42 @@
 {
-  "name": "crux-backend",
+  "name": "crux-seeker-service",
   "version": "1.0.0",
-  "description": "Backend for Crux Marketplace",
+  "description": "Backend for Crux Seeker",
   "main": "server.js",
   "dependencies": {
+    "aws-sdk": "^2.766.0",
+    "axios": "^0.20.0",
+    "base64url": "^3.0.1",
+    "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "cryptr": "^6.0.2",
+    "csvtojson": "^2.0.10",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "nodemon": "^2.0.4"
+    "express-useragent": "^1.0.15",
+    "fs": "0.0.1-security",
+    "google-auth-library": "^6.0.6",
+    "handlebars": "^4.7.6",
+    "jsonwebtoken": "^8.5.1",
+    "moment": "^2.29.1",
+    "multer": "^1.4.2",
+    "node-linkedin": "^0.5.6",
+    "nodemon": "^2.0.4",
+    "path": "^0.12.7",
+    "pg": "^8.3.3",
+    "pg-hstore": "^2.3.3",
+    "querystring": "^0.2.0",
+    "sequelize": "^5.21.10",
+    "sequelize-cli": "^5.5.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "sequelize-cli": "^6.2.0"
+  },
   "scripts": {
+    "staging": "NODE_ENV=staging node server.js",
     "start": "node server.js",
+    "dev": "npx nodemon start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

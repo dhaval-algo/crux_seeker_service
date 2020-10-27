@@ -1,0 +1,44 @@
+{
+  "development": {
+    "tokenExpiry": 518400,
+    "verificaitonTokenExpiry": 518400,
+    "guestTokenExpiry": 518400,
+    "resetPasswordTokenExpiry": 86400,
+    "otpLength": 6,
+    "otpExpiry": 10,
+    "otpSpan": 10,
+    "otpMaxSent": 3,
+    "otpInvalidTries": 3,
+    "verificationUrl":"http://localhost:3000/verify-account",
+    "resetPasswordUrl":"http://localhost:3000/reset-password",
+    "redirectUrl":"/"
+  },
+  "production": {
+    "tokenExpiry": 518400,
+    "verificaitonTokenExpiry": 518400,
+    "guestTokenExpiry": 518400,
+    "resetPasswordTokenExpiry": 86400,
+    "otpLength": 6,
+    "otpExpiry": 10,
+    "otpSpan": 10,
+    "otpMaxSent": 3,
+    "otpInvalidTries": 3,
+    "verificationUrl":"",
+    "resetPasswordUrl":"",
+    "redirectUrl":"/"
+  },
+  "staging": {
+    "tokenExpiry": 518400,
+    "verificaitonTokenExpiry": 518400,
+    "guestTokenExpiry": 518400,
+    "resetPasswordTokenExpiry": 86400,
+    "otpLength": 6,
+    "otpExpiry": 10,
+    "otpSpan": 10,
+    "otpMaxSent": 3,
+    "otpInvalidTries": 3,
+    "verificationUrl":"https://crux.ajency.in/verify-account",
+    "resetPasswordUrl":"https://crux.ajency.in/reset-password",
+    "redirectUrl":"/"
+  }
+}
