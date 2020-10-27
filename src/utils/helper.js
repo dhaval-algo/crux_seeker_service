@@ -11,6 +11,8 @@ const communication = require('../communication/v1/communication');
 const { signToken } = require('../services/v1/auth/auth');
 crypt = new Cryptr(process.env.CRYPT_SALT);
 const moment = require("moment");
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
 
 const encryptStr = (str) => {
     return crypt.encrypt(str);
@@ -700,6 +702,78 @@ const sendResetPassowrdLink = (userObj, useQueue) => {
     })
 }
 
+const calculateProfileCompletion =  (userObj) => {
+    return new Promise(async (resolve) => {
+        try {
+            const sections = {
+                "profile_picture": {
+                    weightage: 25,
+                    fieldCount: 1,
+                    fields: ["profilePicture"]
+                },
+                "education": {
+                    weightage:25,
+                    fieldCount:5,
+                    fields: ["institute","degree", "specialization", "graduationYear", "grade"]
+                },
+                "work_experience":{
+                    weightage:25,
+                    fieldCount:4,
+                    fields: ["experience","jobTitle", "industry", "company"]
+                },
+                "basic_information":{
+                    weightage:25,
+                    fieldCount:7,
+                    fields: ["firstName","lastName", 'gender', "dob", "phone","city", "email"]
+                }
+            }
+            let profileCompleted = 0
+        
+            for (const key in sections) {
+                const element = sections[key];
+                const meta = await models.user_meta.findAll({
+                    where:{
+                        metaType:"primary",
+                        key:{[Op.in]:sections[key].fields},
+                        userId:userObj.userId || userObj.id
+                    },
+                    order: [
+                        ['createdAt', 'DESC']
+                    ]
+                })
+                if(meta.length) {
+                    const formValues = meta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                        
+                        for (var key in x) {
+                            if(!acc[key])
+                                acc[key] = x[key]
+                        };
+                        return acc;
+                    }, {});
+                    let fieldEntered = 0
+                    sections[key].fields.forEach( field => {
+                        console.log(formValues[field],'==>', field);
+                       if(formValues[field]) {
+                           fieldEntered++
+                       }
+                    });
+                    const secComltd = (sections[key].weightage/sections[key].fieldCount) * fieldEntered
+                    console.log(key,'=------',fieldEntered);
+                    profileCompleted = profileCompleted + secComltd;
+                } else {
+                    profileCompleted = profileCompleted + 0
+                }
+                    
+            }
+            resolve(Math.ceil(profileCompleted))
+            
+        } catch (error) {
+            console.log(error);
+            resolve(0)
+        }
+    })
+}
+
 module.exports = {
     encryptStr,
     decryptStr,
@@ -712,5 +786,6 @@ module.exports = {
     getLoginToken,
     invalidateTokens,
     sendWelcomeEmail,
-    sendResetPassowrdLink
+    sendResetPassowrdLink,
+    calculateProfileCompletion
 }

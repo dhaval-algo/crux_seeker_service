@@ -14,6 +14,8 @@ router.post('/resend-verification-link',authenticateJWT, userService.resendVerif
 router.post('/verify-account', userService.verifyAccount);
 router.post('/forgot-password', userService.forgotPassword);
 router.post('/reset-password', userService.resetPassword);
+router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
+
 
 //require.post()
 module.exports = router;            
