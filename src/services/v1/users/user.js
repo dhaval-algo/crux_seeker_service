@@ -336,7 +336,14 @@ const signInUser = async (resData) => {
             if (!credVerificationRes.success) {
                 return resolve(credVerificationRes);
             }
-            const tokenRes = getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
+            const payload = {
+                requestFieldMetaType: "primary",
+                requestFields: ["firstName", "lastName"],
+                user:verificationRes.data.user
+            }
+
+            let resForm = await fetchFormValues(payload)
+            const tokenRes = getLoginToken({ ...verificationRes.data.user,...resForm.data.requestFieldValues, audience: resData.audience, provider: resData.provider });
             return resolve(tokenRes);
         } catch (error) {
             console.log(error);
