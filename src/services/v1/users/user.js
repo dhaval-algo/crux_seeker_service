@@ -9,7 +9,8 @@ const {
     invalidateTokens,
     sendWelcomeEmail ,
     sendResetPassowrdLink,
-    encryptStr
+    encryptStr,
+    calculateProfileCompletion
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -821,6 +822,18 @@ const resetPassword = async (req,res) => {
         })
     }  
 }
+
+const getProfileProgress = async (req,res) => {
+    const { user } = req
+console.log(req.user);
+    const profileRes = await calculateProfileCompletion(user)
+    return res.status(200).json({
+        success:true,
+        data: {
+            profileProgress:profileRes
+        }
+    })
+}
 module.exports = {
     login,
     verifyOtp,
@@ -831,5 +844,6 @@ module.exports = {
     resendVerificationLink,
     verifyAccount,
     resetPassword,
-    forgotPassword
+    forgotPassword,
+    getProfileProgress
 }
