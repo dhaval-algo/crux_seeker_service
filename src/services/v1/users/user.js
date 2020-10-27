@@ -25,14 +25,23 @@ const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
 const { stringify } = require("querystring");
+const eventEmitter = require("../../../utils/subscriber");
 const SEND_OTP = !!process.env.SEND_OTP;
 const signToken = require('../auth/auth').signToken;
 
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 
+// note that all your subscribers must be imported somewhere in the app, so they are getting registered
+// on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
+
+
+  const eventEmitter1 =   require('../../../utils/subscriber');
+
 const login = async (req, res, next) => {
     try {
+        console.log(eventEmitter1);
+        eventEmitter1.emit("testevent");
         const body = req.body;
         const audience = req.headers.origin;
         const { username = "", password = "" } = body;

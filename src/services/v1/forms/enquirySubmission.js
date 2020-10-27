@@ -2,6 +2,7 @@ const models = require("../../../../models");
 const { FORM_TYPE_SOURCE, DEFAULT_CODES, USER_STATUS, USER_TYPE } = require('../../../utils/defaultCode')
 const { getLoginToken, calculateProfileCompletion } = require('../../../utils/helper')
 const Sequelize = require('sequelize');
+const eventEmitter = require("../../../utils/subscriber");
 const Op = Sequelize.Op;
 const handleEnquirySubmission = async (resBody, req) => {
     const { formTypeSource } = resBody;
@@ -65,9 +66,10 @@ const handleCallBackEnquiry = (resBody, req) => {
             form_submission_values = resMeta.map((meta) => { return { objectId: meta.id, objectType: 'user_meta', userId: userObj.userId, formSubmissionId: formSub.id } })
             //entries in form_submission_values
             const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
-            if (!user.userId) {
-                const tokenRes = await getLoginToken({ ...userObj, audience: req.headers.origin || "" });
-                tokenRes.code = DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code;
+            eventEmitter.emit('enquiry_placed',formSub.id)
+            if(!user.userId) {
+                const tokenRes = await getLoginToken({ ...userObj, audience: req.headers.origin ||"" });
+                tokenRes.code =DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code;
                 tokenRes.message = DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.message
                 return resolve(tokenRes)
             }
@@ -94,11 +96,12 @@ const handleCallBackEnquiry = (resBody, req) => {
 
 const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
-        const { user, targetEntityType, targetEntityId, otherInfo = { ...req.useragent }, formData, formType, formTypeSource, actionType, updateProfile } = resBody;
+        const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
         let { formSubmissionId } = resBody;
-        let userObj = { ...user };
-        if (!targetEntityType || !targetEntityId) {
-            return resolve({ success: false, code: DEFAULT_CODES.FAILED_ENQUIRY.code, message: DEFAULT_CODES.FAILED_ENQUIRY.message })
+        insertInCRM = !!lastStep
+        let userObj = {...user};
+        if(!targetEntityType || !targetEntityId) {
+           return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
         }
 
         try {
@@ -135,6 +138,9 @@ const handleGeneralEnquiry = (resBody, req) => {
                 const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
                 if(updateProfile) {
                     updateProfileMeta(formData, userObj)
+                }
+                if(insertInCRM) {
+                    eventEmitter.emit('enquiry_placed',formSubmissionId)
                 }
                 return resolve({
                     success: true,
@@ -242,8 +248,8 @@ const updateProfileMeta = (formData, userObj) => {
 const fetchFormValues = (reqBody) => {
     return new Promise(async (resolve, reject) => {
 
-        const { requestFieldMetaType = "", requestFields = [], user } = reqBody;
-        if (requestFields.length) {
+        const { requestFieldMetaType="", requestFields = [], user } = reqBody;
+        if(requestFields.length) {
             let where = {
                 userId: user.userId,
                 key: { [Op.in]: requestFields },
@@ -268,7 +274,6 @@ const fetchFormValues = (reqBody) => {
                 }
             })
         } else {
-            console.log("here");
             resolve({
                 success: false,
                 data: {
