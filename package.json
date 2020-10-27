@@ -8,6 +8,8 @@
     "axios": "^0.20.0",
     "base64url": "^3.0.1",
     "bcrypt": "^5.0.0",
+    "@elastic/elasticsearch": "^7.9.1",
+    "aws-elasticsearch-connector": "^9.0.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "cryptr": "^6.0.2",
@@ -32,7 +34,9 @@
     "sequelize-cli": "^5.5.1"
   },
   "devDependencies": {
-    "sequelize-cli": "^6.2.0"
+    "sequelize-cli": "^6.2.0",
+    "node-fetch": "^2.6.1",
+    "nodemon": "^2.0.4"
   },
   "scripts": {
     "staging": "NODE_ENV=staging node server.js",

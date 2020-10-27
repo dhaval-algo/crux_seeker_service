@@ -25,6 +25,8 @@ app.use(upload.array());
 app.use(express.json());
 app.use(cors({ origin: true }));
 
+app.use("/api", require("./src/api/routes"));
+
 // Set up routes
 routes.init(app);
 //start server
