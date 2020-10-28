@@ -581,6 +581,77 @@ module.exports = class learnContentService {
     }
 
 
+
+    async getCourseByIds(req, callback){
+        let courses = [];
+        let ids = [];
+        if(req.query['ids']){
+            ids = req.query['ids'].split(",");
+        }
+        if(ids.length > 0){
+            const queryBody = {
+                "query": {
+                  "ids": {
+                      "values": ids
+                  }
+                }
+            };
+            const result = await elasticService.plainSearch('learn-content', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        const course = await this.generateSingleViewData(hit._source);
+                        courses.push(course);
+                    }
+                }
+            }
+        }
+        callback(null, {status: 'success', message: 'Fetched successfully!', data: courses});
+    }
+
+    async getCourseOptionByCategories(req, callback){
+        let courses = [];
+        let categories = [];
+        if(req.query['categories']){
+            categories = req.query['categories'].split(",");
+        }
+        console.log("Categories <> ", categories);
+
+        if(categories.length > 0){
+            const queryBody = {
+                "query": {
+                    "bool": {
+                        "must": [
+                          {
+                            "term": {
+                              "status.keyword": "published"
+                            }
+                          }
+                        ],
+                        "filter": [
+                            {                              
+                              "terms": {
+                                  "categories.keyword": categories
+                              }
+                            }
+                          ]
+                    }
+                }
+            };
+            const result = await elasticService.plainSearch('learn-content', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    //console.log("result.hits.hits <> ", result.hits.hits);
+                    courses = result.hits.hits.map(function(obj) {
+                        return {"label": obj['_source']['title'], "value": `LRN_CNT_PUB_${obj['_source']['id']}`};
+                      });
+                }
+            }
+        }
+        callback(null, {status: 'success', message: 'Fetched successfully!', data: courses});
+    }
+
+
     async generateSingleViewData(result, isList = false){
 
         let effort = null;
@@ -596,7 +667,7 @@ module.exports = class learnContentService {
         let data = {
             title: result.title,
             slug: result.slug,
-            id: `LRN_CNT_PUB__${result.id}`,
+            id: `LRN_CNT_PUB_${result.id}`,
             subtitle: result.subtitle,
             provider: {
                 name: result.provider_name,
