@@ -715,7 +715,7 @@ const calculateProfileCompletion =  (userObj) => {
                 "education": {
                     weightage:25,
                     fieldCount:5,
-                    fields: ["institute","degree", "specialization", "graduationYear", "grade"]
+                    fields: ["instituteName","degree", "specialization", "graduationYear", "grade"]
                 },
                 "work_experience":{
                     weightage:25,
