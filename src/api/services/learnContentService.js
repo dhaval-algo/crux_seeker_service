@@ -382,9 +382,9 @@ module.exports = class learnContentService {
         }
 
 
-       /*  queryPayload.sort = {
+        /* queryPayload.sort = {
             "average_rating": {
-                "unmapped_type": "float",
+                "type": "float",
                 "order": "desc"
             }
         }; */
@@ -559,7 +559,7 @@ module.exports = class learnContentService {
 
 
     async getCategories(callback){
-        let categories = [];
+        let categories = [];       
 
         const queryBody = {
             "query": {
@@ -602,6 +602,7 @@ module.exports = class learnContentService {
 
     async getCourseByIds(req, callback){
         let courses = [];
+        let courseOrdered = [];
         let ids = [];
         if(req.query['ids']){
             ids = req.query['ids'].split(",");
@@ -614,6 +615,7 @@ module.exports = class learnContentService {
                   }
                 }
             };
+
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
@@ -621,10 +623,14 @@ module.exports = class learnContentService {
                         const course = await this.generateSingleViewData(hit._source);
                         courses.push(course);
                     }
+                    for(const id of ids){
+                        let course = courses.find(o => o.id === id);
+                        courseOrdered.push(course);
+                    }
                 }
-            }
+            }            
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: courses});
+        callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
     }
 
     async getCourseOptionByCategories(req, callback){
