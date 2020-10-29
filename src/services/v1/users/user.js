@@ -892,6 +892,27 @@ const removeCourseFromWishList = async (req,res) => {
     })
 }
 
+const fetchWishListIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['course_wishlist'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let wishedList = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            courses:wishedList
+        }
+    })
+}
+
 
 module.exports = {
     login,
@@ -907,5 +928,6 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
-    removeCourseFromWishList
+    removeCourseFromWishList,
+    fetchWishListIds
 }
