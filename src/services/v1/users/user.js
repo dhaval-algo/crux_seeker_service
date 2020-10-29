@@ -832,7 +832,6 @@ const resetPassword = async (req,res) => {
 
 const getProfileProgress = async (req,res) => {
     const { user } = req
-console.log(req.user);
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({
         success:true,
@@ -841,6 +840,47 @@ console.log(req.user);
         }
     })
 }
+
+const getCourseWishlist = async (req,res) => {
+    const { user } = req
+    const { limit = 10, search, page, orderBy="DESC" } = req.query
+    
+    const offset = (page -1) * limit
+    const order = [
+        ['createdBy', orderBy.toUpperCase()]
+    ]
+    const payload = {
+        requestFields: ["course_wishlist"],
+        user,
+        where: {
+            order,
+            limit,
+            offset  
+        }
+    }
+
+    let resForm = await fetchFormValues(payload)
+    return res.status(200).json({
+        success:true,
+        data: {
+            courses:resForm
+        }
+    })
+}
+
+const addCourseToWishList = (req,res) => {
+    const { user} = req;
+    const {courseId} = req.body
+    const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -852,5 +892,7 @@ module.exports = {
     verifyAccount,
     resetPassword,
     forgotPassword,
-    getProfileProgress
+    getProfileProgress,
+    getCourseWishlist,
+    addCourseToWishList
 }
