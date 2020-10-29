@@ -868,6 +868,18 @@ const getCourseWishlist = async (req,res) => {
     })
 }
 
+const addCourseToWishList = (req,res) => {
+    const { user} = req;
+    const {courseId} = req.body
+    const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
 
 module.exports = {
     login,
