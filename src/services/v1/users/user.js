@@ -880,6 +880,18 @@ const addCourseToWishList = async (req,res) => {
     })
 }
 
+const removeCourseFromWishList = async (req,res) => {
+    const { user} = req;
+    const {courseId} = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
 
 module.exports = {
     login,
@@ -894,5 +906,6 @@ module.exports = {
     forgotPassword,
     getProfileProgress,
     getCourseWishlist,
-    addCourseToWishList
+    addCourseToWishList,
+    removeCourseFromWishList
 }

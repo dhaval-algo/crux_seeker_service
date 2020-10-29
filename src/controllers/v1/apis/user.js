@@ -16,6 +16,7 @@ router.post('/forgot-password', userService.forgotPassword);
 router.post('/reset-password', userService.resetPassword);
 router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
 router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList);
+router.post('/remove-from-wishlist',authenticateJWT, userService.removeCourseFromWishList);
 
 
 //require.post()
