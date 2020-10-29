@@ -715,7 +715,7 @@ const calculateProfileCompletion =  (userObj) => {
                 "education": {
                     weightage:25,
                     fieldCount:5,
-                    fields: ["institute","degree", "specialization", "graduationYear", "grade"]
+                    fields: ["instituteName","degree", "specialization", "graduationYear", "grade"]
                 },
                 "work_experience":{
                     weightage:25,
@@ -753,13 +753,17 @@ const calculateProfileCompletion =  (userObj) => {
                     }, {});
                     let fieldEntered = 0
                     sections[key].fields.forEach( field => {
-                        console.log(formValues[field],'==>', field);
                        if(formValues[field]) {
                            fieldEntered++
                        }
                     });
-                    const secComltd = (sections[key].weightage/sections[key].fieldCount) * fieldEntered
-                    console.log(key,'=------',fieldEntered);
+                    let fieldCount = sections[key].fieldCount
+                    if(key =="work_experience" && formValues['experience']){
+                        if (JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
+                            fieldCount = 1
+                        }
+                    }
+                    const secComltd = (sections[key].weightage/fieldCount) * fieldEntered
                     profileCompleted = profileCompleted + secComltd;
                 } else {
                     profileCompleted = profileCompleted + 0
