@@ -945,6 +945,7 @@ const wishListCourseData = async (req,res) => {
         return res.status(200).json({
             success:true,
             data: {
+                ids:wishedListIds,
                 courses:courses
             }
         })
