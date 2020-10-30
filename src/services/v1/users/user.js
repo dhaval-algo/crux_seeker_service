@@ -924,7 +924,15 @@ const wishListCourseData = async (req,res) => {
             where
         })
         let wishedListIds = resForm.map((rec) => rec.value)
-        
+        if(!wishedListIds.length) {
+            return res.status(200).json({
+                success:true,
+                data: {
+                    ids:wishedListIds,
+                    courses:[]
+                }
+            })
+        }
         let queryBody = {
             "query": {
               "ids": {
@@ -951,6 +959,14 @@ const wishListCourseData = async (req,res) => {
                     courses.push(course);
                 }
             }
+        } else {
+            return res.status(200).json({
+                success:true,
+                data: {
+                    ids:wishedListIds,
+                    courses:[]
+                }
+            })
         }
         return res.status(200).json({
             success:true,
