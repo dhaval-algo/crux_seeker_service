@@ -937,6 +937,8 @@ const wishListCourseData = async (req,res) => {
 
         if(searchStr){ 
             queryBody.query.match_phrase["title"]=searchStr
+        }else {
+            delete queryBody.query.match_phrase
         }
 
         console.log(queryBody);
