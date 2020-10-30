@@ -913,7 +913,7 @@ const wishListCourseData = async (req,res) => {
         
         console.log('--------------------------------------------');
         const { user } = req
-        
+        const {searchStr} = req.query
         let where = {
             userId: user.userId,
             key: { [Op.in]: ['course_wishlist'] },
@@ -925,13 +925,21 @@ const wishListCourseData = async (req,res) => {
         })
         let wishedListIds = resForm.map((rec) => rec.value)
         
-        const queryBody = {
+        let queryBody = {
             "query": {
               "ids": {
                   "values": wishedListIds
-              }
+              },
+              "match_phrase":{}
             }
         };
+
+
+        if(searchStr){ 
+            queryBody.query.match_phrase["title"]=searchStr
+        }
+
+        console.log(queryBody);
         const result = await elasticService.plainSearch('learn-content', queryBody);
         let courses = []
         if(result.hits){
@@ -950,6 +958,7 @@ const wishListCourseData = async (req,res) => {
             }
         })
     } catch (error) {
+        console.log(error);
             return res.status(500).send({error,success:false})
     }
 }
