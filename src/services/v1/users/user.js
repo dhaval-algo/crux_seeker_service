@@ -14,7 +14,6 @@ const {
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
-const b64 = require("base64url");
 const bcrypt = require('bcrypt');
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
@@ -24,11 +23,9 @@ const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
-const { stringify } = require("querystring");
-const eventEmitter = require("../../../utils/subscriber");
 const SEND_OTP = !!process.env.SEND_OTP;
-const signToken = require('../auth/auth').signToken;
-
+const learnContentService = require("../../../api/services/learnContentService");
+let LearnContentService = new learnContentService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 
@@ -36,12 +33,10 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
 
 
-  const eventEmitter1 =   require('../../../utils/subscriber');
+const elasticService = require("../../../api/services/elasticService");
 
 const login = async (req, res, next) => {
     try {
-        console.log(eventEmitter1);
-        eventEmitter1.emit("testevent");
         const body = req.body;
         const audience = req.headers.origin;
         const { username = "", password = "" } = body;
@@ -892,6 +887,72 @@ const removeCourseFromWishList = async (req,res) => {
     })
 }
 
+const fetchWishListIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['course_wishlist'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let wishedList = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            courses:wishedList
+        }
+    })
+}
+
+const wishListCourseData = async (req,res) => {
+    try {
+        
+        console.log('--------------------------------------------');
+        const { user } = req
+        
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['course_wishlist'] },
+        }
+        
+        let resForm = await models.user_meta.findAll({
+            attributes:['value'],
+            where
+        })
+        let wishedListIds = resForm.map((rec) => rec.value)
+        
+        const queryBody = {
+            "query": {
+              "ids": {
+                  "values": wishedListIds
+              }
+            }
+        };
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        let courses = []
+        if(result.hits){
+            if(result.hits.hits && result.hits.hits.length > 0){
+                for(const hit of result.hits.hits){
+                    const course = await LearnContentService.generateSingleViewData(hit._source);
+                    courses.push(course);
+                }
+            }
+        }
+        return res.status(200).json({
+            success:true,
+            data: {
+                courses:courses
+            }
+        })
+    } catch (error) {
+            return res.status(500).send({error,success:false})
+    }
+}
+
 
 module.exports = {
     login,
@@ -907,5 +968,7 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
-    removeCourseFromWishList
+    removeCourseFromWishList,
+    fetchWishListIds,
+    wishListCourseData
 }
