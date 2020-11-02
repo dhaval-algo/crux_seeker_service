@@ -372,7 +372,7 @@ module.exports = class learnContentService {
 
         if(req.query['sort']){
             console.log("Sort requested <> ", req.query['sort']);
-            const keywordFields = ['title', 'average_rating_actual'];
+            const keywordFields = ['title'];
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             if(keywordFields.includes(splitSort[0])){
@@ -700,6 +700,7 @@ module.exports = class learnContentService {
             instructors: [],
             cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
             cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+            embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
             what_will_learn: (!isList) ? result.what_will_learn : null,
