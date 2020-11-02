@@ -675,7 +675,7 @@ const sendWelcomeEmail  = (userObj) => {
     })
 }
 
-const sendResetPassowrdLink = (userObj, useQueue) => {
+const sendResetPasswordLink = (userObj, useQueue) => {
     return new Promise(async (resolve, reject) => {
         try {
             let tokenRes = await createToken(userObj, TOKEN_TYPES.RESETPASSWORD)
@@ -791,6 +791,6 @@ module.exports = {
     getLoginToken,
     invalidateTokens,
     sendWelcomeEmail,
-    sendResetPassowrdLink,
+    sendResetPasswordLink,
     calculateProfileCompletion
 }
