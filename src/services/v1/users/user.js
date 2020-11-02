@@ -8,7 +8,7 @@ const {
     getLoginToken,
     invalidateTokens,
     sendWelcomeEmail ,
-    sendResetPassowrdLink,
+    sendResetPasswordLink,
     encryptStr,
     calculateProfileCompletion
 } = require("../../../utils/helper");
@@ -761,7 +761,7 @@ const forgotPassword = async (req,res) => {
     }
     //generate reset token
     userRes.data.user['audience'] = req.headers.origin || "";
-    const resetLink = await sendResetPassowrdLink(userRes.data.user, false)
+    const resetLink = await sendResetPasswordLink(userRes.data.user, false)
 
     res.status(200).json({
         success:true
