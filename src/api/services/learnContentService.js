@@ -372,7 +372,7 @@ module.exports = class learnContentService {
 
         if(req.query['sort']){
             console.log("Sort requested <> ", req.query['sort']);
-            const keywordFields = ['title', 'average_rating_actual'];
+            const keywordFields = ['title'];
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             if(keywordFields.includes(splitSort[0])){
