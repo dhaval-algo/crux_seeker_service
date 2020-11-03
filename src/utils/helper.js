@@ -112,7 +112,6 @@ const verifyLinkedInToken = async (resData) => {
                     data: { provider: resData.provider }
                 })
             }
-            let fullName = userProfileRes.data.localizedFirstName + " " + userProfileRes.data.localizedLastName
 
             return resolve({
                 code: DEFAULT_CODES.VALID_TOKEN.code,
@@ -121,7 +120,8 @@ const verifyLinkedInToken = async (resData) => {
                 data: {
                     email: userEmailRes.data.elements[0]['handle~'].emailAddress || "",
                     username: userEmailRes.data.elements[0]['handle~'].emailAddress,
-                    fullName: fullName,
+                    firstName: userProfileRes.data.localizedFirstName,
+                    lastName:userProfileRes.data.localizedLastName,
                     phone: '',
                     provider: LOGIN_TYPES.LINKEDIN
                 }
@@ -156,7 +156,7 @@ const verifyGoogleToken = async (tokenId) => {
             email: payload.email || "",
             username: payload.email,
             phone: "",
-            fullName: payload.name,
+            firstName: payload.name,
             provider: LOGIN_TYPES.GOOGLE
         }
     }
@@ -386,79 +386,77 @@ const handleLocalSignUP = async (userObj) => {
 }
 
 const handleSocialSignUp = (userObj) => {
+    const { tokenPayload = {} } = userObj
+    // return ({success:false})
     return new Promise(async (resolve, reject) => {
-        let userId
+        let { userId, userType } = tokenPayload;
         try {
-            let colName = "email";
-            if (!isEmail(userObj.username)) {
-                colName = "phone";
-            }
-            const user = await models.user_login.findOne({
-                where: {
-                    [colName]: userObj.username
+            // return resolve({success:false})
+           
+            if (userId && userType) {
+                if (userType == USER_TYPE.GUEST) {
+                    await models.user.update(
+                        {
+                            userType: USER_TYPE.REGISTERED,
+                            status: USER_STATUS.ACTIVE,
+                            verified:true
+                        },
+                        {
+                            where: { id: userId }
+                        }
+                    )
                 }
-            })
-            // if (tokenPayload) {
-            //     if (tokenPayload.userType == USER_TYPE.GUEST) {
-            //         userId = tokenPayload.userId;
-            //         await models.user.update(
-            //             {
-            //                 userType: USER_TYPE.REGISTERED,
-            //                 status: USER_STATUS.ACTIVE
-            //             },
-            //             {
-            //                 where: { id: userId }
-            //             }
-            //         )
-            //     }
 
-            // } else {
-            //     const newUser = await models.user.create({
-            //         status: USER_STATUS.ACTIVE,
-            //         userType: USER_TYPE.REGISTERED,
-            //         verified: userObj.verified || false
-            //     })
-            //     userId = newUser.id
-            // }
-            // const userMeta = userObj.userMeta.filter((f) => { return f['userId'] = userId })
-            // await createUserMeta(userMeta)
-            await createUserLogin([
-                {
-                    userId: user.id,
-                    email: userObj.username || userObj.email || "",
-                    password: userObj.password || null,
-                    phone: userObj.phone || null,
-                    provider: userObj.provider,
-                    providerId: userObj.providerId || null,
-                    providerData: userObj.providerData || {},
-                },
-                // {
-                //     userId,
-                //     email: userObj.username || userObj.email || "",
-                //     password: userObj.password || null,
-                //     phone: userObj.phone || null,
-                //     provider: LOGIN_TYPES.LOCAL,
-                //     providerId: null,
-                //     providerData: {},
-                // }
+            } else {
+                const newUser = await models.user.create({
+                    status: USER_STATUS.ACTIVE,
+                    userType: USER_TYPE.REGISTERED,
+                    verified: true
+                })
+                userId = newUser.id
+            }
+            await createUserMeta([
+                {value:userObj.firstName, key:"firstName", metaType:"primary", userId},
+                {key:"lastName", value:userObj.lastName || null, metaType:"primary", userId},
+                {key:"email",value:userObj.email, metaType:"primary", userId}
             ])
-
+            await createUserLogin([{
+                userId,
+                email: userObj.username || userObj.username || "",
+                password: null,
+                phone: userObj.phone || null,
+                provider: LOGIN_TYPES.LOCAL,
+                providerId: null,
+                providerData: {},
+            },
+            {
+                provider:userObj.provider,
+                providerId: userObj.providerId || null,
+                userId: userId,
+                email: userObj.email || userObj.username,
+                providerData: userObj.providerData || {}
+            }])
+            
             return resolve({
                 success: true,
                 code: DEFAULT_CODES.USER_CREATED.code,
                 message: DEFAULT_CODES.USER_CREATED.message,
                 data: {
                     user: {
+                        name: userObj.firstName || "",
                         username: userObj.username,
                         userId,
-                        email: userObj.email,
-                        phone: userObj.phone,
+                        email: userObj.username || userObj.email,
+                        phone: userObj.phone || null,
                         userType: USER_TYPE.REGISTERED,
-                        provider: userObj.provider
+                        provider: userObj.provider,
+                        isVerified: true
                     }
                 }
             })
+
         } catch (error) {
+            console.log(error);
             return resolve({
                 success: false,
                 code: DEFAULT_CODES.SYSTEM_ERROR.code,
@@ -467,7 +465,6 @@ const handleSocialSignUp = (userObj) => {
                 }
             })
         }
-
     })
 }
 
@@ -574,6 +571,50 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
         }
     })
 
+}
+
+/**
+ * Checks if user is verified
+ * if not verified verifies the user.
+ * delete verification tokens
+ * check if social provider rec present if not creates
+ * @param {*} userObject 
+ * @param {*} provider 
+ */
+const createSocialEntryIfNotExists = (userObject,provider) => {
+    return new Promise(async (resolve) => {
+        try {
+            const providerRec = await models.user_login.findOne({
+                where:{
+                    provider:provider,
+                    userId:userObject.userId || userObject.id
+                }
+            })
+            if(!providerRec) {
+                let providerObj = {
+                    provider,
+                    providerId: userObject.providerId || null,
+                    userId: userObject.userId || userObject.id,
+                    email: userObject.email || userObject.username,
+                    providerData: userObject.providerData || {}
+                }
+                await createUserLogin([providerObj])
+            }
+           
+            if(!userObject.verified) {
+                await models.user.update({verified:true}, {
+                    where: {
+                        id:userObject.userId || userObject.id
+                    }
+                })
+               await invalidateTokens(userObject)
+            }
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+            resolve(false)
+        }
+    })
 }
 /* 
     * Generate Token for login session
@@ -792,5 +833,6 @@ module.exports = {
     invalidateTokens,
     sendWelcomeEmail,
     sendResetPasswordLink,
-    calculateProfileCompletion
+    calculateProfileCompletion,
+    createSocialEntryIfNotExists
 }
