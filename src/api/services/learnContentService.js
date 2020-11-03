@@ -688,6 +688,12 @@ module.exports = class learnContentService {
             coverImageSize = 'thumbnail';
         }
 
+        for(let i=0; i<result.reviews.length; i++){
+            if(result.reviews[i]['reviewer_name'] == 'Other'){
+                result.reviews.splice(i, 1);
+            }
+        }
+
         let data = {
             title: result.title,
             slug: result.slug,
@@ -746,6 +752,9 @@ module.exports = class learnContentService {
         if(!isList){
             if(result.instructors && result.instructors.length > 0){
                 for(let instructor of result.instructors){
+                    if(instructor.name == 'Other'){
+                        continue;
+                    }
                     if(instructor.instructor_image){
                         instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
                     }
@@ -812,18 +821,33 @@ module.exports = class learnContentService {
         if(data.course_details.topics == 'Others'){
             data.course_details.topics = null;
         }
-        if(data.course_details.medium == 'Not Specified'){
+        if(data.course_details.medium == 'Others'){
             data.course_details.medium = null;
         }
-        if(data.course_details.instruction_type == 'Not Specified'){
+        if(data.course_details.instruction_type == 'Others'){
             data.course_details.instruction_type = null;
         }
-        if(data.course_details.language == 'Not Specified'){
+        if(data.course_details.language == 'Others'){
             data.course_details.language = null;
         }
-        if(data.course_details.pricing.pricing_type == 'Not_Specified'){
+        if(data.course_details.pricing.pricing_type == 'Others'){
             data.course_details.pricing.pricing_type = null;
-        }        
+        }
+        if(data.content == "Dummy content."){
+            data.content = null;
+        }
+        if(data.skills && data.skills.length > 0){
+            for(let i=0; i<data.skills.length; i++){
+                if(data.skills[i] == 'Others'){
+                    data.skills.splice(i, 1);
+                }
+            }
+        }
+        
+        
+
+
+
         return data;
     }
 
@@ -831,7 +855,7 @@ module.exports = class learnContentService {
 
     async generateListViewData(rows){
         let datas = [];
-        for(const row of rows){
+        for(let row of rows){
             const data = await this.generateSingleViewData(row._source, true);
             datas.push(data);
         }
