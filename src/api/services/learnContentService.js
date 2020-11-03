@@ -715,9 +715,11 @@ module.exports = class learnContentService {
             content: (!isList) ? result.content : null,
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
-                duration: calculateDuration(result.total_duration_in_hrs), 
+                duration: calculateDuration(result.total_duration_in_hrs),
+                total_duration_unit: result.total_duration_unit, 
                 effort: effort,
                 total_video_content: result.total_video_content_in_hrs,
+                total_video_content_unit: result.total_video_content_unit,
                 language: result.languages.join(", "),
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
                 level: (result.level) ? result.level : null,
@@ -736,7 +738,11 @@ module.exports = class learnContentService {
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
                     free_condition_description: result.free_condition_description,
-                    conditional_price: result.conditional_price
+                    conditional_price: result.conditional_price,
+                    pricing_additional_details: result.pricing_additional_details,
+                    course_financing_options: result.course_financing_options,
+                    finance_option: result.finance_option,
+                    finance_details: result.finance_details
                 }                
             },
             provider_course_url: result.provider_course_url,
@@ -746,8 +752,54 @@ module.exports = class learnContentService {
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
-            }
+            },
+            live_class: result.live_class,
+            human_interaction: result.human_interaction,
+            personalized_teaching: result.personalized_teaching,
+            post_course_interaction: result.post_course_interaction,
+            international_faculty: result.international_faculty,
+            batches: [],
+            enrollment_start_date: result.enrollment_start_date,
+            enrollment_end_date: result.enrollment_end_date,
+            hands_on_training: {
+                learning_mediums: result.learning_mediums,
+                virtual_labs: result.virtual_labs,
+                case_based_learning: result.case_based_learning,
+                assessments: result.assessments,
+                capstone_project: result.capstone_project
+            },
+            placement: {
+                internship: result.internship,
+                job_assistance: result.job_assistance,
+                alumni_network: result.alumni_network,
+                placements: (result.placements) ? result.placements : [],
+                average_salary: result.average_salary,
+                highest_salary: result.highest_salary
+            },
+            corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
+            accreditations: (result.accreditations) ? result.accreditations : []
         };
+
+        if(!isList){
+            data.meta_information = {
+                meta_title: result.meta_title,
+                meta_description: result.meta_description,
+                meta_keywords: result.meta_keywords,
+                add_type: result.add_type,
+                import_source: result.import_source,
+                external_source_id: result.external_source_id,
+                application_seat_ratio: result.application_seat_ratio,
+                bounce_rate: result.bounce_rate,
+                completion_ratio: result.completion_ratio,
+                enrollment_ratio: result.enrollment_ratio,
+                faculty_student_ratio: result.faculty_student_ratio,
+                gender_diversity: result.gender_diversity,
+                student_stream_diversity: result.student_stream_diversity,
+                student_nationality_diversity: result.student_nationality_diversity,
+                average_salary_hike: result.average_salary_hike,
+                instructor_citations: result.instructor_citations
+            }
+        }
 
         if(!isList){
             if(result.instructors && result.instructors.length > 0){
