@@ -1005,7 +1005,8 @@ const wishListCourseData = async (req,res) => {
 
 // fetch list of the enquires
 const getEnquiryList = async (req,res) => {
-    let { limit=5, page=0 } = req.query;
+    try {
+        let { limit=5, page=0 } = req.query;
     const { user } = req;
     let offset = page * limit
     const count = await models.form_submission.findAll({
@@ -1022,14 +1023,17 @@ const getEnquiryList = async (req,res) => {
         order: sequelize.literal('count DESC')
         
       });
-    //fetch enquiries
-    let enquiryRecs = await models.form_submission.findAll({ 
-        attributes: ['targetEntityId','otherInfo','createdAt'],
-        where :{ userId:user.userId || user.id, targetEntityType:"course"},
-        limit,
-        offset
-    })
-    // no enquiries return
+      //fetch enquiries
+      let   where = { userId:user.userId || user.id, targetEntityType:"course"}
+      if(offset) {
+          where['offset'] = offset
+      }
+      let enquiryRecs = await models.form_submission.findAll({ 
+          attributes: ['targetEntityId','otherInfo','createdAt'],
+          where :{ userId:user.userId || user.id, targetEntityType:"course"},
+          limit
+        })
+        // no enquiries return
     if(!enquiryRecs.length) {
         return res.status(200).send({
             success:true,
@@ -1055,7 +1059,6 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
-        console.log(queryBody);
         const result = await elasticService.plainSearch('learn-content', queryBody);
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
@@ -1076,6 +1079,17 @@ const getEnquiryList = async (req,res) => {
         }
     })
     //build res
+    } catch (error) {
+        console.log(error);
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    
 }
 
 module.exports = {
