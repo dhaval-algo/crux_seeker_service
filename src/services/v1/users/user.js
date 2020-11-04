@@ -1044,6 +1044,7 @@ const getEnquiryList = async (req,res) => {
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
                     enquiry.courseName = hit._source.title
+                    enquiry.categoryName = hit._source.category.toString()
                 }
             }
         }
