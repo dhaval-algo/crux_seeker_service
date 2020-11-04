@@ -1009,7 +1009,7 @@ const getEnquiryList = async (req,res) => {
         offset
     })
     // no enquiries return
-    if(!enquiryRecs) {
+    if(!enquiryRecs.length) {
         return res.status(200).send({
             success:true,
             data:{
@@ -1032,9 +1032,9 @@ const getEnquiryList = async (req,res) => {
               "ids": {
                   "values": [enquiryRecs[key].targetEntityId]
               },
-              "match_phrase":{}
             }
         };
+        console.log(queryBody);
         const result = await elasticService.plainSearch('learn-content', queryBody);
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
