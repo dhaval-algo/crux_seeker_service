@@ -1075,7 +1075,7 @@ const getEnquiryList = async (req,res) => {
         success:true,
         data:{
             enquires:enquiriesDone,
-            count:count.count || 0
+            count:count[0].count
         }
     })
     //build res
