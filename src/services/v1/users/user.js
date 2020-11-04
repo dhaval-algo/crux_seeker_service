@@ -1066,16 +1066,16 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
-        // const result = await elasticService.plainSearch('learn-content', queryBody);
-        // if(result.hits){
-        //     console.log(result.hits.hits.length,'-------------------------------');
-        //     if(result.hits.hits && result.hits.hits.length > 0){
-        //         for(const hit of result.hits.hits){
-        //             enquiry.courseName = hit._source.title
-        //             enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
-        //         }
-        //     }
-        // }
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        if(result.hits){
+            console.log(result.hits.hits.length,'-------------------------------');
+            if(result.hits.hits && result.hits.hits.length > 0){
+                for(const hit of result.hits.hits){
+                    enquiry.courseName = hit._source.title
+                    enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                }
+            }
+        }
         enquiriesDone.push(enquiry);
     }
     //fetch course fron esatic
