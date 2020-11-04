@@ -35,6 +35,7 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 
 const elasticService = require("../../../api/services/elasticService");
+const { sequelize } = require("../../../../models");
 
 const login = async (req, res, next) => {
     try {
@@ -1002,6 +1003,74 @@ const wishListCourseData = async (req,res) => {
     }
 }
 
+// fetch list of the enquires
+const getEnquiryList = async (req,res) => {
+    let { limit=5, page=0 } = req.query;
+    const { user } = req;
+    let offset = page * limit
+    const count = await models.form_submission.findAll({
+	
+        attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
+        where:{
+            userId:user.userId || user.id,
+            targetEntityType:"course"
+        },
+        group : ['userId'],
+        
+        raw: true,
+        
+        order: sequelize.literal('count DESC')
+        
+      });
+    //fetch enquiries
+    let enquiryRecs = await models.form_submission.findAll({ 
+        attributes: ['targetEntityId','otherInfo','createdAt'],
+        where :{ userId:user.userId || user.id, targetEntityType:"course"},
+        limit,
+        offset
+    })
+    // no enquiries return
+    if(!enquiryRecs) {
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    const enquiriesDone = []
+
+    for (const key in enquiryRecs) {
+        let enquiry = {
+            sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
+            courseName:'',
+            categoryName:'',
+            createdAt:enquiryRecs[key].createdAt
+        }
+        
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        let courses = []
+        if(result.hits){
+            if(result.hits.hits && result.hits.hits.length > 0){
+                for(const hit of result.hits.hits){
+                    enquiry.courseName = hit._source.title
+                }
+            }
+        }
+        enquiriesDone.push(enquiry);
+    }
+    //fetch course fron esatic
+  
+    return res.status(200).send({
+        success:true,
+        data:{
+            enquires:enquiriesDone,
+            count:count.count || 0
+        }
+    })
+    //build res
+}
 
 module.exports = {
     login,
@@ -1019,5 +1088,6 @@ module.exports = {
     addCourseToWishList,
     removeCourseFromWishList,
     fetchWishListIds,
-    wishListCourseData
+    wishListCourseData,
+    getEnquiryList
 }
