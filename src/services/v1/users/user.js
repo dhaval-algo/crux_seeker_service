@@ -1053,7 +1053,7 @@ const getEnquiryList = async (req,res) => {
     return res.status(200).send({
         success:true,
         data:{
-            enquires:enquiriesDone,
+            enquiries:enquiriesDone,
             count:count[0].count
         }
     })
