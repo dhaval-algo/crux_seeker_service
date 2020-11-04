@@ -1027,9 +1027,15 @@ const getEnquiryList = async (req,res) => {
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt
         }
-        
+        let queryBody = {
+            "query": {
+              "ids": {
+                  "values": [enquiryRecs[key].targetEntityId]
+              },
+              "match_phrase":{}
+            }
+        };
         const result = await elasticService.plainSearch('learn-content', queryBody);
-        let courses = []
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
