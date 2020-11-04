@@ -1030,7 +1030,7 @@ const getEnquiryList = async (req,res) => {
       }
       let enquiryRecs = await models.form_submission.findAll({ 
           attributes: ['targetEntityId','otherInfo','createdAt'],
-          where :{ userId:user.userId || user.id, targetEntityType:"course"},
+          where :{ userId:user.userId || user.id, targetEntityType:"course",status:'submitted'},
           limit
         })
         // no enquiries return
