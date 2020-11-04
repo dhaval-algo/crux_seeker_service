@@ -713,6 +713,8 @@ module.exports = class learnContentService {
             target_students: (!isList) ? result.target_students : null,
             prerequisites: (!isList) ? result.prerequisites  : null,
             content: (!isList) ? result.content : null,
+            categories: (result.categories) ? result.categories : [],
+            sub_categories: (result.sub_categories) ? result.sub_categories : [],
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: calculateDuration(result.total_duration_in_hrs),
