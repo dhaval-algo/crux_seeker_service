@@ -15,6 +15,10 @@ router.post('/verify-account', userService.verifyAccount);
 router.post('/forgot-password', userService.forgotPassword);
 router.post('/reset-password', userService.resetPassword);
 router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
+router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList);
+router.post('/remove-from-wishlist',authenticateJWT, userService.removeCourseFromWishList);
+router.post('/fetch-wishlist',authenticateJWT, userService.fetchWishListIds);
+router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData)
 
 
 //require.post()

@@ -137,14 +137,32 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
         console.log("queryPayload <> ", queryPayload);
         const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.total && result.total.value > 0){
-            return formatFilters(result.hits, filterConfigs);
+            console.log("Main data length <> ", result.total.value);
+            return formatFilters(result.hits, filterConfigs, query);
         }else{
             return [];
         }
 };
 
-const formatFilters = async (data, filterData) => {
+const getInitialData = async (query) => {
+    delete query.bool['filter'];
+    for(let i=0; i<query.bool.must.length; i++){
+         if(query.bool.must[i]["range"]){
+                query.bool.must.splice(i, 1);
+        }
+    }    
+    const result = await elasticService.search('learn-content', query);
+    if(result.total && result.total.value > 0){
+        console.log("Initial data length <> ", result.total.value);
+        return result.hits;
+    }else{
+        return [];
+    }
+};
+
+const formatFilters = async (data, filterData, query) => {
     let filters = [];
+    const initialData = await getInitialData(query);
     for(const filter of filterData){
 
         let formatedFilters = {
@@ -169,14 +187,14 @@ const formatFilters = async (data, filterData) => {
 
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
-                const maxValue = getMaxValue(data, filter.elastic_attribute_name);
+                const maxValue = getMaxValue(initialData, filter.elastic_attribute_name);
                 if(maxValue <= 0){
                     continue;
                 }
                 formatedFilters.min = 0;
                 formatedFilters.max = maxValue;
                 formatedFilters.minValue = 0;
-                formatedFilters.maxValue = getMaxValue(data, filter.elastic_attribute_name);
+                formatedFilters.maxValue = maxValue;
             }
 
             if(filter.filter_type == 'RangeOptions'){
@@ -194,8 +212,8 @@ const getMaxValue = (data, attribute) => {
     let maxValue = 0;
     for(const esData of data){
         const entity = esData._source;
-        if(entity.regular_price > maxValue){
-            maxValue = entity.regular_price;
+        if(entity[attribute] > maxValue){
+            maxValue = entity[attribute];
         }
     }
     return maxValue;
@@ -354,7 +372,7 @@ module.exports = class learnContentService {
 
         if(req.query['sort']){
             console.log("Sort requested <> ", req.query['sort']);
-            const keywordFields = ['title', 'average_rating_actual'];
+            const keywordFields = ['title'];
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             if(keywordFields.includes(splitSort[0])){
@@ -364,9 +382,9 @@ module.exports = class learnContentService {
         }
 
 
-       /*  queryPayload.sort = {
+        /* queryPayload.sort = {
             "average_rating": {
-                "unmapped_type": "float",
+                "type": "float",
                 "order": "desc"
             }
         }; */
@@ -541,7 +559,7 @@ module.exports = class learnContentService {
 
 
     async getCategories(callback){
-        let categories = [];
+        let categories = [];       
 
         const queryBody = {
             "query": {
@@ -584,6 +602,7 @@ module.exports = class learnContentService {
 
     async getCourseByIds(req, callback){
         let courses = [];
+        let courseOrdered = [];
         let ids = [];
         if(req.query['ids']){
             ids = req.query['ids'].split(",");
@@ -596,6 +615,7 @@ module.exports = class learnContentService {
                   }
                 }
             };
+
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
@@ -603,10 +623,14 @@ module.exports = class learnContentService {
                         const course = await this.generateSingleViewData(hit._source);
                         courses.push(course);
                     }
+                    for(const id of ids){
+                        let course = courses.find(o => o.id === id);
+                        courseOrdered.push(course);
+                    }
                 }
-            }
+            }            
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: courses});
+        callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
     }
 
     async getCourseOptionByCategories(req, callback){

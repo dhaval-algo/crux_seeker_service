@@ -14,7 +14,6 @@ const {
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
-const b64 = require("base64url");
 const bcrypt = require('bcrypt');
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
@@ -24,11 +23,9 @@ const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
-const { stringify } = require("querystring");
-const eventEmitter = require("../../../utils/subscriber");
 const SEND_OTP = !!process.env.SEND_OTP;
-const signToken = require('../auth/auth').signToken;
-
+const learnContentService = require("../../../api/services/learnContentService");
+let LearnContentService = new learnContentService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 
@@ -36,12 +33,10 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
 
 
-  const eventEmitter1 =   require('../../../utils/subscriber');
+const elasticService = require("../../../api/services/elasticService");
 
 const login = async (req, res, next) => {
     try {
-        console.log(eventEmitter1);
-        eventEmitter1.emit("testevent");
         const body = req.body;
         const audience = req.headers.origin;
         const { username = "", password = "" } = body;
@@ -832,7 +827,6 @@ const resetPassword = async (req,res) => {
 
 const getProfileProgress = async (req,res) => {
     const { user } = req
-console.log(req.user);
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({
         success:true,
@@ -841,6 +835,153 @@ console.log(req.user);
         }
     })
 }
+
+const getCourseWishlist = async (req,res) => {
+    const { user } = req
+    const { limit = 10, search, page, orderBy="DESC" } = req.query
+    
+    const offset = (page -1) * limit
+    const order = [
+        ['createdBy', orderBy.toUpperCase()]
+    ]
+    const payload = {
+        requestFields: ["course_wishlist"],
+        user,
+        where: {
+            order,
+            limit,
+            offset  
+        }
+    }
+
+    let resForm = await fetchFormValues(payload)
+    return res.status(200).json({
+        success:true,
+        data: {
+            courses:resForm
+        }
+    })
+}
+
+const addCourseToWishList = async (req,res) => {
+    const { user} = req;
+    const {courseId} = req.body
+    const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+const removeCourseFromWishList = async (req,res) => {
+    const { user} = req;
+    const {courseId} = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+const fetchWishListIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['course_wishlist'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let wishedList = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            courses:wishedList
+        }
+    })
+}
+
+const wishListCourseData = async (req,res) => {
+    try {
+        
+        console.log('--------------------------------------------');
+        const { user } = req
+        const {searchStr} = req.query
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['course_wishlist'] },
+        }
+        
+        let resForm = await models.user_meta.findAll({
+            attributes:['value'],
+            where
+        })
+        let wishedListIds = resForm.map((rec) => rec.value)
+        if(!wishedListIds.length) {
+            return res.status(200).json({
+                success:true,
+                data: {
+                    ids:wishedListIds,
+                    courses:[]
+                }
+            })
+        }
+        let queryBody = {
+            "query": {
+              "ids": {
+                  "values": wishedListIds
+              },
+              "match_phrase":{}
+            }
+        };
+
+
+        if(searchStr){ 
+            queryBody.query.match_phrase["title"]=searchStr
+        }else {
+            delete queryBody.query.match_phrase
+        }
+
+        console.log(queryBody);
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        let courses = []
+        if(result.hits){
+            if(result.hits.hits && result.hits.hits.length > 0){
+                for(const hit of result.hits.hits){
+                    const course = await LearnContentService.generateSingleViewData(hit._source);
+                    courses.push(course);
+                }
+            }
+        } else {
+            return res.status(200).json({
+                success:true,
+                data: {
+                    ids:wishedListIds,
+                    courses:[]
+                }
+            })
+        }
+        return res.status(200).json({
+            success:true,
+            data: {
+                ids:wishedListIds,
+                courses:courses
+            }
+        })
+    } catch (error) {
+        console.log(error);
+            return res.status(500).send({error,success:false})
+    }
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -852,5 +993,10 @@ module.exports = {
     verifyAccount,
     resetPassword,
     forgotPassword,
-    getProfileProgress
+    getProfileProgress,
+    getCourseWishlist,
+    addCourseToWishList,
+    removeCourseFromWishList,
+    fetchWishListIds,
+    wishListCourseData
 }
