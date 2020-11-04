@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
     targetEntityId: DataTypes.STRING,
     formType: DataTypes.STRING,
     formTypeSource: DataTypes.STRING,
-    otherInfo: DataTypes.JSON
+    otherInfo: DataTypes.JSON,
+    status: DataTypes.STRING
   }, {});
   form_submission.associate = function(models) {
     // associations can be defined here

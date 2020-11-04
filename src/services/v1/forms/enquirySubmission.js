@@ -58,7 +58,7 @@ const handleCallBackEnquiry = (resBody, req) => {
                 targetEntityType,
                 targetEntityId,
                 otherInfo,
-                status:'submitted'
+                status:"submitted"
             }
 
             const formSub = await models.form_submission.create(form_submission)
