@@ -347,7 +347,7 @@ const getFilterOption = (data, filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type'];
+    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name',];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
@@ -562,7 +562,7 @@ module.exports = class learnContentService {
         if(query.bool.must[2]){
             console.log("Elastic must range Query <> ", query.bool.must[2]);
         }
-        console.log("Elastic must Query <> ", query.bool.must);
+        console.log("Elastic filter Query <> ", query.bool.filter);
 
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
