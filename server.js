@@ -12,13 +12,14 @@ const routes = require('./src/routes');
 
 // create 
 const app = express();
-app.use(bodyParser.json()); 
+app.use(bodyParser.json({limit: '50mb'})); 
 //resource path 
 app.use(express.static(path.join(__dirname, '/public')));
 
 app.use(require('express-useragent').express())
+
 // for parsing application/xwww-
-app.use(bodyParser.urlencoded({ extended: true })); 
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 //form-urlencoded
 // for parsing multipart/form-data
 app.use(upload.array()); 

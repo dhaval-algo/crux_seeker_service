@@ -11,7 +11,8 @@ const {
     sendResetPasswordLink,
     encryptStr,
     calculateProfileCompletion,
-    createSocialEntryIfNotExists
+    createSocialEntryIfNotExists,
+    getImgBuffer
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -24,6 +25,7 @@ const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
+const imageConversion = require("image-conversion")
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
 let LearnContentService = new learnContentService();
@@ -36,6 +38,7 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
+const { getBucketNames, uploadImageToS3 } = require("../AWS");
 
 const login = async (req, res, next) => {
     try {
@@ -275,6 +278,13 @@ const socialSignIn = async (req, res, next) => {
             // }
             // verificationRes.data.user = newUserRes.data.user;
         }
+        const payload = {
+            requestFieldMetaType: "primary",
+            requestFields: ["firstName", "lastName", "profilePicture"],
+            user:verificationRes.data.user
+        }
+
+        let resForm = await fetchFormValues(payload)
 
         // check if login type present if not create.
         const userAuth =  await createSocialEntryIfNotExists({...verificationRes.data.user,...providerRes.data},provider)
@@ -286,7 +296,7 @@ const socialSignIn = async (req, res, next) => {
             });
         }
         //create token
-        const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data,verified:true, audience: req.headers.origin, provider: providerRes.data.provider });
+        const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data,...resForm.data.requestFieldValues, audience: req.headers.origin, provider: providerRes.data.provider });
         console.log(tokenRes);
         return res.status(200).json(tokenRes);
 
@@ -355,7 +365,7 @@ const signInUser = async (resData) => {
             }
             const payload = {
                 requestFieldMetaType: "primary",
-                requestFields: ["firstName", "lastName"],
+                requestFields: ["firstName", "lastName", "profilePicture"],
                 user:verificationRes.data.user
             }
 
@@ -1101,6 +1111,16 @@ const getEnquiryList = async (req,res) => {
     
 }
 
+const uploadProfilePic =async (req,res) => {
+    // getBucketNames()\
+    const {image} =req.body
+    const {user}=req
+    let imageB =  getImgBuffer(image)
+    let path = `images/profile-images/${user.userId}.jpeg`
+    let s3Path = await uploadImageToS3(path,imageB)
+    await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
+    return res.status(200).json({success:true,profilePicture:s3Path})
+}
 module.exports = {
     login,
     verifyOtp,
@@ -1118,5 +1138,6 @@ module.exports = {
     removeCourseFromWishList,
     fetchWishListIds,
     wishListCourseData,
-    getEnquiryList
+    getEnquiryList,
+    uploadProfilePic
 }
