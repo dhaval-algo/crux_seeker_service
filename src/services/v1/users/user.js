@@ -25,6 +25,7 @@ const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
+const imageConversion = require("image-conversion")
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
 let LearnContentService = new learnContentService();
