@@ -13,7 +13,7 @@ crypt = new Cryptr(process.env.CRYPT_SALT);
 const moment = require("moment");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
-
+const { Buffer } = require('buffer');
 const encryptStr = (str) => {
     return crypt.encrypt(str);
 };
@@ -603,6 +603,7 @@ const getLoginToken = async (userObj) => {
                 provider: userObj.provider || "",
                 userType: userObj.userType,
                 isVerified: userObj.verified || false,
+                profilePicture: userObj.profilePicture
             }
         }
         const token = signToken(payload, signOptions);
@@ -779,6 +780,10 @@ const calculateProfileCompletion =  (userObj) => {
     })
 }
 
+const getImgBuffer = (base64) => {
+    const base64str = base64.replace(/^data:image\/\w+;base64,/,'');
+    return Buffer.from(base64str, 'base64')
+}
 module.exports = {
     encryptStr,
     decryptStr,
@@ -792,5 +797,6 @@ module.exports = {
     invalidateTokens,
     sendWelcomeEmail,
     sendResetPassowrdLink,
-    calculateProfileCompletion
+    calculateProfileCompletion,
+    getImgBuffer
 }
