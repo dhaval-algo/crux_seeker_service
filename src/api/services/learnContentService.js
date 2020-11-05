@@ -201,6 +201,9 @@ const formatFilters = async (data, filterData, query) => {
                 if(filter.elastic_attribute_name == 'average_rating'){
                     formatedFilters.options = getRangeOptions(data, filter.elastic_attribute_name);
                 }
+                if(filter.elastic_attribute_name == 'total_duration_in_hrs'){
+                    formatedFilters.options = getDurationRangeOptions(data, filter.elastic_attribute_name);
+                }
             }
         }        
         filters.push(formatedFilters);
@@ -244,6 +247,63 @@ const getRangeOptions = (data, attribute) => {
     return options;
 };
 
+const getDurationRangeOptions = (data, attribute) => {
+    let options = [
+        {
+            label: 'Less than 2 Hours',
+            count: 0,
+            selected: false,
+            start: 'MIN',
+            end: 2
+        },
+        {
+            label: '1 - 4 weeks',
+            count: 0,
+            selected: false,
+            start: 40,
+            end: 160
+        },
+        {
+            label: '1 - 3 months',
+            count: 0,
+            selected: false,
+            start: 160,
+            end: 480
+        },
+        {
+            label: '3+ months',
+            count: 0,
+            selected: false,
+            start: 481,
+            end: 'MAX'
+        }
+    ];
+
+    for(let poption of options){
+        for(const esData of data){
+            const entity = esData._source;
+            if(poption.start !== 'MIN' && poption.end !== 'MAX'){
+                if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
+                    poption.count++;
+                }
+            }else{
+                if(poption.start == 'MIN'){
+                    if(entity[attribute] <= poption.end){
+                        poption.count++;
+                    }
+                }
+                if(poption.end == 'MAX'){
+                    if(entity[attribute] >= poption.start){
+                        poption.count++;
+                    }
+                }
+            }           
+        }
+    }
+    return options;
+};
+
+
 const getFilterOption = (data, filter) => {
     let options = [];
     for(const esData of data){
@@ -252,6 +312,9 @@ const getFilterOption = (data, filter) => {
         if(entityData){
             if(Array.isArray(entityData)){
                 for(const entry of entityData){
+                    if(entry == 'Free_With_Condition'){
+                        continue;
+                    }
                     let existing = options.find(o => o.label === entry);
                     if(existing){
                         existing.count++;
@@ -264,6 +327,9 @@ const getFilterOption = (data, filter) => {
                     }
                 }
             }else{
+                if(entityData == 'Free_With_Condition'){
+                    continue;
+                }
                 let existing = options.find(o => o.label === entityData);
                 if(existing){
                     existing.count++;
