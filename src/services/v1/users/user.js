@@ -30,7 +30,6 @@ const learnContentService = require("../../../api/services/learnContentService")
 let LearnContentService = new learnContentService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
-
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
 
@@ -1115,9 +1114,15 @@ const uploadProfilePic =async (req,res) => {
     const {image} =req.body
     const {user}=req
     let imageB =  getImgBuffer(image)
-    let path = `images/profile-images/${user.userId}.jpeg`
+    let imageName = `86ab15d2${user.userId}EyroLPIJo`;
+    let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
-    await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
+    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
+    if(!existImg) {
+        await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
+    } else {
+        await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
+    }
     return res.status(200).json({success:true,profilePicture:s3Path})
 }
 module.exports = {
