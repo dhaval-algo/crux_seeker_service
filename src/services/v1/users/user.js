@@ -12,7 +12,8 @@ const {
     encryptStr,
     calculateProfileCompletion,
     createSocialEntryIfNotExists,
-    getImgBuffer
+    getImgBuffer,
+    generateSingleViewData
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -985,7 +986,7 @@ const wishListCourseData = async (req,res) => {
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
-                    const course = await LearnContentService.generateSingleViewData(hit._source);
+                    const course = await generateSingleViewData(hit._source);
                     courses.push(course);
                 }
             }
