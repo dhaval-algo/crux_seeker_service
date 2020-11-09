@@ -134,10 +134,14 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
             delete queryPayload['from'];
             delete queryPayload['size'];
         }
-        console.log("queryPayload <> ", queryPayload);
+        //queryPayload.from = 0;
+        //queryPayload.size = count;
+        //console.log("queryPayload <> ", queryPayload);
+        //console.log("query <> ", query);
         const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.total && result.total.value > 0){
             console.log("Main data length <> ", result.total.value);
+            console.log("Result data length <> ", result.hits.length);
             return formatFilters(result.hits, filterConfigs, query);
         }else{
             return [];
@@ -150,10 +154,12 @@ const getInitialData = async (query) => {
          if(query.bool.must[i]["range"]){
                 query.bool.must.splice(i, 1);
         }
-    }    
-    const result = await elasticService.search('learn-content', query);
+    } 
+    console.log("query <> ", query);  
+    const result = await elasticService.search('learn-content', query, {from: 0, size: 10000});
     if(result.total && result.total.value > 0){
-        console.log("Initial data length <> ", result.total.value);
+        console.log("Initial data total length <> ", result.total.value);
+        console.log("Initial data size <> ", result.hits.length);
         return result.hits;
     }else{
         return [];
@@ -198,11 +204,11 @@ const formatFilters = async (data, filterData, query) => {
             }
 
             if(filter.filter_type == 'RangeOptions'){
-                if(filter.elastic_attribute_name == 'average_rating'){
-                    formatedFilters.options = getRangeOptions(data, filter.elastic_attribute_name);
+                if(filter.elastic_attribute_name == 'ratings'){
+                    formatedFilters.options = getRangeOptions(initialData, filter.elastic_attribute_name);
                 }
                 if(filter.elastic_attribute_name == 'total_duration_in_hrs'){
-                    formatedFilters.options = getDurationRangeOptions(data, filter.elastic_attribute_name);
+                    formatedFilters.options = getDurationRangeOptions(initialData, filter.elastic_attribute_name);
                 }
             }
         }        
@@ -230,7 +236,7 @@ const getRangeOptions = (data, attribute) => {
         count = 0;
         for(const esData of data){
             const entity = esData._source;
-            if(entity[attribute] >= predefinedOptions[i]){
+            if(entity[attribute] >= predefinedOptions[i]*100){                
                 count++;
             }
         }
@@ -244,6 +250,7 @@ const getRangeOptions = (data, attribute) => {
         };
         options.push(option);
     }
+    options = options.filter(item => item.count > 0);
     return options;
 };
 
@@ -261,20 +268,20 @@ const getDurationRangeOptions = (data, attribute) => {
             count: 0,
             selected: false,
             start: 40,
-            end: 160
+            end: 159
         },
         {
             label: '1 - 3 months',
             count: 0,
             selected: false,
             start: 160,
-            end: 480
+            end: 479
         },
         {
             label: '3+ months',
             count: 0,
             selected: false,
-            start: 481,
+            start: 480,
             end: 'MAX'
         }
     ];
@@ -300,6 +307,7 @@ const getDurationRangeOptions = (data, attribute) => {
             }           
         }
     }
+    options = options.filter(item => item.count > 0);
     return options;
 };
 
@@ -347,7 +355,7 @@ const getFilterOption = (data, filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name',];
+    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
@@ -491,7 +499,16 @@ module.exports = class learnContentService {
         
         if(req.query['rf']){
             parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            console.log("parsedRangeFilters <> ", parsedRangeFilters);
             for(const filter of parsedRangeFilters){
+                /* if(filter.key == "Ratings"){
+                    if(filter.start !== "MIN"){
+                        filter.start = filter.start*100;
+                    }
+                    if(filter.end !== "MAX"){
+                        filter.end = filter.end*100;
+                    }
+                } */
                 console.log("Applying filters <> ", filter);
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
@@ -499,10 +516,10 @@ module.exports = class learnContentService {
 
                     let rangeQuery = {};
                     if(filter.start !== "MIN"){
-                        rangeQuery["gte"] = filter.start;
+                        rangeQuery["gte"] = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
                     }
                     if(filter.end !== "MAX"){
-                        rangeQuery["lte"] = filter.end;
+                        rangeQuery["lte"] = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
                     }
 
                     query.bool.must.push({
@@ -577,7 +594,7 @@ module.exports = class learnContentService {
               }
 
             //let filters = await getFilters(result.hits, filterConfigs);
-            let filters = await getAllFilters(query, queryPayload, filterConfigs);            
+            let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);            
             
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
