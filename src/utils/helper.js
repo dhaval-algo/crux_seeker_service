@@ -826,6 +826,12 @@ const getImgBuffer = (base64) => {
     return Buffer.from(base64str, 'base64')
 }
 
+const round = (value, step) => {
+    step || (step = 1.0);
+    var inv = 1.0 / step;
+    return Math.round(value * inv) / inv;
+};
+
 const generateSingleViewData = (result, isList = false) => {
 
     let effort = null;
