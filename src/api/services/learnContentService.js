@@ -4,11 +4,13 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 let slugMapping = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
+const MAX_RESULT = 10000;
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
+    //console.log("Filter Configs <> ", json);
     return json;
     } else {
         return [];
@@ -134,11 +136,13 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
             delete queryPayload['from'];
             delete queryPayload['size'];
         }
+        console.log("Query payload for filters data <> ",queryPayload);
+        console.log("query for filters data <> ",query);
         //queryPayload.from = 0;
         //queryPayload.size = count;
         //console.log("queryPayload <> ", queryPayload);
         //console.log("query <> ", query);
-        const result = await elasticService.search('learn-content', query, queryPayload);
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
             console.log("Main data length <> ", result.total.value);
             console.log("Result data length <> ", result.hits.length);
@@ -156,7 +160,7 @@ const getInitialData = async (query) => {
         }
     } 
     console.log("query <> ", query);  
-    const result = await elasticService.search('learn-content', query, {from: 0, size: 10000});
+    const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
         console.log("Initial data total length <> ", result.total.value);
         console.log("Initial data size <> ", result.hits.length);
@@ -167,6 +171,7 @@ const getInitialData = async (query) => {
 };
 
 const formatFilters = async (data, filterData, query) => {
+    console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     const initialData = await getInitialData(query);
     for(const filter of filterData){
@@ -246,7 +251,8 @@ const getRangeOptions = (data, attribute) => {
             count: count,
             selected: false,
             start: predefinedOptions[i],
-            end: 'MAX'
+            end: 'MAX',
+            disabled: (count > 0) ? false : true
         };
         options.push(option);
     }
@@ -261,28 +267,32 @@ const getDurationRangeOptions = (data, attribute) => {
             count: 0,
             selected: false,
             start: 'MIN',
-            end: 2
+            end: 2,
+            disabled: true
         },
         {
             label: '1 - 4 weeks',
             count: 0,
             selected: false,
             start: 40,
-            end: 159
+            end: 159,
+            disabled: true
         },
         {
             label: '1 - 3 months',
             count: 0,
             selected: false,
             start: 160,
-            end: 479
+            end: 479,
+            disabled: true
         },
         {
             label: '3+ months',
             count: 0,
             selected: false,
             start: 480,
-            end: 'MAX'
+            end: 'MAX',
+            disabled: true
         }
     ];
 
@@ -306,23 +316,48 @@ const getDurationRangeOptions = (data, attribute) => {
                 }
             }           
         }
+        if(poption.count > 0){
+            poption.disabled = false;
+        }
     }
-    options = options.filter(item => item.count > 0);
+    //options = options.filter(item => item.count > 0);
     return options;
 };
 
 
 const getFilterOption = (data, filter) => {
     let options = [];
+    let others = null;
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
+
+        if(filter.label == "Price Type" && entityData == 'emi'){
+            console.log("entityData <> ", entityData);
+            continue;
+        }
+
         if(entityData){
             if(Array.isArray(entityData)){
                 for(const entry of entityData){
                     if(entry == 'Free_With_Condition'){
                         continue;
                     }
+
+                    if(entry == 'Others'){
+                        if(others != null){
+                            others.count++;
+                        }else{
+                            others = {
+                                label: entry,
+                                count: 1,
+                                selected: false,
+                                disabled: false
+                            }
+                        }                        
+                        continue;
+                    }
+
                     let existing = options.find(o => o.label === entry);
                     if(existing){
                         existing.count++;
@@ -330,7 +365,8 @@ const getFilterOption = (data, filter) => {
                         options.push({
                             label: entry,
                             count: 1,
-                            selected: false
+                            selected: false,
+                            disabled: false
                         });
                     }
                 }
@@ -338,6 +374,21 @@ const getFilterOption = (data, filter) => {
                 if(entityData == 'Free_With_Condition'){
                     continue;
                 }
+
+                if(entityData == 'Others'){
+                    if(others != null){
+                        others.count++;
+                    }else{
+                        others = {
+                            label: entityData,
+                            count: 1,
+                            selected: false,
+                            disabled: false
+                        }
+                    }                        
+                    continue;
+                }
+
                 let existing = options.find(o => o.label === entityData);
                 if(existing){
                     existing.count++;
@@ -345,12 +396,18 @@ const getFilterOption = (data, filter) => {
                     options.push({
                         label: entityData,
                         count: 1,
-                        selected: false
+                        selected: false,
+                        disabled: false
                     });
                 }
             }
         }
     }
+
+    if(others != null){
+        options.push(others);
+    }
+
     return options;
 };
 
