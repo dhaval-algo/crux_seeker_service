@@ -42,10 +42,16 @@ module.exports = {
       
     if(payload.from !== null){
       finalQuery.from = payload.from;
-    } 
+    }else{
+      finalQuery.from = 0;
+    }
+
     if(payload.size !== null){
       finalQuery.size = payload.size;
-    } 
+    }else{
+      finalQuery.size = 10000;
+    }
+
     if(payload.sort !== null){
       finalQuery.sort = payload.sort;
     } 
