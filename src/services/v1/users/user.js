@@ -934,6 +934,7 @@ const fetchWishListIds = async (req,res) => {
     return res.status(200).json({
         success:true,
         data: {
+            userId: user.userId,
             courses:wishedList
         }
     })
@@ -942,7 +943,6 @@ const fetchWishListIds = async (req,res) => {
 const wishListCourseData = async (req,res) => {
     try {
         
-        console.log('--------------------------------------------');
         const { user } = req
         const {searchStr} = req.query
         let where = {
@@ -994,6 +994,7 @@ const wishListCourseData = async (req,res) => {
             return res.status(200).json({
                 success:true,
                 data: {
+                    userId: user.userId,
                     ids:wishedListIds,
                     courses:[]
                 }
@@ -1002,6 +1003,7 @@ const wishListCourseData = async (req,res) => {
         return res.status(200).json({
             success:true,
             data: {
+                userId: user.userId,
                 ids:wishedListIds,
                 courses:courses
             }
