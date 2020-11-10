@@ -841,7 +841,8 @@ module.exports = class learnContentService {
             subtitle: result.subtitle,
             provider: {
                 name: result.provider_name,
-                currency: result.provider_currency
+                currency: result.provider_currency,
+                slug: result.provider_slug
             },
             instructors: [],
             cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
@@ -854,7 +855,10 @@ module.exports = class learnContentService {
             prerequisites: (!isList) ? result.prerequisites  : null,
             content: (!isList) ? result.content : null,
             categories: (result.categories) ? result.categories : [],
+            categories_list: (result.categories_list) ? result.categories_list : [],
             sub_categories: (result.sub_categories) ? result.sub_categories : [],
+            sub_categories_list: (result.sub_categories_list) ? result.sub_categories_list : [],
+            topics_list: (result.topics_list) ? result.topics_list : [],
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: calculateDuration(result.total_duration_in_hrs),
@@ -870,7 +874,7 @@ module.exports = class learnContentService {
                 accessibilities: (result.accessibilities && result.accessibilities.length > 0) ? result.accessibilities.join(", ") : null,
                 availabilities: (result.availabilities && result.availabilities.length > 0) ? result.availabilities.join(", ") : null,
                 learn_type: (result.learn_type) ? result.learn_type : null,
-                topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,
+                topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
                 tags: [],
                 pricing: {
                     pricing_type: result.pricing_type,
