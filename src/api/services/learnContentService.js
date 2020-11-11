@@ -2,6 +2,7 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
+
 let slugMapping = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
@@ -15,6 +16,14 @@ const getFilterConfigs = async () => {
     } else {
         return [];
     }
+};
+
+const getMediaurl = (mediaUrl) => {
+    const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
+    if(isRelative){
+        mediaUrl = process.env.ASSET_URL+mediaUrl;
+    }
+    return mediaUrl;
 };
 
 const getEntityLabelBySlug = async (entity, slug) => {
@@ -851,8 +860,8 @@ module.exports = class learnContentService {
                 slug: result.provider_slug
             },
             instructors: [],
-            cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-            cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+            cover_video: (result.video) ? getMediaurl(result.video) : null,
+            cover_image: (result.images) ? getMediaurl(result.images[coverImageSize]) : null,
             embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
@@ -960,7 +969,7 @@ module.exports = class learnContentService {
                         continue;
                     }
                     if(instructor.instructor_image){
-                        instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+                        instructor.instructor_image = getMediaurl(instructor.instructor_image.thumbnail);                    
                     }
                     data.instructors.push(instructor);
                 }
@@ -982,7 +991,7 @@ module.exports = class learnContentService {
                 
                 if(!isList){
                     if(review.photo){
-                        review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                        review.photo = getMediaurl(review.photo.thumbnail);                    
                     }
                     data.reviews.push(review);
                 }

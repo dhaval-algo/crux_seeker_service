@@ -31,6 +31,14 @@ const getPaginationQuery = (query) => {
     };
 };
 
+const getMediaurl = (mediaUrl) => {
+    const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
+    if(isRelative){
+        mediaUrl = process.env.ASSET_URL+mediaUrl;
+    }
+    return mediaUrl;
+};
+
 
 module.exports = class providerService {
 
@@ -143,8 +151,8 @@ module.exports = class providerService {
             title: result.title,
             slug: result.slug,
             id: `PVDR_${result.id}`,
-            cover_video: (result.cover_video) ? process.env.ASSET_URL+result.cover_video : null,
-            cover_image: (result.cover_image) ? process.env.ASSET_URL+result.cover_image[coverImageSize] : null,
+            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
+            cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
             embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,
             overview: result.overview,
             programs: (result.programs) ? result.programs : [],
@@ -194,7 +202,7 @@ module.exports = class providerService {
             for(let award of result.awards){                
                 if(!isList){
                     if(award.image){
-                        award.image = process.env.ASSET_URL+award.image.thumbnail;                    
+                        award.image = getMediaurl(award.image.thumbnail);                    
                     }
                     data.awards.push(award);
                 }
@@ -205,7 +213,7 @@ module.exports = class providerService {
             for(let accr of result.accreditations){                
                 if(!isList){
                     if(accr.logo){
-                        accr.logo = process.env.ASSET_URL+accr.logo.thumbnail;                    
+                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
                     }
                     data.accreditations.push(accr);
                 }
@@ -220,7 +228,7 @@ module.exports = class providerService {
                 
                 if(!isList){
                     if(review.photo){
-                        review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                        review.photo = getMediaurl(review.photo.thumbnail);                    
                     }
                     data.reviews.push(review);
                 }
