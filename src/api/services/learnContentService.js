@@ -623,20 +623,26 @@ module.exports = class learnContentService {
                 }
             }); */
 
-            query.bool.filter.push({
+            /* query.bool.filter.push({
                 
                 "match": {
                     "title.keyword": {
-                        "query": req.query['q']
+                        "query": decodeURIComponent(req.query['q'])
                      } 
                     }
-            })
+            }) */
+
+            query.bool.must.push( 
+                {
+                    match: {
+                        "title": decodeURIComponent(req.query['q'])
+                    }
+                }
+            );
+            
         }
 
-        if(query.bool.must[2]){
-            console.log("Elastic must range Query <> ", query.bool.must[2]);
-        }
-        console.log("Elastic filter Query <> ", query.bool.filter);
+        console.log("Final Query <> ", JSON.stringify(query));
 
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
