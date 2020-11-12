@@ -19,10 +19,12 @@ const getFilterConfigs = async () => {
 };
 
 const getMediaurl = (mediaUrl) => {
-    const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
-    if(isRelative){
-        mediaUrl = process.env.ASSET_URL+mediaUrl;
-    }
+    if(mediaUrl !== null && mediaUrl !== undefined){
+        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
+        if(isRelative){
+            mediaUrl = process.env.ASSET_URL+mediaUrl;
+        }
+    }    
     return mediaUrl;
 };
 
