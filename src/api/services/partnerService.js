@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
-const keywordFields = ['title'];
+const keywordFields = ['name'];
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -43,15 +43,13 @@ const getMediaurl = (mediaUrl) => {
 };
 
 
-module.exports = class providerService {
+module.exports = class partnerService {
 
-    async getProviderList(req, callback){
+    async getPartnerList(req, callback){
         const query = { 
             "bool": {
                 //"should": [],
-                "must": [
-                    {term: { "status.keyword": 'approved' }}                
-                ],
+                "must": [],
                 "filter": []
             }
         };
@@ -60,14 +58,12 @@ module.exports = class providerService {
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
-        console.log("paginationQuery <> ", paginationQuery);
 
         if(!req.query['sort']){
-            req.query['sort'] = "created_at:desc";
+            req.query['sort'] = "name:asc";
         }
 
         if(req.query['sort']){
-            console.log("Sort requested <> ", req.query['sort']);
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             if(keywordFields.includes(splitSort[0])){
@@ -81,14 +77,14 @@ module.exports = class providerService {
             query.bool.must.push( 
                 {
                     match: {
-                        "title": decodeURIComponent(req.query['q'])
+                        "name": decodeURIComponent(req.query['q'])
                     }
                 }
             );            
         }
         console.log("Final Query <> ", JSON.stringify(query));
 
-        const result = await elasticService.search('provider', query, queryPayload, queryString);
+        const result = await elasticService.search('partner', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits);
@@ -114,14 +110,13 @@ module.exports = class providerService {
         }        
     }
 
-    async getProvider(slug, callback){
+    async getPartner(slug, callback){
         const query = { "bool": {
             "must": [
-              {term: { "slug.keyword": slug }},
-              {term: { "status.keyword": 'approved' }}
+              {term: { "slug.keyword": slug }}
             ]
         }};
-        const result = await elasticService.search('provider', query);
+        const result = await elasticService.search('partner', query);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
@@ -150,32 +145,19 @@ module.exports = class providerService {
         }
 
         let data = {
-            title: result.title,
-            slug: result.slug,
-            id: `PVDR_${result.id}`,
+            name: result.name,
+            slug: result.slug,            
+            id: `PTNR_${result.id}`,
+            introduction: (!isList) ? result.introduction : null,
+            usp: (!isList) ? result.usp : null,
+            vision: (!isList) ? result.vision : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
-            embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,
-            overview: result.overview,
-            programs: (result.programs) ? result.programs : [],
-            institute_types: (result.institute_types) ? result.institute_types : [],
-            currency: result.currency,
-            facilities: result.facilities,
-            gender_accepted: result.gender_accepted,
+            embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,           
             establishment_year: result.establishment_year,
-            study_modes: (result.study_modes) ? result.study_modes : [],
-            program_types: (result.program_types) ? result.program_types : [],
-
-            
-            reviews: [],
-            ratings: {
-                total_review_count: result.reviews ? result.reviews.length : 0,
-                average_rating: 0,
-                average_rating_actual: 0,
-                rating_distribution: []
-            },
-            accreditations: [],
-            awards: [],
+            corporate_partners: [],
+            education_partners: [],
+            awards: [],            
             contact_details: {
                 address_line1: result.address_line1,
                 address_line2: result.address_line2,
@@ -187,18 +169,10 @@ module.exports = class providerService {
                 email: result.email,
                 website_link: result.website_link
             },
+            linkedin_url: result.linkedin_url,
+            facebook_url: result.facebook_url,
+            twitter_url: result.twitter_url
         };
-
-        if(!isList){
-            data.meta_information = {
-                student_educational_background_diversity: result.student_educational_background_diversity,
-                student_nationality_diversity: result.student_nationality_diversity,
-                student_gender_diversity: result.student_gender_diversity,
-                student_avg_experience_diversity: result.student_avg_experience_diversity,
-                highest_package_offered: result.highest_package_offered,
-                median_package_offered: result.median_package_offered
-            }
-        }
 
         if(result.awards && result.awards.length > 0){
             for(let award of result.awards){                
@@ -211,58 +185,27 @@ module.exports = class providerService {
             }
         }
 
-        if(result.accreditations && result.accreditations.length > 0){
-            for(let accr of result.accreditations){                
+        if(result.education_partners && result.education_partners.length > 0){
+            for(let epartner of result.education_partners){                
                 if(!isList){
-                    if(accr.logo){
-                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
+                    if(epartner.logo){
+                        epartner.logo = getMediaurl(epartner.logo.thumbnail);                    
                     }
-                    data.accreditations.push(accr);
+                    data.education_partners.push(epartner);
                 }
             }
-        }
-        
-        if(result.reviews && result.reviews.length > 0){
-            let totalRating = 0;
-            let ratings = {};
-            for(let review of result.reviews){
-                totalRating += review.rating;
-                
-                if(!isList){
-                    if(review.photo){
-                        review.photo = getMediaurl(review.photo.thumbnail);                    
-                    }
-                    data.reviews.push(review);
-                }
-
-                if(ratings[review.rating]){
-                    ratings[review.rating] += 1; 
-                }else{
-                    ratings[review.rating] = 1; 
-                }
-            }
-
-            const average_rating = totalRating/result.reviews.length;            
-            data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);            
-            let rating_distribution = [];           
-
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
         } 
+        
+        if(result.corporate_partners && result.corporate_partners.length > 0){
+            for(let cpartner of result.corporate_partners){                
+                if(!isList){
+                    if(cpartner.logo){
+                        cpartner.logo = getMediaurl(cpartner.logo.thumbnail);                    
+                    }
+                    data.corporate_partners.push(cpartner);
+                }
+            }
+        }       
 
         return data;
     }
