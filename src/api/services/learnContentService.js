@@ -883,6 +883,7 @@ module.exports = class learnContentService {
             embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
+            skill_tags: (result.skills) ? result.skills : [],
             what_will_learn: (!isList) ? result.what_will_learn : null,
             target_students: (!isList) ? result.target_students : null,
             prerequisites: (!isList) ? result.prerequisites  : null,
