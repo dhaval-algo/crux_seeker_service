@@ -747,9 +747,25 @@ module.exports = class learnContentService {
             let categoriesData = result.aggregations.categories.buckets;
             console.log("categoriesData <> ", categoriesData);
             //categories = categoriesData.map(o => {"label": o['key'], "value": o['key']} );
-            categories = categoriesData.map(function(obj) {
+
+            let others = null;
+            for(const category of categoriesData){
+                if(category.key == 'Others'){
+                    others = {"label": category['key'], "value": category['key']};
+                }else{
+                    categories.push({"label": category['key'], "value": category['key']});
+                }
+            }
+            if(others){
+                categories.push(others);
+            }
+            console.log("categories <> ", categories);
+
+            /* categories = categoriesData.map(function(obj) {
                 return {"label": obj['key'], "value": obj['key']};
               });
+
+              console.log("categories <> ", categories); */
         }
 
         callback(null, {status: 'success', message: 'Fetched successfully!', data: categories});
