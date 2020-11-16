@@ -155,7 +155,7 @@ module.exports = class providerService {
             id: `PVDR_${result.id}`,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
-            embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,
+            embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             overview: result.overview,
             programs: (result.programs) ? result.programs : [],
             institute_types: (result.institute_types) ? result.institute_types : [],
