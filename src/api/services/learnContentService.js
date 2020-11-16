@@ -185,6 +185,7 @@ const formatFilters = async (data, filterData, query) => {
     console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     const initialData = await getInitialData(query);
+    let emptyOptions = [];
     for(const filter of filterData){
 
         let formatedFilters = {
@@ -204,7 +205,7 @@ const formatFilters = async (data, filterData, query) => {
             false_facet_value: filter.false_facet_value,
             implicit_filter_skip: filter.implicit_filter_skip,
             implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : []
+            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
         };
 
         if(rangeFilterTypes.includes(filter.filter_type)){
@@ -227,9 +228,24 @@ const formatFilters = async (data, filterData, query) => {
                     formatedFilters.options = getDurationRangeOptions(initialData, filter.elastic_attribute_name);
                 }
             }
-        }        
+        }  
+        
+        if(filter.filter_type !== 'RangeSlider'){
+            if(formatedFilters.options.length <= 0){
+                emptyOptions.push(filter.label);
+            }
+        }
+
         filters.push(formatedFilters);
     }
+
+    if(emptyOptions.length > 0){
+        console.log("Empty options <> ", emptyOptions);
+        filters = filters.filter(function( obj ) {
+            return !emptyOptions.includes(obj.label);
+          });
+    }
+
     return filters;    
 };
 
