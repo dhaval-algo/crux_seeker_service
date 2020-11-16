@@ -159,13 +159,8 @@ const createLoggedUserMeta = async (userId) => {
             // strapiObj.location = JSON.parse(metaObjVal.city).country
         }
         strapiObj = cleanObject(strapiObj)
-        axios.post(request_url, strapiObj).then((response) => {
-            console.log(response.data,'------dddddsdsdwrrr----------');
-            resolve(response.data)
-        }).catch(e => {
-            resolve(false)
-            console.log(e.response.data);
-        })
+        resolve(strapiObj)
+      
     })
 }
 
@@ -295,7 +290,7 @@ const createRecordInStrapi = async (enquiryId) => {
     if(data.userId){
         userRes = await createLoggedUserMeta(data.userId)
         delete data.userId;
-        data.enquiry_users = [userRes.id]
+        data.enquiry_owner = userRes
     }
     axios.post(request_url, data).then((response) => {
         console.log(response.data);
