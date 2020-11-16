@@ -1128,6 +1128,12 @@ const uploadProfilePic =async (req,res) => {
     }
     return res.status(200).json({success:true,profilePicture:s3Path})
 }
+
+const removeProfilePic = async (req,res) => {
+    const {user} = req
+    await models.user_meta.update({value:""},{where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+    return res.status(200).send(true)
+}
 module.exports = {
     login,
     verifyOtp,
@@ -1146,5 +1152,6 @@ module.exports = {
     fetchWishListIds,
     wishListCourseData,
     getEnquiryList,
-    uploadProfilePic
+    uploadProfilePic,
+    removeProfilePic
 }
