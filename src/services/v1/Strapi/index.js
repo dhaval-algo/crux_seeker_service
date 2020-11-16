@@ -186,7 +186,7 @@ const prepareStrapiData = (enquiry_id) => {
             current_company:false,
             source_url:'',
             course_name:"",
-            category_name:"",
+            course_category:"",
             date_of_birth:'',
             userId:''
         }
@@ -269,7 +269,7 @@ const prepareStrapiData = (enquiry_id) => {
                     if(result.hits.hits && result.hits.hits.length > 0){
                         for(const hit of result.hits.hits){
                             strapiObj.course_name = hit._source.title
-                            strapiObj.category_name = hit._source.categories? hit._source.categories.toString():""
+                            strapiObj.course_category = hit._source.categories? hit._source.categories.toString():""
                         }
                     }
                 }
