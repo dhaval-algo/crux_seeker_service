@@ -1131,8 +1131,8 @@ const uploadProfilePic =async (req,res) => {
 
 const removeProfilePic = async (req,res) => {
     const {user} = req
-    await models.user_meta.update({value:"",key:'profilePicture',metaType:'primary',userId:user.userId})
-    return res.status(200)
+    await models.user_meta.update({value:""},{where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+    return res.status(200).send(true)
 }
 module.exports = {
     login,
