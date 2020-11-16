@@ -153,7 +153,7 @@ module.exports = class partnerService {
             vision: (!isList) ? result.vision : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
-            embedded_video_url: (result.embedded_video_url) ? embedded_video_url : null,           
+            embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
             establishment_year: result.establishment_year,
             corporate_partners: [],
             education_partners: [],
