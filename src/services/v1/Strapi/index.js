@@ -120,6 +120,7 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.gender = metaObjVal.gender || "";
         strapiObj.grade = metaObjVal.grade || "";
         strapiObj.email = metaObjVal.email || "";
+        strapiObj.date_of_birth = metaObjVal.dob || "";
         strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
     
         if (metaObjVal.specialization) {
@@ -147,7 +148,7 @@ const createLoggedUserMeta = async (userId) => {
         }
     
         if (metaObjVal.company) {
-            strapiObj.company_name = JSON.parse(metaObjVal.company).label
+            strapiObj.company = JSON.parse(metaObjVal.company).label
         }
     
         if (metaObjVal.currentCompany) {
@@ -217,6 +218,7 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.gender = metaObjVal.gender || "";
                 strapiObj.grade = metaObjVal.grade || "";
                 strapiObj.email = metaObjVal.email || "";
+                strapiObj.date_of_birth = metaObjVal.dob || "";
                 strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
 
                 if(metaObjVal.specialization) {
