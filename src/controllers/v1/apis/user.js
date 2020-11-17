@@ -19,6 +19,7 @@ router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList)
 router.post('/remove-from-wishlist',authenticateJWT, userService.removeCourseFromWishList);
 router.post('/fetch-wishlist',authenticateJWT, userService.fetchWishListIds);
 router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData)
+router.get('/fetch-enquiries', authenticateJWT, userService.getEnquiryList)
 
 
 //require.post()
