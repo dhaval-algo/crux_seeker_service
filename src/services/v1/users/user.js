@@ -8,9 +8,12 @@ const {
     getLoginToken,
     invalidateTokens,
     sendWelcomeEmail ,
-    sendResetPassowrdLink,
+    sendResetPasswordLink,
     encryptStr,
-    calculateProfileCompletion
+    calculateProfileCompletion,
+    createSocialEntryIfNotExists,
+    getImgBuffer,
+    generateSingleViewData
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -28,12 +31,13 @@ const learnContentService = require("../../../api/services/learnContentService")
 let LearnContentService = new learnContentService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
-
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
 
 
 const elasticService = require("../../../api/services/elasticService");
+const { sequelize } = require("../../../../models");
+const { getBucketNames, uploadImageToS3 } = require("../AWS");
 
 const login = async (req, res, next) => {
     try {
@@ -166,8 +170,8 @@ const verifyUserToken = (req, res) => {
 
 const signUp = async (req, res) => {
     const audience = req.headers.origin;
-    const { username = "", password = "", } = req.body;
-    if (username.trim() == '') {
+    let { username = "", password = "",  provider = LOGIN_TYPES.LOCAL, email} = req.body;
+    if (username.trim() == '' && provider == LOGIN_TYPES.LOCAL) {
         return res.status(200).json({
             'success': false,
             'message': 'Email is required',
@@ -175,14 +179,25 @@ const signUp = async (req, res) => {
         });
     }
 
-    if (password.trim() == '') {
+    if (password.trim() == '' &&  provider == LOGIN_TYPES.LOCAL) {
         return res.status(200).json({
             'success': false,
             'message': 'Password is required',
             'data': {}
         });
     }
-    const verificationRes = await userExist(req.body.username, LOGIN_TYPES.LOCAL);
+    let providerRes= {}
+    //if orivude is socila login veriffy token
+    if(provider !=LOGIN_TYPES.LOCAL){
+        providerRes = await verifySocialToken(req.body)
+        console.log(providerRes);
+        if (!providerRes.success) {
+            return res.status(200).send(providerRes)
+        }
+    }
+    username = username || providerRes.data.email;
+
+    const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
     if (verificationRes.success) {
         verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
@@ -192,9 +207,9 @@ const signUp = async (req, res) => {
     }
     req.body.tokenPayload = req.user;
     req.body.audience = audience;
-    req.body.provider = LOGIN_TYPES.LOCAL
-    let userres = await createUser(req.body)
-    console.log(userres);
+    req.body.provider = req.body.provider || LOGIN_TYPES.LOCAL
+    console.log(verificationRes);
+    let userres = await createUser({...req.body,...verificationRes.data, ...providerRes.data})
     if (!userres.success) {
         return res.status(500).send(userres)
     }
@@ -249,7 +264,7 @@ const socialSignIn = async (req, res, next) => {
         }
 
         //check if user exists
-        let verificationRes = await userExist(providerRes.data.username, providerRes.data.provider);
+        let verificationRes = await userExist(providerRes.data.username, LOGIN_TYPES.LOCAL);
         if (!verificationRes.success) {
             return res.status(200).json(verificationRes)
             // const newUserRes = await createUser(providerRes.data);
@@ -262,9 +277,25 @@ const socialSignIn = async (req, res, next) => {
             // }
             // verificationRes.data.user = newUserRes.data.user;
         }
+        const payload = {
+            requestFieldMetaType: "primary",
+            requestFields: ["firstName", "lastName", "profilePicture"],
+            user:verificationRes.data.user
+        }
 
+        let resForm = await fetchFormValues(payload)
+
+        // check if login type present if not create.
+        const userAuth =  await createSocialEntryIfNotExists({...verificationRes.data.user,...providerRes.data},provider)
+        if(!userAuth) {
+            return res.status(500).json({
+                'code': DEFAULT_CODES.SYSTEM_ERROR.code,
+                'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+                success: false
+            });
+        }
         //create token
-        const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience: req.headers.origin, provider: providerRes.data.provider });
+        const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data,...resForm.data.requestFieldValues, audience: req.headers.origin, provider: providerRes.data.provider });
         console.log(tokenRes);
         return res.status(200).json(tokenRes);
 
@@ -333,7 +364,7 @@ const signInUser = async (resData) => {
             }
             const payload = {
                 requestFieldMetaType: "primary",
-                requestFields: ["firstName", "lastName"],
+                requestFields: ["firstName", "lastName", "profilePicture"],
                 user:verificationRes.data.user
             }
 
@@ -761,7 +792,7 @@ const forgotPassword = async (req,res) => {
     }
     //generate reset token
     userRes.data.user['audience'] = req.headers.origin || "";
-    const resetLink = await sendResetPassowrdLink(userRes.data.user, false)
+    const resetLink = await sendResetPasswordLink(userRes.data.user, false)
 
     res.status(200).json({
         success:true
@@ -903,6 +934,7 @@ const fetchWishListIds = async (req,res) => {
     return res.status(200).json({
         success:true,
         data: {
+            userId: user.userId,
             courses:wishedList
         }
     })
@@ -911,7 +943,6 @@ const fetchWishListIds = async (req,res) => {
 const wishListCourseData = async (req,res) => {
     try {
         
-        console.log('--------------------------------------------');
         const { user } = req
         const {searchStr} = req.query
         let where = {
@@ -955,7 +986,7 @@ const wishListCourseData = async (req,res) => {
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
-                    const course = await LearnContentService.generateSingleViewData(hit._source);
+                    const course = await generateSingleViewData(hit._source);
                     courses.push(course);
                 }
             }
@@ -963,6 +994,7 @@ const wishListCourseData = async (req,res) => {
             return res.status(200).json({
                 success:true,
                 data: {
+                    userId: user.userId,
                     ids:wishedListIds,
                     courses:[]
                 }
@@ -971,6 +1003,7 @@ const wishListCourseData = async (req,res) => {
         return res.status(200).json({
             success:true,
             data: {
+                userId: user.userId,
                 ids:wishedListIds,
                 courses:courses
             }
@@ -981,7 +1014,126 @@ const wishListCourseData = async (req,res) => {
     }
 }
 
+// fetch list of the enquires
+const getEnquiryList = async (req,res) => {
+    try {
+        let { limit=5, page=1 } = req.query;
+    const { user } = req;
+    let offset = 0
 
+    if(page>1) {
+        offset =  (page-1)* limit
+    }
+    console.log("offset ", offset, page);
+    const count = await models.form_submission.findAll({
+	
+        attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
+        where:{
+            userId:user.userId || user.id,
+            targetEntityType:"course",
+            status:'submitted'
+        },
+        group : ['userId'],
+        
+        raw: true,
+        
+        order: sequelize.literal('count DESC')
+        
+      });
+      //fetch enquiries
+      let formSubConfig = { 
+        attributes: ['targetEntityId','otherInfo','createdAt'],
+        where: { userId:user.userId || user.id, targetEntityType:"course",status:'submitted'},
+        limit
+      }
+     
+      if(page>1) {
+        formSubConfig.offset = offset
+      }
+      let enquiryRecs = await models.form_submission.findAll(formSubConfig)
+        // no enquiries return
+    if(!enquiryRecs.length) {
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    const enquiriesDone = []
+
+    for (const key in enquiryRecs) {
+        let enquiry = {
+            sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
+            courseName:'',
+            categoryName:'',
+            createdAt:enquiryRecs[key].createdAt
+        }
+        let queryBody = {
+            "query": {
+              "ids": {
+                  "values": [enquiryRecs[key].targetEntityId]
+              },
+            }
+        };
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        if(result.hits){
+            console.log(result.hits.hits.length,'-------------------------------');
+            if(result.hits.hits && result.hits.hits.length > 0){
+                for(const hit of result.hits.hits){
+                    enquiry.courseName = hit._source.title
+                    enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                }
+            }
+        }
+        enquiriesDone.push(enquiry);
+    }
+    //fetch course fron esatic
+  
+    return res.status(200).send({
+        success:true,
+        data:{
+            enquiries:enquiriesDone,
+            count:count[0].count
+        }
+    })
+    //build res
+    } catch (error) {
+        console.log(error);
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    
+}
+
+const uploadProfilePic =async (req,res) => {
+    // getBucketNames()\
+    const {image} =req.body
+    const {user}=req
+    let imageB =  getImgBuffer(image)
+    let imageName = `86ab15d2${user.userId}EyroLPIJo`;
+    let path = `images/profile-images/${imageName}.jpeg`
+    let s3Path = await uploadImageToS3(path,imageB)
+    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
+    if(!existImg) {
+        await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
+    } else {
+        await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
+    }
+    return res.status(200).json({success:true,profilePicture:s3Path})
+}
+
+const removeProfilePic = async (req,res) => {
+    const {user} = req
+    await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+    return res.status(200).send(true)
+}
 module.exports = {
     login,
     verifyOtp,
@@ -998,5 +1150,8 @@ module.exports = {
     addCourseToWishList,
     removeCourseFromWishList,
     fetchWishListIds,
-    wishListCourseData
+    wishListCourseData,
+    getEnquiryList,
+    uploadProfilePic,
+    removeProfilePic
 }
