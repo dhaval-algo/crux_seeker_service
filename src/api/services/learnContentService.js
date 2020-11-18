@@ -208,6 +208,19 @@ const formatFilters = async (data, filterData, query) => {
             options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
         };
 
+        //Force level options to predefined order
+        if(filter.elastic_attribute_name == 'level'){
+            let newOptions = [];
+            let orderedLabels = ['Beginner','Intermediate','Advanced'];
+            for(const label of orderedLabels){
+                let opt = formatedFilters.options.find(o => o.label === label);
+                if(opt){
+                    newOptions.push(opt);
+                }
+            }
+            formatedFilters.options = newOptions;
+        }
+
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
                 const maxValue = getMaxValue(initialData, filter.elastic_attribute_name);
