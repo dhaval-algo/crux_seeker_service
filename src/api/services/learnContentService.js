@@ -896,6 +896,15 @@ module.exports = class learnContentService {
             }
         }
 
+        let cover_image = null;
+        if(result.images){
+            if(result.images[coverImageSize]){
+                cover_image = getMediaurl(result.images[coverImageSize]);
+            }else{
+                cover_image = getMediaurl(result.images['thumbnail']);
+            }
+        }
+
         let data = {
             title: result.title,
             slug: result.slug,
@@ -908,7 +917,7 @@ module.exports = class learnContentService {
             },
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images) ? getMediaurl(result.images[coverImageSize]) : null,
+            cover_image: (result.images) ? cover_image : null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
