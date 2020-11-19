@@ -917,7 +917,7 @@ module.exports = class learnContentService {
             },
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images) ? cover_image : null,
+            cover_image: cover_image,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
