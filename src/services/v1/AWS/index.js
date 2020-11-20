@@ -51,7 +51,7 @@ const uploadFileToS3 = (path, file, contentType) => {
 
         promise.then(
           function(data) {
-            console.log("imageUrl uploaded photo.");
+            console.log("sitemap uploaded");
             resolve(true);
           },
           function(err) {resolve(err.message);

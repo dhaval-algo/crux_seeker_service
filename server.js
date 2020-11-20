@@ -10,6 +10,7 @@ const cron = require('node-cron')
 global.appRoot = path.resolve(__dirname);
 
 const routes = require('./src/routes');
+const { createSiteMap } = require('./src/services/v1/sitemap');
 
 
 // create 
@@ -36,7 +37,14 @@ routes.init(app);
 // cron jobs
 cron.schedule('0 3 * * *', async function () {
     console.log('running a task every minute');
-    
+    try {
+        
+        await createSiteMap()
+        console.log("Site map created");
+    } catch (error) {
+        console.log("Error in cron");
+        
+    }
     // console.log(res);
 });
 
