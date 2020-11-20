@@ -36,6 +36,31 @@ const uploadImageToS3 = (path, image) => {
     })
 }
 
+const uploadFileToS3 = (path, file, contentType) => {
+  return new Promise( resolve => {
+      let upload = new AWS.S3.ManagedUpload({
+          params: {
+            Bucket: process.env.AWS_CDN_BUCKET,
+            Key: path,
+            Body: file,
+            ContentType:contentType,
+            // ACL: "public-read"
+          }
+        });
+        let promise = upload.promise();
+
+        promise.then(
+          function(data) {
+            console.log("imageUrl uploaded photo.");
+            resolve(true);
+          },
+          function(err) {resolve(err.message);
+          }
+        );
+  })
+}
+
 module.exports = { 
-    uploadImageToS3
+    uploadImageToS3,
+    uploadFileToS3
 }
