@@ -1,5 +1,7 @@
 const elasticService = require("./elasticService");
+const learnContentService = require("./learnContentService");
 const fetch = require("node-fetch");
+let LearnContentService = new learnContentService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
@@ -149,8 +151,16 @@ module.exports = class providerService {
             coverImageSize = 'thumbnail';
         }
 
+        let courses = {
+            list: [],
+            total: 0
+        };
+        if(!isList){
+            courses = await this.getProviderCourses(result.name);
+        }
+
         let data = {
-            title: result.title,
+            title: result.name,
             slug: result.slug,
             id: `PVDR_${result.id}`,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
@@ -187,6 +197,7 @@ module.exports = class providerService {
                 email: result.email,
                 website_link: result.website_link
             },
+            courses: courses
         };
 
         if(!isList){
@@ -265,6 +276,36 @@ module.exports = class providerService {
         } 
 
         return data;
+    }
+
+
+    async getProviderCourses(provider_name){
+        let courses = {
+            list: [],
+            total: 0
+        };
+        const query = {
+            "bool": {
+                "must": [
+                    {term: { "status.keyword": 'published' }},
+                    {term: { "provider_name.keyword": provider_name }}
+                ]
+             }
+        };
+
+        let queryPayload = {};
+        queryPayload.from = 0;
+        queryPayload.size = 3;
+        queryPayload.sort = "published_date:desc";
+
+        const result = await elasticService.search('learn-content', query, queryPayload);
+        if(result.hits && result.hits.length > 0){
+            courses.list = await LearnContentService.generateListViewData(result.hits);
+            courses.total = result.total.value;
+        }else{
+            callback({status: 'failed', message: 'Not found!'}, null);
+        }
+        return courses;        
     }
     
 
