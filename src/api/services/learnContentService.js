@@ -208,6 +208,19 @@ const formatFilters = async (data, filterData, query) => {
             options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
         };
 
+        //Force level options to predefined order
+        if(filter.elastic_attribute_name == 'level'){
+            let newOptions = [];
+            let orderedLabels = ['Beginner','Intermediate','Advanced'];
+            for(const label of orderedLabels){
+                let opt = formatedFilters.options.find(o => o.label === label);
+                if(opt){
+                    newOptions.push(opt);
+                }
+            }
+            formatedFilters.options = newOptions;
+        }
+
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
                 const maxValue = getMaxValue(initialData, filter.elastic_attribute_name);
@@ -883,6 +896,15 @@ module.exports = class learnContentService {
             }
         }
 
+        let cover_image = null;
+        if(result.images){
+            if(result.images[coverImageSize]){
+                cover_image = getMediaurl(result.images[coverImageSize]);
+            }else{
+                cover_image = getMediaurl(result.images['thumbnail']);
+            }
+        }
+
         let data = {
             title: result.title,
             slug: result.slug,
@@ -895,7 +917,7 @@ module.exports = class learnContentService {
             },
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images) ? getMediaurl(result.images[coverImageSize]) : null,
+            cover_image: cover_image,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
@@ -954,7 +976,7 @@ module.exports = class learnContentService {
             personalized_teaching: result.personalized_teaching,
             post_course_interaction: result.post_course_interaction,
             international_faculty: result.international_faculty,
-            batches: [],
+            batches: (result.batches) ? result.batches : [],
             enrollment_start_date: result.enrollment_start_date,
             enrollment_end_date: result.enrollment_end_date,
             hands_on_training: {
