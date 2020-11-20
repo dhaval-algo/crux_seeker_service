@@ -995,7 +995,7 @@ module.exports = class learnContentService {
                 highest_salary: result.highest_salary
             },
             corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
-            accreditations: (result.accreditations) ? result.accreditations : []
+            accreditations: []
         };
 
         if(!isList){
@@ -1036,6 +1036,17 @@ module.exports = class learnContentService {
             }
             if(result.medium){
                 data.course_details.tags.push(result.medium);
+            }
+
+            if(result.accreditations && result.accreditations.length > 0){
+                for(let accr of result.accreditations){                
+                    if(!isList){
+                        if(accr.logo){
+                            accr.logo = getMediaurl(accr.logo.thumbnail);                    
+                        }
+                        data.accreditations.push(accr);
+                    }
+                }
             }
         }
 
