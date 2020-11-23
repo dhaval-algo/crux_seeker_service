@@ -18,9 +18,6 @@ const iterate = (obj,smStream, route) => {
                     })
                     break;
                 default:
-                    smStream.write({
-                        url: `/course/${obj.slug}`,
-                    })
                     break;
             }
             break;
@@ -32,9 +29,6 @@ const iterate = (obj,smStream, route) => {
                     })
                     break; 
                 default:
-                    smStream.write({
-                        url: `/topic/${obj.slug}`,
-                    })
                     break;
             }
             break;
