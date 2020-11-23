@@ -14,6 +14,7 @@ module.exports = {
     },
 
     getSinglePartner: async (req, res) => {
+        console.log("Request <> ",req);
         const slug = req.params.slug;
         PartnerService.getPartner(slug, (err, data) => {
             if (data) {

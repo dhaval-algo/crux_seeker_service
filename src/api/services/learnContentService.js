@@ -915,6 +915,11 @@ module.exports = class learnContentService {
                 currency: result.provider_currency,
                 slug: result.provider_slug
             },
+            partner: {
+                name: result.partner_name,
+                slug: result.partner_slug,
+                partner_url: result.partner_url
+            },
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: cover_image,
