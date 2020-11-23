@@ -1,5 +1,7 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
+const learnContentService = require("./learnContentService");
+let LearnContentService = new learnContentService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
@@ -116,7 +118,9 @@ module.exports = class partnerService {
               {term: { "slug.keyword": slug }}
             ]
         }};
+        console.log("Single partner query <> ", JSON.stringify(query));
         const result = await elasticService.search('partner', query);
+        console.log("result <> ", result);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
@@ -144,13 +148,21 @@ module.exports = class partnerService {
             coverImageSize = 'thumbnail';
         }
 
+        let courses = {
+            list: [],
+            total: 0
+        };
+        if(!isList){
+            courses = await this.getPartnerCourses(result.name);
+        }
+
         let data = {
             name: result.name,
             slug: result.slug,            
             id: `PTNR_${result.id}`,
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
-            vision: (!isList) ? result.vision : null,
+            offerings: (!isList) ? result.offerings : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
@@ -171,7 +183,12 @@ module.exports = class partnerService {
             },
             linkedin_url: result.linkedin_url,
             facebook_url: result.facebook_url,
-            twitter_url: result.twitter_url
+            twitter_url: result.twitter_url,
+            courses: courses,
+            user_first_name: result.user_first_name,
+            user_last_name: result.user_last_name,
+            user_email: result.user_email,
+            user_id: result.user_id
         };
 
         if(result.awards && result.awards.length > 0){
@@ -208,6 +225,36 @@ module.exports = class partnerService {
         }       
 
         return data;
+    }
+
+
+    async getPartnerCourses(partner_name){
+        let courses = {
+            list: [],
+            total: 0
+        };
+        const query = {
+            "bool": {
+                "must": [
+                    {term: { "status.keyword": 'published' }},
+                    {term: { "partner_name.keyword": partner_name }}
+                ]
+             }
+        };
+
+        let queryPayload = {};
+        queryPayload.from = 0;
+        queryPayload.size = 3;
+        queryPayload.sort = "published_date:desc";
+
+        const result = await elasticService.search('learn-content', query, queryPayload);
+        if(result.hits && result.hits.length > 0){
+            courses.list = await LearnContentService.generateListViewData(result.hits);
+            courses.total = result.total.value;
+        }else{
+            callback({status: 'failed', message: 'Not found!'}, null);
+        }
+        return courses;        
     }
     
 
