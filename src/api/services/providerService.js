@@ -295,7 +295,7 @@ module.exports = class providerService {
 
         let queryPayload = {};
         queryPayload.from = 0;
-        queryPayload.size = 3;
+        queryPayload.size = 4;
         queryPayload.sort = "published_date:desc";
 
         const result = await elasticService.search('learn-content', query, queryPayload);
