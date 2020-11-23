@@ -1,6 +1,7 @@
 const SitemapStream = require('sitemap').SitemapStream
 const streamToPromise = require('sitemap').streamToPromise
 const { default: Axios } = require('axios');
+const elasticService = require('../../../api/services/elasticService');
 const { uploadFileToS3 } = require('../AWS');
 let slugs = []
 const iterate = (obj, smStream, route) => {
@@ -11,10 +12,10 @@ const iterate = (obj, smStream, route) => {
                 switch (obj[key]) {
                     case 'category':
                     case 'sub-category':
-                            // if (slugs.includes(obj.slug)){
-                            //     console.log(obj.slug, "includesss");
-                            //     break;
-                            // }
+                        // if (slugs.includes(obj.slug)){
+                        //     console.log(obj.slug, "includesss");
+                        //     break;
+                        // }
                         smStream.write({
                             url: `/courses/${obj.slug}`,
                         })
@@ -52,8 +53,150 @@ const iterate = (obj, smStream, route) => {
 }
 
 function createCourse() {
+    return new Promise(async (resolve) => {
+        try {
 
-    return true
+            let queryBody = {
+
+                "_source": ["slug", "updated_at"],
+                "query": {
+                    "match_all": {}
+                }
+
+            }
+
+            const result = await elasticService.plainSearch('learn-content', queryBody);
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            if (result.hits) {
+                if (result.hits.hits && result.hits.hits.length > 0) {
+                    for (const hit of result.hits.hits) {
+                        smStream.write({
+                            url: `/course/${hit._source.slug}`,
+                            lastmod: hit._source.updated_at
+                        });
+                    }
+                }
+
+
+                // fetch category tree
+
+                //generate course url 
+
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'course.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
+
+function createProvider() {
+    return new Promise(async (resolve) => {
+        try {
+
+            let queryBody = {
+                "_source": ["slug", "updated_at"],
+                "query": {
+                    "match_all": {}
+                }
+
+            }
+
+            const result = await elasticService.plainSearch('provider', queryBody);
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            if (result.hits) {
+                if (result.hits.hits && result.hits.hits.length > 0) {
+                    for (const hit of result.hits.hits) {
+                        smStream.write({
+                            url: `/institute/${hit._source.slug}`,
+                            lastmod: hit._source.updated_at
+                        });
+                    }
+                }
+
+
+                // fetch category tree
+
+                //generate course url 
+
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'institute.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
+
+function createPartner() {
+    return new Promise(async (resolve) => {
+        try {
+
+            let queryBody = {
+                "_source": ["slug", "updated_at"],
+                "query": {
+                    "match_all": {}
+                }
+            }
+
+            const result = await elasticService.plainSearch('partner', queryBody);
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            if (result.hits) {
+                if (result.hits.hits && result.hits.hits.length > 0) {
+                    for (const hit of result.hits.hits) {
+                        smStream.write({
+                            url: `/partner/${hit._source.slug}`,
+                            lastmod: hit._source.updated_at
+                        });
+                    }
+                }
+
+
+                // fetch category tree
+
+                //generate course url 
+
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'partner.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
 }
 
 function createCategories() {
@@ -127,12 +270,11 @@ module.exports = {
     createSiteMap: () => {
         return new Promise(async (resolve) => {
             try {
-                slugs = []
                 const result = await createCategories()
-                slugs = [] // before calling clear sllugs array 
                 await createTopic()
-                slugs = []
                 await createCourse()
+                await createPartner()
+                await createProvider()
                 resolve(result)
             } catch (error) {
                 console.log(error);
