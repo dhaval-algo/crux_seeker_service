@@ -24,7 +24,7 @@ router.post ('/upload-profile',authenticateJWT, userService.uploadProfilePic);
 router.get('/remove-profile', authenticateJWT, userService.removeProfilePic)
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
-    res.setHeader('Content-Type', 'text/xml')
+    res.setHeader('Content-Type', 'text/json')
     return res.status(200).send(res1)
 })
 
