@@ -62,6 +62,8 @@ const parseCategoryTree = (categoryTree) => {
 
         if(category.slug == 'others'){
             other_categories = category;
+            //Removing sub categories for 'Others
+            other_categories.child = [];
         }else{
             categories.push(category);
         }
