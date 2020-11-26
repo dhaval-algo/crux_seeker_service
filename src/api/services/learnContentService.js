@@ -452,7 +452,7 @@ const getFilterOption = (data, filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills'];
+    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
