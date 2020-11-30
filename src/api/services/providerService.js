@@ -186,6 +186,7 @@ module.exports = class providerService {
             },
             accreditations: [],
             awards: [],
+            alumni: [],
             contact_details: {
                 address_line1: result.address_line1,
                 address_line2: result.address_line2,
@@ -229,6 +230,17 @@ module.exports = class providerService {
                         accr.logo = getMediaurl(accr.logo.thumbnail);                    
                     }
                     data.accreditations.push(accr);
+                }
+            }
+        }
+
+        if(result.alumni && result.alumni.length > 0){
+            for(let alum of result.alumni){                
+                if(!isList){
+                    if(alum.photo){
+                        alum.photo = getMediaurl(alum.photo.thumbnail);                    
+                    }
+                    data.alumni.push(alum);
                 }
             }
         }
