@@ -1030,7 +1030,7 @@ const getEnquiryList = async (req,res) => {
         attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
         where:{
             userId:user.userId || user.id,
-            targetEntityType:"course",
+            // targetEntityType:"course",
             status:'submitted'
         },
         group : ['userId'],
@@ -1042,8 +1042,8 @@ const getEnquiryList = async (req,res) => {
       });
       //fetch enquiries
       let formSubConfig = { 
-        attributes: ['targetEntityId','otherInfo','createdAt'],
-        where: { userId:user.userId || user.id, targetEntityType:"course",status:'submitted'},
+        attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
+        where: { userId:user.userId || user.id,status:'submitted'},
         limit
       }
      
@@ -1066,9 +1066,11 @@ const getEnquiryList = async (req,res) => {
     for (const key in enquiryRecs) {
         let enquiry = {
             sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
-            courseName:'',
+            entityNamecourseName:'',
             categoryName:'',
-            createdAt:enquiryRecs[key].createdAt
+            createdAt:enquiryRecs[key].createdAt,
+            enquiryOn:'',
+            entityName:""
         }
         let queryBody = {
             "query": {
@@ -1077,13 +1079,27 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
-        const result = await elasticService.plainSearch('learn-content', queryBody);
-        if(result.hits){
-            console.log(result.hits.hits.length,'-------------------------------');
-            if(result.hits.hits && result.hits.hits.length > 0){
-                for(const hit of result.hits.hits){
-                    enquiry.courseName = hit._source.title
-                    enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+        if(enquiryRecs[key].targetEntityType =='course') {
+            enquiry.enquiryOn = 'course';
+            const result = await elasticService.plainSearch('learn-content', queryBody);
+            if(result.hits){
+                console.log(result.hits.hits.length,'-------------------------------');
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        // enquiry.courseName = hit._source.title
+                        enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                        enquiry.entityName = hit._source.title
+                    }
+                }
+            }
+        } else if(enquiryRecs[key].targetEntityType =='provider') {
+            enquiry.enquiryOn = 'provider';
+            const result = await elasticService.plainSearch('provider', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        enquiry.entityName = hit._source.title
+                    }
                 }
             }
         }
