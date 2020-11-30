@@ -133,6 +133,12 @@ const handleGeneralEnquiry = (resBody, req) => {
 
                     const formSub = await models.form_submission.create(form_submission)
                     formSubmissionId = formSub.id
+                } else {
+                    await models.form_submission.update({status:!!lastStep? 'submitted':'draft'},{
+                        where: {
+                            id:formSubmissionId
+                        }
+                    })
                 }
 
                 let form_submission_values = []
@@ -248,7 +254,7 @@ const updateProfileMeta = (formData, userObj) => {
     })
 }
 
-const fetchFormValues = (reqBody) => {
+const formSubmissionId = (reqBody) => {
     return new Promise(async (resolve, reject) => {
 
         const { requestFieldMetaType="", requestFields = [], user } = reqBody;
