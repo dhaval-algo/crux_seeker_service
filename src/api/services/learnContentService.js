@@ -1069,10 +1069,11 @@ module.exports = class learnContentService {
                     data.reviews.push(review);
                 }
 
-                if(ratings[review.rating]){
-                    ratings[review.rating] += 1; 
+                let rating_round = Math.floor(review.rating);
+                if(ratings[rating_round]){
+                    ratings[rating_round] += 1; 
                 }else{
-                    ratings[review.rating] = 1; 
+                    ratings[rating_round] = 1; 
                 }
             }
 
@@ -1080,8 +1081,6 @@ module.exports = class learnContentService {
             data.ratings.average_rating = round(average_rating, 0.5);
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
-
-            
 
             //add missing ratings
             for(let i=0; i<5; i++){
