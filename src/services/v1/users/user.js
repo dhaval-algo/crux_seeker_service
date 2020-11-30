@@ -1079,6 +1079,7 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
+        console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
