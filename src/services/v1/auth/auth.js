@@ -7,6 +7,10 @@ let privateKEY  = fs.readFileSync(appRoot+'/keys/private.key', 'utf8');
 let publicKEY  = fs.readFileSync(appRoot+'/keys/public.key', 'utf8'); 
 
 const signToken = (payload,options) => {
+    let signObj = JSON.parse(JSON.stringify(payload))
+    if(payload.user.name) {
+        delete signObj.user.name
+    }
     let signOptions = {
         issuer: '',
         audience: '',
@@ -14,7 +18,7 @@ const signToken = (payload,options) => {
         algorithm:  "RS256",
         ...options
     }
-    return jwt.sign(payload, privateKEY, signOptions);
+    return jwt.sign(signObj, privateKEY, signOptions);
 }
 
 const verifyToken = async (token, options) => {
