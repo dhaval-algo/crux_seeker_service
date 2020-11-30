@@ -254,7 +254,7 @@ const updateProfileMeta = (formData, userObj) => {
     })
 }
 
-const formSubmissionId = (reqBody) => {
+const fetchFormValues = (reqBody) => {
     return new Promise(async (resolve, reject) => {
 
         const { requestFieldMetaType="", requestFields = [], user } = reqBody;
