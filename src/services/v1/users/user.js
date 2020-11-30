@@ -1086,7 +1086,7 @@ const getEnquiryList = async (req,res) => {
                 console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
-                        enquiry.courseName = hit._source.title
+                        // enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.entityName = hit._source.title
                     }
@@ -1096,7 +1096,6 @@ const getEnquiryList = async (req,res) => {
             enquiry.enquiryOn = 'provider';
             const result = await elasticService.plainSearch('provider', queryBody);
             if(result.hits){
-                console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         enquiry.entityName = hit._source.title
