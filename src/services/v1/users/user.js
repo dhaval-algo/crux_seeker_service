@@ -1100,7 +1100,7 @@ const getEnquiryList = async (req,res) => {
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
-                        enquiry.entityName = hit._source.title
+                        enquiry.entityName = hit._source.name
                     }
                 }
             }
