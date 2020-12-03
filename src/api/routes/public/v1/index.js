@@ -5,6 +5,7 @@ const learnContentController = require('../../../controllers/learnContentControl
 const providerController = require('../../../controllers/providerController');
 const categoryController = require('../../../controllers/categoryController');
 const partnerController = require('../../../controllers/partnerController');
+const searchController = require('../../../controllers/searchController');
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
@@ -20,5 +21,7 @@ router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
 
 router.get('/categories/tree', categoryController.getCategoryTree);
+
+router.get('/search/:keyword', searchController.getSearchResult);
 
 module.exports = router;

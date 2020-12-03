@@ -672,10 +672,22 @@ module.exports = class learnContentService {
                     }
             }) */
 
-            query.bool.must.push( 
+            /* query.bool.must.push( 
                 {
                     match: {
                         "title": decodeURIComponent(req.query['q'])
+                    }
+                }
+            ); */
+
+            query.bool.must.push( 
+                {
+                    "multi_match": {
+                      "query": decodeURIComponent(req.query['q']),
+                      "fields": [
+                        "title",
+                        "provider_name"
+                      ]
                     }
                 }
             );
