@@ -192,7 +192,8 @@ const prepareStrapiData = (enquiry_id) => {
             userId:'',
             enquiry_type:"",
             enquiry_on:"",
-            entity_id:""
+            entity_id:"",
+            learn_content:null,
         }
         try {
 
@@ -205,6 +206,7 @@ const prepareStrapiData = (enquiry_id) => {
             strapiObj.enquiry_type = formSubRec.formTypeSource;
             strapiObj.entity_id = formSubRec.targetEntityId;
             if(formSubRec.targetEntityType == "course") {
+                strapiObj.learn_content = formSubRec.targetEntityId;
                 strapiObj.enquiry_on = "learn_content";
             } else if(formSubRec.targetEntityType == "provider") {
                 strapiObj.enquiry_on = "provider";
