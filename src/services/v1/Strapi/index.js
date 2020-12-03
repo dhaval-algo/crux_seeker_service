@@ -194,6 +194,7 @@ const prepareStrapiData = (enquiry_id) => {
             enquiry_on:"",
             entity_id:"",
             learn_content:null,
+            categories_list:null
         }
         try {
 
@@ -284,6 +285,7 @@ const prepareStrapiData = (enquiry_id) => {
                         for(const hit of result.hits.hits){
                             strapiObj.course_name = hit._source.title
                             strapiObj.course_category = hit._source.categories? hit._source.categories.toString():""
+                            strapiObj.categories_list = hit._source.categories_list? hit._source.categories_list:null
                         }
                     }
                 }
