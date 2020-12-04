@@ -313,7 +313,7 @@ const createRecordInStrapi = async (enquiryId) => {
         console.log(response.data);
         return
     }).catch(e => {
-        console.log(e.response.data);
+        console.log(e.response.data, "error in srapo");
         return
     })
 }
