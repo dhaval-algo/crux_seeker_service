@@ -205,9 +205,9 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.userId = formSubRec.userId
             }
             strapiObj.enquiry_type = formSubRec.formTypeSource;
-            strapiObj.entity_id = formSubRec.targetEntityId;
+            strapiObj.entity_id = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
             if(formSubRec.targetEntityType == "course") {
-                strapiObj.learn_content = formSubRec.targetEntityId;
+                strapiObj.learn_content = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
                 strapiObj.enquiry_on = "learn_content";
             } else if(formSubRec.targetEntityType == "provider") {
                 strapiObj.enquiry_on = "provider";
