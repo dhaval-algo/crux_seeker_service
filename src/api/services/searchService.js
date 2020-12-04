@@ -3,12 +3,12 @@ const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 
 const entityQueryMapping = {
-    'learn-content': {label: 'Course', status: 'published', fields: ['title','provider_name'], source_fields: ['title']},
-    'provider': {label: 'Institute', status: 'approved', fields: ['name'], source_fields: ['name']},
+    'learn-content': {label: 'Course', status: 'published', fields: ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags'], source_fields: ['title']},
+    'provider': {label: 'Institute', status: 'approved', fields: ['name','slug','institute_types','programs','program_types','study_modes'], source_fields: ['name','slug']},
     //'article': {label: 'Article', status: 'published', fields: ['title'], source_fields: ['title']}
 };
 
-const MAX_PER_ENTITY = 3;
+const MAX_PER_ENTITY = 20;
 
 const generateEntityQuery = (entity, keyword) => {
     let entityConfig = entityQueryMapping[entity];
@@ -22,7 +22,7 @@ const generateEntityQuery = (entity, keyword) => {
             },
             {
               "multi_match": {
-                "query": keyword,
+                "query": decodeURIComponent(keyword),
                 "fields": entityConfig.fields
               }
             },
@@ -73,15 +73,26 @@ module.exports = class searchService {
         console.log("Query <> ", JSON.stringify(query));
 
         const result = await elasticService.search(queryEntities.join(","), query);
-        if(result.total && result.total.value > 0){
-
-            let data = [];
+        let data = {
+            result: [],
+            totalCount: 0,
+            viewAll: false
+        };
+        if(result.total && result.total.value > 0){            
 
             for(const hit of result.hits){
                 let data_source = hit._index;
                 let cardData = await this.getCardData(data_source, hit._source);
+                
+                if(data.result.length < MAX_PER_ENTITY){
+                    data.result.push(cardData);
+                }                    
+                data.totalCount++;
+                if(data.totalCount > MAX_PER_ENTITY){
+                    data.viewAll = true;
+                }
 
-                let existing = data.find(o => o.index === data_source);
+                /* let existing = data.find(o => o.index === data_source);
                 if(existing){
                     if(existing.result.length < MAX_PER_ENTITY){
                         existing.result.push(cardData);
@@ -98,11 +109,11 @@ module.exports = class searchService {
                         totalResult: 1,
                         viewAll: false
                     });
-                }          
+                }    */       
             }            
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: []});
+            callback(null, {status: 'success', message: 'No records found!', data: data});
         }        
     }
 
@@ -112,6 +123,7 @@ module.exports = class searchService {
         let data = {};
         if(data_source == 'learn-content'){
             data = {
+                index: data_source,
                 title: entityData.title,
                 slug: entityData.slug,
                 rating: entityData.average_rating,
@@ -120,6 +132,7 @@ module.exports = class searchService {
             };
         }else if(data_source == 'provider'){
             data = {
+                index: data_source,
                 title: entityData.name,
                 slug: entityData.slug,
                 description: "Institute"
