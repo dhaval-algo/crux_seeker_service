@@ -682,9 +682,15 @@ module.exports = class learnContentService {
 
             query.bool.must.push( 
                 {
-                    "multi_match": {
+                    /* "multi_match": {
                       "query": decodeURIComponent(req.query['q']),
                       "fields": ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags']
+                    } */
+                    "query_string" : {
+                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
+                        "fields" : ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags'],
+                        "analyze_wildcard" : true,
+                        "allow_leading_wildcard": true
                     }
                 }
             );
