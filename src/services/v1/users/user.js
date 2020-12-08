@@ -1070,8 +1070,7 @@ const getEnquiryList = async (req,res) => {
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
-            instituteName:"",
-            entityName:""
+            instituteName:""
         }
         let queryBody = {
             "query": {
@@ -1088,9 +1087,8 @@ const getEnquiryList = async (req,res) => {
                 console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
-                        // enquiry.courseName = hit._source.title
+                        enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
-                        enquiry.entityName = hit._source.title
                     }
                 }
             }
@@ -1101,7 +1099,7 @@ const getEnquiryList = async (req,res) => {
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
-                        enquiry.entityName = hit._source.name
+                        // enquiry.entityName = hit._source.name
                         enquiry.instituteName = hit._source.name
                     }
                 }
