@@ -1066,10 +1066,11 @@ const getEnquiryList = async (req,res) => {
     for (const key in enquiryRecs) {
         let enquiry = {
             sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
-            entityNamecourseName:'',
+            courseName:'',
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
+            instituteName:"",
             entityName:""
         }
         let queryBody = {
@@ -1101,6 +1102,7 @@ const getEnquiryList = async (req,res) => {
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         enquiry.entityName = hit._source.name
+                        enquiry.instituteName = hit._source.name
                     }
                 }
             }
