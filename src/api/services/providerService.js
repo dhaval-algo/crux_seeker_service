@@ -401,7 +401,8 @@ module.exports = class providerService {
                 email: result.email,
                 website_link: result.website_link
             },
-            courses: courses
+            courses: courses,
+            course_count: (result.course_count) ? result.course_count : 0
         };
 
         if(!isList){
