@@ -57,21 +57,12 @@ module.exports = class sectionService {
                     const hit = hits[index];
                     console.log(hit);
                     let section = buckets.find(bucket => bucket.key == hit._source.slug);
-                    if(section) {
+                    if(section && section.doc_count) {
                         let secR = {
                             label: hit._source.default_display_label,
                             slug: hit._source.slug,
                             type: "category",
                             count: section.doc_count,
-                            child: []
-                        }
-                        data.push(secR)
-                    } else {
-                        let secR = {
-                            label: hit._source.default_display_label,
-                            slug: hit._source.slug,
-                            type: "category",
-                            count: 0,
                             child: []
                         }
                         data.push(secR)
