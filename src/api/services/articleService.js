@@ -1,7 +1,6 @@
 const elasticService = require("./elasticService");
 const learnContentService = require("./learnContentService");
 const fetch = require("node-fetch");
-let LearnContentService = new learnContentService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
@@ -9,7 +8,7 @@ const MAX_RESULT = 10000;
 const keywordFields = ['name'];
 
 const getFilterConfigs = async () => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Provider&filterable_eq=true&_sort=order:ASC`);
+    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Article&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
     return json;
@@ -87,7 +86,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
     }
     console.log("Query payload for filters data <> ",queryPayload);
     console.log("query for filters data <> ",query);
-    const result = await elasticService.search('provider', query, {from: 0, size: MAX_RESULT});
+    const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
         console.log("Main data length <> ", result.total.value);
         console.log("Result data length <> ", result.hits.length);
@@ -221,16 +220,16 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
 };
 
 
-module.exports = class providerService {
+module.exports = class articleService {
 
-    async getProviderList(req, callback){
+    async getArticleList(req, callback){
         const filterConfigs = await getFilterConfigs();
         //console.log("filterConfigs <> ", filterConfigs);
         const query = { 
             "bool": {
                 //"should": [],
                 "must": [
-                    {term: { "status.keyword": 'approved' }}                
+                    {term: { "status.keyword": 'published' }}                
                 ],
                 "filter": []
             }
@@ -243,7 +242,7 @@ module.exports = class providerService {
         console.log("paginationQuery <> ", paginationQuery);
 
         if(!req.query['sort']){
-            req.query['sort'] = "name:asc";
+            req.query['sort'] = "published_date:desc";
         }
 
         if(req.query['sort']){
@@ -277,7 +276,7 @@ module.exports = class providerService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['name','slug','institute_types','programs','program_types','study_modes'],
+                        "fields" : ['title','slug','tags','section_name','levels','author_first_name','author_last_name','categories'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -286,7 +285,7 @@ module.exports = class providerService {
         }
         console.log("Final Query <> ", JSON.stringify(query));
 
-        const result = await elasticService.search('provider', query, queryPayload, queryString);
+        const result = await elasticService.search('article', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits);
@@ -319,14 +318,14 @@ module.exports = class providerService {
         }        
     }
 
-    async getProvider(slug, callback){
+    async getArticle(slug, callback){
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
-              {term: { "status.keyword": 'approved' }}
+              {term: { "status.keyword": 'published' }}
             ]
         }};
-        const result = await elasticService.search('provider', query);
+        const result = await elasticService.search('article', query);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
@@ -354,174 +353,88 @@ module.exports = class providerService {
             coverImageSize = 'thumbnail';
         }
 
-        let courses = {
-            list: [],
-            total: 0
-        };
-        if(!isList){
-            courses = await this.getProviderCourses(result.name);
-        }
-
         let data = {
-            title: result.name,
+            title: result.title,
             slug: result.slug,
-            id: `PVDR_${result.id}`,
-            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
+            id: `ARTCL_PUB_${result.id}`,
             cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
-            embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
-            overview: result.overview,
-            programs: (result.programs) ? result.programs : [],
-            institute_types: (result.institute_types) ? result.institute_types : [],
-            currency: result.currency,
-            facilities: result.facilities,
-            gender_accepted: result.gender_accepted,
-            establishment_year: result.establishment_year,
-            study_modes: (result.study_modes) ? result.study_modes : [],
-            program_types: (result.program_types) ? result.program_types : [],
-
-            
-            reviews: [],
-            ratings: {
-                total_review_count: result.reviews ? result.reviews.length : 0,
-                average_rating: 0,
-                average_rating_actual: 0,
-                rating_distribution: []
+            short_description: result.short_description,
+            content: (!isList) ? result.content : null,
+            author: {
+                id: result.author_id,
+                username: result.author_username,
+                firstname: result.author_firstname,
+                lastname: result.author_lastname,
+                designation: result.author_designation,
+                bio: result.author_bio
             },
-            accreditations: [],
-            awards: [],
-            alumni: [],
-            contact_details: {
-                address_line1: result.address_line1,
-                address_line2: result.address_line2,
-                city: result.city,
-                state: result.state,
-                pincode: result.pincode,
-                country: result.country,
-                phone: result.phone,
-                email: result.email,
-                website_link: result.website_link
+            comments: (result.comments && !isList) ? result.comments : [],
+            social_links: {
+                facebook: result.facebook_link,
+                linkedin: result.linkedin_link,
+                twitter: result.twitter_link
             },
-            courses: courses,
-            course_count: (result.course_count) ? result.course_count : 0
+            published_date: result.published_date,
+            categories: (result.categories) ? result.categories : [],
+            levels: (result.levels) ? result.levels : [],
+            tags: (result.tags) ? result.tags : [],            
+            section_name: result.section_name,
+            section_slug: result.section_slug,
+            related_articles: (result.related_articles && !isList) ? await this.getArticleByIds(result.related_articles) : [],
+            recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : []
         };
 
         if(!isList){
             data.meta_information = {
-                student_educational_background_diversity: result.student_educational_background_diversity,
-                student_nationality_diversity: result.student_nationality_diversity,
-                student_gender_diversity: result.student_gender_diversity,
-                student_avg_experience_diversity: result.student_avg_experience_diversity,
-                highest_package_offered: result.highest_package_offered,
-                median_package_offered: result.median_package_offered
+                meta_tile: result.meta_tile,
+                meta_description: result.meta_description,
+                meta_keywords: result.meta_keywords
             }
         }
-
-        if(result.awards && result.awards.length > 0){
-            for(let award of result.awards){                
-                if(!isList){
-                    if(award.image){
-                        award.image = getMediaurl(award.image.thumbnail);                    
-                    }
-                    data.awards.push(award);
-                }
-            }
-        }
-
-        if(result.accreditations && result.accreditations.length > 0){
-            for(let accr of result.accreditations){                
-                if(!isList){
-                    if(accr.logo){
-                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
-                    }
-                    data.accreditations.push(accr);
-                }
-            }
-        }
-
-        if(result.alumni && result.alumni.length > 0){
-            for(let alum of result.alumni){                
-                if(!isList){
-                    if(alum.photo){
-                        alum.photo = getMediaurl(alum.photo.thumbnail);                    
-                    }
-                    data.alumni.push(alum);
-                }
-            }
-        }
-        
-        if(result.reviews && result.reviews.length > 0){
-            let totalRating = 0;
-            let ratings = {};
-            for(let review of result.reviews){
-                totalRating += review.rating;
-                
-                if(!isList){
-                    if(review.photo){
-                        review.photo = getMediaurl(review.photo.thumbnail);                    
-                    }
-                    data.reviews.push(review);
-                }
-
-                if(ratings[review.rating]){
-                    ratings[review.rating] += 1; 
-                }else{
-                    ratings[review.rating] = 1; 
-                }
-            }
-
-            const average_rating = totalRating/result.reviews.length;            
-            data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);            
-            let rating_distribution = [];           
-
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
-        } 
 
         return data;
     }
 
 
-    async getProviderCourses(provider_name){
-        let courses = {
-            list: [],
-            total: 0
-        };
-        const query = {
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }},
-                    {term: { "provider_name.keyword": provider_name }}
-                ]
-             }
-        };
+    async getArticleByIds(articleIds){
+        let articles = [];
+        let articleOrdered = [];
+        /* let ids = [];
+        const idPrefix = "ARTCL_PUB_";
+        if(articleIds){
+            ids = articleIds.map(e => idPrefix+e.toString());
+        } */
+        if(articleIds.length > 0){
+            const queryBody = {
+                "query": {
+                  /* "ids": {
+                      "values": ids
+                  }, */
+                  "bool": {
+                    "must": [
+                      {term: { "status.keyword": 'published' }},
+                      {terms: { "id": articleIds }}
+                    ]
+                 }
+                }
+            };
 
-        let queryPayload = {};
-        queryPayload.from = 0;
-        queryPayload.size = 4;
-        queryPayload.sort = "published_date:desc";
-
-        const result = await elasticService.search('learn-content', query, queryPayload);
-        if(result.hits && result.hits.length > 0){
-            courses.list = await LearnContentService.generateListViewData(result.hits);
-            courses.total = result.total.value;
+            const result = await elasticService.plainSearch('article', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        const article = await this.generateSingleViewData(hit._source, true);
+                        articles.push(article);
+                    }
+                    for(const id of articleIds){
+                        let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
+                        articleOrdered.push(article);
+                    }
+                }
+            }            
         }
-        return courses;        
+        return articleOrdered;
     }
-    
 
 
 }
