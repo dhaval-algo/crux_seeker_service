@@ -1,11 +1,10 @@
 const elasticService = require("./elasticService");
-const learnContentService = require("./learnContentService");
 const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
-const keywordFields = ['name'];
+const keywordFields = ['title'];
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Article&filterable_eq=true&_sort=order:ASC`);
@@ -34,7 +33,7 @@ const parseQueryFilters = (filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['programs','study_modes','institute_types','location','gender_accepted'];
+    const keywordFields = ['title','section_name','categories','levels'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
@@ -363,8 +362,8 @@ module.exports = class articleService {
             author: {
                 id: result.author_id,
                 username: result.author_username,
-                firstname: result.author_firstname,
-                lastname: result.author_lastname,
+                firstname: result.author_first_name,
+                lastname: result.author_last_name,
                 designation: result.author_designation,
                 bio: result.author_bio
             },
