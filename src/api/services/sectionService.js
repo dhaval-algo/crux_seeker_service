@@ -4,7 +4,6 @@ const articleService = require('./articleService');
 const ArticleService = new articleService()
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
-    console.log(section);
     if (!!section.featured_articles && section.featured_articles.length) {
       section.featured_articles = await getActiveArticles(section.featured_articles)
     }
@@ -59,26 +58,18 @@ const buildSectionView = (section) => {
 
 const getActiveArticles =  (articles) => {
   return new Promise(async(resolve) => {
-    articles = articles.map((art) => { return `ARTCL_${art}`})
     const query = {
-      "bool": {
-        "must": [
-          {
-            "term": {
-              "status.keyword": "pu"
-            }
-            
-          }
-        ],
-        "filter": [
-          {
-            "ids": {
-              "values": articles           
-              
-            }
-          }
-        ]        
-      }     
+      "query": {
+        /* "ids": {
+            "values": ids
+        }, */
+        "bool": {
+          "must": [
+            {term: { "status.keyword": 'published' }},
+            {terms: { "id": articles }}
+          ]
+       }
+      }
     
     }
   
@@ -110,7 +101,7 @@ module.exports = class sectionService {
             "must": [
               {
                 "term": {
-                  "status.keyword": "approved"
+                  "status.keyword": "published"
                 }
               }
             ]
