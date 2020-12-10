@@ -1,6 +1,7 @@
 const elasticService = require("./elasticService");
+const articleService = require('./articleService');
 
-
+const ArticleService = new articleService()
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
     console.log(section);
@@ -9,47 +10,47 @@ const buildSectionView = (section) => {
     }
   
     if (!!section.trending_articles && section.trending_articles.length) {
-      section.trending_articles = await getActiveArticles(section.trending_articles)
+      section.trending_articles = await ArticleService.getArticleByIds(section.trending_articles)
     }
     if (!!section.recent_articles && section.recent_articles.length) {
-      section.recent_articles = await getActiveArticles(section.recent_articles)
+      section.recent_articles = await ArticleService.getArticleByIds(section.recent_articles)
     }
     if (!!section.recommended_articles && section.recommended_articles.length) {
-      section.recommended_articles = await getActiveArticles(section.recommended_articles)
+      section.recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles)
     }
     if (!!section.location_display_labels && section.location_display_labels.length) {
-      section.location_display_labels = await getActiveArticles(section.location_display_labels)
+      section.location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels)
     }
   
     if (!!section.career_guidance && section.career_guidance.length) {
-      section.career_guidance = await getActiveArticles(section.career_guidance)
+      section.career_guidance = await ArticleService.getArticleByIds(section.career_guidance)
     }
     if (!!section.expert_interview_advice && section.expert_interview_advice.length) {
-      section.expert_interview_advice = await getActiveArticles(section.expert_interview_advice)
+      section.expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice)
     }
     if (!!section.improve_your_resume && section.improve_your_resume.length) {
-      section.improve_your_resume = await getActiveArticles(section.improve_your_resume)
+      section.improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume)
     }
   
     if (!!section.all_about_linkedin && section.all_about_linkedin.length) {
-      section.all_about_linkedin = await getActiveArticles(section.all_about_linkedin)
+      section.all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin)
     }
     if (!!section.best_ways_to_learn && section.best_ways_to_learn.length) {
-      section.best_ways_to_learn = await getActiveArticles(section.best_ways_to_learn)
+      section.best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn)
     }
     if (!!section.top_skills_of_the_future && section.top_skills_of_the_future.length) {
-      section.top_skills_of_the_future = await getActiveArticles(section.top_skills_of_the_future)
+      section.top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future)
     }
     if (!!section.important_skills_of_the_future && section.important_skills_of_the_future.length) {
-      section.important_skills_of_the_future = await getActiveArticles(section.important_skills_of_the_future)
+      section.important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future)
     }
   
     if (!!section.tips_for_learners && section.tips_for_learners.length) {
-      section.tips_for_learners = await getActiveArticles(section.tips_for_learners)
+      section.tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners)
     }
 
     if (!!section.best_certifications && section.best_certifications.length) {
-      section.best_certifications = await getActiveArticles(section.best_certifications)
+      section.best_certifications = await ArticleService.getArticleByIds(section.best_certifications)
     }
     return resolve(section)
   })
@@ -58,13 +59,13 @@ const buildSectionView = (section) => {
 
 const getActiveArticles =  (articles) => {
   return new Promise(async(resolve) => {
-    articles = articles.map((art) => { return `ARTCL_PUB_${art}`})
+    articles = articles.map((art) => { return `ARTCL_${art}`})
     const query = {
       "bool": {
         "must": [
           {
             "term": {
-              "status.keyword": "published"
+              "status.keyword": "pu"
             }
             
           }
@@ -86,9 +87,9 @@ const getActiveArticles =  (articles) => {
     if(resultT.hits){
       if(resultT.hits && resultT.hits.length > 0){
           //console.log("result.hits.hits <> ", result.hits.hits);
-          resultT.hits.map(function(obj) {
-            dataArray.push(obj._source)
-            return
+          resultT.hits.map(async function(obj) {
+            let artcl = await ArticleService.generateSingleViewData(obj._source)
+             dataArray.push(artcl)
           });
       }
     }
