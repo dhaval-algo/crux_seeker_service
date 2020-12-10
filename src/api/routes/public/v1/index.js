@@ -27,4 +27,5 @@ router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/search/:keyword', searchController.getSearchResult);
 
 router.get('/section/tree',sectionController.getCategoryTree)
+router.get('/section/:slug',sectionController.getSectionContent)
 module.exports = router;
