@@ -69,9 +69,8 @@ const getActiveArticles =  (articles) => {
         "filter": [
           {
             "ids": {
-              "values": [
-                  articles           
-              ]
+              "values": articles           
+              
             }
           }
         ]        
@@ -79,12 +78,12 @@ const getActiveArticles =  (articles) => {
     
     }
   
-    const resultT = await elasticService.search('section',query)
+    const resultT = await elasticService.search('article',query)
     let dataArray = []
-    if(result.hits){
-      if(result.hits.hits && result.hits.hits.length > 0){
+    if(resultT.hits){
+      if(resultT.hits && resultT.hits.length > 0){
           //console.log("result.hits.hits <> ", result.hits.hits);
-          resultT.hits.hits.map(function(obj) {
+          resultT.hits.map(function(obj) {
             dataArray.push(obj._source)
             return
           });
