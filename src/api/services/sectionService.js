@@ -48,6 +48,9 @@ const buildSectionView = (section) => {
       section.tips_for_learners = await getActiveArticles(section.tips_for_learners)
     }
 
+    if (!!section.best_certifications && section.best_certifications.length) {
+      section.best_certifications = await getActiveArticles(section.best_certifications)
+    }
     return resolve(section)
   })
   
