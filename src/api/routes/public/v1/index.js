@@ -8,6 +8,8 @@ const partnerController = require('../../../controllers/partnerController');
 const searchController = require('../../../controllers/searchController');
 const ArticleController = require('../../../controllers/articleController');
 
+const sectionController = require('../../../controllers/sectionController')
+
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
 
@@ -25,6 +27,8 @@ router.get('/categories/tree', categoryController.getCategoryTree);
 
 router.get('/search/:keyword', searchController.getSearchResult);
 
+router.get('/section/tree',sectionController.getCategoryTree)
+router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
 router.get('/articles/:slug', ArticleController.getSingleArticle);
 
