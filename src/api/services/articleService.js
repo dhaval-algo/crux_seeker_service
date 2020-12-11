@@ -33,7 +33,7 @@ const parseQueryFilters = (filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['title','section_name','categories','levels'];
+    const keywordFields = ['title','section_name','categories','levels','tags'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
