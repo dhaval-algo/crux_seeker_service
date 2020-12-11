@@ -955,6 +955,7 @@ const wishListCourseData = async (req,res) => {
             where
         })
         let wishedListIds = resForm.map((rec) => rec.value)
+        wishedListIds = wishedListIds.filter(w => !!w)
         if(!wishedListIds.length) {
             return res.status(200).json({
                 success:true,
