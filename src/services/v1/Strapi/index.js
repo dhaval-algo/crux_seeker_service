@@ -26,7 +26,7 @@ const getObjectData = (metaObj) => {
         return resolve(data)
     }) 
 }
-
+   
 const cleanObject = (obj) => {
     for (var propName in obj) { 
       if (obj[propName] === null || obj[propName] === undefined || obj[propName] == "") {
@@ -189,7 +189,12 @@ const prepareStrapiData = (enquiry_id) => {
             course_name:"",
             course_category:"",
             date_of_birth:'',
-            userId:''
+            userId:'',
+            enquiry_type:"",
+            enquiry_on:"",
+            entity_id:"",
+            learn_content:null,
+            categories_list:null
         }
         try {
 
@@ -198,6 +203,14 @@ const prepareStrapiData = (enquiry_id) => {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
                 strapiObj.source_url = formSubRec.otherInfo.sourceUrl
                 strapiObj.userId = formSubRec.userId
+            }
+            strapiObj.enquiry_type = formSubRec.formTypeSource;
+            strapiObj.entity_id = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
+            if(formSubRec.targetEntityType == "course") {
+                strapiObj.learn_content = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
+                strapiObj.enquiry_on = "learn_content";
+            } else if(formSubRec.targetEntityType == "provider") {
+                strapiObj.enquiry_on = "provider";
             }
             formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
             if(formSubValRec != null) {
@@ -272,6 +285,7 @@ const prepareStrapiData = (enquiry_id) => {
                         for(const hit of result.hits.hits){
                             strapiObj.course_name = hit._source.title
                             strapiObj.course_category = hit._source.categories? hit._source.categories.toString():""
+                            strapiObj.categories_list = hit._source.categories_list? hit._source.categories_list:null
                         }
                     }
                 }
@@ -294,10 +308,13 @@ const createRecordInStrapi = async (enquiryId) => {
         delete data.userId;
         data.enquiry_owner = userRes
     }
+
     axios.post(request_url, data).then((response) => {
         console.log(response.data);
+        return
     }).catch(e => {
         console.log(e.response.data);
+        return
     })
 }
 
