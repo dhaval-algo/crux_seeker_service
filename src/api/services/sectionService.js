@@ -7,10 +7,10 @@ const buildSectionView = (section) => {
     if (!!section.featured_articles && section.featured_articles.length) {
       section.featured_articles = await getActiveArticles(section.featured_articles)
     }
-  
     if (!!section.trending_articles && section.trending_articles.length) {
       section.trending_articles = await ArticleService.getArticleByIds(section.trending_articles)
     }
+
     if (!!section.recent_articles && section.recent_articles.length) {
       section.recent_articles = await ArticleService.getArticleByIds(section.recent_articles)
     }
@@ -73,7 +73,7 @@ const getActiveArticles =  (articles) => {
     
     }
   
-    const resultT = await elasticService.search('article',query)
+    const resultT = await elasticService.plainSearch('article',query)
     let dataArray = []
     if(resultT.hits){
       if(resultT.hits && resultT.hits.length > 0){
@@ -174,6 +174,7 @@ module.exports = class sectionService {
           ]
         }
       };
+      console.log(query);
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
         data = await buildSectionView(result.hits[0]._source)
