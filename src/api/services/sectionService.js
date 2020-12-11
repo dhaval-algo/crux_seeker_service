@@ -6,50 +6,65 @@ const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
     if (!!section.featured_articles && section.featured_articles.length) {
       section.featured_articles = await getActiveArticles(section.featured_articles)
+      section.featured_articles =  section.featured_articles.filter(art => !!art)
     }
     if (!!section.trending_articles && section.trending_articles.length) {
       section.trending_articles = await ArticleService.getArticleByIds(section.trending_articles)
+      section.trending_articles =  section.trending_articles.filter(art => !!art)
     }
 
     if (!!section.recent_articles && section.recent_articles.length) {
       section.recent_articles = await ArticleService.getArticleByIds(section.recent_articles)
+      section.recent_articles =  section.recent_articles.filter(art => !!art)
+
     }
     if (!!section.recommended_articles && section.recommended_articles.length) {
       section.recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles)
+      section.recommended_articles =  section.recommended_articles.filter(art => !!art)
     }
     if (!!section.location_display_labels && section.location_display_labels.length) {
       section.location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels)
+      section.location_display_labels =  section.location_display_labels.filter(art => !!art)
     }
   
     if (!!section.career_guidance && section.career_guidance.length) {
       section.career_guidance = await ArticleService.getArticleByIds(section.career_guidance)
+      section.career_guidance =  section.career_guidance.filter(art => !!art)
     }
     if (!!section.expert_interview_advice && section.expert_interview_advice.length) {
       section.expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice)
+      section.expert_interview_advice =  section.expert_interview_advice.filter(art => !!art)
     }
     if (!!section.improve_your_resume && section.improve_your_resume.length) {
       section.improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume)
+      section.improve_your_resume =  section.improve_your_resume.filter(art => !!art)
     }
   
     if (!!section.all_about_linkedin && section.all_about_linkedin.length) {
       section.all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin)
+      section.all_about_linkedin =  section.all_about_linkedin.filter(art => !!art)
     }
     if (!!section.best_ways_to_learn && section.best_ways_to_learn.length) {
       section.best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn)
+      section.best_ways_to_learn =  section.best_ways_to_learn.filter(art => !!art)
     }
     if (!!section.top_skills_of_the_future && section.top_skills_of_the_future.length) {
       section.top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future)
+      section.top_skills_of_the_future =  section.top_skills_of_the_future.filter(art => !!art)
     }
     if (!!section.important_skills_of_the_future && section.important_skills_of_the_future.length) {
       section.important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future)
+      section.important_skills_of_the_future =  section.important_skills_of_the_future.filter(art => !!art)
     }
   
     if (!!section.tips_for_learners && section.tips_for_learners.length) {
       section.tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners)
+      section.tips_for_learners =  section.tips_for_learners.filter(art => !!art)
     }
 
     if (!!section.best_certifications && section.best_certifications.length) {
       section.best_certifications = await ArticleService.getArticleByIds(section.best_certifications)
+      section.best_certifications =  section.best_certifications.filter(art => !!art)
     }
     return resolve(section)
   })
