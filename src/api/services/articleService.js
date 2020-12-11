@@ -352,6 +352,18 @@ module.exports = class articleService {
             coverImageSize = 'thumbnail';
         }
 
+        let author = (!isList) ? await this.getAuthor(result.author_id) : null;
+        if(!author){
+            author = {
+                id: result.author_id,
+                username: result.author_username,
+                firstname: result.author_first_name,
+                lastname: result.author_last_name,
+                designation: result.author_designation,
+                bio: result.author_bio
+            };
+        }
+
         let data = {
             title: result.title,
             slug: result.slug,
@@ -359,14 +371,7 @@ module.exports = class articleService {
             cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
             short_description: result.short_description,
             content: (!isList) ? result.content : null,
-            author: {
-                id: result.author_id,
-                username: result.author_username,
-                firstname: result.author_first_name,
-                lastname: result.author_last_name,
-                designation: result.author_designation,
-                bio: result.author_bio
-            },
+            author: author,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
@@ -433,6 +438,35 @@ module.exports = class articleService {
             }            
         }
         return articleOrdered;
+    }
+
+
+    async generateAuthorData(result){
+        let data = {
+            id: result.id,
+            user_id: result.user_id,
+            username: result.username,
+            firstname: result.first_name,
+            lastname: result.last_name,
+            designation: result.designation,
+            bio: result.bio,
+            image: (result.image) ? getMediaurl(result.image.url) : null
+        };
+        return data;
+    }
+
+    async getAuthor(id){
+        let author = null;
+        const query = { "bool": {
+            "must": [
+              {term: { "user_id": id }}
+            ]
+        }};
+        const result = await elasticService.search('author', query);
+        if(result.hits && result.hits.length > 0){
+            author = await this.generateAuthorData(result.hits[0]._source);
+        }
+        return author;     
     }
 
 
