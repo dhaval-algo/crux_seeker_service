@@ -351,8 +351,6 @@ module.exports = class partnerService {
         if(result.hits && result.hits.length > 0){
             courses.list = await LearnContentService.generateListViewData(result.hits);
             courses.total = result.total.value;
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
         }
         return courses;        
     }
