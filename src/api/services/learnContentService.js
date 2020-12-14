@@ -583,7 +583,7 @@ module.exports = class learnContentService {
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
-            for(const filter of parsedFilters){
+            for(const filter of parsedFilters){                
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
