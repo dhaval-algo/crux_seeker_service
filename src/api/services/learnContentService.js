@@ -2,17 +2,30 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
+
 let slugMapping = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
+const MAX_RESULT = 10000;
 
 const getFilterConfigs = async () => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?filterable_eq=true&_sort=order:ASC`);
+    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Learn_Content&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
+    //console.log("Filter Configs <> ", json);
     return json;
     } else {
         return [];
     }
+};
+
+const getMediaurl = (mediaUrl) => {
+    if(mediaUrl !== null && mediaUrl !== undefined){
+        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
+        if(isRelative){
+            mediaUrl = process.env.ASSET_URL+mediaUrl;
+        }
+    }    
+    return mediaUrl;
 };
 
 const getEntityLabelBySlug = async (entity, slug) => {
@@ -134,10 +147,16 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
             delete queryPayload['from'];
             delete queryPayload['size'];
         }
-        console.log("queryPayload <> ", queryPayload);
-        const result = await elasticService.search('learn-content', query, queryPayload);
+        console.log("Query payload for filters data <> ",queryPayload);
+        console.log("query for filters data <> ",query);
+        //queryPayload.from = 0;
+        //queryPayload.size = count;
+        //console.log("queryPayload <> ", queryPayload);
+        //console.log("query <> ", query);
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
             console.log("Main data length <> ", result.total.value);
+            console.log("Result data length <> ", result.hits.length);
             return formatFilters(result.hits, filterConfigs, query);
         }else{
             return [];
@@ -150,10 +169,12 @@ const getInitialData = async (query) => {
          if(query.bool.must[i]["range"]){
                 query.bool.must.splice(i, 1);
         }
-    }    
-    const result = await elasticService.search('learn-content', query);
+    } 
+    console.log("query <> ", query);  
+    const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
-        console.log("Initial data length <> ", result.total.value);
+        console.log("Initial data total length <> ", result.total.value);
+        console.log("Initial data size <> ", result.hits.length);
         return result.hits;
     }else{
         return [];
@@ -161,8 +182,10 @@ const getInitialData = async (query) => {
 };
 
 const formatFilters = async (data, filterData, query) => {
+    console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     const initialData = await getInitialData(query);
+    let emptyOptions = [];
     for(const filter of filterData){
 
         let formatedFilters = {
@@ -182,8 +205,21 @@ const formatFilters = async (data, filterData, query) => {
             false_facet_value: filter.false_facet_value,
             implicit_filter_skip: filter.implicit_filter_skip,
             implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : []
+            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
         };
+
+        //Force level options to predefined order
+        if(filter.elastic_attribute_name == 'level'){
+            let newOptions = [];
+            let orderedLabels = ['Beginner','Intermediate','Advanced'];
+            for(const label of orderedLabels){
+                let opt = formatedFilters.options.find(o => o.label === label);
+                if(opt){
+                    newOptions.push(opt);
+                }
+            }
+            formatedFilters.options = newOptions;
+        }
 
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
@@ -198,13 +234,31 @@ const formatFilters = async (data, filterData, query) => {
             }
 
             if(filter.filter_type == 'RangeOptions'){
-                if(filter.elastic_attribute_name == 'average_rating'){
-                    formatedFilters.options = getRangeOptions(data, filter.elastic_attribute_name);
+                if(filter.elastic_attribute_name == 'ratings'){
+                    formatedFilters.options = getRangeOptions(initialData, filter.elastic_attribute_name);
+                }
+                if(filter.elastic_attribute_name == 'total_duration_in_hrs'){
+                    formatedFilters.options = getDurationRangeOptions(initialData, filter.elastic_attribute_name);
                 }
             }
-        }        
+        }  
+        
+        if(filter.filter_type !== 'RangeSlider'){
+            if(formatedFilters.options.length <= 0){
+                emptyOptions.push(filter.label);
+            }
+        }
+
         filters.push(formatedFilters);
     }
+
+    if(emptyOptions.length > 0){
+        console.log("Empty options <> ", emptyOptions);
+        filters = filters.filter(function( obj ) {
+            return !emptyOptions.includes(obj.label);
+          });
+    }
+
     return filters;    
 };
 
@@ -227,7 +281,7 @@ const getRangeOptions = (data, attribute) => {
         count = 0;
         for(const esData of data){
             const entity = esData._source;
-            if(entity[attribute] >= predefinedOptions[i]){
+            if(entity[attribute] >= predefinedOptions[i]*100){                
                 count++;
             }
         }
@@ -237,21 +291,113 @@ const getRangeOptions = (data, attribute) => {
             count: count,
             selected: false,
             start: predefinedOptions[i],
-            end: 'MAX'
+            end: 'MAX',
+            disabled: (count > 0) ? false : true
         };
         options.push(option);
     }
+    options = options.filter(item => item.count > 0);
     return options;
 };
 
+const getDurationRangeOptions = (data, attribute) => {
+    let options = [
+        {
+            label: 'Less than 2 Hours',
+            count: 0,
+            selected: false,
+            start: 'MIN',
+            end: 2,
+            disabled: true
+        },
+        {
+            label: '1 - 4 weeks',
+            count: 0,
+            selected: false,
+            start: 40,
+            end: 159,
+            disabled: true
+        },
+        {
+            label: '1 - 3 months',
+            count: 0,
+            selected: false,
+            start: 160,
+            end: 479,
+            disabled: true
+        },
+        {
+            label: '3+ months',
+            count: 0,
+            selected: false,
+            start: 480,
+            end: 'MAX',
+            disabled: true
+        }
+    ];
+
+    for(let poption of options){
+        for(const esData of data){
+            const entity = esData._source;
+            if(poption.start !== 'MIN' && poption.end !== 'MAX'){
+                if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
+                    poption.count++;
+                }
+            }else{
+                if(poption.start == 'MIN'){
+                    if(entity[attribute] <= poption.end){
+                        poption.count++;
+                    }
+                }
+                if(poption.end == 'MAX'){
+                    if(entity[attribute] >= poption.start){
+                        poption.count++;
+                    }
+                }
+            }           
+        }
+        if(poption.count > 0){
+            poption.disabled = false;
+        }
+    }
+    //options = options.filter(item => item.count > 0);
+    return options;
+};
+
+
 const getFilterOption = (data, filter) => {
     let options = [];
+    let others = null;
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
+
+        if(filter.label == "Price Type" && entityData == 'emi'){
+            console.log("entityData <> ", entityData);
+            continue;
+        }
+
         if(entityData){
             if(Array.isArray(entityData)){
                 for(const entry of entityData){
+                    if(entry == 'Free_With_Condition'){
+                        continue;
+                    }
+
+                    if(entry == 'Others'){
+                        if(others != null){
+                            others.count++;
+                        }else{
+                            others = {
+                                label: entry,
+                                count: 1,
+                                selected: false,
+                                disabled: false
+                            }
+                        }                        
+                        continue;
+                    }
+
                     let existing = options.find(o => o.label === entry);
                     if(existing){
                         existing.count++;
@@ -259,11 +405,30 @@ const getFilterOption = (data, filter) => {
                         options.push({
                             label: entry,
                             count: 1,
-                            selected: false
+                            selected: false,
+                            disabled: false
                         });
                     }
                 }
             }else{
+                if(entityData == 'Free_With_Condition'){
+                    continue;
+                }
+
+                if(entityData == 'Others'){
+                    if(others != null){
+                        others.count++;
+                    }else{
+                        others = {
+                            label: entityData,
+                            count: 1,
+                            selected: false,
+                            disabled: false
+                        }
+                    }                        
+                    continue;
+                }
+
                 let existing = options.find(o => o.label === entityData);
                 if(existing){
                     existing.count++;
@@ -271,17 +436,23 @@ const getFilterOption = (data, filter) => {
                     options.push({
                         label: entityData,
                         count: 1,
-                        selected: false
+                        selected: false,
+                        disabled: false
                     });
                 }
             }
         }
     }
+
+    if(others != null){
+        options.push(others);
+    }
+
     return options;
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type'];
+    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
@@ -425,7 +596,16 @@ module.exports = class learnContentService {
         
         if(req.query['rf']){
             parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            console.log("parsedRangeFilters <> ", parsedRangeFilters);
             for(const filter of parsedRangeFilters){
+                /* if(filter.key == "Ratings"){
+                    if(filter.start !== "MIN"){
+                        filter.start = filter.start*100;
+                    }
+                    if(filter.end !== "MAX"){
+                        filter.end = filter.end*100;
+                    }
+                } */
                 console.log("Applying filters <> ", filter);
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
@@ -433,10 +613,10 @@ module.exports = class learnContentService {
 
                     let rangeQuery = {};
                     if(filter.start !== "MIN"){
-                        rangeQuery["gte"] = filter.start;
+                        rangeQuery["gte"] = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
                     }
                     if(filter.end !== "MAX"){
-                        rangeQuery["lte"] = filter.end;
+                        rangeQuery["lte"] = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
                     }
 
                     query.bool.must.push({
@@ -483,20 +663,41 @@ module.exports = class learnContentService {
                 }
             }); */
 
-            query.bool.filter.push({
+            /* query.bool.filter.push({
                 
                 "match": {
                     "title.keyword": {
-                        "query": req.query['q']
+                        "query": decodeURIComponent(req.query['q'])
                      } 
                     }
-            })
+            }) */
+
+            /* query.bool.must.push( 
+                {
+                    match: {
+                        "title": decodeURIComponent(req.query['q'])
+                    }
+                }
+            ); */
+
+            query.bool.must.push( 
+                {
+                    /* "multi_match": {
+                      "query": decodeURIComponent(req.query['q']),
+                      "fields": ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags']
+                    } */
+                    "query_string" : {
+                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
+                        "fields" : ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags'],
+                        "analyze_wildcard" : true,
+                        "allow_leading_wildcard": true
+                    }
+                }
+            );
+            
         }
 
-        if(query.bool.must[2]){
-            console.log("Elastic must range Query <> ", query.bool.must[2]);
-        }
-        console.log("Elastic must Query <> ", query.bool.must);
+        console.log("Final Query <> ", JSON.stringify(query));
 
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -511,7 +712,7 @@ module.exports = class learnContentService {
               }
 
             //let filters = await getFilters(result.hits, filterConfigs);
-            let filters = await getAllFilters(query, queryPayload, filterConfigs);            
+            let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);            
             
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
@@ -590,9 +791,25 @@ module.exports = class learnContentService {
             let categoriesData = result.aggregations.categories.buckets;
             console.log("categoriesData <> ", categoriesData);
             //categories = categoriesData.map(o => {"label": o['key'], "value": o['key']} );
-            categories = categoriesData.map(function(obj) {
+
+            let others = null;
+            for(const category of categoriesData){
+                if(category.key == 'Others'){
+                    others = {"label": category['key'], "value": category['key']};
+                }else{
+                    categories.push({"label": category['key'], "value": category['key']});
+                }
+            }
+            if(others){
+                categories.push(others);
+            }
+            console.log("categories <> ", categories);
+
+            /* categories = categoriesData.map(function(obj) {
                 return {"label": obj['key'], "value": obj['key']};
               });
+
+              console.log("categories <> ", categories); */
         }
 
         callback(null, {status: 'success', message: 'Fetched successfully!', data: categories});
@@ -688,6 +905,21 @@ module.exports = class learnContentService {
             coverImageSize = 'thumbnail';
         }
 
+        for(let i=0; i<result.reviews.length; i++){
+            if(result.reviews[i]['reviewer_name'] == 'Other'){
+                result.reviews.splice(i, 1);
+            }
+        }
+
+        let cover_image = null;
+        if(result.images){
+            if(result.images[coverImageSize]){
+                cover_image = getMediaurl(result.images[coverImageSize]);
+            }else{
+                cover_image = getMediaurl(result.images['thumbnail']);
+            }
+        }
+
         let data = {
             title: result.title,
             slug: result.slug,
@@ -695,22 +927,37 @@ module.exports = class learnContentService {
             subtitle: result.subtitle,
             provider: {
                 name: result.provider_name,
-                currency: result.provider_currency
+                currency: result.provider_currency,
+                slug: result.provider_slug
+            },
+            partner: {
+                name: result.partner_name,
+                slug: result.partner_slug,
+                partner_url: result.partner_url
             },
             instructors: [],
-            cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-            cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+            cover_video: (result.video) ? getMediaurl(result.video) : null,
+            cover_image: cover_image,
+            embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
+            skill_tags: (result.skills) ? result.skills : [],
             what_will_learn: (!isList) ? result.what_will_learn : null,
             target_students: (!isList) ? result.target_students : null,
             prerequisites: (!isList) ? result.prerequisites  : null,
             content: (!isList) ? result.content : null,
+            categories: (result.categories) ? result.categories : [],
+            categories_list: (result.categories_list) ? result.categories_list : [],
+            sub_categories: (result.sub_categories) ? result.sub_categories : [],
+            sub_categories_list: (result.sub_categories_list) ? result.sub_categories_list : [],
+            topics_list: (result.topics_list) ? result.topics_list : [],
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
-                duration: calculateDuration(result.total_duration_in_hrs), 
+                duration: calculateDuration(result.total_duration_in_hrs),
+                total_duration_unit: result.total_duration_unit, 
                 effort: effort,
                 total_video_content: result.total_video_content_in_hrs,
+                total_video_content_unit: result.total_video_content_unit,
                 language: result.languages.join(", "),
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
                 level: (result.level) ? result.level : null,
@@ -719,7 +966,7 @@ module.exports = class learnContentService {
                 accessibilities: (result.accessibilities && result.accessibilities.length > 0) ? result.accessibilities.join(", ") : null,
                 availabilities: (result.availabilities && result.availabilities.length > 0) ? result.availabilities.join(", ") : null,
                 learn_type: (result.learn_type) ? result.learn_type : null,
-                topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,
+                topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
                 tags: [],
                 pricing: {
                     pricing_type: result.pricing_type,
@@ -729,7 +976,11 @@ module.exports = class learnContentService {
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
                     free_condition_description: result.free_condition_description,
-                    conditional_price: result.conditional_price
+                    conditional_price: result.conditional_price,
+                    pricing_additional_details: result.pricing_additional_details,
+                    course_financing_options: result.course_financing_options,
+                    finance_option: result.finance_option,
+                    finance_details: result.finance_details
                 }                
             },
             provider_course_url: result.provider_course_url,
@@ -739,14 +990,63 @@ module.exports = class learnContentService {
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
-            }
+            },
+            live_class: result.live_class,
+            human_interaction: result.human_interaction,
+            personalized_teaching: result.personalized_teaching,
+            post_course_interaction: result.post_course_interaction,
+            international_faculty: result.international_faculty,
+            batches: (result.batches) ? result.batches : [],
+            enrollment_start_date: result.enrollment_start_date,
+            enrollment_end_date: result.enrollment_end_date,
+            hands_on_training: {
+                learning_mediums: result.learning_mediums,
+                virtual_labs: result.virtual_labs,
+                case_based_learning: result.case_based_learning,
+                assessments: result.assessments,
+                capstone_project: result.capstone_project
+            },
+            placement: {
+                internship: result.internship,
+                job_assistance: result.job_assistance,
+                alumni_network: result.alumni_network,
+                placements: (result.placements) ? result.placements : [],
+                average_salary: result.average_salary,
+                highest_salary: result.highest_salary
+            },
+            corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
+            accreditations: []
         };
+
+        if(!isList){
+            data.meta_information = {
+                meta_title: result.meta_title,
+                meta_description: result.meta_description,
+                meta_keywords: result.meta_keywords,
+                add_type: result.add_type,
+                import_source: result.import_source,
+                external_source_id: result.external_source_id,
+                application_seat_ratio: result.application_seat_ratio,
+                bounce_rate: result.bounce_rate,
+                completion_ratio: result.completion_ratio,
+                enrollment_ratio: result.enrollment_ratio,
+                faculty_student_ratio: result.faculty_student_ratio,
+                gender_diversity: result.gender_diversity,
+                student_stream_diversity: result.student_stream_diversity,
+                student_nationality_diversity: result.student_nationality_diversity,
+                average_salary_hike: result.average_salary_hike,
+                instructor_citations: result.instructor_citations
+            }
+        }
 
         if(!isList){
             if(result.instructors && result.instructors.length > 0){
                 for(let instructor of result.instructors){
+                    if(instructor.name == 'Other'){
+                        continue;
+                    }
                     if(instructor.instructor_image){
-                        instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+                        instructor.instructor_image = getMediaurl(instructor.instructor_image.thumbnail);                    
                     }
                     data.instructors.push(instructor);
                 }
@@ -756,6 +1056,17 @@ module.exports = class learnContentService {
             }
             if(result.medium){
                 data.course_details.tags.push(result.medium);
+            }
+
+            if(result.accreditations && result.accreditations.length > 0){
+                for(let accr of result.accreditations){                
+                    if(!isList){
+                        if(accr.logo){
+                            accr.logo = getMediaurl(accr.logo.thumbnail);                    
+                        }
+                        data.accreditations.push(accr);
+                    }
+                }
             }
         }
 
@@ -768,15 +1079,16 @@ module.exports = class learnContentService {
                 
                 if(!isList){
                     if(review.photo){
-                        review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                        review.photo = getMediaurl(review.photo.thumbnail);                    
                     }
                     data.reviews.push(review);
                 }
 
-                if(ratings[review.rating]){
-                    ratings[review.rating] += 1; 
+                let rating_round = Math.floor(review.rating);
+                if(ratings[rating_round]){
+                    ratings[rating_round] += 1; 
                 }else{
-                    ratings[review.rating] = 1; 
+                    ratings[rating_round] = 1; 
                 }
             }
 
@@ -784,8 +1096,6 @@ module.exports = class learnContentService {
             data.ratings.average_rating = round(average_rating, 0.5);
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
-
-            
 
             //add missing ratings
             for(let i=0; i<5; i++){
@@ -811,18 +1121,33 @@ module.exports = class learnContentService {
         if(data.course_details.topics == 'Others'){
             data.course_details.topics = null;
         }
-        if(data.course_details.medium == 'Not Specified'){
+        if(data.course_details.medium == 'Others'){
             data.course_details.medium = null;
         }
-        if(data.course_details.instruction_type == 'Not Specified'){
+        if(data.course_details.instruction_type == 'Others'){
             data.course_details.instruction_type = null;
         }
-        if(data.course_details.language == 'Not Specified'){
+        if(data.course_details.language == 'Others'){
             data.course_details.language = null;
         }
-        if(data.course_details.pricing.pricing_type == 'Not_Specified'){
+        if(data.course_details.pricing.pricing_type == 'Others'){
             data.course_details.pricing.pricing_type = null;
-        }        
+        }
+        if(data.content == "Dummy content."){
+            data.content = null;
+        }
+        if(data.skills && data.skills.length > 0){
+            for(let i=0; i<data.skills.length; i++){
+                if(data.skills[i] == 'Others'){
+                    data.skills.splice(i, 1);
+                }
+            }
+        }
+        
+        
+
+
+
         return data;
     }
 
@@ -830,7 +1155,7 @@ module.exports = class learnContentService {
 
     async generateListViewData(rows){
         let datas = [];
-        for(const row of rows){
+        for(let row of rows){
             const data = await this.generateSingleViewData(row._source, true);
             datas.push(data);
         }

@@ -57,7 +57,8 @@ const handleCallBackEnquiry = (resBody, req) => {
                 formTypeSource,
                 targetEntityType,
                 targetEntityId,
-                otherInfo
+                otherInfo,
+                status:"submitted"
             }
 
             const formSub = await models.form_submission.create(form_submission)
@@ -117,6 +118,7 @@ const handleGeneralEnquiry = (resBody, req) => {
             })
             const resMeta = await models.user_meta.bulkCreate(formData)
             if (formType != "signup") {
+                
                 if (!formSubmissionId) {
                     // entries in form_submission
                     const form_submission = {
@@ -125,11 +127,18 @@ const handleGeneralEnquiry = (resBody, req) => {
                         formTypeSource,
                         targetEntityType,
                         targetEntityId,
-                        otherInfo
+                        otherInfo,
+                        status:!!lastStep? 'submitted':'draft'
                     }
 
                     const formSub = await models.form_submission.create(form_submission)
                     formSubmissionId = formSub.id
+                } else {
+                    await models.form_submission.update({status:!!lastStep? 'submitted':'draft'},{
+                        where: {
+                            id:formSubmissionId
+                        }
+                    })
                 }
 
                 let form_submission_values = []

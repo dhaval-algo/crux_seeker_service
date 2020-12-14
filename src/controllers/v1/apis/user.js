@@ -1,9 +1,9 @@
 const express = require('express');
 const authenticateJWT = require('../../../services/v1/middleware/authenticate');
 const injectTokenPayload = require('../../../services/v1/middleware/injectTokenPayload');
+const { createSiteMap } = require('../../../services/v1/sitemap');
 const userService = require('../../../services/v1/users/user');
 let router = express.Router();
-
 router.post('/sign-in', userService.login);
 router.post('/send-otp', userService.sendOtp);
 router.post('/verify-otp', userService.verifyOtp);
@@ -19,6 +19,14 @@ router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList)
 router.post('/remove-from-wishlist',authenticateJWT, userService.removeCourseFromWishList);
 router.post('/fetch-wishlist',authenticateJWT, userService.fetchWishListIds);
 router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData)
+router.get('/fetch-enquiries', authenticateJWT, userService.getEnquiryList)
+router.post ('/upload-profile',authenticateJWT, userService.uploadProfilePic);
+router.get('/remove-profile', authenticateJWT, userService.removeProfilePic)
+router.get('/create-sitemap', async (req,res) => {
+    const res1 = await createSiteMap()
+    res.setHeader('Content-Type', 'text/json')
+    return res.status(200).send(res1)
+})
 
 
 //require.post()
