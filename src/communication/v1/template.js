@@ -37,7 +37,7 @@ module.exports = {
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
-        let emailTemplate = template({reset_link:messagData.reset_link });
+        let emailTemplate = template({reset_link:messagData.reset_link, resource_link:process.env.SERVER_URL });
          
         let templateData = {subject:'Crux- reset password',message:emailTemplate};
  
