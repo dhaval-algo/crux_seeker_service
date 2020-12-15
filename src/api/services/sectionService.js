@@ -216,7 +216,7 @@ module.exports = class sectionService {
     }
   }
 
-  async getBlogHomePageContent() {
+  async getBlogHomePageContent(req, callback) {
     let data = {}
     try {
       const query = {
