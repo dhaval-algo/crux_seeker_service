@@ -31,5 +31,6 @@ router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
 router.get('/articles/:slug', ArticleController.getSingleArticle);
+router.get('/section/home-page',sectionController.getBlogHomePageContent)
 
 module.exports = router;
