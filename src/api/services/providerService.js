@@ -35,7 +35,7 @@ const parseQueryFilters = (filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['programs','study_modes','institute_types','location','gender_accepted'];
+    const keywordFields = ['programs','study_modes','institute_types','city','gender_accepted'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
