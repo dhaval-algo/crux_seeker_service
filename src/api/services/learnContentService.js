@@ -628,7 +628,8 @@ module.exports = class learnContentService {
         let parsedRangeFilters = [];
 
         let filterQuery = JSON.parse(JSON.stringify(query));
-        let filters = await getAllFilters(filterQuery, queryPayload, filterConfigs);
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -747,6 +748,7 @@ module.exports = class learnContentService {
         }
 
         console.log("Final Query <> ", JSON.stringify(query));
+        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
