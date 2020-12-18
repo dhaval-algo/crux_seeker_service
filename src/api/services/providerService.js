@@ -81,12 +81,16 @@ const getMediaurl = (mediaUrl) => {
 
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
-    if(queryPayload.from !== null && queryPayload.size !== null){
+    //let filters = JSON.parse(JSON.stringify(query.bool.filter));
+    //delete query.bool.filter;
+    if(queryPayload.from !== null && queryPayload.size !== null){        
         delete queryPayload['from'];
-        delete queryPayload['size'];
+        delete queryPayload['size'];        
     }
+    //query['bool']['should'] = filters;
+    //query['bool']['minimum_should_match'] = 1;
     console.log("Query payload for filters data <> ",queryPayload);
-    console.log("query for filters data <> ",query);
+    console.log("Filter Query <> ", JSON.stringify(query));
     const result = await elasticService.search('provider', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
         console.log("Main data length <> ", result.total.value);
@@ -186,7 +190,7 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
     for(let filter of filters){
         if(filter.filter_type == "Checkboxes"){
             let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
+            //console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter && filter.options){
                 for(let option of filter.options){
                     if(seleteddFilter.value.includes(option.label)){
@@ -197,7 +201,7 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
         }
         if(filter.filter_type == "RangeOptions"){
             let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
+            //console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter && filter.options){
                 for(let option of filter.options){
                     if((option.start ==  seleteddFilter.start) && (option.end ==  seleteddFilter.end)){
@@ -208,7 +212,7 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
         }
         if(filter.filter_type == "RangeSlider"){
             let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
+            //console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter){
                 filter.min = seleteddFilter.start;
                 filter.max = seleteddFilter.end;
@@ -221,6 +225,53 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
 };
 
 
+
+const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
+    if(parsedFilters.length <= 0){
+        return filters;
+    }
+    for(let filter of filters){
+        if(filter.filter_type !== 'Checkboxes'){
+            continue;
+        }
+        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
+        if(!parsedFilter){
+            for(let option of filter.options){
+                option.count = 0;
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
+                    if(!elasticAttribute){
+                        continue;
+                    }
+                for(const esData of data){
+                    
+                    const entity = esData._source; 
+                    let entityData = entity[elasticAttribute.elastic_attribute_name];
+                    if(entityData){
+                        if(Array.isArray(entityData)){
+                            if(entityData.includes(option.label)){
+                                option.count++;
+                            }
+                        }else{
+                            if(entityData == option.label){
+                                option.count++;
+                            }
+                        }
+                    }
+                }
+                if(option.count == 0){
+                    option.disabled = true;
+                }
+            }
+        }
+
+        filter.options = filter.options.filter(function( obj ) {
+            return !obj.disabled;
+          });
+    }
+    return filters;
+};
+
+
 module.exports = class providerService {
 
     async getProviderList(req, callback){
@@ -228,7 +279,6 @@ module.exports = class providerService {
         //console.log("filterConfigs <> ", filterConfigs);
         const query = { 
             "bool": {
-                //"should": [],
                 "must": [
                     {term: { "status.keyword": 'approved' }}                
                 ],
@@ -258,6 +308,9 @@ module.exports = class providerService {
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
+        let filterQuery = JSON.parse(JSON.stringify(query));
+        let filters = await getAllFilters(filterQuery, queryPayload, filterConfigs);        
+        
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){
@@ -298,7 +351,8 @@ module.exports = class providerService {
                 totalCount: result.total.value
             }
 
-            let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
+            //let filters = await getAllFilters(query, queryPayload, filterConfigs);
+            filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
 
             //update selected flags
             if(parsedFilters.length > 0){
