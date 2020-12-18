@@ -219,6 +219,52 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
 };
 
 
+const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
+    if(parsedFilters.length <= 0){
+        return filters;
+    }
+    for(let filter of filters){
+        if(filter.filter_type !== 'Checkboxes'){
+            continue;
+        }
+        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
+        if(!parsedFilter){
+            for(let option of filter.options){
+                option.count = 0;
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
+                    if(!elasticAttribute){
+                        continue;
+                    }
+                for(const esData of data){
+                    
+                    const entity = esData._source; 
+                    let entityData = entity[elasticAttribute.elastic_attribute_name];
+                    if(entityData){
+                        if(Array.isArray(entityData)){
+                            if(entityData.includes(option.label)){
+                                option.count++;
+                            }
+                        }else{
+                            if(entityData == option.label){
+                                option.count++;
+                            }
+                        }
+                    }
+                }
+                if(option.count == 0){
+                    option.disabled = true;
+                }
+            }
+        }
+
+        filter.options = filter.options.filter(function( obj ) {
+            return !obj.disabled;
+          });
+    }
+    return filters;
+};
+
+
 module.exports = class articleService {
 
     async getArticleList(req, callback){
@@ -256,6 +302,10 @@ module.exports = class articleService {
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
+
+        let filterQuery = JSON.parse(JSON.stringify(query));
+        let filters = await getAllFilters(filterQuery, queryPayload, filterConfigs);
+
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){
@@ -296,7 +346,8 @@ module.exports = class articleService {
                 totalCount: result.total.value
             }
 
-            let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
+            //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);
+            filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
 
             //update selected flags
             if(parsedFilters.length > 0){
