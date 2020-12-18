@@ -304,7 +304,8 @@ module.exports = class articleService {
         let parsedRangeFilters = [];
 
         let filterQuery = JSON.parse(JSON.stringify(query));
-        let filters = await getAllFilters(filterQuery, queryPayload, filterConfigs);
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
