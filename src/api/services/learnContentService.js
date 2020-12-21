@@ -1,5 +1,6 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
+const pluralize = require('pluralize')
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -101,6 +102,21 @@ const parseQueryRangeFilters = (filter) => {
     console.log("query_range_filters <> ", query_filters);
     return query_filters;
 };
+
+const getDurationText = (duration, duration_unit) => {
+    let duration_text = "";
+    if(duration_unit){
+        duration_unit = duration_unit.toLowerCase();
+        duration_text += duration;
+        if(parseInt(duration) <= 1){
+            duration_unit = pluralize.singular(duration_unit);
+        }
+        duration_text += " "+duration_unit;
+    }else{
+        duration_text = calculateDuration(duration); 
+    }
+    return duration_text;
+}
 
 
 const calculateDuration = (total_duration_in_hrs) => {
@@ -1005,7 +1021,7 @@ module.exports = class learnContentService {
             topics_list: (result.topics_list) ? result.topics_list : [],
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
-                duration: calculateDuration(result.total_duration_in_hrs),
+                duration: getDurationText(result.total_duration_in_hrs, result.total_duration_unit),
                 total_duration_unit: result.total_duration_unit, 
                 effort: effort,
                 total_video_content: result.total_video_content_in_hrs,
@@ -1111,7 +1127,10 @@ module.exports = class learnContentService {
             }
 
             if(result.accreditations && result.accreditations.length > 0){
-                for(let accr of result.accreditations){                
+                for(let accr of result.accreditations){
+                    if(accr.name == 'Not Available'){
+                        continue;
+                    }                
                     if(!isList){
                         if(accr.logo){
                             accr.logo = getMediaurl(accr.logo.thumbnail);                    
@@ -1194,11 +1213,7 @@ module.exports = class learnContentService {
                     data.skills.splice(i, 1);
                 }
             }
-        }
-        
-        
-
-
+        } 
 
         return data;
     }
