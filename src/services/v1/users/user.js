@@ -966,6 +966,7 @@ const wishListCourseData = async (req,res) => {
             })
         }
         let queryBody = {
+            "size":1000,
             "query": {
               "ids": {
                   "values": wishedListIds
