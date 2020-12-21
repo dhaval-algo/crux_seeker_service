@@ -246,6 +246,13 @@ module.exports = class partnerService {
         if(isList){
             coverImageSize = 'thumbnail';
         }
+        let cover_image = null;
+        if(result.cover_image){
+            cover_image = getMediaurl(result.cover_image[coverImageSize]);
+            if(!cover_image){
+                cover_image = getMediaurl(result.cover_image['thumbnail']);
+            }
+        }
 
         let courses = {
             list: [],
@@ -263,7 +270,7 @@ module.exports = class partnerService {
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
-            cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
+            cover_image: cover_image,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
             establishment_year: result.establishment_year,
             corporate_partners: [],

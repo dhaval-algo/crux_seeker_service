@@ -512,6 +512,52 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
+
+const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
+    if(parsedFilters.length <= 0){
+        return filters;
+    }
+    for(let filter of filters){
+        if(filter.filter_type !== 'Checkboxes'){
+            continue;
+        }
+        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
+        if(!parsedFilter){
+            for(let option of filter.options){
+                option.count = 0;
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
+                    if(!elasticAttribute){
+                        continue;
+                    }
+                for(const esData of data){
+                    
+                    const entity = esData._source; 
+                    let entityData = entity[elasticAttribute.elastic_attribute_name];
+                    if(entityData){
+                        if(Array.isArray(entityData)){
+                            if(entityData.includes(option.label)){
+                                option.count++;
+                            }
+                        }else{
+                            if(entityData == option.label){
+                                option.count++;
+                            }
+                        }
+                    }
+                }
+                if(option.count == 0){
+                    option.disabled = true;
+                }
+            }
+        }
+
+        filter.options = filter.options.filter(function( obj ) {
+            return !obj.disabled;
+          });
+    }
+    return filters;
+};
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
@@ -580,6 +626,10 @@ module.exports = class learnContentService {
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
+
+        let filterQuery = JSON.parse(JSON.stringify(query));
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -698,6 +748,7 @@ module.exports = class learnContentService {
         }
 
         console.log("Final Query <> ", JSON.stringify(query));
+        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -712,7 +763,8 @@ module.exports = class learnContentService {
               }
 
             //let filters = await getFilters(result.hits, filterConfigs);
-            let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);            
+            //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
+            filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);           
             
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
