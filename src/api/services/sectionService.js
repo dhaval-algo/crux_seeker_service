@@ -150,7 +150,7 @@ module.exports = class sectionService {
         "query": {
           "match_all": {}
         },
-        "_source": ["default_display_label", "slug", "location_display_labels"]
+        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image"]
       }
       console.log('here1');
       const result = await elasticService.plainSearch('section', query);
@@ -178,6 +178,7 @@ module.exports = class sectionService {
               slug: hit._source.slug,
               type: "category",
               count: section.doc_count,
+              cover_image: (hit._source.cover_image) ? hit._source.cover_image['thumbnail'] : null,
               child: []
             }
             data.push(secR)
