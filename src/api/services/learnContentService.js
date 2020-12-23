@@ -1001,8 +1001,10 @@ module.exports = class learnContentService {
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
-                partner_url: result.partner_url
+                partner_url: result.partner_url,
+                currency: result.partner_currency
             },
+            currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: cover_image,
@@ -1214,6 +1216,10 @@ module.exports = class learnContentService {
                 }
             }
         } 
+
+        if(result.partner_currency){
+            data.provider.currency = result.partner_currency.iso_code;
+        }
 
         return data;
     }
