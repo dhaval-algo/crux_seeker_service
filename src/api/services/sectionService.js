@@ -66,6 +66,16 @@ const buildSectionView = (section) => {
       section.best_certifications = await ArticleService.getArticleByIds(section.best_certifications)
       section.best_certifications =  section.best_certifications.filter(art => !!art)
     }
+
+    if (!!section.top_stories && !!section.top_stories.length) {
+      section.top_stories = await ArticleService.getArticleByIds(section.top_stories)
+      section.top_stories =  section.top_stories.filter(art => !!art)
+    }
+
+    if (!!section.latest_stories && !!section.latest_stories.length) {
+      section.latest_stories = await ArticleService.getArticleByIds(section.latest_stories)
+      section.latest_stories =  section.latest_stories.filter(art => !!art)
+    }
     return resolve(section)
   })
   
@@ -195,6 +205,25 @@ module.exports = class sectionService {
       };
       console.log(query);
       const result = await elasticService.search('section', query)
+      if (result.hits && result.hits.length) {
+        data = await buildSectionView(result.hits[0]._source)
+        return callback(null, { success: true, data })
+      }
+      return callback(null, { success: true, data:[] })
+
+    } catch (error) {
+      return callback(null, { success: true, data: [] })
+    }
+  }
+
+  async getBlogHomePageContent(req, callback) {
+    let data = {}
+    try {
+      const query = {
+        "match_all": {}
+      };
+      console.log(query);
+      const result = await elasticService.search('blog_home_page', query)
       if (result.hits && result.hits.length) {
         data = await buildSectionView(result.hits[0]._source)
         return callback(null, { success: true, data })
