@@ -1032,7 +1032,7 @@ const getEnquiryList = async (req,res) => {
         attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
         where:{
             userId:user.userId || user.id,
-            // targetEntityType:"course",
+            targetEntityType:"course",
             status:'submitted'
         },
         group : ['userId'],
@@ -1091,6 +1091,7 @@ const getEnquiryList = async (req,res) => {
                     for(const hit of result.hits.hits){
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                        enquiry.instituteName = hit._source.provider_name
                     }
                 }
             }
