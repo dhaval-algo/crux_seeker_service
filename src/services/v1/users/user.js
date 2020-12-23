@@ -966,6 +966,7 @@ const wishListCourseData = async (req,res) => {
             })
         }
         let queryBody = {
+            "size":1000,
             "query": {
               "ids": {
                   "values": wishedListIds
@@ -1145,13 +1146,15 @@ const uploadProfilePic =async (req,res) => {
     } else {
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
-    return res.status(200).json({success:true,profilePicture:s3Path})
+    const profileRes = await calculateProfileCompletion(user)
+    return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
 const removeProfilePic = async (req,res) => {
     const {user} = req
     await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
-    return res.status(200).send(true)
+    const profileRes = await calculateProfileCompletion(user)
+    return res.status(200).json({success:true, profileProgress:profileRes})
 }
 module.exports = {
     login,
