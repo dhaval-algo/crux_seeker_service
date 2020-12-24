@@ -966,6 +966,7 @@ const wishListCourseData = async (req,res) => {
             })
         }
         let queryBody = {
+            "size":1000,
             "query": {
               "ids": {
                   "values": wishedListIds
@@ -1031,7 +1032,7 @@ const getEnquiryList = async (req,res) => {
         attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
         where:{
             userId:user.userId || user.id,
-            // targetEntityType:"course",
+            targetEntityType:"course",
             status:'submitted'
         },
         group : ['userId'],
@@ -1090,6 +1091,7 @@ const getEnquiryList = async (req,res) => {
                     for(const hit of result.hits.hits){
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                        enquiry.instituteName = hit._source.provider_name
                     }
                 }
             }
@@ -1145,13 +1147,15 @@ const uploadProfilePic =async (req,res) => {
     } else {
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
-    return res.status(200).json({success:true,profilePicture:s3Path})
+    const profileRes = await calculateProfileCompletion(user)
+    return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
 const removeProfilePic = async (req,res) => {
     const {user} = req
     await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
-    return res.status(200).send(true)
+    const profileRes = await calculateProfileCompletion(user)
+    return res.status(200).json({success:true, profileProgress:profileRes})
 }
 module.exports = {
     login,
