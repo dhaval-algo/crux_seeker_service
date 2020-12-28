@@ -437,7 +437,8 @@ module.exports = class articleService {
             section_name: result.section_name,
             section_slug: result.section_slug,
             related_articles: (result.related_articles && !isList) ? await this.getArticleByIds(result.related_articles) : [],
-            recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : []
+            recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : [],
+            ads_keywords:result.ads_keywords
         };
 
         if(!isList){
