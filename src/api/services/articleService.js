@@ -443,7 +443,7 @@ module.exports = class articleService {
 
         if(!isList){
             data.meta_information = {
-                meta_tile: result.meta_tile,
+                meta_tile: result.meta_title,
                 meta_description: result.meta_description,
                 meta_keywords: result.meta_keywords
             }
