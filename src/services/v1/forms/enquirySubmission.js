@@ -23,8 +23,9 @@ const handleEnquirySubmission = async (resBody, req) => {
 
 const handleCallBackEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
-        const { user, targetEntityType, targetEntityId, otherInfo = { ...req.useragent }, formData, formType, formTypeSource } = resBody;
+        let { user, targetEntityType, targetEntityId, otherInfo, formData, formType, formTypeSource } = resBody;
         let userObj = { ...user };
+        otherInfo = {...otherInfo, ...req.useragent }
         if (!targetEntityType || !targetEntityId) {
             return resolve({ success: false, code: DEFAULT_CODES.FAILED_ENQUIRY.code, message: DEFAULT_CODES.FAILED_ENQUIRY.message })
         }
@@ -97,8 +98,9 @@ const handleCallBackEnquiry = (resBody, req) => {
 
 const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
-        const {user, targetEntityType, targetEntityId,otherInfo={...req.useragent},formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
+        let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
         let { formSubmissionId } = resBody;
+        otherInfo = {...otherInfo,...req.useragent}
         insertInCRM = !!lastStep
         let userObj = {...user};
         if(!targetEntityType || !targetEntityId) {
