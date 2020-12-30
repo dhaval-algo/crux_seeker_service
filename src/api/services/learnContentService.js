@@ -104,6 +104,9 @@ const parseQueryRangeFilters = (filter) => {
 };
 
 const getDurationText = (duration, duration_unit) => {
+    if(duration == 0){
+        return null;
+    }
     let duration_text = "";
     if(duration_unit){
         duration_unit = duration_unit.toLowerCase();
@@ -1026,7 +1029,7 @@ module.exports = class learnContentService {
                 duration: getDurationText(result.total_duration_in_hrs, result.total_duration_unit),
                 total_duration_unit: result.total_duration_unit, 
                 effort: effort,
-                total_video_content: result.total_video_content_in_hrs,
+                total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
                 total_video_content_unit: result.total_video_content_unit,
                 language: result.languages.join(", "),
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
