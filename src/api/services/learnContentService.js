@@ -104,6 +104,9 @@ const parseQueryRangeFilters = (filter) => {
 };
 
 const getDurationText = (duration, duration_unit) => {
+    if(!duration){
+        return null;
+    }
     if(duration == 0){
         return null;
     }
