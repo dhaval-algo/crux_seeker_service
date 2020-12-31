@@ -1222,6 +1222,10 @@ module.exports = class learnContentService {
             data.provider.currency = result.partner_currency.iso_code;
         }
 
+        if(result.custom_ads_keywords) {
+            data.ads_keywords +=`,${result.custom_ads_keywords}` 
+        }
+
         return data;
     }
 

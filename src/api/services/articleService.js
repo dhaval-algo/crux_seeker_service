@@ -448,7 +448,10 @@ module.exports = class articleService {
                 meta_keywords: result.meta_keywords
             }
         }
-
+        
+        if(result.custom_ads_keywords) {
+            data.ads_keywords +=`,${result.custom_ads_keywords}` 
+        }
         return data;
     }
 
