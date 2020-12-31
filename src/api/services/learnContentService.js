@@ -1091,7 +1091,8 @@ module.exports = class learnContentService {
                 highest_salary: result.highest_salary
             },
             corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
-            accreditations: []
+            accreditations: [],
+            ads_keywords:result.ads_keywords
         };
 
         if(!isList){
