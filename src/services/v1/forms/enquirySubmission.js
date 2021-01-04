@@ -148,7 +148,8 @@ const handleGeneralEnquiry = (resBody, req) => {
                 //entries in form_submission_values
                 const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
                 if(updateProfile) {
-                    updateProfileMeta(formData, userObj)
+                    let temp = formData.filter( t => {return t.key !="email"})
+                    updateProfileMeta(temp, userObj)
                 }
                 if(insertInCRM) {
                     eventEmitter.emit('enquiry_placed',formSubmissionId)
