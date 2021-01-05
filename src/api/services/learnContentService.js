@@ -1,10 +1,12 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
+const { getUserCurrency, getCurrencies, getCurrencyAmount } = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 let slugMapping = [];
+let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
 
@@ -27,6 +29,10 @@ const getMediaurl = (mediaUrl) => {
         }
     }    
     return mediaUrl;
+};
+
+const getBaseCurrency = (result) => {
+    return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
 };
 
 const getEntityLabelBySlug = async (entity, slug) => {
@@ -164,7 +170,7 @@ const getFilters = async (data, filterConfigs) => {
     return formatFilters(data, filterConfigs);
 };
 
-const getAllFilters = async (query, queryPayload, filterConfigs) => {
+const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) => {
         if(queryPayload.from !== null && queryPayload.size !== null){
             delete queryPayload['from'];
             delete queryPayload['size'];
@@ -179,7 +185,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
         if(result.total && result.total.value > 0){
             console.log("Main data length <> ", result.total.value);
             console.log("Result data length <> ", result.hits.length);
-            return formatFilters(result.hits, filterConfigs, query);
+            return formatFilters(result.hits, filterConfigs, query, userCurrency);
         }else{
             return [];
         }
@@ -203,7 +209,7 @@ const getInitialData = async (query) => {
     }
 };
 
-const formatFilters = async (data, filterData, query) => {
+const formatFilters = async (data, filterData, query, userCurrency) => {
     console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     const initialData = await getInitialData(query);
@@ -245,7 +251,7 @@ const formatFilters = async (data, filterData, query) => {
 
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
-                const maxValue = getMaxValue(initialData, filter.elastic_attribute_name);
+                const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
                 if(maxValue <= 0){
                     continue;
                 }
@@ -284,12 +290,14 @@ const formatFilters = async (data, filterData, query) => {
     return filters;    
 };
 
-const getMaxValue = (data, attribute) => {
+const getMaxValue = (data, attribute, userCurrency) => {
     let maxValue = 0;
     for(const esData of data){
         const entity = esData._source;
-        if(entity[attribute] > maxValue){
-            maxValue = entity[attribute];
+        const baseCurrency = getBaseCurrency(entity);
+        const convertedAmount = getCurrencyAmount(entity[attribute], currencies, baseCurrency, userCurrency);
+        if(convertedAmount > maxValue){
+            maxValue = convertedAmount;
         }
     }
     return maxValue;
@@ -583,6 +591,7 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
+        currencies = await getCurrencies();
 
         slugMapping = getSlugMapping(req);
 
@@ -651,7 +660,7 @@ module.exports = class learnContentService {
 
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
+        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -685,10 +694,18 @@ module.exports = class learnContentService {
 
                     let rangeQuery = {};
                     if(filter.start !== "MIN"){
-                        rangeQuery["gte"] = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
+                        let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
+                        if(filter.key == 'Price'){
+                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');
+                        }
+                        rangeQuery["gte"] = startValue;
                     }
                     if(filter.end !== "MAX"){
-                        rangeQuery["lte"] = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
+                        let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
+                        if(filter.key == 'Price'){
+                            endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
+                        }
+                        rangeQuery["lte"] = endValue;
                     }
 
                     query.bool.must.push({
@@ -775,7 +792,7 @@ module.exports = class learnContentService {
         const result = await elasticService.search('learn-content', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits);
+            const list = await this.generateListViewData(result.hits, req.query['currency']);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -816,7 +833,11 @@ module.exports = class learnContentService {
         }        
     }
 
-    async getLearnContent(slug, callback){
+    async getLearnContent(req, callback){
+        const slug = req.params.slug;
+        //const currency = await getUserCurrency(req);
+        currencies = await getCurrencies();
+
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
@@ -825,7 +846,7 @@ module.exports = class learnContentService {
         }};
         const result = await elasticService.search('learn-content', query);
         if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source);
+            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
@@ -967,7 +988,8 @@ module.exports = class learnContentService {
     }
 
 
-    async generateSingleViewData(result, isList = false){
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
+        const baseCurrency = getBaseCurrency(result);        
 
         let effort = null;
         if(result.recommended_effort_per_week){
@@ -1010,7 +1032,7 @@ module.exports = class learnContentService {
                 partner_url: result.partner_url,
                 currency: result.partner_currency
             },
-            currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,
+            currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: cover_image,
@@ -1047,12 +1069,14 @@ module.exports = class learnContentService {
                 pricing: {
                     pricing_type: result.pricing_type,
                     currency: result.pricing_currency,
-                    regular_price: result.regular_price,
-                    sale_price: result.sale_price,
+                    base_currency: baseCurrency,
+                    user_currency: currency,
+                    regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
+                    sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
                     free_condition_description: result.free_condition_description,
-                    conditional_price: result.conditional_price,
+                    conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
                     finance_option: result.finance_option,
@@ -1237,10 +1261,13 @@ module.exports = class learnContentService {
 
 
 
-    async generateListViewData(rows){
+    async generateListViewData(rows, currency){
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true);
+            const data = await this.generateSingleViewData(row._source, true, currency);
             datas.push(data);
         }
         return datas;
