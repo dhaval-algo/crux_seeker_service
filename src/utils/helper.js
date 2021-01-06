@@ -148,6 +148,14 @@ const verifyGoogleToken = async (tokenId) => {
     });
     const payload = ticket.getPayload();
     const userid = payload['sub'];
+    let lastName ="", firstName="";
+    if(payload.name) {
+        let temp = payload.name.split(" ");
+        firstName = temp[0];
+        if(temp.length>1) {
+            lastName = temp[1]
+        }
+    }
     return {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
@@ -156,7 +164,8 @@ const verifyGoogleToken = async (tokenId) => {
             email: payload.email || "",
             username: payload.email,
             phone: "",
-            firstName: payload.name,
+            firstName: firstName,
+            lastName:lastName,
             provider: LOGIN_TYPES.GOOGLE
         }
     }
