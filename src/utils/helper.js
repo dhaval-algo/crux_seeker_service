@@ -648,11 +648,11 @@ const getLoginToken = async (userObj) => {
         const payload = {
             user: {
                 email: userObj.email || "",
-                name: userObj.firstName || "",
+                name:  userObj.name || userObj.firstName || "",
                 userId: userObj.userId,
                 provider: userObj.provider || "",
                 userType: userObj.userType,
-                isVerified: userObj.verified || false,
+                isVerified: userObj.isVerified || userObj.verified || false,
                 profilePicture: userObj.profilePicture
             }
         }
