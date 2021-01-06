@@ -224,6 +224,9 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
         return filters;
     }
     for(let filter of filters){
+        if(filter.is_singleton){
+            continue;
+        }
         if(filter.filter_type !== 'Checkboxes'){
             continue;
         }
@@ -348,10 +351,12 @@ module.exports = class articleService {
             }
 
             //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);
-            filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
+            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
 
             //update selected flags
             if(parsedFilters.length > 0){
+                //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -365,7 +370,8 @@ module.exports = class articleService {
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+            filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
         }        
     }
 
@@ -404,6 +410,15 @@ module.exports = class articleService {
             coverImageSize = 'thumbnail';
         }
 
+        let cover_image = null;
+        if(result.cover_image){
+            if(result.cover_image[coverImageSize]){
+                cover_image = getMediaurl(result.cover_image[coverImageSize]);
+            }else{
+                cover_image = getMediaurl(result.cover_image['thumbnail']);
+            }
+        }
+
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
         if(!author){
             author = {
@@ -420,7 +435,7 @@ module.exports = class articleService {
             title: result.title,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
-            cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
+            cover_image: cover_image,
             short_description: result.short_description,
             content: (!isList) ? result.content : null,
             author: author,

@@ -13,9 +13,8 @@ module.exports = {
         });        
     },
 
-    getSingleProvider: async (req, res) => {
-        const slug = req.params.slug;
-        ProviderService.getProvider(slug, (err, data) => {
+    getSingleProvider: async (req, res) => {        
+        ProviderService.getProvider(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {

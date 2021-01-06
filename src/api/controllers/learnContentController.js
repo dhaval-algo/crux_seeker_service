@@ -15,7 +15,7 @@ module.exports = {
 
     getSingleLearnContent: async (req, res) => {
         const slug = req.params.slug;
-        LearnContentService.getLearnContent(slug, (err, data) => {
+        LearnContentService.getLearnContent(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
