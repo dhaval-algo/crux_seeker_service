@@ -456,7 +456,7 @@ const checkPassword = (userObj, resPwd) => {
         data: {
         }
     }
-    if (resPwd === decryptStr(userObj.password)) {
+    if (userObj.password && resPwd === decryptStr(userObj.password)) {
         return response
     } else {
         response.success = false;
