@@ -913,6 +913,9 @@ module.exports = class learnContentService {
 
 
     async getCourseByIds(req, callback){
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
         let courses = [];
         let courseOrdered = [];
         let ids = [];
@@ -932,7 +935,7 @@ module.exports = class learnContentService {
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
-                        const course = await this.generateSingleViewData(hit._source);
+                        const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
                         courses.push(course);
                     }
                     for(const id of ids){
