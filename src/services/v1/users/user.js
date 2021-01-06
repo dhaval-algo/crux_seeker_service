@@ -213,7 +213,7 @@ const signUp = async (req, res) => {
     if (!userres.success) {
         return res.status(500).send(userres)
     }
-    const tokenRes = await getLoginToken({ ...userres.data.user, audience: audience || "", provider: LOGIN_TYPES.LOCAL });
+    const tokenRes = await getLoginToken({provider: LOGIN_TYPES.LOCAL, ...userres.data.user, audience: audience || ""});
     tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
     tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
     userres.data.user.userId
