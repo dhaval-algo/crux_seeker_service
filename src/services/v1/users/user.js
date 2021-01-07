@@ -158,9 +158,6 @@ const verifyOtp = async (req, res, next) => {
 
 const verifyUserToken = (req, res) => {
 
-    req.body.client_ip_address = (req.headers['x-real-ip']!=undefined)?req.headers['x-real-ip']:''
-    console.log(req.body.client_ip_address, "IP", req.headers['x-forwarded-for'],"REq.id",req.ip
-        );
     let resp = {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
