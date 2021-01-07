@@ -329,7 +329,7 @@ module.exports = class articleService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title','slug','tags','section_name','levels','author_first_name','author_last_name','categories'],
+                        "fields" : ['title', 'section_name', 'author_first_name', 'author_last_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -410,6 +410,8 @@ module.exports = class articleService {
             coverImageSize = 'thumbnail';
         }
 
+        console.log("result.cover_image <> ", result.cover_image);
+
         let cover_image = null;
         if(result.cover_image){
             if(result.cover_image[coverImageSize]){
@@ -417,6 +419,9 @@ module.exports = class articleService {
             }else{
                 cover_image = getMediaurl(result.cover_image['thumbnail']);
             }
+        }
+        if(!cover_image){
+            cover_image = getMediaurl(result.cover_image['url']);
         }
 
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
@@ -526,6 +531,9 @@ module.exports = class articleService {
             bio: result.bio,
             image: (result.image) ? getMediaurl(result.image.thumbnail) : null
         };
+        if(!data.image){
+            data.image = getMediaurl(result.image['url']);
+        }
         return data;
     }
 
