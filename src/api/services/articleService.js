@@ -421,6 +421,7 @@ module.exports = class articleService {
 
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
         if(!author){
+            console.log("Author not found...");
             author = {
                 id: result.author_id,
                 username: result.author_username,
@@ -429,6 +430,8 @@ module.exports = class articleService {
                 designation: result.author_designation,
                 bio: result.author_bio
             };
+        }else{
+            console.log("Author found...", author); 
         }
 
         let data = {
@@ -521,7 +524,7 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ? getMediaurl(result.image.url) : null
+            image: (result.image) ? getMediaurl(result.image.thumbnail) : null
         };
         return data;
     }
