@@ -3,9 +3,9 @@ const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 
 const entityQueryMapping = {
-    'learn-content': {label: 'Course', status: 'published', fields: ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags'], source_fields: ['title']},
-    'provider': {label: 'Institute', status: 'approved', fields: ['name','slug','institute_types','programs','program_types','study_modes'], source_fields: ['name','slug']},
-    //'article': {label: 'Article', status: 'published', fields: ['title'], source_fields: ['title']}
+    'learn-content': {label: 'Course', status: 'published', fields: ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'], source_fields: ['title']},
+    'provider': {label: 'Institute', status: 'approved', fields: ['name','program_types'], source_fields: ['name','slug']},
+    'article': {label: 'Article', status: 'published', fields: ['title', 'section_name', 'author_first_name', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
 };
 
 const MAX_PER_ENTITY = 20;
@@ -199,6 +199,15 @@ module.exports = class searchService {
                 title: entityData.name,
                 slug: entityData.slug,
                 description: "Institute"
+            };
+        }else if(data_source == 'article'){
+            data = {
+                index: data_source,
+                title: entityData.title,
+                slug: entityData.slug,
+                section_name: entityData.section_name,
+                section_slug: entityData.section_slug,
+                description: "Advice"
             };
         }
         return data;
