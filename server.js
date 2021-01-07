@@ -15,6 +15,7 @@ const { createSiteMap } = require('./src/services/v1/sitemap');
 
 // create 
 const app = express();
+app.set('trust proxy', true)
 app.use(bodyParser.json({ limit: '50mb' }));
 //resource path 
 app.use(express.static(path.join(__dirname, '/public')));
