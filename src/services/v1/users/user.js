@@ -1046,7 +1046,8 @@ const getEnquiryList = async (req,res) => {
       let formSubConfig = { 
         attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
         where: { userId:user.userId || user.id,status:'submitted'},
-        limit
+        limit,
+        order: sequelize.literal('createdAt DESC')
       }
      
       if(page>1) {
