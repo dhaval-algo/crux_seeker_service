@@ -1079,6 +1079,7 @@ const getEnquiryList = async (req,res) => {
     })
 
     allEnquiriesIds = allEnquiriesIds.map(e => e.targetEntityId)
+    console.log(allEnquiriesIds);
     let countQueryBody = {
         "query": {
           "ids": {
