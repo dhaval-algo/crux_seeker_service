@@ -83,4 +83,19 @@ module.exports = {
     } 
   }, 
 
+  count: async (index, queryBody) => {
+    const client = elasticClient();
+    let finalQuery = {
+      index: index,
+      body: queryBody
+    };
+
+    const result = await client.count(finalQuery);
+    if(result && result.body){
+        return result.body;
+    }else{
+        return 0;
+    } 
+  }, 
+
 };
