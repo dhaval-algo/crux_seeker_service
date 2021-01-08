@@ -1115,7 +1115,7 @@ const getEnquiryList = async (req,res) => {
         // }
     }
     //fetch course fron esatic
-  
+    enquiriesDone = enquiriesDone.filter(enquiry => enquiry.courseName ||  enquiry.instituteName);
     return res.status(200).send({
         success:true,
         data:{
