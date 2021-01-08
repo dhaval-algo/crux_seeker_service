@@ -263,7 +263,14 @@ const createLead = async (enquiry_id) => {
     const data = await prepareLeadData(enquiry_id)
     
     axios.post(request_url, data,{headers}).then((response) => {
-        console.log("created lead",response.data);
+        if(response.data.details) {
+            
+            console.log("created lead",response.data.details);
+        } else {
+            console.log("created lead",response.data);
+
+        }
+        
     }).catch(e => {
         console.log("error in create lead",e.response.data);
         console.log("error in create lead",e.response.data.details);
