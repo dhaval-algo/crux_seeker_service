@@ -190,7 +190,7 @@ const prepareLeadData = (enquiry_id) => {
                     }
                 })
                 let metaObjVal = await getObjectData(metaObj)
-                leadObj.Phone = `+${metaObjVal.phone}` || "";
+                leadObj.Phone =metaObjVal.phone ? `+${metaObjVal.phone}` :"";
                 leadObj.First_Name = metaObjVal.firstName || "";
                 leadObj.Last_Name = metaObjVal.lastName || "Not given";
                 leadObj.Gender = metaObjVal.gender || "";
