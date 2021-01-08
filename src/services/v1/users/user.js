@@ -1079,23 +1079,24 @@ const getEnquiryList = async (req,res) => {
         }
         let queryBody = {
             "query": {
-              "ids": {
-                  "values": [enquiryRecs[key].targetEntityId]
+              "terms": {
+                  "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
               },
             }
         };
-        console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
+        // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                console.log(result.hits.hits.length,'-------------------------------');
+                // console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
+                    // for(const hit of result.hits.hits){
+                        let hit =  result.hits.hits[0]
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
-                    }
+                    // }
                 }
             }
             enquiriesDone.push(enquiry);
