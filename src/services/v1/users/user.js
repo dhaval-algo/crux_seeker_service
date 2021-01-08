@@ -1083,7 +1083,7 @@ const getEnquiryList = async (req,res) => {
     let countQueryBody = {
         "query": {
           "ids": {
-              "values": [allEnquiriesIds]
+              "values": allEnquiriesIds
           },
         }
     };
