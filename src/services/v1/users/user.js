@@ -1066,7 +1066,7 @@ const getEnquiryList = async (req,res) => {
             }
         })
     }
-    const enquiriesDone = []
+    let enquiriesDone = []
 
     for (const key in enquiryRecs) {
         let enquiry = {
