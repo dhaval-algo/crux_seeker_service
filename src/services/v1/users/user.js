@@ -1028,21 +1028,21 @@ const getEnquiryList = async (req,res) => {
         offset =  (page-1)* limit
     }
     console.log("offset ", offset, page);
-    const count = await models.form_submission.findAll({
+    // const count = await models.form_submission.findAll({
 	
-        attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
-        where:{
-            userId:user.userId || user.id,
-            targetEntityType:"course",
-            status:'submitted'
-        },
-        group : ['userId'],
+    //     attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
+    //     where:{
+    //         userId:user.userId || user.id,
+    //         targetEntityType:"course",
+    //         status:'submitted'
+    //     },
+    //     group : ['userId'],
         
-        raw: true,
+    //     raw: true,
         
-        order: sequelize.literal('count DESC')
+    //     order: sequelize.literal('count DESC')
         
-      });
+    //   });
       //fetch enquiries
       
       let formSubConfig = { 
@@ -1079,7 +1079,6 @@ const getEnquiryList = async (req,res) => {
     })
 
     allEnquiriesIds = allEnquiriesIds.map(e => e.targetEntityId)
-    console.log(allEnquiriesIds);
     let countQueryBody = {
         "query": {
           "ids": {
@@ -1087,7 +1086,7 @@ const getEnquiryList = async (req,res) => {
           },
         }
     };
-    const result = await elasticService.count('learn-content', countQueryBody);
+    const countResult = await elasticService.count('learn-content', countQueryBody);
 
     let enquiriesDone = []
     for (const key in enquiryRecs) {
@@ -1143,8 +1142,7 @@ const getEnquiryList = async (req,res) => {
         success:true,
         data:{
             enquiries:enquiriesDone,
-            count:count[0].count,
-            realCount: result.count
+            count: countResult.count
         }
     })
     //build res
