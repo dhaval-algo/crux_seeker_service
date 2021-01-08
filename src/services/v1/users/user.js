@@ -1098,20 +1098,22 @@ const getEnquiryList = async (req,res) => {
                     }
                 }
             }
-        } else if(enquiryRecs[key].targetEntityType =='provider') {
-            enquiry.enquiryOn = 'provider';
-            const result = await elasticService.plainSearch('provider', queryBody);
-            console.log(result.hits.hits.length,'-------------------------------');
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        // enquiry.entityName = hit._source.name
-                        enquiry.instituteName = hit._source.name
-                    }
-                }
-            }
+            enquiriesDone.push(enquiry);
         }
-        enquiriesDone.push(enquiry);
+        //  else if(enquiryRecs[key].targetEntityType =='provider') {
+        //     enquiry.enquiryOn = 'provider';
+        //     const result = await elasticService.plainSearch('provider', queryBody);
+        //     console.log(result.hits.hits.length,'-------------------------------');
+        //     if(result.hits){
+        //         if(result.hits.hits && result.hits.hits.length > 0){
+        //             for(const hit of result.hits.hits){
+        //                 // enquiry.entityName = hit._source.name
+        //                 enquiry.instituteName = hit._source.name
+        //             }
+        //         }
+        //     }
+        // }
+        enquiriesDone = enquiriesDone.filter(e => e.courseName || e.instituteName)
     }
     //fetch course fron esatic
   
