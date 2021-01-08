@@ -1027,24 +1027,23 @@ const getEnquiryList = async (req,res) => {
     if(page>1) {
         offset =  (page-1)* limit
     }
-    // console.log("offset ", offset, page);
-    // const count = await models.form_submission.findAll({
+    console.log("offset ", offset, page);
+    const count = await models.form_submission.findAll({
 	
-    //     attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
-    //     where:{
-    //         userId:user.userId || user.id,
-    //         targetEntityType:"course",
-    //         status:'submitted'
-    //     },
-    //     group : ['userId'],
+        attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
+        where:{
+            userId:user.userId || user.id,
+            targetEntityType:"course",
+            status:'submitted'
+        },
+        group : ['userId'],
         
-    //     raw: true,
+        raw: true,
         
-    //     order: sequelize.literal('count DESC')
+        order: sequelize.literal('count DESC')
         
-    //   });
+      });
       //fetch enquiries
-      
       let formSubConfig = { 
         attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
         where: { userId:user.userId || user.id,status:'submitted'},
@@ -1067,28 +1066,8 @@ const getEnquiryList = async (req,res) => {
             }
         })
     }
-    let allEnquiriesIds = await models.form_submission.findAll({ 
-        attributes: ['targetEntityId'],
-        where:{
-            userId:user.userId || user.id,
-            targetEntityType:"course",
-            status:'submitted'
-        },        
-        raw: true,
-        
-    })
+    const enquiriesDone = []
 
-    allEnquiriesIds = allEnquiriesIds.map(e => e.targetEntityId)
-    let countQueryBody = {
-        "query": {
-          "ids": {
-              "values": allEnquiriesIds
-          },
-        }
-    };
-    const countResult = await elasticService.count('learn-content', countQueryBody);
-
-    let enquiriesDone = []
     for (const key in enquiryRecs) {
         let enquiry = {
             sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
@@ -1105,12 +1084,12 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
-        // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
+        console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                // console.log(result.hits.hits.length,'-------------------------------');
+                console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         enquiry.courseName = hit._source.title
@@ -1134,7 +1113,6 @@ const getEnquiryList = async (req,res) => {
         //         }
         //     }
         // }
-        enquiriesDone = enquiriesDone.filter(e => e.courseName || e.instituteName)
     }
     //fetch course fron esatic
   
@@ -1142,7 +1120,7 @@ const getEnquiryList = async (req,res) => {
         success:true,
         data:{
             enquiries:enquiriesDone,
-            count: countResult.count
+            count:count[0].count
         }
     })
     //build res
