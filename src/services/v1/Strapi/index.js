@@ -114,7 +114,7 @@ const createLoggedUserMeta = async (userId) => {
             date_of_birth: '',
         }
     
-        strapiObj.phone = `+${metaObjVal.phone}` || "";
+        strapiObj.phone =   metaObjVal.phone? `+${metaObjVal.phone}`: "";
         strapiObj.first_name = metaObjVal.firstName || "";
         strapiObj.last_name = metaObjVal.lastName || "Not given";
         strapiObj.gender = metaObjVal.gender || "";
@@ -317,7 +317,7 @@ const createRecordInStrapi = async (enquiryId) => {
         console.log(response.data);
         return
     }).catch(e => {
-        console.log(e.response.data);
+        console.log(e.response.data, "error in srapo", JSON.stringify(data));
         return
     })
 }
