@@ -259,11 +259,19 @@ const cleanObject = (obj) => {
 const createLead = async (enquiry_id) => {
     let request_url = "https://www.zohoapis.in/crm/v2/Leads"
     const access_token = await getAccessToken();
+    console.log(access_token);
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLeadData(enquiry_id)
-    
+    console.log(data);
     axios.post(request_url, data,{headers}).then((response) => {
-        console.log("created lead",response.data);
+        if(response.data.details) {
+            
+            console.log("created lead",response.data.details);
+        } else {
+            console.log("created lead",response.data);
+
+        }
+        
     }).catch(e => {
         console.log("error in create lead",e.response.data);
         console.log("error in create lead",e.response.data.details);
