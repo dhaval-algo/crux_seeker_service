@@ -114,7 +114,7 @@ const createLoggedUserMeta = async (userId) => {
             date_of_birth: '',
         }
     
-        strapiObj.phone = `+${metaObjVal.phone}` || "";
+        strapiObj.phone =   metaObjVal.phone? `+${metaObjVal.phone}`: "";
         strapiObj.first_name = metaObjVal.firstName || "";
         strapiObj.last_name = metaObjVal.lastName || "Not given";
         strapiObj.gender = metaObjVal.gender || "";
