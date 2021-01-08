@@ -1027,7 +1027,7 @@ const getEnquiryList = async (req,res) => {
     if(page>1) {
         offset =  (page-1)* limit
     }
-    console.log("offset ", offset, page);
+    // console.log("offset ", offset, page);
     // const count = await models.form_submission.findAll({
 	
     //     attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
@@ -1105,12 +1105,12 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
-        console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
+        // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                console.log(result.hits.hits.length,'-------------------------------');
+                // console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         enquiry.courseName = hit._source.title
