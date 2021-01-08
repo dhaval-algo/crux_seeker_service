@@ -259,10 +259,9 @@ const cleanObject = (obj) => {
 const createLead = async (enquiry_id) => {
     let request_url = "https://www.zohoapis.in/crm/v2/Leads"
     const access_token = await getAccessToken();
-    console.log(access_token);
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLeadData(enquiry_id)
-    console.log(data);
+    console.log("data zoho", data, access_token);
     axios.post(request_url, data,{headers}).then((response) => {
         if(response.data.details) {
             
