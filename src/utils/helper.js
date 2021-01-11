@@ -1005,7 +1005,7 @@ const generateSingleViewData = (result, isList = false) => {
         }
     }
                           
-    }
+    
 
     
     if(result.reviews && result.reviews.length > 0){
