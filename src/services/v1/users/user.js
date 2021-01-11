@@ -157,6 +157,7 @@ const verifyOtp = async (req, res, next) => {
 }
 
 const verifyUserToken = (req, res) => {
+
     let resp = {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
@@ -213,7 +214,7 @@ const signUp = async (req, res) => {
     if (!userres.success) {
         return res.status(500).send(userres)
     }
-    const tokenRes = await getLoginToken({ ...userres.data.user, audience: audience || "", provider: LOGIN_TYPES.LOCAL });
+    const tokenRes = await getLoginToken({provider: LOGIN_TYPES.LOCAL, ...userres.data.user, audience: audience || ""});
     tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
     tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
     userres.data.user.userId
@@ -456,7 +457,7 @@ const checkPassword = (userObj, resPwd) => {
         data: {
         }
     }
-    if (resPwd === decryptStr(userObj.password)) {
+    if (userObj.password && resPwd === decryptStr(userObj.password)) {
         return response
     } else {
         response.success = false;
@@ -1046,7 +1047,9 @@ const getEnquiryList = async (req,res) => {
       let formSubConfig = { 
         attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
         where: { userId:user.userId || user.id,status:'submitted'},
-        limit
+        limit,
+        raw: true,
+        order: sequelize.literal('"createdAt" DESC')
       }
      
       if(page>1) {
@@ -1063,7 +1066,7 @@ const getEnquiryList = async (req,res) => {
             }
         })
     }
-    const enquiriesDone = []
+    let enquiriesDone = []
 
     for (const key in enquiryRecs) {
         let enquiry = {
@@ -1076,42 +1079,44 @@ const getEnquiryList = async (req,res) => {
         }
         let queryBody = {
             "query": {
-              "ids": {
-                  "values": [enquiryRecs[key].targetEntityId]
+              "terms": {
+                  "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
               },
             }
         };
-        console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
+        // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                console.log(result.hits.hits.length,'-------------------------------');
+                // console.log(result.hits.hits.length,'-------------------------------');
                 if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
+                    // for(const hit of result.hits.hits){
+                        let hit =  result.hits.hits[0]
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
-                    }
+                    // }
                 }
             }
-        } else if(enquiryRecs[key].targetEntityType =='provider') {
-            enquiry.enquiryOn = 'provider';
-            const result = await elasticService.plainSearch('provider', queryBody);
-            console.log(result.hits.hits.length,'-------------------------------');
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        // enquiry.entityName = hit._source.name
-                        enquiry.instituteName = hit._source.name
-                    }
-                }
-            }
+            enquiriesDone.push(enquiry);
         }
-        enquiriesDone.push(enquiry);
+        //  else if(enquiryRecs[key].targetEntityType =='provider') {
+        //     enquiry.enquiryOn = 'provider';
+        //     const result = await elasticService.plainSearch('provider', queryBody);
+        //     console.log(result.hits.hits.length,'-------------------------------');
+        //     if(result.hits){
+        //         if(result.hits.hits && result.hits.hits.length > 0){
+        //             for(const hit of result.hits.hits){
+        //                 // enquiry.entityName = hit._source.name
+        //                 enquiry.instituteName = hit._source.name
+        //             }
+        //         }
+        //     }
+        // }
     }
     //fetch course fron esatic
-  
+    enquiriesDone = enquiriesDone.filter(enquiry => enquiry.courseName ||  enquiry.instituteName);
     return res.status(200).send({
         success:true,
         data:{

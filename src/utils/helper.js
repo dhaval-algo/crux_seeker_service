@@ -148,6 +148,14 @@ const verifyGoogleToken = async (tokenId) => {
     });
     const payload = ticket.getPayload();
     const userid = payload['sub'];
+    let lastName ="", firstName="";
+    if(payload.name) {
+        let temp = payload.name.split(" ");
+        firstName = temp[0];
+        if(temp.length>1) {
+            lastName = temp[1]
+        }
+    }
     return {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
@@ -156,7 +164,8 @@ const verifyGoogleToken = async (tokenId) => {
             email: payload.email || "",
             username: payload.email,
             phone: "",
-            firstName: payload.name,
+            firstName: firstName,
+            lastName:lastName,
             provider: LOGIN_TYPES.GOOGLE
         }
     }
@@ -639,11 +648,11 @@ const getLoginToken = async (userObj) => {
         const payload = {
             user: {
                 email: userObj.email || "",
-                name: userObj.firstName || "",
+                name:  userObj.name || userObj.firstName || "",
                 userId: userObj.userId,
                 provider: userObj.provider || "",
                 userType: userObj.userType,
-                isVerified: userObj.verified || false,
+                isVerified: userObj.isVerified || userObj.verified || false,
                 profilePicture: userObj.profilePicture
             }
         }
@@ -825,6 +834,15 @@ const getImgBuffer = (base64) => {
     const base64str = base64.replace(/^data:image\/\w+;base64,/,'');
     return Buffer.from(base64str, 'base64')
 }
+const getMediaurl = (mediaUrl) => {
+    if(mediaUrl !== null && mediaUrl !== undefined){
+        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
+        if(isRelative){
+            mediaUrl = process.env.ASSET_URL+mediaUrl;
+        }
+    }    
+    return mediaUrl;
+};
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -844,6 +862,14 @@ const generateSingleViewData = (result, isList = false) => {
         coverImageSize = 'thumbnail';
     }
 
+    let cover_image = null;
+    if(result.images){
+        if(result.images[coverImageSize]){
+            cover_image = getMediaurl(result.images[coverImageSize]);
+        }else{
+            cover_image = getMediaurl(result.images['thumbnail']);
+        }
+    }
     for(let i=0; i<result.reviews.length; i++){
         if(result.reviews[i]['reviewer_name'] == 'Other'){
             result.reviews.splice(i, 1);
@@ -860,8 +886,8 @@ const generateSingleViewData = (result, isList = false) => {
             currency: result.provider_currency
         },
         instructors: [],
-        cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-        cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+        cover_video: (result.video) ? getMediaurl(result.video) : null,
+        cover_image: cover_image,
         embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
         description: result.description,
         skills: (!isList) ? result.skills_gained : null,
@@ -977,6 +1003,8 @@ const generateSingleViewData = (result, isList = false) => {
         if(result.medium){
             data.course_details.tags.push(result.medium);
         }
+    }
+                          
     }
 
     

@@ -25,7 +25,7 @@ const handleCallBackEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
         let { user, targetEntityType, targetEntityId, otherInfo, formData, formType, formTypeSource } = resBody;
         let userObj = { ...user };
-        otherInfo = {...otherInfo, ...req.useragent }
+        otherInfo = {...otherInfo, ...req.useragent, userIp: req.ip }
         if (!targetEntityType || !targetEntityId) {
             return resolve({ success: false, code: DEFAULT_CODES.FAILED_ENQUIRY.code, message: DEFAULT_CODES.FAILED_ENQUIRY.message })
         }
@@ -100,7 +100,7 @@ const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
         let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
         let { formSubmissionId } = resBody;
-        otherInfo = {...otherInfo,...req.useragent}
+        otherInfo = {...otherInfo,...req.useragent, userIp:req.ip}
         insertInCRM = !!lastStep
         let userObj = {...user};
         if(!targetEntityType || !targetEntityId) {
@@ -148,7 +148,8 @@ const handleGeneralEnquiry = (resBody, req) => {
                 //entries in form_submission_values
                 const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
                 if(updateProfile) {
-                    updateProfileMeta(formData, userObj)
+                    let temp = formData.filter( t => {return t.key !="email"})
+                    updateProfileMeta(temp, userObj)
                 }
                 if(insertInCRM) {
                     eventEmitter.emit('enquiry_placed',formSubmissionId)

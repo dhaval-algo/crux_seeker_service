@@ -190,7 +190,7 @@ const prepareLeadData = (enquiry_id) => {
                     }
                 })
                 let metaObjVal = await getObjectData(metaObj)
-                leadObj.Phone = `+${metaObjVal.phone}` || "";
+                leadObj.Phone =metaObjVal.phone ? `+${metaObjVal.phone}` :"";
                 leadObj.First_Name = metaObjVal.firstName || "";
                 leadObj.Last_Name = metaObjVal.lastName || "Not given";
                 leadObj.Gender = metaObjVal.gender || "";
@@ -261,11 +261,19 @@ const createLead = async (enquiry_id) => {
     const access_token = await getAccessToken();
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLeadData(enquiry_id)
-    
+    console.log("data zoho", data, access_token);
     axios.post(request_url, data,{headers}).then((response) => {
-        console.log(response.data);
+        if(response.data.details) {
+            
+            console.log("created lead",response.data.details);
+        } else {
+            console.log("created lead",response.data);
+
+        }
+        
     }).catch(e => {
-        console.log(e.response.data);
+        console.log("error in create lead",e.response.data);
+        console.log("error in create lead",e.response.data.details);
     })
 
 }
