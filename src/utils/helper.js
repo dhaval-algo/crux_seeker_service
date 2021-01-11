@@ -14,7 +14,6 @@ const moment = require("moment");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { Buffer } = require('buffer');
-const pluralize = require('pluralize')
 const encryptStr = (str) => {
     return crypt.encrypt(str);
 };
@@ -755,7 +754,6 @@ const sendResetPasswordLink = (userObj, useQueue) => {
     })
 }
 
-
 const calculateProfileCompletion =  (userObj) => {
     return new Promise(async (resolve) => {
         try {
@@ -836,13 +834,6 @@ const getImgBuffer = (base64) => {
     const base64str = base64.replace(/^data:image\/\w+;base64,/,'');
     return Buffer.from(base64str, 'base64')
 }
-
-const round = (value, step) => {
-    step || (step = 1.0);
-    var inv = 1.0 / step;
-    return Math.round(value * inv) / inv;
-};
-
 const getMediaurl = (mediaUrl) => {
     if(mediaUrl !== null && mediaUrl !== undefined){
         const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
@@ -853,31 +844,13 @@ const getMediaurl = (mediaUrl) => {
     return mediaUrl;
 };
 
-const getDurationText = (duration, duration_unit) => {
-    if(!duration){
-        return null;
-    }
-    if(duration == 0){
-        return null;
-    }
-    let duration_text = "";
-    if(duration_unit){
-        duration_unit = duration_unit.toLowerCase();
-        duration_text += duration;
-        if(parseInt(duration) <= 1){
-            duration_unit = pluralize.singular(duration_unit);
-        }
-        duration_text += " "+duration_unit;
-    }else{
-        duration_text = calculateDuration(duration); 
-    }
-    return duration_text;
-}
+const round = (value, step) => {
+    step || (step = 1.0);
+    var inv = 1.0 / step;
+    return Math.round(value * inv) / inv;
+};
 
-
-
-
-const generateSingleViewData = async (result, isList = false) => {
+const generateSingleViewData = (result, isList = false) => {
 
     let effort = null;
     if(result.recommended_effort_per_week){
@@ -889,18 +862,17 @@ const generateSingleViewData = async (result, isList = false) => {
         coverImageSize = 'thumbnail';
     }
 
-    for(let i=0; i<result.reviews.length; i++){
-        if(result.reviews[i]['reviewer_name'] == 'Other'){
-            result.reviews.splice(i, 1);
-        }
-    }
-
     let cover_image = null;
     if(result.images){
         if(result.images[coverImageSize]){
             cover_image = getMediaurl(result.images[coverImageSize]);
         }else{
             cover_image = getMediaurl(result.images['thumbnail']);
+        }
+    }
+    for(let i=0; i<result.reviews.length; i++){
+        if(result.reviews[i]['reviewer_name'] == 'Other'){
+            result.reviews.splice(i, 1);
         }
     }
 
@@ -911,38 +883,26 @@ const generateSingleViewData = async (result, isList = false) => {
         subtitle: result.subtitle,
         provider: {
             name: result.provider_name,
-            currency: result.provider_currency,
-            slug: result.provider_slug
+            currency: result.provider_currency
         },
-        partner: {
-            name: result.partner_name,
-            slug: result.partner_slug,
-            partner_url: result.partner_url,
-            currency: result.partner_currency
-        },
-        currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,
         instructors: [],
         cover_video: (result.video) ? getMediaurl(result.video) : null,
         cover_image: cover_image,
         embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
         description: result.description,
         skills: (!isList) ? result.skills_gained : null,
-        skill_tags: (result.skills) ? result.skills : [],
         what_will_learn: (!isList) ? result.what_will_learn : null,
         target_students: (!isList) ? result.target_students : null,
         prerequisites: (!isList) ? result.prerequisites  : null,
         content: (!isList) ? result.content : null,
         categories: (result.categories) ? result.categories : [],
-        categories_list: (result.categories_list) ? result.categories_list : [],
         sub_categories: (result.sub_categories) ? result.sub_categories : [],
-        sub_categories_list: (result.sub_categories_list) ? result.sub_categories_list : [],
-        topics_list: (result.topics_list) ? result.topics_list : [],
         course_details: {
             //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
-            duration: getDurationText(result.total_duration_in_hrs, result.total_duration_unit),
+            duration: calculateDuration(result.total_duration_in_hrs),
             total_duration_unit: result.total_duration_unit, 
             effort: effort,
-            total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
+            total_video_content: result.total_video_content_in_hrs,
             total_video_content_unit: result.total_video_content_unit,
             language: result.languages.join(", "),
             subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
@@ -952,7 +912,7 @@ const generateSingleViewData = async (result, isList = false) => {
             accessibilities: (result.accessibilities && result.accessibilities.length > 0) ? result.accessibilities.join(", ") : null,
             availabilities: (result.availabilities && result.availabilities.length > 0) ? result.availabilities.join(", ") : null,
             learn_type: (result.learn_type) ? result.learn_type : null,
-            topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
+            topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,
             tags: [],
             pricing: {
                 pricing_type: result.pricing_type,
@@ -982,7 +942,7 @@ const generateSingleViewData = async (result, isList = false) => {
         personalized_teaching: result.personalized_teaching,
         post_course_interaction: result.post_course_interaction,
         international_faculty: result.international_faculty,
-        batches: (result.batches) ? result.batches : [],
+        batches: [],
         enrollment_start_date: result.enrollment_start_date,
         enrollment_end_date: result.enrollment_end_date,
         hands_on_training: {
@@ -1001,8 +961,7 @@ const generateSingleViewData = async (result, isList = false) => {
             highest_salary: result.highest_salary
         },
         corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
-        accreditations: [],
-        ads_keywords:result.ads_keywords
+        accreditations: (result.accreditations) ? result.accreditations : []
     };
 
     if(!isList){
@@ -1033,7 +992,7 @@ const generateSingleViewData = async (result, isList = false) => {
                     continue;
                 }
                 if(instructor.instructor_image){
-                    instructor.instructor_image = getMediaurl(instructor.instructor_image.thumbnail);                    
+                    instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
                 }
                 data.instructors.push(instructor);
             }
@@ -1044,20 +1003,8 @@ const generateSingleViewData = async (result, isList = false) => {
         if(result.medium){
             data.course_details.tags.push(result.medium);
         }
-
-        if(result.accreditations && result.accreditations.length > 0){
-            for(let accr of result.accreditations){
-                if(accr.name == 'Not Available'){
-                    continue;
+    }
                 }                
-                if(!isList){
-                    if(accr.logo){
-                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
-                    }
-                    data.accreditations.push(accr);
-                }
-            }
-        }
     }
 
     
@@ -1069,16 +1016,15 @@ const generateSingleViewData = async (result, isList = false) => {
             
             if(!isList){
                 if(review.photo){
-                    review.photo = getMediaurl(review.photo.thumbnail);                    
+                    review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
                 }
                 data.reviews.push(review);
             }
 
-            let rating_round = Math.floor(review.rating);
-            if(ratings[rating_round]){
-                ratings[rating_round] += 1; 
+            if(ratings[review.rating]){
+                ratings[review.rating] += 1; 
             }else{
-                ratings[rating_round] = 1; 
+                ratings[review.rating] = 1; 
             }
         }
 
@@ -1086,6 +1032,8 @@ const generateSingleViewData = async (result, isList = false) => {
         data.ratings.average_rating = round(average_rating, 0.5);
         data.ratings.average_rating_actual = average_rating.toFixed(1);            
         let rating_distribution = [];
+
+        
 
         //add missing ratings
         for(let i=0; i<5; i++){
@@ -1132,18 +1080,10 @@ const generateSingleViewData = async (result, isList = false) => {
                 data.skills.splice(i, 1);
             }
         }
-    } 
-
-    if(result.partner_currency){
-        data.provider.currency = result.partner_currency.iso_code;
     }
-
-    if(result.custom_ads_keywords) {
-        data.ads_keywords +=`,${result.custom_ads_keywords}` 
-    }
-
     return data;
 }
+
 const calculateDuration = (total_duration_in_hrs) => {
     const hourse_in_day = 8;
     const days_in_week = 5;
