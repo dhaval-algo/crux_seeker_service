@@ -61,18 +61,18 @@ module.exports = class searchService {
                         "should": []
                     }
                 };
-        if(entity){
-            queryEntities.push(entity);
-            sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
-            const entityQuery = generateEntityQuery(entity, keyword);
-            query.bool.should.push(entityQuery);
-        }else{
+        if(!entity || (entity == 'all')){
             for (const [key, value] of Object.entries(entityQueryMapping)) {
                 queryEntities.push(key);
                 sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
                 const entityQuery = generateEntityQuery(key, keyword);
                 query.bool.should.push(entityQuery);
-            }
+            }            
+        }else{
+            queryEntities.push(entity);
+            sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
+            const entityQuery = generateEntityQuery(entity, keyword);
+            query.bool.should.push(entityQuery);
         }
 
         const uniqueFields = sourceFields.filter(function(item, pos, self) {
