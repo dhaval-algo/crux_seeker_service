@@ -14,6 +14,7 @@ const moment = require("moment");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { Buffer } = require('buffer');
+const pluralize = require('pluralize')
 const encryptStr = (str) => {
     return crypt.encrypt(str);
 };
@@ -754,6 +755,7 @@ const sendResetPasswordLink = (userObj, useQueue) => {
     })
 }
 
+
 const calculateProfileCompletion =  (userObj) => {
     return new Promise(async (resolve) => {
         try {
@@ -841,7 +843,74 @@ const round = (value, step) => {
     return Math.round(value * inv) / inv;
 };
 
-const generateSingleViewData = (result, isList = false) => {
+const getMediaurl = (mediaUrl) => {
+    if(mediaUrl !== null && mediaUrl !== undefined){
+        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
+        if(isRelative){
+            mediaUrl = process.env.ASSET_URL+mediaUrl;
+        }
+    }    
+    return mediaUrl;
+};
+
+const getDurationText = (duration, duration_unit) => {
+    if(!duration){
+        return null;
+    }
+    if(duration == 0){
+        return null;
+    }
+    let duration_text = "";
+    if(duration_unit){
+        duration_unit = duration_unit.toLowerCase();
+        duration_text += duration;
+        if(parseInt(duration) <= 1){
+            duration_unit = pluralize.singular(duration_unit);
+        }
+        duration_text += " "+duration_unit;
+    }else{
+        duration_text = calculateDuration(duration); 
+    }
+    return duration_text;
+}
+
+
+const calculateDuration = (total_duration_in_hrs) => {
+    const hourse_in_day = 8;
+    const days_in_week = 5;
+    let duration = null;
+        if(total_duration_in_hrs){
+            let totalDuration = null;
+            let durationUnit = null;
+            if(total_duration_in_hrs < (hourse_in_day*days_in_week)){
+                totalDuration = total_duration_in_hrs;
+                durationUnit = (totalDuration > 1) ? 'hours': 'hour';
+                return `${totalDuration} ${durationUnit}`;
+            }
+
+            const week = Math.floor((hourse_in_day*days_in_week)/7);
+            if(week < 4){
+                totalDuration = week;
+                durationUnit = (week > 1) ? 'weeks': 'week';
+                return `${totalDuration} ${durationUnit}`;
+            }
+
+            const month = Math.floor(week/4);
+            if(month < 12){
+                totalDuration = month;
+                durationUnit = (month > 1) ? 'months': 'month';
+                return `${totalDuration} ${durationUnit}`;
+            }
+
+            const year = Math.floor(month/12);
+            totalDuration = year;
+            durationUnit = (year > 1) ? 'years': 'year';
+            return `${totalDuration} ${durationUnit}`;
+        }
+        return duration;
+};
+
+const generateSingleViewData = async (result, isList = false) => {
 
     let effort = null;
     if(result.recommended_effort_per_week){
@@ -859,6 +928,15 @@ const generateSingleViewData = (result, isList = false) => {
         }
     }
 
+    let cover_image = null;
+    if(result.images){
+        if(result.images[coverImageSize]){
+            cover_image = getMediaurl(result.images[coverImageSize]);
+        }else{
+            cover_image = getMediaurl(result.images['thumbnail']);
+        }
+    }
+
     let data = {
         title: result.title,
         slug: result.slug,
@@ -866,26 +944,38 @@ const generateSingleViewData = (result, isList = false) => {
         subtitle: result.subtitle,
         provider: {
             name: result.provider_name,
-            currency: result.provider_currency
+            currency: result.provider_currency,
+            slug: result.provider_slug
         },
+        partner: {
+            name: result.partner_name,
+            slug: result.partner_slug,
+            partner_url: result.partner_url,
+            currency: result.partner_currency
+        },
+        currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,
         instructors: [],
-        cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-        cover_image: (result.images) ? result.images[coverImageSize] : null,
+        cover_video: (result.video) ? getMediaurl(result.video) : null,
+        cover_image: cover_image,
         embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
         description: result.description,
         skills: (!isList) ? result.skills_gained : null,
+        skill_tags: (result.skills) ? result.skills : [],
         what_will_learn: (!isList) ? result.what_will_learn : null,
         target_students: (!isList) ? result.target_students : null,
         prerequisites: (!isList) ? result.prerequisites  : null,
         content: (!isList) ? result.content : null,
         categories: (result.categories) ? result.categories : [],
+        categories_list: (result.categories_list) ? result.categories_list : [],
         sub_categories: (result.sub_categories) ? result.sub_categories : [],
+        sub_categories_list: (result.sub_categories_list) ? result.sub_categories_list : [],
+        topics_list: (result.topics_list) ? result.topics_list : [],
         course_details: {
             //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
-            duration: calculateDuration(result.total_duration_in_hrs),
+            duration: getDurationText(result.total_duration_in_hrs, result.total_duration_unit),
             total_duration_unit: result.total_duration_unit, 
             effort: effort,
-            total_video_content: result.total_video_content_in_hrs,
+            total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
             total_video_content_unit: result.total_video_content_unit,
             language: result.languages.join(", "),
             subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
@@ -895,7 +985,7 @@ const generateSingleViewData = (result, isList = false) => {
             accessibilities: (result.accessibilities && result.accessibilities.length > 0) ? result.accessibilities.join(", ") : null,
             availabilities: (result.availabilities && result.availabilities.length > 0) ? result.availabilities.join(", ") : null,
             learn_type: (result.learn_type) ? result.learn_type : null,
-            topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,
+            topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
             tags: [],
             pricing: {
                 pricing_type: result.pricing_type,
@@ -925,7 +1015,7 @@ const generateSingleViewData = (result, isList = false) => {
         personalized_teaching: result.personalized_teaching,
         post_course_interaction: result.post_course_interaction,
         international_faculty: result.international_faculty,
-        batches: [],
+        batches: (result.batches) ? result.batches : [],
         enrollment_start_date: result.enrollment_start_date,
         enrollment_end_date: result.enrollment_end_date,
         hands_on_training: {
@@ -944,7 +1034,8 @@ const generateSingleViewData = (result, isList = false) => {
             highest_salary: result.highest_salary
         },
         corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
-        accreditations: (result.accreditations) ? result.accreditations : []
+        accreditations: [],
+        ads_keywords:result.ads_keywords
     };
 
     if(!isList){
@@ -975,7 +1066,7 @@ const generateSingleViewData = (result, isList = false) => {
                     continue;
                 }
                 if(instructor.instructor_image){
-                    instructor.instructor_image = process.env.ASSET_URL+instructor.instructor_image.thumbnail;                    
+                    instructor.instructor_image = getMediaurl(instructor.instructor_image.thumbnail);                    
                 }
                 data.instructors.push(instructor);
             }
@@ -985,6 +1076,20 @@ const generateSingleViewData = (result, isList = false) => {
         }
         if(result.medium){
             data.course_details.tags.push(result.medium);
+        }
+
+        if(result.accreditations && result.accreditations.length > 0){
+            for(let accr of result.accreditations){
+                if(accr.name == 'Not Available'){
+                    continue;
+                }                
+                if(!isList){
+                    if(accr.logo){
+                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
+                    }
+                    data.accreditations.push(accr);
+                }
+            }
         }
     }
 
@@ -997,15 +1102,16 @@ const generateSingleViewData = (result, isList = false) => {
             
             if(!isList){
                 if(review.photo){
-                    review.photo = process.env.ASSET_URL+review.photo.thumbnail;                    
+                    review.photo = getMediaurl(review.photo.thumbnail);                    
                 }
                 data.reviews.push(review);
             }
 
-            if(ratings[review.rating]){
-                ratings[review.rating] += 1; 
+            let rating_round = Math.floor(review.rating);
+            if(ratings[rating_round]){
+                ratings[rating_round] += 1; 
             }else{
-                ratings[review.rating] = 1; 
+                ratings[rating_round] = 1; 
             }
         }
 
@@ -1013,8 +1119,6 @@ const generateSingleViewData = (result, isList = false) => {
         data.ratings.average_rating = round(average_rating, 0.5);
         data.ratings.average_rating_actual = average_rating.toFixed(1);            
         let rating_distribution = [];
-
-        
 
         //add missing ratings
         for(let i=0; i<5; i++){
@@ -1061,10 +1165,18 @@ const generateSingleViewData = (result, isList = false) => {
                 data.skills.splice(i, 1);
             }
         }
+    } 
+
+    if(result.partner_currency){
+        data.provider.currency = result.partner_currency.iso_code;
     }
+
+    if(result.custom_ads_keywords) {
+        data.ads_keywords +=`,${result.custom_ads_keywords}` 
+    }
+
     return data;
 }
-
 const calculateDuration = (total_duration_in_hrs) => {
     const hourse_in_day = 8;
     const days_in_week = 5;
