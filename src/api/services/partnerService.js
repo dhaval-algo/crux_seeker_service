@@ -211,7 +211,8 @@ module.exports = class partnerService {
         }        
     }
 
-    async getPartner(slug, callback){
+    async getPartner(req, callback){
+        const slug = req.params.slug;
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }}
@@ -221,7 +222,7 @@ module.exports = class partnerService {
         const result = await elasticService.search('partner', query);
         console.log("result <> ", result);
         if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source);
+            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
@@ -240,11 +241,18 @@ module.exports = class partnerService {
 
 
 
-    async generateSingleViewData(result, isList = false){
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
         
         let coverImageSize = 'small';
         if(isList){
             coverImageSize = 'thumbnail';
+        }
+        let cover_image = null;
+        if(result.cover_image){
+            cover_image = getMediaurl(result.cover_image[coverImageSize]);
+            if(!cover_image){
+                cover_image = getMediaurl(result.cover_image['thumbnail']);
+            }
         }
 
         let courses = {
@@ -252,7 +260,7 @@ module.exports = class partnerService {
             total: 0
         };
         if(!isList){
-            courses = await this.getPartnerCourses(result.name);
+            courses = await this.getPartnerCourses(result.name, currency);
         }
 
         let data = {
@@ -263,7 +271,7 @@ module.exports = class partnerService {
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
-            cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
+            cover_image: cover_image,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
             establishment_year: result.establishment_year,
             corporate_partners: [],
@@ -328,7 +336,7 @@ module.exports = class partnerService {
     }
 
 
-    async getPartnerCourses(partner_name){
+    async getPartnerCourses(partner_name, currency){
         let courses = {
             list: [],
             total: 0
@@ -349,10 +357,8 @@ module.exports = class partnerService {
 
         const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.hits && result.hits.length > 0){
-            courses.list = await LearnContentService.generateListViewData(result.hits);
+            courses.list = await LearnContentService.generateListViewData(result.hits, currency);
             courses.total = result.total.value;
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
         }
         return courses;        
     }

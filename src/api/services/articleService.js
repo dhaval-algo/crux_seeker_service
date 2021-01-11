@@ -219,6 +219,55 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
 };
 
 
+const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
+    if(parsedFilters.length <= 0){
+        return filters;
+    }
+    for(let filter of filters){
+        if(filter.is_singleton){
+            continue;
+        }
+        if(filter.filter_type !== 'Checkboxes'){
+            continue;
+        }
+        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
+        if(!parsedFilter){
+            for(let option of filter.options){
+                option.count = 0;
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
+                    if(!elasticAttribute){
+                        continue;
+                    }
+                for(const esData of data){
+                    
+                    const entity = esData._source; 
+                    let entityData = entity[elasticAttribute.elastic_attribute_name];
+                    if(entityData){
+                        if(Array.isArray(entityData)){
+                            if(entityData.includes(option.label)){
+                                option.count++;
+                            }
+                        }else{
+                            if(entityData == option.label){
+                                option.count++;
+                            }
+                        }
+                    }
+                }
+                if(option.count == 0){
+                    option.disabled = true;
+                }
+            }
+        }
+
+        filter.options = filter.options.filter(function( obj ) {
+            return !obj.disabled;
+          });
+    }
+    return filters;
+};
+
+
 module.exports = class articleService {
 
     async getArticleList(req, callback){
@@ -256,6 +305,11 @@ module.exports = class articleService {
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
+
+        let filterQuery = JSON.parse(JSON.stringify(query));
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
+
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){
@@ -275,7 +329,7 @@ module.exports = class articleService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title','slug','tags','section_name','levels','author_first_name','author_last_name','categories'],
+                        "fields" : ['title', 'section_name', 'author_first_name', 'author_last_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -296,10 +350,13 @@ module.exports = class articleService {
                 totalCount: result.total.value
             }
 
-            let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
+            //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);
+            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
 
             //update selected flags
             if(parsedFilters.length > 0){
+                //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -313,7 +370,8 @@ module.exports = class articleService {
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+            filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
         }        
     }
 
@@ -352,8 +410,23 @@ module.exports = class articleService {
             coverImageSize = 'thumbnail';
         }
 
+        console.log("result.cover_image <> ", result.cover_image);
+
+        let cover_image = null;
+        if(result.cover_image){
+            if(result.cover_image[coverImageSize]){
+                cover_image = getMediaurl(result.cover_image[coverImageSize]);
+            }else{
+                cover_image = getMediaurl(result.cover_image['thumbnail']);
+            }
+        }
+        if(!cover_image){
+            cover_image = getMediaurl(result.cover_image['url']);
+        }
+
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
         if(!author){
+            console.log("Author not found...");
             author = {
                 id: result.author_id,
                 username: result.author_username,
@@ -362,13 +435,15 @@ module.exports = class articleService {
                 designation: result.author_designation,
                 bio: result.author_bio
             };
+        }else{
+            console.log("Author found...", author); 
         }
 
         let data = {
             title: result.title,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
-            cover_image: (result.cover_image) ? getMediaurl(result.cover_image[coverImageSize]) : null,
+            cover_image: cover_image,
             short_description: result.short_description,
             content: (!isList) ? result.content : null,
             author: author,
@@ -385,17 +460,21 @@ module.exports = class articleService {
             section_name: result.section_name,
             section_slug: result.section_slug,
             related_articles: (result.related_articles && !isList) ? await this.getArticleByIds(result.related_articles) : [],
-            recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : []
+            recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : [],
+            ads_keywords:result.ads_keywords
         };
 
         if(!isList){
             data.meta_information = {
-                meta_tile: result.meta_tile,
+                meta_tile: result.meta_title,
                 meta_description: result.meta_description,
                 meta_keywords: result.meta_keywords
             }
         }
-
+        
+        if(result.custom_ads_keywords) {
+            data.ads_keywords +=`,${result.custom_ads_keywords}` 
+        }
         return data;
     }
 
@@ -450,8 +529,11 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ? getMediaurl(result.image.url) : null
+            image: (result.image) ? getMediaurl(result.image.thumbnail) : null
         };
+        if(!data.image){
+            data.image = getMediaurl(result.image['url']);
+        }
         return data;
     }
 
