@@ -1004,7 +1004,7 @@ const generateSingleViewData = (result, isList = false) => {
             data.course_details.tags.push(result.medium);
         }
     }
-                }                
+                          
     }
 
     
