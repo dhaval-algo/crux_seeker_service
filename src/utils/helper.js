@@ -870,7 +870,7 @@ const generateSingleViewData = (result, isList = false) => {
         },
         instructors: [],
         cover_video: (result.video) ? process.env.ASSET_URL+result.video : null,
-        cover_image: (result.images) ? process.env.ASSET_URL+result.images[coverImageSize] : null,
+        cover_image: (result.images) ? result.images[coverImageSize] : null,
         embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
         description: result.description,
         skills: (!isList) ? result.skills_gained : null,
