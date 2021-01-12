@@ -294,18 +294,20 @@ const getMaxValue = (data, attribute, userCurrency) => {
     let maxValue = 0;
     for(const esData of data){
         const entity = esData._source;
-        const baseCurrency = getBaseCurrency(entity);
+        /* const baseCurrency = getBaseCurrency(entity);
         const convertedAmount = getCurrencyAmount(entity[attribute], currencies, baseCurrency, userCurrency);
         if(convertedAmount > maxValue){
             maxValue = convertedAmount;
-        }
-        /* if(entity[attribute] > maxValue){
-            maxValue = entity[attribute];
         } */
+        if(entity[attribute] > maxValue){
+            maxValue = entity[attribute];
+        }
     }
-    /* if(maxValue > 0){
+    if(maxValue > 0){
+        console.log("actual currency value <> ", maxValue);
         maxValue = getCurrencyAmount(maxValue, currencies, process.env.DEFAULT_CURRENCY, userCurrency);
-    } */
+        console.log("maxvalue after conversion <> ", maxValue);
+    }
     return maxValue;
 };
 
