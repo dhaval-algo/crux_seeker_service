@@ -24,6 +24,9 @@ const getUserCurrency = async(request) => {
 };
 
 const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
+    if(amount == 0){
+        return 0;
+    }
     if(!amount){
         return null;
     }
