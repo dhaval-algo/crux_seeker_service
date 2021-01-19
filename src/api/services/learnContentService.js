@@ -294,18 +294,20 @@ const getMaxValue = (data, attribute, userCurrency) => {
     let maxValue = 0;
     for(const esData of data){
         const entity = esData._source;
-        const baseCurrency = getBaseCurrency(entity);
+        /* const baseCurrency = getBaseCurrency(entity);
         const convertedAmount = getCurrencyAmount(entity[attribute], currencies, baseCurrency, userCurrency);
         if(convertedAmount > maxValue){
             maxValue = convertedAmount;
-        }
-        /* if(entity[attribute] > maxValue){
-            maxValue = entity[attribute];
         } */
+        if(entity[attribute] > maxValue){
+            maxValue = entity[attribute];
+        }
     }
-    /* if(maxValue > 0){
+    if(maxValue > 0){
+        console.log("actual currency value <> ", maxValue);
         maxValue = getCurrencyAmount(maxValue, currencies, process.env.DEFAULT_CURRENCY, userCurrency);
-    } */
+        console.log("maxvalue after conversion <> ", maxValue);
+    }
     return maxValue;
 };
 
@@ -500,7 +502,6 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
     for(let filter of filters){
         if(filter.filter_type == "Checkboxes"){
             let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter && filter.options){
                 for(let option of filter.options){
                     if(seleteddFilter.value.includes(option.label)){
@@ -511,7 +512,6 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
         }
         if(filter.filter_type == "RangeOptions"){
             let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter && filter.options){
                 for(let option of filter.options){
                     if((option.start ==  seleteddFilter.start) && (option.end ==  seleteddFilter.end)){
@@ -702,13 +702,15 @@ module.exports = class learnContentService {
                     if(filter.start !== "MIN"){
                         let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
                         if(filter.key == 'Price'){
-                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');
+                            console.log("Appliying start price <> ", startValue);
+                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');                            
                         }
                         rangeQuery["gte"] = startValue;
                     }
                     if(filter.end !== "MAX"){
                         let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
                         if(filter.key == 'Price'){
+                            console.log("Appliying end price <> ", endValue);
                             endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
                         }
                         rangeQuery["lte"] = endValue;
@@ -835,6 +837,10 @@ module.exports = class learnContentService {
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
+            //update selected flags
+            if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
         }        
     }

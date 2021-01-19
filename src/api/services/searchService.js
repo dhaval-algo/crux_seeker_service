@@ -1,3 +1,5 @@
+const mSorter = require("match-sorter");
+let {matchSorter} = mSorter;
 const elasticService = require("./elasticService");
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
@@ -9,6 +11,7 @@ const entityQueryMapping = {
 };
 
 const MAX_PER_ENTITY = 20;
+const MAX_RESULT = 30;
 
 const generateEntityQuery = (entity, keyword) => {
     let entityConfig = entityQueryMapping[entity];
@@ -48,7 +51,7 @@ const generateEntityQuery = (entity, keyword) => {
 
 module.exports = class searchService {
     async getSearchResult(req, callback){
-        const keyword = req.params.keyword;
+        const keyword = decodeURIComponent(req.params.keyword);
         const entity = req.query.entity;
         const queryEntities = [];
         let sourceFields = [];
@@ -58,18 +61,18 @@ module.exports = class searchService {
                         "should": []
                     }
                 };
-        if(entity){
-            queryEntities.push(entity);
-            sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
-            const entityQuery = generateEntityQuery(entity, keyword);
-            query.bool.should.push(entityQuery);
-        }else{
+        if(!entity || (entity == 'all')){
             for (const [key, value] of Object.entries(entityQueryMapping)) {
                 queryEntities.push(key);
                 sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
                 const entityQuery = generateEntityQuery(key, keyword);
                 query.bool.should.push(entityQuery);
-            }
+            }            
+        }else{
+            queryEntities.push(entity);
+            sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
+            const entityQuery = generateEntityQuery(entity, keyword);
+            query.bool.should.push(entityQuery);
         }
 
         const uniqueFields = sourceFields.filter(function(item, pos, self) {
@@ -78,7 +81,8 @@ module.exports = class searchService {
 
         console.log("Query <> ", JSON.stringify(query));       
 
-        const result = await elasticService.search(queryEntities.join(","), query);
+        const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
+        //console.log("Result Reponse <<>>>>>> <> ", JSON.stringify(result));
         let data = {
             result: [],
             totalCount: 0,
@@ -97,7 +101,9 @@ module.exports = class searchService {
                 if(data.totalCount > MAX_PER_ENTITY){
                     data.viewAll = true;
                 }  
-            }            
+            }
+            data.result = matchSorter(data.result, keyword, {keys: ['title'], threshold: matchSorter.rankings.NO_MATCH});
+
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
         }else{
             callback(null, {status: 'success', message: 'No records found!', data: data});

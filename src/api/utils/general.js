@@ -24,6 +24,9 @@ const getUserCurrency = async(request) => {
 };
 
 const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
+    if(amount == 0){
+        return 0;
+    }
     if(!amount){
         return null;
     }
@@ -31,7 +34,7 @@ const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
         userCurrency = process.env.DEFAULT_CURRENCY;
     }
     if(baseCurrency == userCurrency){
-        return amount;
+        return Math.round(amount);
     }
     let currency_b = currencies.find(o => o.iso_code === baseCurrency);
     let currency_u = currencies.find(o => o.iso_code === userCurrency);
