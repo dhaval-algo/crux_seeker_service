@@ -759,10 +759,11 @@ module.exports = class learnContentService {
 
             //let filters = await getFilters(result.hits, filterConfigs);
             //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
-            filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);           
+            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);           
             
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits); 
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 

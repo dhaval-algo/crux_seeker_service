@@ -353,10 +353,11 @@ module.exports = class providerService {
             }
 
             //let filters = await getAllFilters(query, queryPayload, filterConfigs);
-            filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
+            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
 
             //update selected flags
             if(parsedFilters.length > 0){
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -370,7 +371,10 @@ module.exports = class providerService {
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+            if(parsedFilters.length > 0){
+                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
         }        
     }
 

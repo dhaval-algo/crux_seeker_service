@@ -370,7 +370,9 @@ module.exports = class articleService {
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
-            filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            if(parsedFilters.length > 0){
+                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
         }        
     }
