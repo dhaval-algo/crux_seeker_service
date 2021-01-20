@@ -850,19 +850,28 @@ module.exports = class learnContentService {
         //const currency = await getUserCurrency(req);
         currencies = await getCurrencies();
 
+        const course = await this.fetchCourseBySlug(slug);
+        if(course){
+            const data = await this.generateSingleViewData(course, false, req.query.currency);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            callback({status: 'failed', message: 'Not found!'}, null);
+        }        
+    }
+
+    async fetchCourseBySlug(slug) {
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
               {term: { "status.keyword": 'published' }}
             ]
         }};
-        const result = await elasticService.search('learn-content', query);
-        if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+        let result = await elasticService.search('learn-content', query);
+        if(result.hits && result.hits.length > 0) {
+            return result.hits[0]._source;
+        } else {
+            return null;
+        }
     }
 
 
