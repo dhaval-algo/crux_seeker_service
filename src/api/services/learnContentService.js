@@ -729,60 +729,8 @@ module.exports = class learnContentService {
         
         let queryString = null;
         if(req.query['q']){
-            /* query.match_phrase = {
-                "title.keyword": {
-                    query: req.query['q'],
-                    operator: "and",
-                    fuzziness: "auto"
-              }
-            } */
-            /* query.bool.must.push( {match: {
-                "title.keyword": {
-                    "query": "python",
-                    "type":  "phrase"
-                }
-            }}) */
-            /* query.wildcard = {
-                "title.keyword" : `*${req.query['q']}*`
-              }; */
-              //queryString = req.query['q'];
-
-             /*  query.match = {
-                "title.keyword": "Python"
-            }; */
-
-            /* query.bool.should.push({
-                "match": {
-                "title.keyword": {
-                    "query": req.query['q'],
-                    "operator": "or"
-                 } 
-                }
-            }); */
-
-            /* query.bool.filter.push({
-                
-                "match": {
-                    "title.keyword": {
-                        "query": decodeURIComponent(req.query['q'])
-                     } 
-                    }
-            }) */
-
-            /* query.bool.must.push( 
-                {
-                    match: {
-                        "title": decodeURIComponent(req.query['q'])
-                    }
-                }
-            ); */
-
             query.bool.must.push( 
                 {
-                    /* "multi_match": {
-                      "query": decodeURIComponent(req.query['q']),
-                      "fields": ['title','slug','learn_type','categories','sub_categories','topics','provider_name','medium','instruction_type','level','languages','accessibilities','availabilities','pricing_type','finance_option','skills_gained','content','instructors','learnng_mediums','partner_name','skill_tags']
-                    } */
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
                         "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
