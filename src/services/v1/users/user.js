@@ -1162,6 +1162,16 @@ const removeProfilePic = async (req,res) => {
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
+
+const fetchUserMetaObjByUserId = async (userId) => {
+    let userMeta = await models.user_meta.findAll({ where: { user_id } });
+    let userMetaObj = {};
+    for(let um of userMeta) {
+        userMetaObj[um.key] = um.value;
+    }
+    return userMetaObj;
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -1181,5 +1191,6 @@ module.exports = {
     wishListCourseData,
     getEnquiryList,
     uploadProfilePic,
-    removeProfilePic
+    removeProfilePic,
+    fetchUserMetaObjByUserId
 }
