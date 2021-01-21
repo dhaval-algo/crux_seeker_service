@@ -1164,7 +1164,7 @@ const removeProfilePic = async (req,res) => {
 }
 
 const fetchUserMetaObjByUserId = async (userId) => {
-    let userMeta = await models.user_meta.findAll({ where: { user_id } });
+    let userMeta = await models.user_meta.findAll({ where: { userId: userId, metaType: "primary" } });
     let userMetaObj = {};
     for(let um of userMeta) {
         userMetaObj[um.key] = um.value;

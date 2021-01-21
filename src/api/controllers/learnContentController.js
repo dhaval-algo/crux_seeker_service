@@ -2,6 +2,8 @@ const learnContentService = require("../services/learnContentService");
 let LearnContentService = new learnContentService();
 const paymentService = new (require("../services/PaymentService"));
 const userService = require("../../services/v1/users/user");
+const axios = require("axios");
+const helperService = require("../../utils/helper");
 
 module.exports = {
 
@@ -60,8 +62,8 @@ module.exports = {
         try {
             let { courseSlug, address } = req.body;
             
-            if(courseSlug) {
-                res.status(200).send({
+            if(!courseSlug) {
+                return res.status(200).send({
                     code: "params_missing",
                     message: "Course slug missing"
                 });
@@ -76,22 +78,27 @@ module.exports = {
             if(course) {
                 /** Initiate the payment */
                 /** Using the base price which is in USD */
-                let paymentIntent = await paymentService.createPaymentIntent(course.basePrice, "USD");
+                let amount = helperService.roundOff(course.basePrice, 2)
+                let paymentIntentSecret = await paymentService.createPaymentIntent(amount, "USD");
 
-                /** Create the order */
-                // TODO
+                /** Create the order data */
+                let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", amount, "USD",
+                    "stripe", paymentIntentSecret);
+
+                /** Add the data to Strapi */
+                await axios.post(process.env.API_BACKEND_URL + "/orders", orderData);
 
                 return res.status(200).send({
                     code: "success",
                     message: "Payment initiated",
                     data: {
-                        paymentIntent: paymentIntent
+                        paymentIntent: paymentIntentSecret
                     }
                 });
             } else {
                 return res.status(200).send({
                     code: "course_not_found",
-                    message: "Course slug missing"
+                    message: "Course not found"
                 });
             }
         } catch(err) {

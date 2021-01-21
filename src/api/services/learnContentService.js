@@ -10,6 +10,8 @@ let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
 
+const helperService = require("../../utils/helper");
+
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Learn_Content&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
@@ -1297,5 +1299,44 @@ module.exports = class learnContentService {
         return datas;
     }
 
+    /** Creates order data with single payment mode */
+    async createOrderData(userId, userMeta, address, course, orderType, amount, currency, paymentGateway, transactionId) {
+        let orderData = {};
+        
+        orderData = {
+            order_id: "ODR" + helperService.generateReferenceId(),
+            user_id: userId,
+            order_type: orderType,
+            partner: course.partner_id,
+            amount: amount,
+            status: "pending_payment",
+            order_items: [
+                {
+                    item_id: course.id,
+                    item_name: course.title,
+                    item_description: course.description,
+                    qty: 1
+                }
+            ],
+            order_customer: {
+                first_name: (userMeta.firstName) ? userMeta.firstName : null,
+                last_name: (userMeta.lastName) ? userMeta.lastName : null,
+                email: (userMeta.email) ? userMeta.email : null,
+                phone: (userMeta.phone) ? userMeta.phone : null,
+                address: (address) ? address : null
+            },
+            order_payment: [
+                {
+                    gateway: paymentGateway,
+                    transaction_id: transactionId,
+                    amount: amount,
+                    currency: currency,
+                    status: null,
+                    reject_reason: null
+                }
+            ]
+        }
 
+        return orderData;
+    }
 }
