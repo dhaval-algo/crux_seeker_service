@@ -1325,16 +1325,14 @@ module.exports = class learnContentService {
                 phone: (userMeta.phone) ? userMeta.phone : null,
                 address: (address) ? address : null
             },
-            order_payment: [
-                {
-                    gateway: paymentGateway,
-                    transaction_id: transactionId,
-                    amount: amount,
-                    currency: currency,
-                    status: null,
-                    reject_reason: null
-                }
-            ]
+            order_payment: {
+                gateway: paymentGateway,
+                transaction_id: transactionId,
+                amount: amount,
+                currency: currency,
+                status: null,
+                reject_reason: null
+            }
         }
 
         return orderData;
