@@ -158,20 +158,22 @@ module.exports = class providerService {
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
-        console.log("paginationQuery <> ", paginationQuery);
 
         if(!req.query['sort']){
-            req.query['sort'] = "name:asc";
+            if(req.query['rank']){
+                req.query['sort'] = "rank:asc";
+            }else{
+                req.query['sort'] = "name:asc";
+            }            
         }
 
         if(req.query['sort']){
-            console.log("Sort requested <> ", req.query['sort']);
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             let sortField = splitSort[0];
             
             if((sortField == 'rank') && (req.query['rank'])){
-                sortField = `ranking_${req.query['rank']}`;
+                sort = `ranking_${req.query['rank']}:${splitSort[1]}`;
             }
 
             if(keywordFields.includes(sortField)){
@@ -445,7 +447,7 @@ module.exports = class providerService {
             data.ratings.rating_distribution = rating_distribution.reverse();
         } 
 
-        if(rank !== null){
+        if(rank !== null && result.ranks){
             data.rank = result[`ranking_${rank}`];
             data.rank_details = result.ranks.find(o => o.slug === rank);
         }
