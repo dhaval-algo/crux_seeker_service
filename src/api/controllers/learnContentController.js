@@ -78,11 +78,12 @@ module.exports = {
             if(course) {
                 /** Initiate the payment */
                 /** Using the base price which is in USD */
-                let amount = helperService.roundOff(course.basePrice, 2)
-                let paymentIntentSecret = await paymentService.createPaymentIntent(amount, "USD");
+                let amount = helperService.roundOff(course.finalPrice, 2);
+                let currency = course.partner_currency.iso_code;
+                let paymentIntentSecret = await paymentService.createPaymentIntent(amount, currency);
 
                 /** Create the order data */
-                let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", amount, "USD",
+                let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", amount, currency,
                     "stripe", paymentIntentSecret);
 
                 /** Add the data to Strapi */
