@@ -1315,7 +1315,11 @@ module.exports = class learnContentService {
                     item_id: course.id,
                     item_name: course.title,
                     item_description: course.description,
-                    qty: 1
+                    qty: 1,
+                    item_price: amount,
+                    discount: 0, //TODO change later
+                    tax: 0,
+                    item_total: amount
                 }
             ],
             order_customer: {
