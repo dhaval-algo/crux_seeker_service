@@ -953,6 +953,9 @@ module.exports = class learnContentService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
         const baseCurrency = getBaseCurrency(result);        
 
         let effort = null;

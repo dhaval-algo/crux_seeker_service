@@ -944,7 +944,7 @@ const fetchWishListIds = async (req,res) => {
 const wishListCourseData = async (req,res) => {
     try {
         
-        const { user } = req
+         const { user } = req
         const {searchStr} = req.query
         let where = {
             userId: user.userId,
@@ -971,6 +971,7 @@ const wishListCourseData = async (req,res) => {
             "query": {
               "ids": {
                   "values": wishedListIds
+                  //"values": ["LRN_CNT_PUB_282", "LRN_CNT_PUB_638", "LRN_CNT_PUB_3543", "LRN_CNT_PUB_1742", "LRN_CNT_PUB_3525"]
               },
               "match_phrase":{}
             }
