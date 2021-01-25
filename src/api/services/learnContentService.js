@@ -1302,6 +1302,9 @@ module.exports = class learnContentService {
     /** Creates order data with single payment mode */
     async createOrderData(userId, userMeta, address, course, orderType, amount, currency, paymentGateway, transactionId) {
         let orderData = {};
+
+        let regularPrice = parseFloat(course.regular_price);
+        let salePrice = course.sale_price ? parseFloat(course.sale_price) : 0.0;
         
         orderData = {
             order_id: "ODR" + helperService.generateReferenceId(),
@@ -1316,8 +1319,8 @@ module.exports = class learnContentService {
                     item_name: course.title,
                     item_description: course.description,
                     qty: 1,
-                    item_price: amount,
-                    discount: 0, //TODO change later
+                    item_price: helperService.roundOff(regularPrice, 2),
+                    discount: helperService.roundOff(regularPrice - salePrice, 2),
                     tax: 0,
                     item_total: amount
                 }
