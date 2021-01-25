@@ -989,7 +989,7 @@ const wishListCourseData = async (req,res) => {
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
-                    const course = await generateSingleViewData(hit._source);
+                    const course = await generateSingleViewData(hit._source, true, req.query.currency);
                     courses.push(course);
                 }
             }
