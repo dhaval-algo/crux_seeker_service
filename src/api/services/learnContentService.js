@@ -10,6 +10,8 @@ let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
 
+const helperService = require("../../utils/helper");
+
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Learn_Content&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
@@ -799,19 +801,28 @@ module.exports = class learnContentService {
         //const currency = await getUserCurrency(req);
         currencies = await getCurrencies();
 
+        const course = await this.fetchCourseBySlug(slug);
+        if(course){
+            const data = await this.generateSingleViewData(course, false, req.query.currency);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            callback({status: 'failed', message: 'Not found!'}, null);
+        }        
+    }
+
+    async fetchCourseBySlug(slug) {
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
               {term: { "status.keyword": 'published' }}
             ]
         }};
-        const result = await elasticService.search('learn-content', query);
-        if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+        let result = await elasticService.search('learn-content', query);
+        if(result.hits && result.hits.length > 0) {
+            return result.hits[0]._source;
+        } else {
+            return null;
+        }
     }
 
 
@@ -1237,5 +1248,49 @@ module.exports = class learnContentService {
         return datas;
     }
 
+    /** Creates order data with single payment mode */
+    async createOrderData(userId, userMeta, address, course, orderType, amount, currency, paymentGateway, transactionId) {
+        let orderData = {};
 
+        let regularPrice = parseFloat(course.regular_price);
+        let salePrice = course.sale_price ? parseFloat(course.sale_price) : 0.0;
+        
+        orderData = {
+            order_id: "ODR" + helperService.generateReferenceId(),
+            user_id: userId,
+            order_type: orderType,
+            partner: course.partner_id,
+            amount: amount,
+            status: "pending_payment",
+            order_items: [
+                {
+                    item_id: course.id,
+                    item_name: course.title,
+                    item_description: course.description,
+                    qty: 1,
+                    item_price: helperService.roundOff(regularPrice, 2),
+                    discount: helperService.roundOff(regularPrice - salePrice, 2),
+                    tax: 0,
+                    item_total: amount
+                }
+            ],
+            order_customer: {
+                first_name: (userMeta.firstName) ? userMeta.firstName : null,
+                last_name: (userMeta.lastName) ? userMeta.lastName : null,
+                email: (userMeta.email) ? userMeta.email : null,
+                phone: (userMeta.phone) ? userMeta.phone : null,
+                address: (address) ? address : null
+            },
+            order_payment: {
+                gateway: paymentGateway,
+                transaction_id: transactionId,
+                amount: amount,
+                currency: currency,
+                status: null,
+                reject_reason: null
+            }
+        }
+
+        return orderData;
+    }
 }

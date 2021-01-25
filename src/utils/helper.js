@@ -1119,6 +1119,13 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
+const generateReferenceId = () => {
+    return Math.floor(Math.random() * 100)+''+new Date().getTime();
+}
+
+const roundOff = (number, precision) => {
+    return Math.round((number + Number.EPSILON) * Math.pow(10, precision)) / Math.pow(10, precision);
+}
 
 module.exports = {
     encryptStr,
@@ -1136,5 +1143,7 @@ module.exports = {
     calculateProfileCompletion,
     createSocialEntryIfNotExists,
     getImgBuffer,
-    generateSingleViewData
+    generateSingleViewData,
+    generateReferenceId,
+    roundOff
 }

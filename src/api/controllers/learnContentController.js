@@ -1,5 +1,9 @@
 const learnContentService = require("../services/learnContentService");
 let LearnContentService = new learnContentService();
+const paymentService = new (require("../services/PaymentService"));
+const userService = require("../../services/v1/users/user");
+const axios = require("axios");
+const helperService = require("../../utils/helper");
 
 module.exports = {
 
@@ -54,5 +58,56 @@ module.exports = {
         });        
     },
 
+    buyCourse: async (req, res) => {
+        try {
+            let { courseSlug, address } = req.body;
+            
+            if(!courseSlug) {
+                return res.status(200).send({
+                    code: "params_missing",
+                    message: "Course slug missing"
+                });
+            }
 
+            /** Fetch the user details */
+            let userObj = await userService.fetchUserMetaObjByUserId(req.user.userId);
+
+            /** Fetch the course details based on the course slug */
+            let course = await LearnContentService.fetchCourseBySlug(courseSlug);
+
+            if(course) {
+                /** Initiate the payment */
+                /** Using the base price which is in USD */
+                let amount = helperService.roundOff(course.finalPrice, 2);
+                let currency = course.partner_currency.iso_code;
+                let paymentIntentSecret = await paymentService.createPaymentIntent(amount, currency);
+
+                /** Create the order data */
+                let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", amount, currency,
+                    "stripe", paymentIntentSecret);
+
+                /** Add the data to Strapi */
+                await axios.post(process.env.API_BACKEND_URL + "/orders", orderData);
+
+                return res.status(200).send({
+                    code: "success",
+                    message: "Payment initiated",
+                    data: {
+                        paymentIntent: paymentIntentSecret
+                    }
+                });
+            } else {
+                return res.status(200).send({
+                    code: "course_not_found",
+                    message: "Course not found"
+                });
+            }
+        } catch(err) {
+            console.log("Exception in buy course api: ", err);
+            return res.status(200).send({
+                code: "error",
+                message: "Error"
+            });
+        }
+    }
 };
