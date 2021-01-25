@@ -34,7 +34,6 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
 
-
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3 } = require("../AWS");
@@ -990,6 +989,7 @@ const wishListCourseData = async (req,res) => {
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
                     const course = await generateSingleViewData(hit._source, true, req.query.currency);
+                    // const course = await LearnContentService.generateSingleViewData(hit._source);
                     courses.push(course);
                 }
             }
