@@ -3,81 +3,23 @@ const learnContentService = require("./learnContentService");
 const fetch = require("node-fetch");
 let LearnContentService = new learnContentService();
 
-const apiBackendUrl = process.env.API_BACKEND_URL;
-const rangeFilterTypes = ['RangeSlider','RangeOptions'];
+const { 
+    getFilterConfigs, 
+    parseQueryFilters,
+    round,
+    getPaginationQuery,
+    getMediaurl,
+    updateFilterCount,
+    getFilterAttributeName,
+    updateSelectedFilters,
+    getRankingFilter,
+    getRankingBySlug
+} = require('../utils/general');
+
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
+const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
 
-const getFilterConfigs = async () => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Provider&filterable_eq=true&_sort=order:ASC`);
-    if (response.ok) {
-    let json = await response.json();
-    return json;
-    } else {
-        return [];
-    }
-};
-
-const parseQueryFilters = (filter) => {
-    const parsedFilterString = decodeURIComponent(filter);
-    console.log("parsedFilterString <> ", parsedFilterString);
-    let query_filters = [];
-    const filterArray = parsedFilterString.split("::");
-    for(const qf of filterArray){
-        const qfilters = qf.split(":");
-        query_filters.push({
-            key: qfilters[0],
-            value: qfilters[1].split(",")
-        });
-    }
-    console.log("query_filters <> ", query_filters);
-    return query_filters;
-};
-
-const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['programs','study_modes','institute_types','city','gender_accepted'];
-    if(keywordFields.includes(attribute_name)){
-        return `${attribute_name}.keyword`;
-    }else{
-        return attribute_name;
-    }
-};
-
-const round = (value, step) => {
-    step || (step = 1.0);
-    var inv = 1.0 / step;
-    return Math.round(value * inv) / inv;
-};
-
-const getPaginationQuery = (query) => {
-    let page = 1;
-    let size = 25;
-    let from = 0;
-    if(query['page']){
-      page = parseInt(query['page']);
-    }
-    if(query['size']){
-      size = parseInt(query['size']);
-    }      
-    if(page > 1){
-      from = (page-1)*size;
-    }
-    return {
-      from,
-      size,
-      page
-    };
-};
-
-const getMediaurl = (mediaUrl) => {
-    if(mediaUrl !== null && mediaUrl !== undefined){
-        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
-        if(isRelative){
-            mediaUrl = process.env.ASSET_URL+mediaUrl;
-        }
-    }    
-    return mediaUrl;
-};
 
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
@@ -144,6 +86,9 @@ const formatFilters = async (data, filterData, query) => {
           });
     }
 
+    let ranking_rilter = await getRankingFilter();
+    filters.push(ranking_rilter);
+
     return filters;    
 };
 
@@ -186,90 +131,7 @@ const getFilterOption = (data, filter) => {
     return options;
 };
 
-const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
-    for(let filter of filters){
-        if(filter.filter_type == "Checkboxes"){
-            let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
-            //console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
-            if(seleteddFilter && filter.options){
-                for(let option of filter.options){
-                    if(seleteddFilter.value.includes(option.label)){
-                        option.selected = true;
-                    }
-                }
-            }
-        }
-        if(filter.filter_type == "RangeOptions"){
-            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            //console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
-            if(seleteddFilter && filter.options){
-                for(let option of filter.options){
-                    if((option.start ==  seleteddFilter.start) && (option.end ==  seleteddFilter.end)){
-                        option.selected = true;
-                    }
-                }
-            }
-        }
-        if(filter.filter_type == "RangeSlider"){
-            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            //console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
-            if(seleteddFilter){
-                filter.min = seleteddFilter.start;
-                filter.max = seleteddFilter.end;
-            }
-        }
-    }
-    console.log("parsedRangedFilters <> ", parsedRangeFilters);
 
-    return filters;
-};
-
-
-
-const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
-    if(parsedFilters.length <= 0){
-        return filters;
-    }
-    for(let filter of filters){
-        if(filter.filter_type !== 'Checkboxes'){
-            continue;
-        }
-        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
-        if(!parsedFilter){
-            for(let option of filter.options){
-                option.count = 0;
-                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
-                    if(!elasticAttribute){
-                        continue;
-                    }
-                for(const esData of data){
-                    
-                    const entity = esData._source; 
-                    let entityData = entity[elasticAttribute.elastic_attribute_name];
-                    if(entityData){
-                        if(Array.isArray(entityData)){
-                            if(entityData.includes(option.label)){
-                                option.count++;
-                            }
-                        }else{
-                            if(entityData == option.label){
-                                option.count++;
-                            }
-                        }
-                    }
-                }
-                if(option.count == 0){
-                    option.disabled = true;
-                }
-            }
-        }
-
-        filter.options = filter.options.filter(function( obj ) {
-            return !obj.disabled;
-          });
-    }
-    return filters;
-};
 
 
 module.exports = class providerService {
@@ -286,44 +148,71 @@ module.exports = class providerService {
             }
         };
 
+        /* if(req.query['rank']){
+            query.bool.filter.push({
+                "exists" : { "field" : `ranking_${req.query['rank']}` }
+            });
+        } */
+
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
-        console.log("paginationQuery <> ", paginationQuery);
 
         if(!req.query['sort']){
-            req.query['sort'] = "name:asc";
+            if(req.query['rank']){
+                req.query['sort'] = "rank:asc";
+            }else{
+                req.query['sort'] = "name:asc";
+            }            
         }
 
         if(req.query['sort']){
-            console.log("Sort requested <> ", req.query['sort']);
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
-            if(keywordFields.includes(splitSort[0])){
-                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            let sortField = splitSort[0];
+            
+            if((sortField == 'rank') && (req.query['rank'])){
+                sort = `ranking_${req.query['rank']}:${splitSort[1]}`;
+            }
+
+            if(keywordFields.includes(sortField)){
+                sort = `${sortField}.keyword:${splitSort[1]}`;
             }
             queryPayload.sort = [sort];
         }
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
+        let ranking = null;
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
         let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);        
         
         if(req.query['f']){
-            parsedFilters = parseQueryFilters(req.query['f']);
-            for(const filter of parsedFilters){
-                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
-                if(elasticAttribute){
-                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
-                    query.bool.filter.push({
-                        "terms": {[attribute_name]: filter.value}
-                    });
-                }
+            parsedFilters = parseQueryFilters(req.query['f']); 
+            let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+            if(elasticAttribute){
+                const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+                query.bool.filter.push({
+                    "terms": {[attribute_name]: filter.value}
+                });
             }
         }
+
+        if(req.query['rank']){
+            ranking = await getRankingBySlug(req.query['rank']);
+            if(ranking){
+                parsedFilters.push({
+                    key: 'Ranking',
+                    value: [ranking.name]
+                });
+                query.bool.filter.push({
+                    "exists" : { "field" : `ranking_${req.query['rank']}` }
+                });
+            }            
+        }
+        
         
         let queryString = null;
         if(req.query['q']){
@@ -343,7 +232,7 @@ module.exports = class providerService {
         const result = await elasticService.search('provider', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits);
+            const list = await this.generateListViewData(result.hits, req.query['rank']);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -363,6 +252,7 @@ module.exports = class providerService {
 
               let data = {
                 list: list,
+                ranking: ranking,
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort']
@@ -374,7 +264,7 @@ module.exports = class providerService {
             if(parsedFilters.length > 0){
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {}, filters: filters}});
         }        
     }
 
@@ -396,10 +286,10 @@ module.exports = class providerService {
     }
 
 
-    async generateListViewData(rows){
+    async generateListViewData(rows, rank){
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true);
+            const data = await this.generateSingleViewData(row._source, true, null, rank);
             datas.push(data);
         }
         return datas;
@@ -407,8 +297,7 @@ module.exports = class providerService {
 
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
-        
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, rank = null){
         let coverImageSize = 'small';
         if(isList){
             coverImageSize = 'thumbnail';
@@ -557,6 +446,11 @@ module.exports = class providerService {
             });
             data.ratings.rating_distribution = rating_distribution.reverse();
         } 
+
+        if(rank !== null && result.ranks){
+            data.rank = result[`ranking_${rank}`];
+            data.rank_details = result.ranks.find(o => o.slug === rank);
+        }
 
         return data;
     }
