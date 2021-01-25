@@ -229,7 +229,14 @@ module.exports = class providerService {
         }
         console.log("Final Query <> ", JSON.stringify(query));
 
-        const result = await elasticService.search('provider', query, queryPayload, queryString);
+        let result = {};
+
+        try{
+            result = await elasticService.search('provider', query, queryPayload, queryString);
+        }catch(e){
+            console.log("Error fetching elastic data <> ", e);
+        }
+
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['rank']);
