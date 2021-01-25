@@ -1300,7 +1300,7 @@ module.exports = class learnContentService {
     }
 
     /** Creates order data with single payment mode */
-    async createOrderData(userId, userMeta, address, course, orderType, amount, currency, paymentGateway, transactionId) {
+    async createOrderData(userId, userMeta, address, course, orderType, amount, currency, paymentGateway, transactionId, timezone) {
         let orderData = {};
 
         let regularPrice = parseFloat(course.regular_price);
@@ -1330,7 +1330,8 @@ module.exports = class learnContentService {
                 last_name: (userMeta.lastName) ? userMeta.lastName : null,
                 email: (userMeta.email) ? userMeta.email : null,
                 phone: (userMeta.phone) ? userMeta.phone : null,
-                address: (address) ? address : null
+                address: (address) ? address : null,
+                timezone: (timezone) ? timezone : null
             },
             order_payment: {
                 gateway: paymentGateway,
