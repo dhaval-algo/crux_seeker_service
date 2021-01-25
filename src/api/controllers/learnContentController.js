@@ -65,7 +65,6 @@ module.exports = {
             if(!courseSlug) {
                 return res.status(200).send({
                     code: "params_missing",
-                    success: false,
                     message: "Course slug missing"
                 });
             }
@@ -92,7 +91,6 @@ module.exports = {
 
                 return res.status(200).send({
                     code: "success",
-                    success: true,
                     message: "Payment initiated",
                     data: {
                         paymentIntent: paymentIntentSecret
@@ -101,7 +99,6 @@ module.exports = {
             } else {
                 return res.status(200).send({
                     code: "course_not_found",
-                    success: false,
                     message: "Course not found"
                 });
             }
@@ -109,7 +106,6 @@ module.exports = {
             console.log("Exception in buy course api: ", err);
             return res.status(200).send({
                 code: "error",
-                success: false,
                 message: "Error"
             });
         }
