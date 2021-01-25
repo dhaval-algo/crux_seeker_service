@@ -38,6 +38,9 @@ const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3 } = require("../AWS");
 
+const providerService = require("./providerService");
+let ProviderService = new providerService();
+
 const login = async (req, res, next) => {
     try {
         const body = req.body;
