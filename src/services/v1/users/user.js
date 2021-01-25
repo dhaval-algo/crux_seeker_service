@@ -39,6 +39,9 @@ const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3 } = require("../AWS");
 
+const providerService = require("./providerService");
+let ProviderService = new providerService();
+
 const login = async (req, res, next) => {
     try {
         const body = req.body;
@@ -989,7 +992,7 @@ const wishListCourseData = async (req,res) => {
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
-                    const course = await generateSingleViewData(hit._source, true, req.query.currency);
+                    const course = await ProviderService.generateSingleViewData(hit._source, true, req.query.currency);
                     courses.push(course);
                 }
             }
