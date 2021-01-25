@@ -60,7 +60,7 @@ module.exports = {
 
     buyCourse: async (req, res) => {
         try {
-            let { courseSlug, address } = req.body;
+            let { courseSlug, timezone } = req.body;
             
             if(!courseSlug) {
                 return res.status(200).send({
@@ -84,7 +84,7 @@ module.exports = {
 
                 /** Create the order data */
                 let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", amount, currency,
-                    "stripe", paymentIntentSecret);
+                    "stripe", paymentIntentSecret, timezone);
 
                 /** Add the data to Strapi */
                 await axios.post(process.env.API_BACKEND_URL + "/orders", orderData);
