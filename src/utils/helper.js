@@ -883,7 +883,8 @@ const generateSingleViewData = (result, isList = false) => {
         subtitle: result.subtitle,
         provider: {
             name: result.provider_name,
-            currency: result.provider_currency
+            currency: result.provider_currency,
+            slug: result.provider_slug
         },
         instructors: [],
         cover_video: (result.video) ? getMediaurl(result.video) : null,
