@@ -190,13 +190,15 @@ module.exports = class providerService {
         let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);        
         
         if(req.query['f']){
-            parsedFilters = parseQueryFilters(req.query['f']); 
-            let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
-            if(elasticAttribute){
-                const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-                query.bool.filter.push({
-                    "terms": {[attribute_name]: filter.value}
-                });
+            parsedFilters = parseQueryFilters(req.query['f']);
+            for(const filter of parsedFilters){  
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+                    query.bool.filter.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+                }
             }
         }
 
