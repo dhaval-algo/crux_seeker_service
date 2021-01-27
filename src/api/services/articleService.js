@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
-const keywordFields = ['title'];
+const keywordFields = ['title', 'slug'];
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Article&filterable_eq=true&_sort=order:ASC`);
@@ -33,7 +33,7 @@ const parseQueryFilters = (filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['title','section_name','categories','levels','tags'];
+    const keywordFields = ['title','section_name','categories','levels','tags', 'slug'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
@@ -297,6 +297,9 @@ module.exports = class articleService {
             console.log("Sort requested <> ", req.query['sort']);
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
+            if(splitSort[0] == 'title'){
+                splitSort[0] = 'slug';
+            }
             if(keywordFields.includes(splitSort[0])){
                 sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
             }
