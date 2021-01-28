@@ -79,7 +79,6 @@ const getPaginationQuery = (query) => {
 
 const parseQueryFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
-    console.log("parsedFilterString <> ", parsedFilterString);
     let query_filters = [];
     const filterArray = parsedFilterString.split("::");
     for(const qf of filterArray){
@@ -89,13 +88,11 @@ const parseQueryFilters = (filter) => {
             value: qfilters[1].split(",")
         });
     }
-    console.log("query_filters <> ", query_filters);
     return query_filters;
 };
 
 const parseQueryRangeFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
-    console.log("parsedRangeFilterString <> ", parsedFilterString);
     let query_filters = [];
     const filterArray = parsedFilterString.split("::");
     for(const qf of filterArray){
@@ -107,7 +104,6 @@ const parseQueryRangeFilters = (filter) => {
             end: (splitRange[1] == "MAX") ? splitRange[1] : parseFloat(splitRange[1])
         });
     }
-    console.log("query_range_filters <> ", query_filters);
     return query_filters;
 };
 
@@ -177,16 +173,12 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
             delete queryPayload['from'];
             delete queryPayload['size'];
         }
-        console.log("Query payload for filters data <> ",queryPayload);
-        console.log("query for filters data <> ",query);
         //queryPayload.from = 0;
         //queryPayload.size = count;
         //console.log("queryPayload <> ", queryPayload);
         //console.log("query <> ", query);
         const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
-            console.log("Main data length <> ", result.total.value);
-            console.log("Result data length <> ", result.hits.length);
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             return {
                 filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
@@ -208,11 +200,8 @@ const getInitialData = async (query) => {
                 query.bool.must.splice(i, 1);
         }
     } 
-    console.log("query <> ", query);  
     const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
-        console.log("Initial data total length <> ", result.total.value);
-        console.log("Initial data size <> ", result.hits.length);
         return result.hits;
     }else{
         return [];
@@ -220,7 +209,6 @@ const getInitialData = async (query) => {
 };
 
 const formatFilters = async (data, filterData, query, userCurrency) => {
-    console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     const initialData = await getInitialData(query);
     let emptyOptions = [];
@@ -291,7 +279,6 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
     }
 
     if(emptyOptions.length > 0){
-        console.log("Empty options <> ", emptyOptions);
         filters = filters.filter(function( obj ) {
             return !emptyOptions.includes(obj.label);
           });
@@ -314,9 +301,7 @@ const getMaxValue = (data, attribute, userCurrency) => {
         }
     }
     if(maxValue > 0){
-        console.log("actual currency value <> ", maxValue);
         maxValue = getCurrencyAmount(maxValue, currencies, process.env.DEFAULT_CURRENCY, userCurrency);
-        console.log("maxvalue after conversion <> ", maxValue);
     }
     return maxValue;
 };
@@ -532,14 +517,12 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
         }
         if(filter.filter_type == "RangeSlider"){
             let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter){
                 filter.min = seleteddFilter.start;
                 filter.max = seleteddFilter.end;
             }
         }
     }
-    console.log("parsedRangedFilters <> ", parsedRangeFilters);
 
     return filters;
 };
@@ -626,9 +609,6 @@ module.exports = class learnContentService {
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
-        console.log("paginationQuery <> ", paginationQuery);
-
-        //queryPayload.sort = [{"title.keyword": 'asc'}];
 
         if(!req.query['sort']){
             req.query['sort'] = "published_date:desc";
@@ -646,20 +626,9 @@ module.exports = class learnContentService {
         }
 
 
-        /* queryPayload.sort = {
-            "average_rating": {
-                "type": "float",
-                "order": "desc"
-            }
-        }; */
-
-
-
         let slugs = [];
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
-            //const slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
-            console.log("slugMapping <> ", slugMapping);
             for(let i=0; i<slugs.length; i++){
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
                 if(!slugLabel){
@@ -679,7 +648,6 @@ module.exports = class learnContentService {
 
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
-        console.log("filterResponse <> ", filterResponse);
         let filters = filterResponse.filters;
 
         if(req.query['f']){
@@ -697,7 +665,6 @@ module.exports = class learnContentService {
         
         if(req.query['rf']){
             parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
-            console.log("parsedRangeFilters <> ", parsedRangeFilters);
             for(const filter of parsedRangeFilters){
                 /* if(filter.key == "Ratings"){
                     if(filter.start !== "MIN"){
@@ -707,7 +674,6 @@ module.exports = class learnContentService {
                         filter.end = filter.end*100;
                     }
                 } */
-                console.log("Applying filters <> ", filter);
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
@@ -716,7 +682,6 @@ module.exports = class learnContentService {
                     if(filter.start !== "MIN"){
                         let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
                         if(filter.key == 'Price'){
-                            console.log("Appliying start price <> ", startValue);
                             startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');                            
                         }
                         rangeQuery["gte"] = startValue;
@@ -724,7 +689,6 @@ module.exports = class learnContentService {
                     if(filter.end !== "MAX"){
                         let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
                         if(filter.key == 'Price'){
-                            console.log("Appliying end price <> ", endValue);
                             endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
                         }
                         rangeQuery["lte"] = endValue;
@@ -865,11 +829,9 @@ module.exports = class learnContentService {
             }
           };
         const result = await elasticService.plainSearch('learn-content', queryBody);
-        console.log("elastic result <> ", result);
 
         if(result.aggregations){
             let categoriesData = result.aggregations.categories.buckets;
-            console.log("categoriesData <> ", categoriesData);
             //categories = categoriesData.map(o => {"label": o['key'], "value": o['key']} );
 
             let others = null;
@@ -883,7 +845,6 @@ module.exports = class learnContentService {
             if(others){
                 categories.push(others);
             }
-            console.log("categories <> ", categories);
 
             /* categories = categoriesData.map(function(obj) {
                 return {"label": obj['key'], "value": obj['key']};
@@ -939,7 +900,6 @@ module.exports = class learnContentService {
         if(req.query['categories']){
             categories = req.query['categories'].split(",");
         }
-        console.log("Categories <> ", categories);
 
         if(categories.length > 0){
             const queryBody = {

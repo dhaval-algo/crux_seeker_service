@@ -31,12 +31,8 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
     }
     //query['bool']['should'] = filters;
     //query['bool']['minimum_should_match'] = 1;
-    console.log("Query payload for filters data <> ",queryPayload);
-    console.log("Filter Query <> ", JSON.stringify(query));
     const result = await elasticService.search('provider', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
-        console.log("Main data length <> ", result.total.value);
-        console.log("Result data length <> ", result.hits.length);
         //return formatFilters(result.hits, filterConfigs, query);
         return {
             filters: await formatFilters(result.hits, filterConfigs, query),
@@ -44,8 +40,9 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
         };
     }else{
         //return [];
+        let ranking_rilter = await getRankingFilter();
         return {
-            filters: [],
+            filters: [ranking_rilter],
             total: result.total.value
         };
     }
@@ -53,7 +50,6 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
 
 
 const formatFilters = async (data, filterData, query) => {
-    console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     let emptyOptions = [];
     for(const filter of filterData){
@@ -88,14 +84,12 @@ const formatFilters = async (data, filterData, query) => {
     }
 
     if(emptyOptions.length > 0){
-        console.log("Empty options <> ", emptyOptions);
         filters = filters.filter(function( obj ) {
             return !emptyOptions.includes(obj.label);
           });
     }
 
     let ranking_rilter = await getRankingFilter();
-    console.log("Ranking filters <> ", ranking_rilter);
     filters.push(ranking_rilter);
 
     return filters;    

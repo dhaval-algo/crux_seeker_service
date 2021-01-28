@@ -104,7 +104,6 @@ const getRankingFilter = async () => {
 
 const parseQueryFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
-    console.log("parsedFilterString <> ", parsedFilterString);
     let query_filters = [];
     const filterArray = parsedFilterString.split("::");
     for(const qf of filterArray){
@@ -114,7 +113,6 @@ const parseQueryFilters = (filter) => {
             value: qfilters[1].split(",")
         });
     }
-    console.log("query_filters <> ", query_filters);
     return query_filters;
 };
 
@@ -233,14 +231,12 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
         }
         if(filter.filter_type == "RangeSlider"){
             let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
             if(seleteddFilter){
                 filter.min = seleteddFilter.start;
                 filter.max = seleteddFilter.end;
             }
         }
     }
-    console.log("parsedRangedFilters <> ", parsedRangeFilters);
 
     return filters;
 };
