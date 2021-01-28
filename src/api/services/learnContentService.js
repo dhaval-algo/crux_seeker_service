@@ -482,6 +482,11 @@ const getFilterOption = (data, filter) => {
     return options;
 };
 
+
+const getDurationOptions = () => {
+
+};
+
 const getFilterAttributeName = (attribute_name) => {
     const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
     if(keywordFields.includes(attribute_name)){
