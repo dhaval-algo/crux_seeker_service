@@ -37,9 +37,17 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
     if(result.total && result.total.value > 0){
         console.log("Main data length <> ", result.total.value);
         console.log("Result data length <> ", result.hits.length);
-        return formatFilters(result.hits, filterConfigs, query);
+        //return formatFilters(result.hits, filterConfigs, query);
+        return {
+            filters: await formatFilters(result.hits, filterConfigs, query),
+            total: result.total.value
+        };
     }else{
-        return [];
+        //return [];
+        return {
+            filters: [],
+            total: result.total.value
+        };
     }
 };
 
@@ -87,6 +95,7 @@ const formatFilters = async (data, filterData, query) => {
     }
 
     let ranking_rilter = await getRankingFilter();
+    console.log("Ranking filters <> ", ranking_rilter);
     filters.push(ranking_rilter);
 
     return filters;    
@@ -148,11 +157,11 @@ module.exports = class providerService {
             }
         };
 
-        /* if(req.query['rank']){
+        if(req.query['rank']){
             query.bool.filter.push({
                 "exists" : { "field" : `ranking_${req.query['rank']}` }
             });
-        } */
+        }
 
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
@@ -187,7 +196,9 @@ module.exports = class providerService {
         let ranking = null;
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);        
+        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
+        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
+        let filters = filterResponse.filters;      
         
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -209,9 +220,9 @@ module.exports = class providerService {
                     key: 'Ranking',
                     value: [ranking.name]
                 });
-                query.bool.filter.push({
+                /* query.bool.filter.push({
                     "exists" : { "field" : `ranking_${req.query['rank']}` }
-                });
+                }); */
             }            
         }
         
@@ -247,7 +258,8 @@ module.exports = class providerService {
                 page: paginationQuery.page,
                 count: list.length,
                 perPage: paginationQuery.size,
-                totalCount: result.total.value
+                totalCount: result.total.value,
+                total: filterResponse.total
             }
 
             //let filters = await getAllFilters(query, queryPayload, filterConfigs);
@@ -273,7 +285,7 @@ module.exports = class providerService {
             if(parsedFilters.length > 0){
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {}, filters: filters}});
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
 

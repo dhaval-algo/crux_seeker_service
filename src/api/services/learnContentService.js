@@ -187,9 +187,17 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         if(result.total && result.total.value > 0){
             console.log("Main data length <> ", result.total.value);
             console.log("Result data length <> ", result.hits.length);
-            return formatFilters(result.hits, filterConfigs, query, userCurrency);
+            //return formatFilters(result.hits, filterConfigs, query, userCurrency);
+            return {
+                filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
+                total: result.total.value
+            };
         }else{
-            return [];
+            //return [];
+            return {
+                filters: [],
+                total: result.total.value
+            }
         }
 };
 
@@ -668,7 +676,11 @@ module.exports = class learnContentService {
 
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+
+        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        console.log("filterResponse <> ", filterResponse);
+        let filters = filterResponse.filters;
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -756,7 +768,8 @@ module.exports = class learnContentService {
                 page: paginationQuery.page,
                 count: list.length,
                 perPage: paginationQuery.size,
-                totalCount: result.total.value
+                totalCount: result.total.value,
+                total: filterResponse.total
               }
 
             //let filters = await getFilters(result.hits, filterConfigs);
@@ -792,7 +805,7 @@ module.exports = class learnContentService {
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
 
