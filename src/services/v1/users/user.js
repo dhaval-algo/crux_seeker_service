@@ -943,7 +943,7 @@ const fetchWishListIds = async (req,res) => {
 const wishListCourseData = async (req,res) => {
     try {
         
-        const { user } = req
+         const { user } = req
         const {searchStr} = req.query
         let where = {
             userId: user.userId,
@@ -970,6 +970,7 @@ const wishListCourseData = async (req,res) => {
             "query": {
               "ids": {
                   "values": wishedListIds
+                  //"values": ["LRN_CNT_PUB_282", "LRN_CNT_PUB_638", "LRN_CNT_PUB_3543", "LRN_CNT_PUB_1742", "LRN_CNT_PUB_3525"]
               },
               "match_phrase":{}
             }
@@ -988,7 +989,7 @@ const wishListCourseData = async (req,res) => {
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
-                    const course = await LearnContentService.generateSingleViewData(hit._source);
+                    const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
                     courses.push(course);
                 }
             }

@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
-const keywordFields = ['title'];
+const keywordFields = ['title', 'slug'];
 
 const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Article&filterable_eq=true&_sort=order:ASC`);
@@ -33,7 +33,7 @@ const parseQueryFilters = (filter) => {
 };
 
 const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['title','section_name','categories','levels','tags'];
+    const keywordFields = ['title','section_name','categories','levels','tags', 'slug'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
@@ -89,9 +89,17 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
     if(result.total && result.total.value > 0){
         console.log("Main data length <> ", result.total.value);
         console.log("Result data length <> ", result.hits.length);
-        return formatFilters(result.hits, filterConfigs, query);
+        //return formatFilters(result.hits, filterConfigs, query);
+        return {
+            filters: await formatFilters(result.hits, filterConfigs, query),
+            total: result.total.value
+        };
     }else{
-        return [];
+        //return [];
+        return {
+            filters: [],
+            total: result.total.value
+        };
     }
 };
 
@@ -297,6 +305,9 @@ module.exports = class articleService {
             console.log("Sort requested <> ", req.query['sort']);
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
+            if(splitSort[0] == 'title'){
+                splitSort[0] = 'slug';
+            }
             if(keywordFields.includes(splitSort[0])){
                 sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
             }
@@ -308,14 +319,16 @@ module.exports = class articleService {
 
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
+        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
+        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
+        let filters = filterResponse.filters;
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
-                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+                    const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
                     query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
                     });
@@ -347,7 +360,8 @@ module.exports = class articleService {
                 page: paginationQuery.page,
                 count: list.length,
                 perPage: paginationQuery.size,
-                totalCount: result.total.value
+                totalCount: result.total.value,
+                total: filterResponse.total
             }
 
             //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);
@@ -373,7 +387,7 @@ module.exports = class articleService {
             if(parsedFilters.length > 0){
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: filters}});
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
 
