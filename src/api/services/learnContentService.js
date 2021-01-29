@@ -885,7 +885,12 @@ module.exports = class learnContentService {
                 }
             }            
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+        if(callback){
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+        }else{
+            return courseOrdered;
+        }
+        
     }
 
     async getCourseOptionByCategories(req, callback){

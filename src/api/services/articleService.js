@@ -426,8 +426,6 @@ module.exports = class articleService {
             coverImageSize = 'thumbnail';
         }
 
-        console.log("result.cover_image <> ", result.cover_image);
-
         let cover_image = null;
         if(result.cover_image){
             if(result.cover_image[coverImageSize]){

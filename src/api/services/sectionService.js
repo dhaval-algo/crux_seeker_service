@@ -159,7 +159,12 @@ module.exports = class sectionService {
       const { hits } = result.hits
 
       if (!hits.length) {
-        return callback(null, { success: true, data: [] })
+        if(callback){
+          return callback(null, { success: true, data: [] })
+        }else{
+          return [];
+        }
+        
       }
       console.log('here3');
       const aggrResult = await elasticService.plainSearch('article', aggregateQ);
@@ -170,7 +175,6 @@ module.exports = class sectionService {
       if (buckets.length) {
         for (let index = 0; index < hits.length; index++) {
           const hit = hits[index];
-          console.log(hit);
           let section = buckets.find(bucket => bucket.key == hit._source.slug);
           if (section && section.doc_count) {
             let secR = {
@@ -184,13 +188,28 @@ module.exports = class sectionService {
             data.push(secR)
           }
         }
-        return callback(null, { success: true, data })
+        //return callback(null, { success: true, data })
+        if(callback){
+          return callback(null, { success: true, data: data })
+        }else{
+          return data;
+        }
       } else {
-        return callback(null, { success: true, data: [] })
+        //return callback(null, { success: true, data: [] })
+        if(callback){
+          return callback(null, { success: true, data: [] })
+        }else{
+          return [];
+        }
       }
     } catch (error) {
       console.log(error, "errror");
-      return callback(null, { success: true, data: [] })
+      //return callback(null, { success: true, data: [] })
+      if(callback){
+        return callback(null, { success: true, data: [] })
+      }else{
+        return [];
+      }
     }
   }
 

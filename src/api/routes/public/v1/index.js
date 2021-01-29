@@ -8,7 +8,8 @@ const partnerController = require('../../../controllers/partnerController');
 const searchController = require('../../../controllers/searchController');
 const ArticleController = require('../../../controllers/articleController');
 
-const sectionController = require('../../../controllers/sectionController')
+const sectionController = require('../../../controllers/sectionController');
+const homeController = require('../../../controllers/homeController');
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
@@ -32,5 +33,7 @@ router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
 router.get('/articles/:slug', ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
+
+router.get('/homepage',homeController.getHomePageContent)
 
 module.exports = router;
