@@ -95,7 +95,8 @@ module.exports = {
                     success: true,
                     message: "Payment initiated",
                     data: {
-                        paymentIntent: paymentIntentSecret
+                        paymentIntent: paymentIntentSecret,
+                        orderId: orderData.order_id
                     }
                 });
             } else {
