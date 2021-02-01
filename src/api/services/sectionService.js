@@ -150,7 +150,7 @@ module.exports = class sectionService {
         "query": {
           "match_all": {}
         },
-        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image"]
+        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "short_description"]
       }
       console.log('here1');
       const result = await elasticService.plainSearch('section', query);
