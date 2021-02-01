@@ -33,6 +33,15 @@ const getBlogHomeContent = async() => {
   }
 
 
+  const getShuffledArr = (arr) => {
+    return [...arr].map( (_, i, arrCopy) => {
+        var rand = i + ( Math.floor( Math.random() * (arrCopy.length - i) ) );
+        [arrCopy[rand], arrCopy[i]] = [arrCopy[i], arrCopy[rand]]
+        return arrCopy[i]
+    })
+  }
+
+
 const formatHomepageData = async(data, loggedIn = false, currency) => {
     
     if(data.recommended_courses.length > 0 && loggedIn){
@@ -64,6 +73,11 @@ const formatHomepageData = async(data, loggedIn = false, currency) => {
     data.advice_sections = await SectionService.getCategoryTree();
     }catch(err){
         console.log("err <> ", err);
+    }
+
+    if(data.top_partners.length || data.top_institutes.length){
+      let combined = [].concat(data.top_partners, data.top_institutes);
+      data.top_partner_institutes = getShuffledArr(combined);
     }
 
     return data;
