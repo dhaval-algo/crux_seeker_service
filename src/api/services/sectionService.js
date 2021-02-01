@@ -182,6 +182,7 @@ module.exports = class sectionService {
               slug: hit._source.slug,
               type: "category",
               count: section.doc_count,
+              short_description: section.short_description,
               cover_image: (hit._source.cover_image) ? hit._source.cover_image['thumbnail'] : null,
               child: []
             }
