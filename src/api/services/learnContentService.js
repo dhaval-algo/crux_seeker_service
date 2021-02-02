@@ -1042,7 +1042,17 @@ module.exports = class learnContentService {
             }
         }
 
+        let canBuy = (result.partner_currency.iso_code === "INR");
+
+        let partnerPrice = parseFloat(result.finalPrice);   //final price in ES
+        let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
+        let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
+        let tax = 0.0;
+        if(result.partner_currency.iso_code === "INR") {
+            tax = helperService.roundOff(0.18 * partnerPrice, 2);
+        }
         let data = {
+            canBuy: canBuy,
             title: result.title,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
@@ -1106,7 +1116,11 @@ module.exports = class learnContentService {
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
                     finance_option: result.finance_option,
-                    finance_details: result.finance_details
+                    finance_details: result.finance_details,
+                    partnerPrice: partnerPrice,
+                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
+                    conversionRate: conversionRate,
+                    tax: tax
                 }                
             },
             provider_course_url: result.provider_course_url,
