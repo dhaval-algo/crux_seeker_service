@@ -87,6 +87,16 @@ const getRankingFilter = async () => {
         filter_type: 'Checkboxes',
         options: []
     };
+
+    rankings = rankings.sort(function(a,b) {
+        let ac = a.name.toLowerCase();
+        let bc = b.name.toLowerCase();
+        if (ac == bc) return 0;
+        if (ac > bc) return 1;
+        return -1;
+    });
+
+
     for(const rank of rankings){
         rankingFilter.options.push({
             label: rank.name,
