@@ -1,101 +1,33 @@
 const elasticService = require("./elasticService");
-const fetch = require("node-fetch");
 
-const apiBackendUrl = process.env.API_BACKEND_URL;
-const rangeFilterTypes = ['RangeSlider','RangeOptions'];
+const { 
+    getFilterConfigs, 
+    parseQueryFilters,
+    getPaginationQuery,
+    getMediaurl,
+    updateFilterCount,
+    getFilterAttributeName,
+    updateSelectedFilters,
+    sortFilterOptions
+} = require('../utils/general');
+
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
-
-const getFilterConfigs = async () => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Article&filterable_eq=true&_sort=order:ASC`);
-    if (response.ok) {
-    let json = await response.json();
-    return json;
-    } else {
-        return [];
-    }
-};
-
-const parseQueryFilters = (filter) => {
-    const parsedFilterString = decodeURIComponent(filter);
-    console.log("parsedFilterString <> ", parsedFilterString);
-    let query_filters = [];
-    const filterArray = parsedFilterString.split("::");
-    for(const qf of filterArray){
-        const qfilters = qf.split(":");
-        query_filters.push({
-            key: qfilters[0],
-            value: qfilters[1].split(",")
-        });
-    }
-    console.log("query_filters <> ", query_filters);
-    return query_filters;
-};
-
-const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['title','section_name','categories','levels','tags', 'slug'];
-    if(keywordFields.includes(attribute_name)){
-        return `${attribute_name}.keyword`;
-    }else{
-        return attribute_name;
-    }
-};
-
-const round = (value, step) => {
-    step || (step = 1.0);
-    var inv = 1.0 / step;
-    return Math.round(value * inv) / inv;
-};
-
-const getPaginationQuery = (query) => {
-    let page = 1;
-    let size = 25;
-    let from = 0;
-    if(query['page']){
-      page = parseInt(query['page']);
-    }
-    if(query['size']){
-      size = parseInt(query['size']);
-    }      
-    if(page > 1){
-      from = (page-1)*size;
-    }
-    return {
-      from,
-      size,
-      page
-    };
-};
-
-const getMediaurl = (mediaUrl) => {
-    if(mediaUrl !== null && mediaUrl !== undefined){
-        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
-        if(isRelative){
-            mediaUrl = process.env.ASSET_URL+mediaUrl;
-        }
-    }    
-    return mediaUrl;
-};
-
+const filterFields = ['title','section_name','categories','levels','tags', 'slug'];
+const allowZeroCountFields = ['section_name','categories','levels','tags'];
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
     if(queryPayload.from !== null && queryPayload.size !== null){
         delete queryPayload['from'];
         delete queryPayload['size'];
     }
-    console.log("Query payload for filters data <> ",queryPayload);
-    console.log("query for filters data <> ",query);
     const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
-        console.log("Main data length <> ", result.total.value);
-        console.log("Result data length <> ", result.hits.length);
-        //return formatFilters(result.hits, filterConfigs, query);
         return {
             filters: await formatFilters(result.hits, filterConfigs, query),
             total: result.total.value
         };
     }else{
-        //return [];
         return {
             filters: [],
             total: result.total.value
@@ -105,13 +37,13 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
 
 
 const formatFilters = async (data, filterData, query) => {
-    console.log("applying filter with total data count <> ", data.length);
     let filters = [];
     let emptyOptions = [];
     for(const filter of filterData){
 
         let formatedFilters = {
             label: filter.label,
+            field: filter.elastic_attribute_name,
             filterable: filter.filterable,
             sortable: filter.sortable,
             order: filter.order,
@@ -140,7 +72,6 @@ const formatFilters = async (data, filterData, query) => {
     }
 
     if(emptyOptions.length > 0){
-        console.log("Empty options <> ", emptyOptions);
         filters = filters.filter(function( obj ) {
             return !emptyOptions.includes(obj.label);
           });
@@ -185,105 +116,17 @@ const getFilterOption = (data, filter) => {
             }
         }
     }
+    options = sortFilterOptions(options);
     return options;
-};
-
-const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
-    for(let filter of filters){
-        if(filter.filter_type == "Checkboxes"){
-            let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
-            if(seleteddFilter && filter.options){
-                for(let option of filter.options){
-                    if(seleteddFilter.value.includes(option.label)){
-                        option.selected = true;
-                    }
-                }
-            }
-        }
-        if(filter.filter_type == "RangeOptions"){
-            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
-            if(seleteddFilter && filter.options){
-                for(let option of filter.options){
-                    if((option.start ==  seleteddFilter.start) && (option.end ==  seleteddFilter.end)){
-                        option.selected = true;
-                    }
-                }
-            }
-        }
-        if(filter.filter_type == "RangeSlider"){
-            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            console.log("Selected filter for <> "+filter.label+" <> ", seleteddFilter);
-            if(seleteddFilter){
-                filter.min = seleteddFilter.start;
-                filter.max = seleteddFilter.end;
-            }
-        }
-    }
-    console.log("parsedRangedFilters <> ", parsedRangeFilters);
-
-    return filters;
-};
-
-
-const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
-    if(parsedFilters.length <= 0){
-        return filters;
-    }
-    for(let filter of filters){
-        if(filter.is_singleton){
-            continue;
-        }
-        if(filter.filter_type !== 'Checkboxes'){
-            continue;
-        }
-        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
-        if(!parsedFilter){
-            for(let option of filter.options){
-                option.count = 0;
-                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
-                    if(!elasticAttribute){
-                        continue;
-                    }
-                for(const esData of data){
-                    
-                    const entity = esData._source; 
-                    let entityData = entity[elasticAttribute.elastic_attribute_name];
-                    if(entityData){
-                        if(Array.isArray(entityData)){
-                            if(entityData.includes(option.label)){
-                                option.count++;
-                            }
-                        }else{
-                            if(entityData == option.label){
-                                option.count++;
-                            }
-                        }
-                    }
-                }
-                if(option.count == 0){
-                    option.disabled = true;
-                }
-            }
-        }
-
-        filter.options = filter.options.filter(function( obj ) {
-            return !obj.disabled;
-          });
-    }
-    return filters;
 };
 
 
 module.exports = class articleService {
 
     async getArticleList(req, callback){
-        const filterConfigs = await getFilterConfigs();
-        //console.log("filterConfigs <> ", filterConfigs);
+        const filterConfigs = await getFilterConfigs('Article');
         const query = { 
             "bool": {
-                //"should": [],
                 "must": [
                     {term: { "status.keyword": 'published' }}                
                 ],
@@ -319,7 +162,6 @@ module.exports = class articleService {
 
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
         let filters = filterResponse.filters;
 
@@ -328,7 +170,7 @@ module.exports = class articleService {
             for(const filter of parsedFilters){
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
-                    const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+                    const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
                     query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
                     });
@@ -370,7 +212,7 @@ module.exports = class articleService {
             //update selected flags
             if(parsedFilters.length > 0){
                 //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -493,7 +335,7 @@ module.exports = class articleService {
     }
 
 
-    async getArticleByIds(articleIds){
+    async getArticleByIds(articleIds, isListing = true){
         let articles = [];
         let articleOrdered = [];
         /* let ids = [];
@@ -520,7 +362,7 @@ module.exports = class articleService {
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
-                        const article = await this.generateSingleViewData(hit._source, true);
+                        const article = await this.generateSingleViewData(hit._source, isListing);
                         articles.push(article);
                     }
                     for(const id of articleIds){

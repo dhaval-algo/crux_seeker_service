@@ -1,4 +1,5 @@
 const fetch = require("node-fetch");
+const _ = require('underscore');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 
@@ -52,8 +53,8 @@ const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
 
 
 
-const getFilterConfigs = async () => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Provider&filterable_eq=true&_sort=order:ASC`);
+const getFilterConfigs = async (entity_type) => {
+    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=${entity_type}&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
     return json;
@@ -163,7 +164,7 @@ const getMediaurl = (mediaUrl) => {
     return mediaUrl;
 };
 
-const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
+const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZeroCountFields = []) => {
     if(parsedFilters.length <= 0){
         return filters;
     }
@@ -172,7 +173,7 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
             continue;
         }
         let parsedFilter = parsedFilters.find(o => o.key === filter.label);
-        if(!parsedFilter){
+        //if(!parsedFilter){
             for(let option of filter.options){
                 option.count = 0;
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
@@ -195,11 +196,11 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
                         }
                     }
                 }
-                if(option.count == 0){
+                if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
                     option.disabled = true;
                 }
             }
-        }
+        //}
 
         filter.options = filter.options.filter(function( obj ) {
             return !obj.disabled;
@@ -228,6 +229,8 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
                     }
                 }
             }
+            //Sorting options
+            filter.options = sortFilterOptions(filter.options);
         }
         if(filter.filter_type == "RangeOptions"){
             let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
@@ -247,8 +250,16 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
             }
         }
     }
-
     return filters;
+};
+
+
+
+const sortFilterOptions = (options) => {
+    if(options.length){
+        options = _.sortBy( options, 'count' ).reverse();
+    }
+    return options;
 };
 
 
@@ -266,7 +277,8 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
     getFilterAttributeName,
     updateSelectedFilters,
     getRankingFilter,
-    getRankingBySlug
+    getRankingBySlug,
+    sortFilterOptions
 }
 
 
