@@ -1044,7 +1044,7 @@ module.exports = class learnContentService {
 
         let canBuy = (result.partner_currency.iso_code === "INR");
 
-        let partnerPrice = helperService.roundOff(course.finalPrice, 2);   //final price in ES
+        let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
