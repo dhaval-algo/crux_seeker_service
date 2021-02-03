@@ -77,14 +77,26 @@ module.exports = {
             let course = await LearnContentService.fetchCourseBySlug(courseSlug);
 
             if(course) {
+                if(course.partner_currency.iso_code !== "INR") {
+                    return res.status(200).send({
+                        code: "cannot_buy_course",
+                        success: false,
+                        message: "Provider currency not INR."
+                    });
+                }
+
                 /** Initiate the payment */
                 /** Using the base price which is in USD */
-                let amount = helperService.roundOff(course.finalPrice, 2);
+                let coursePrice = helperService.roundOff(course.finalPrice, 2);
                 let currency = course.partner_currency.iso_code;
-                let paymentIntentSecret = await paymentService.createPaymentIntent(amount, currency);
+                let tax = 0.0;
+                if(course.partner_currency.iso_code === "INR") {
+                    tax = helperService.roundOff(0.18 * coursePrice, 2);
+                }
+                let paymentIntentSecret = await paymentService.createPaymentIntent(coursePrice + tax, currency);
 
                 /** Create the order data */
-                let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", amount, currency,
+                let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", coursePrice, tax, currency,
                     "stripe", paymentIntentSecret, timezone);
 
                 /** Add the data to Strapi */

@@ -1044,7 +1044,7 @@ module.exports = class learnContentService {
 
         let canBuy = (result.partner_currency.iso_code === "INR");
 
-        let partnerPrice = parseFloat(result.finalPrice);   //final price in ES
+        let partnerPrice = helperService.roundOff(course.finalPrice, 2);   //final price in ES
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
@@ -1314,7 +1314,7 @@ module.exports = class learnContentService {
     }
 
     /** Creates order data with single payment mode */
-    async createOrderData(userId, userMeta, address, course, orderType, amount, currency, paymentGateway, transactionId, timezone) {
+    async createOrderData(userId, userMeta, address, course, orderType, coursePrice, tax, currency, paymentGateway, transactionId, timezone) {
         let orderData = {};
 
         let regularPrice = parseFloat(course.regular_price);
@@ -1325,7 +1325,7 @@ module.exports = class learnContentService {
             user_id: userId,
             order_type: orderType,
             partner: course.partner_id,
-            amount: amount,
+            amount: coursePrice + tax,
             status: "pending_payment",
             order_items: [
                 {
@@ -1335,8 +1335,8 @@ module.exports = class learnContentService {
                     qty: 1,
                     item_price: helperService.roundOff(regularPrice, 2),
                     discount: helperService.roundOff(regularPrice - salePrice, 2),
-                    tax: 0,
-                    item_total: amount
+                    tax: tax,
+                    item_total: coursePrice + tax
                 }
             ],
             order_customer: {
@@ -1350,7 +1350,7 @@ module.exports = class learnContentService {
             order_payment: {
                 gateway: paymentGateway,
                 transaction_id: transactionId,
-                amount: amount,
+                amount: coursePrice + tax,
                 currency: currency,
                 status: null,
                 reject_reason: null
