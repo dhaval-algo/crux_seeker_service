@@ -1,7 +1,18 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const { getUserCurrency, getCurrencies, getCurrencyAmount } = require('../utils/general');
+const { getCurrencies, getCurrencyAmount } = require('../utils/general');
+
+const { 
+    getFilterConfigs, 
+    parseQueryFilters,
+    getPaginationQuery,
+    getMediaurl,
+    updateFilterCount,
+    getFilterAttributeName,
+    updateSelectedFilters,
+    sortFilterOptions
+} = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -9,10 +20,12 @@ let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
+const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
+const allowZeroCountFields = ['level','categories','sub_categories'];
 
 const helperService = require("../../utils/helper");
 
-const getFilterConfigs = async () => {
+/* const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Learn_Content&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
@@ -31,7 +44,7 @@ const getMediaurl = (mediaUrl) => {
         }
     }    
     return mediaUrl;
-};
+}; */
 
 const getBaseCurrency = (result) => {
     return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
@@ -57,7 +70,7 @@ const round = (value, step) => {
     return Math.round(value * inv) / inv;
 };
 
-const getPaginationQuery = (query) => {
+/* const getPaginationQuery = (query) => {
     let page = 1;
     let size = 25;
     let from = 0;
@@ -75,9 +88,9 @@ const getPaginationQuery = (query) => {
       size,
       page
     };
-};
+}; */
 
-const parseQueryFilters = (filter) => {
+/* const parseQueryFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
     let query_filters = [];
     const filterArray = parsedFilterString.split("::");
@@ -89,7 +102,7 @@ const parseQueryFilters = (filter) => {
         });
     }
     return query_filters;
-};
+}; */
 
 const parseQueryRangeFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
@@ -216,6 +229,7 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
 
         let formatedFilters = {
             label: filter.label,
+            field: filter.elastic_attribute_name,
             filterable: filter.filterable,
             sortable: filter.sortable,
             order: filter.order,
@@ -481,24 +495,21 @@ const getFilterOption = (data, filter) => {
         options.push(others);
     }
 
+    options = sortFilterOptions(options);
     return options;
 };
 
 
-const getDurationOptions = () => {
-
-};
-
-const getFilterAttributeName = (attribute_name) => {
+/* const getFilterAttributeName = (attribute_name) => {
     const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
     if(keywordFields.includes(attribute_name)){
         return `${attribute_name}.keyword`;
     }else{
         return attribute_name;
     }
-};
+}; */
 
-const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
+/* const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
     for(let filter of filters){
         if(filter.filter_type == "Checkboxes"){
             let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
@@ -530,7 +541,7 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
     }
 
     return filters;
-};
+}; */
 
 
 const getSlugMapping = (req) => {
@@ -547,7 +558,7 @@ const getSlugMapping = (req) => {
 };
 
 
-const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
+/* const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
     if(parsedFilters.length <= 0){
         return filters;
     }
@@ -590,7 +601,7 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
           });
     }
     return filters;
-};
+}; */
 
 module.exports = class learnContentService {
 
@@ -599,7 +610,7 @@ module.exports = class learnContentService {
 
         slugMapping = getSlugMapping(req);
 
-        const filterConfigs = await getFilterConfigs();
+        const filterConfigs = await getFilterConfigs('Learn_Content');
         const query = { 
             "bool": {
                 //"should": [],
@@ -660,7 +671,7 @@ module.exports = class learnContentService {
             for(const filter of parsedFilters){                
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
-                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
                     query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
                     });
@@ -681,7 +692,7 @@ module.exports = class learnContentService {
                 } */
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
-                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name);
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
 
                     let rangeQuery = {};
                     if(filter.start !== "MIN"){
@@ -747,7 +758,7 @@ module.exports = class learnContentService {
             
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits); 
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields); 
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 

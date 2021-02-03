@@ -13,12 +13,14 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     getRankingFilter,
-    getRankingBySlug
+    getRankingBySlug,
+    sortFilterOptions
 } = require('../utils/general');
 
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
 const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
+const allowZeroCountFields = ['programs','study_modes'];
 
 
 
@@ -56,6 +58,7 @@ const formatFilters = async (data, filterData, query) => {
 
         let formatedFilters = {
             label: filter.label,
+            field: filter.elastic_attribute_name,
             filterable: filter.filterable,
             sortable: filter.sortable,
             order: filter.order,
@@ -131,6 +134,7 @@ const getFilterOption = (data, filter) => {
             }
         }
     }
+    options = sortFilterOptions(options);
     return options;
 };
 
@@ -140,7 +144,7 @@ const getFilterOption = (data, filter) => {
 module.exports = class providerService {
 
     async getProviderList(req, callback){
-        const filterConfigs = await getFilterConfigs();
+        const filterConfigs = await getFilterConfigs('Provider');
         //console.log("filterConfigs <> ", filterConfigs);
         const query = { 
             "bool": {
@@ -188,9 +192,9 @@ module.exports = class providerService {
         let parsedFilters = [];
         let parsedRangeFilters = [];
         let ranking = null;
+        
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
         let filters = filterResponse.filters;      
         
@@ -236,6 +240,11 @@ module.exports = class providerService {
         }
         console.log("Final Query <> ", JSON.stringify(query));
 
+        /* let filterQuery = JSON.parse(JSON.stringify(query));
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
+        let filters = filterResponse.filters; */  
+
         let result = {};
 
         try{
@@ -261,7 +270,7 @@ module.exports = class providerService {
 
             //update selected flags
             if(parsedFilters.length > 0){
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 

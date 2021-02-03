@@ -19,7 +19,7 @@ const getBlogHomeContent = async() => {
         let blogHomedata = result.hits[0]._source;
         
         if (blogHomedata.featured_articles && blogHomedata.featured_articles.length) {
-            data.featured_articles = await ArticleService.getArticleByIds(blogHomedata.featured_articles);
+            data.featured_articles = await ArticleService.getArticleByIds(blogHomedata.featured_articles, false);
           }
           
           if (blogHomedata.recent_articles && blogHomedata.recent_articles.length) {
