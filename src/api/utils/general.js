@@ -32,9 +32,6 @@ const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
     if(!amount){
         return null;
     }
-    if(!baseCurrency){
-        baseCurrency = process.env.DEFAULT_CURRENCY;
-    }
     if(!userCurrency){
         userCurrency = process.env.DEFAULT_CURRENCY;
     }
@@ -42,6 +39,9 @@ const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
         return Math.round(amount);
     }
     let currency_b = currencies.find(o => o.iso_code === baseCurrency);
+    if(!currency_b){
+        currency_b = currencies.find(o => o.iso_code === process.env.DEFAULT_CURRENCY);
+    }
     let currency_u = currencies.find(o => o.iso_code === userCurrency);
     if(baseCurrency == 'USD'){
         amount = currency_u.conversion_rate*amount;
