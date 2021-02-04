@@ -356,26 +356,34 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
+            label: 'Less than a week',
+            count: 0,
+            selected: false,
+            start: 'MIN',
+            end: 168,
+            disabled: true
+        },
+        {
             label: '1 - 4 weeks',
             count: 0,
             selected: false,
-            start: 40,
-            end: 159,
+            start: 168,
+            end: 672,
             disabled: true
         },
         {
             label: '1 - 3 months',
             count: 0,
             selected: false,
-            start: 160,
-            end: 479,
+            start: 672,
+            end: 2016,
             disabled: true
         },
         {
             label: '3+ months',
             count: 0,
             selected: false,
-            start: 480,
+            start: 2016,
             end: 'MAX',
             disabled: true
         }
@@ -704,8 +712,11 @@ module.exports = class learnContentService {
                         let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
                         if(filter.key == 'Price'){
                             endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
+                            rangeQuery["lte"] = endValue;
+                        }else{
+                            rangeQuery["lt"] = endValue;
                         }
-                        rangeQuery["lte"] = endValue;
+                        
                     }
 
                     query.bool.must.push({
