@@ -77,14 +77,6 @@ module.exports = {
             let course = await LearnContentService.fetchCourseBySlug(courseSlug);
 
             if(course) {
-                if(course.partner_currency.iso_code !== "INR") {
-                    return res.status(200).send({
-                        code: "cannot_buy_course",
-                        success: false,
-                        message: "Provider currency not INR."
-                    });
-                }
-
                 /** Initiate the payment */
                 /** Using the base price which is in USD */
                 let coursePrice = helperService.roundOff(course.finalPrice, 2);
