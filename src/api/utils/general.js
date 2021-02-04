@@ -32,6 +32,9 @@ const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
     if(!amount){
         return null;
     }
+    if(!baseCurrency){
+        baseCurrency = process.env.DEFAULT_CURRENCY;
+    }
     if(!userCurrency){
         userCurrency = process.env.DEFAULT_CURRENCY;
     }
