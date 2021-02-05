@@ -1,7 +1,7 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 module.exports = class PaymentService {
-    async createPaymentIntent(amount, currency, description) {
+    async createPaymentIntent(amount, currency, description, userObj) {
         let paymentIntent = await stripe.paymentIntents.create({
             amount: amount * 100,
             currency: currency,
