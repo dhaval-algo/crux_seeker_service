@@ -1,10 +1,11 @@
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 module.exports = class PaymentService {
-    async createPaymentIntent(amount, currency) {
+    async createPaymentIntent(amount, currency, description) {
         let paymentIntent = await stripe.paymentIntents.create({
             amount: amount * 100,
-            currency: currency
+            currency: currency,
+            description: description
         });
         if(paymentIntent) {
             return paymentIntent.client_secret;
