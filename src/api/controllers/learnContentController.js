@@ -85,7 +85,7 @@ module.exports = {
                 if(course.partner_currency.iso_code === "INR") {
                     tax = helperService.roundOff(0.18 * coursePrice, 2);
                 }
-                let paymentIntentSecret = await paymentService.createPaymentIntent(coursePrice + tax, currency, course.title);
+                let paymentIntentSecret = await paymentService.createPaymentIntent(coursePrice + tax, currency, course.title, userObj);
 
                 /** Create the order data */
                 let orderData = await LearnContentService.createOrderData(req.user.userId, userObj, req.body.address, course, "course", coursePrice, tax, currency,
