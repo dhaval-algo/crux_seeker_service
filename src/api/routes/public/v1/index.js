@@ -12,6 +12,8 @@ const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
 
+const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
+
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
 
@@ -35,7 +37,7 @@ router.get('/articles/', ArticleController.getArticleList);
 router.get('/articles/:slug', ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 
-router.get('/homepage',homeController.getHomePageContent)
+router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
 
 module.exports = router;
