@@ -266,6 +266,26 @@ const sortFilterOptions = (options) => {
 };
 
 
+const getUserFromHeaders = async(headers) => {
+    let user = null;
+    const authHeader = headers.authorization;
+    const audience = headers.origin;
+    let options = {
+        issuer: process.env.HOST,
+        audience: audience,
+        algorithm:  ["RS256"],
+    }
+    if (authHeader) {
+        const token = authHeader.split(' ')[1];
+        const verifiedToken = await require("../../services/auth/auth").verifyToken(token, options);
+        if(verifiedToken) {
+            user = verifiedToken.user
+        }
+    }
+    return user;
+};
+
+
 
   module.exports = {
     getUserCurrency,
@@ -281,7 +301,8 @@ const sortFilterOptions = (options) => {
     updateSelectedFilters,
     getRankingFilter,
     getRankingBySlug,
-    sortFilterOptions
+    sortFilterOptions,
+    getUserFromHeaders
 }
 
 

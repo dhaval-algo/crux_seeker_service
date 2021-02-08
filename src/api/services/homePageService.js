@@ -1,11 +1,156 @@
 const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const sectionService = require('./sectionService');
+const models = require("../../../models");
 
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 const ArticleService = new articleService();
 const SectionService = new sectionService();
+
+const USER_RECOMMENDED_SECTIONS = ['jobTitle', 'wishlist', 'enquiries'];
+const MAX_ENTRY_PER_RECOMMENDED_SECTION = 3;
+
+
+const searchCourseIdsByQueryString = async(queryString) => {
+  let query = { 
+    "bool": {
+        "must": [
+            {term: { "status.keyword": 'published' }}                
+        ],
+        "filter": []
+    }
+  };
+  query.bool.must.push( 
+    {
+      "query_string" : {
+          "query" : `*${queryString}*`,
+          "fields" : ['title','categories','sub_categories','topics'],
+          "analyze_wildcard" : true,
+          "allow_leading_wildcard": true
+      }
+    }
+  );
+  const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_ENTRY_PER_RECOMMENDED_SECTION});
+  if(result.total && result.total.value > 0){
+      return result.hits.map(o => o['_id']);
+  }else{
+      return [];
+  }
+};
+
+const getAggregatedCategoriesByCourseIds = async(courseIds) => {
+  let categories = [];
+  const query = {
+    "query": {
+      "ids": {
+        "values": courseIds
+      }
+    },
+    "size": 0,
+    "aggs": {
+      "categories": {
+        "terms": {
+          "field": "categories.keyword",
+          "size": 100
+        }
+      }
+    }
+  };
+  const result = await elasticService.plainSearch('learn-content', query);
+  if(result.aggregations){
+    let categoriesData = result.aggregations.categories.buckets;
+    categories = categoriesData.map(o => o['key']);
+  }
+  return categories;
+};
+
+
+const getCourseIdsByCategories = async(categories, excludeIds) => {
+  let query = { 
+    "bool": {
+        "must": [
+            {term: { "status.keyword": 'published' }}                
+        ],
+        "must_not": [
+          {
+            "ids": {
+              "values": excludeIds
+            }
+          }
+        ],
+        "filter": [
+          {                              
+            "terms": {
+                "categories.keyword": categories
+            }
+          }
+        ]
+    }
+  };
+  const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_ENTRY_PER_RECOMMENDED_SECTION});
+  if(result.total && result.total.value > 0){
+      return result.hits.map(o => o['_id']);
+  }else{
+      return [];
+  }
+};
+
+const getJobTitle = async(user) => {
+  let jobTitle = null;
+  let where = {
+    userId: user.userId,
+    key: 'jobTitle',
+    metaType: 'primary'
+  };
+  let jobTitleRecord = await models.user_meta.findOne({where});
+  if(jobTitleRecord){
+    let jsonValue = JSON.parse(jobTitleRecord.value);
+    jobTitle = jsonValue.label;
+  }
+  return jobTitle;
+};
+
+const fetchWishListCourseIds = async (user) => {
+  let wishlistIds = [];
+  let where = {
+      userId: user.userId,
+      key: 'course_wishlist',
+  }
+
+  let wishlistRecords = await models.user_meta.findAll({
+      attributes:['value'],
+      where
+  });
+  if(wishlistRecords){
+    wishlistIds = wishlistRecords.map((rec) => rec.value);
+  }
+  wishlistIds = wishlistIds.filter(function (el) {
+    return el != null;
+  });
+  return wishlistIds;
+}
+
+const fetchEnquiryCourseIds = async (user) => {
+  let enquiryCourseIds = [];
+  let where = {
+      userId: user.userId,
+      targetEntityType: 'course',
+      formType: 'enquiry'
+  };
+
+  let enquiryRecords = await models.form_submission.findAll({
+      attributes:['targetEntityId'],
+      where
+  });
+  if(enquiryRecords){
+    enquiryCourseIds = enquiryRecords.map((rec) => rec.targetEntityId);
+  }
+  enquiryCourseIds = enquiryCourseIds.filter(function (el) {
+    return el != null;
+  });
+  return enquiryCourseIds;
+}
 
 
 const getBlogHomeContent = async() => {
@@ -42,18 +187,116 @@ const getBlogHomeContent = async() => {
   }
 
 
-const formatHomepageData = async(data, loggedIn = false, currency) => {
+  const getUserRecommendedCourses = async(user, static_recommended_course_ids, currency) => {
+      let recommended_courses = [];
+      let recommended_course_ids = [];
+      const ideal_recommended_count = USER_RECOMMENDED_SECTIONS.length * MAX_ENTRY_PER_RECOMMENDED_SECTION;
+      
+      try{
+        const jobTitle = await getJobTitle(user);
+        if(jobTitle){
+          try{
+          const courseIdsByJobTitle = await searchCourseIdsByQueryString(jobTitle);
+          if(courseIdsByJobTitle.length){
+            recommended_course_ids = [...recommended_course_ids, ...courseIdsByJobTitle];
+          }        
+          }catch (ex){
+            console.log("Job title Error <> ", ex);
+          }
+        }
+      }catch (ex){
+        console.log("Job title recommended course Error <> ", ex);
+      }
+
+      try{
+        const wishlistIds = await fetchWishListCourseIds(user);
+        if(wishlistIds.length > 0){
+          const categories = await getAggregatedCategoriesByCourseIds(wishlistIds);
+          if(categories.length){
+            try{
+              const wishListCourseIds = await getCourseIdsByCategories(categories, wishlistIds);
+              if(wishListCourseIds.length){
+                recommended_course_ids = [...recommended_course_ids, ...wishListCourseIds];
+              }
+            }catch (ex){
+              console.log("Wish course ids by category Error <> ", ex);
+            }
+          }
+        }
+      }catch (ex){
+        console.log("wishlist recommended course Error <> ", ex);
+      }
+
+
+      try{
+        const enquiryIds = await fetchEnquiryCourseIds(user);
+        if(enquiryIds.length > 0){
+          const enquiryCategories = await getAggregatedCategoriesByCourseIds(enquiryIds);
+          if(enquiryCategories.length){
+            try{
+              const enquiryCourseIds = await getCourseIdsByCategories(enquiryCategories, enquiryIds);
+              if(enquiryCourseIds.length){
+                recommended_course_ids = [...recommended_course_ids, ...enquiryCourseIds];
+              }
+            }catch (ex){
+              console.log("Enquiry course ids by category Error <> ", ex);
+            }
+          }
+        }
+      }catch (ex){
+        console.log("Enquiry recommended course Error <> ", ex);
+      }
+
+      try{
+        if(recommended_course_ids.length < ideal_recommended_count){
+          const remaining_count = (ideal_recommended_count - recommended_course_ids.length);
+          if(static_recommended_course_ids.length > 0){
+            const remainingIds = static_recommended_course_ids.slice(0, remaining_count);
+            recommended_course_ids = [...recommended_course_ids, ...remainingIds];
+          }
+        }
+      }catch (ex){
+        console.log("Merging default Error <> ", ex);
+      }
+
+      try{
+      if(recommended_course_ids.length > 0){
+        let courses = await LearnContentService.getCourseByIds({query: {currency: currency, ids: recommended_course_ids.join(",")}});
+        recommended_courses = courses.filter(function (el) {
+            return el != null;
+        });
+      }
+    }catch(ex){
+      console.log("Error <> ", ex);
+    }
+
+      return recommended_courses;
+  };
+
+
+const formatHomepageData = async(data, user = null, currency) => {
+
+    if(user){
+      try{
+        data.recommended_courses = await getUserRecommendedCourses(user, data.recommended_courses, currency);  
+      }catch (ex){
+        data.recommended_courses = [];
+        console.log("Error getting recommended courses <> ", ex);
+      } 
+    }else{
+      data.recommended_courses = [];
+    }
     
-    if(data.recommended_courses.length > 0 && loggedIn){
+    /* if(data.recommended_courses.length > 0 && user){
         let courses = await LearnContentService.getCourseByIds({query: {currency: currency, ids: data.recommended_courses.join(",")}});
         data.recommended_courses = courses.filter(function (el) {
             return el != null;
         });
     }else{
         data.recommended_courses = [];
-    }
+    } */
 
-    if(!loggedIn){
+    if(!user){
         data.trending_now = [];
     }
 
@@ -87,17 +330,13 @@ module.exports = class homePageService {
 
   async getHomePageContent(req, callback) {
     let data = {};
-    let loggedIn = false;
-    if(req.query['loggedIn']){
-        loggedIn = (req.query['loggedIn'] == 'true');
-    }
     try {
       const query = {
         "match_all": {}
       };
       const result = await elasticService.search('home-page', query);
       if (result.hits && result.hits.length) {
-        data = await formatHomepageData(result.hits[0]._source, loggedIn, req.query['currency'])
+        data = await formatHomepageData(result.hits[0]._source, req.user, req.query['currency'])
         return callback(null, { success: true, data })
       }
       return callback(null, { success: true, data:data })
