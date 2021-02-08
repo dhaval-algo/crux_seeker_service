@@ -10,7 +10,7 @@ module.exports = class PaymentService {
 
         /** Add the customer */
         await stripe.customers.create({
-            name: userObj.first_name + " " + userObj.last_name,
+            name: userObj.firstName + " " + userObj.lastName,
             address: {
                 line1: 'Goa',
                 postal_code: '403001',
