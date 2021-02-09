@@ -289,7 +289,8 @@ module.exports = class articleService {
                 firstname: result.author_first_name,
                 lastname: result.author_last_name,
                 designation: result.author_designation,
-                bio: result.author_bio
+                bio: result.author_bio,
+                slug: result.author_slug
             };
         }else{
             console.log("Author found...", author); 
@@ -376,7 +377,7 @@ module.exports = class articleService {
     }
 
 
-    async generateAuthorData(result){
+    async generateAuthorData(result, fetch_articles = false){
         let data = {
             id: result.id,
             user_id: result.user_id,
@@ -385,11 +386,22 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ? getMediaurl(result.image.thumbnail) : null
+            image: (result.image) ? getMediaurl(result.image.thumbnail) : null,
+            slug: result.slug,
+            email: result.email,
+            twitter_url: result.twitter_url,
+            linkedin_url: result.linkedin_url,
+            facebook_url: result.facebook_url,
+            city: result.city
         };
         if(!data.image){
             data.image = getMediaurl(result.image['url']);
         }
+
+        if(fetch_articles){
+            data.articles = await this.getArticleByAuthor(result.user_id);
+        }
+
         return data;
     }
 
@@ -405,6 +417,54 @@ module.exports = class articleService {
             author = await this.generateAuthorData(result.hits[0]._source);
         }
         return author;     
+    }
+
+    async getAuthorBySlug(slug, callback){
+        let author = null;
+        const query = { "bool": {
+            "must": [
+              {term: { "slug.keyword": slug }}
+            ]
+        }};
+        const result = await elasticService.search('author', query);
+        if(result.hits && result.hits.length > 0){
+            author = await this.generateAuthorData(result.hits[0]._source, true);
+        }
+        if(callback){
+            if(author){
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: author});
+            }else{
+                callback(null, {status: 'failed', message: 'Not found!', data: author});
+            }            
+        }else{
+            return author;  
+        }           
+    }
+
+
+    async getArticleByAuthor(author_id, isListing = true){
+        let articles = [];
+            const queryBody = {
+                "query": {
+                  "bool": {
+                    "must": [
+                      {term: { "status.keyword": 'published' }},
+                      {term: { "author_id": author_id }}
+                    ]
+                 }
+                }
+            };
+
+            const result = await elasticService.plainSearch('article', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        const article = await this.generateSingleViewData(hit._source, isListing);
+                        articles.push(article);
+                    }
+                }
+            } 
+        return articles;
     }
 
 

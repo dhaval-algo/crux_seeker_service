@@ -40,4 +40,6 @@ router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
 
+router.get('/author/:slug', ArticleController.getAuthor);
+
 module.exports = router;
