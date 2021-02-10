@@ -1003,10 +1003,13 @@ module.exports = class learnContentService {
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
+        let canBuy = false);
         if(result.partner_currency.iso_code === "INR") {
+            canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
         let data = {
+            canBuy: canBuy,
             title: result.title,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
