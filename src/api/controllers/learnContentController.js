@@ -84,6 +84,13 @@ module.exports = {
                 let tax = 0.0;
                 if(course.partner_currency.iso_code === "INR") {
                     tax = helperService.roundOff(0.18 * coursePrice, 2);
+                } else {
+                    /** Reject buy request for non INR courses */
+                    return res.status(200).send({
+                        code: "non_inr_course",
+                        success: false,
+                        message: "Cannot buy non INR course."
+                    });
                 }
                 let paymentIntentSecret = await paymentService.createPaymentIntent(coursePrice + tax, currency, course.title, userObj);
 
