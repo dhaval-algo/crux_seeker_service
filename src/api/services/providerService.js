@@ -1,6 +1,7 @@
 const elasticService = require("./elasticService");
 const learnContentService = require("./learnContentService");
 const fetch = require("node-fetch");
+const _ = require('underscore');
 let LearnContentService = new learnContentService();
 
 const { 
@@ -21,6 +22,7 @@ const MAX_RESULT = 10000;
 const keywordFields = ['name'];
 const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
 const allowZeroCountFields = ['programs','study_modes'];
+const FEATURED_RANK_LIMIT = 4;
 
 
 
@@ -382,7 +384,8 @@ module.exports = class providerService {
                 website_link: result.website_link
             },
             courses: courses,
-            course_count: (result.course_count) ? result.course_count : 0
+            course_count: (result.course_count) ? result.course_count : 0,
+            featured_ranks: []
         };
 
         if(!isList){
@@ -393,7 +396,17 @@ module.exports = class providerService {
                 student_avg_experience_diversity: result.student_avg_experience_diversity,
                 highest_package_offered: result.highest_package_offered,
                 median_package_offered: result.median_package_offered
-            }
+            };
+
+            data.placements = {
+                gender_diversity: result.gender_diversity,
+                recruiters_profile: result.recruiters_profile,
+                ctc: result.ctc,
+                highest_ctc: result.highest_ctc,
+                academic_background: result.academic_background,
+                professional_background: result.professional_background,
+                work_experience: result.work_experience
+            };
         }
 
         if(result.awards && result.awards.length > 0){
@@ -474,6 +487,25 @@ module.exports = class providerService {
         if(rank !== null && result.ranks){
             data.rank = result[`ranking_${rank}`];
             data.rank_details = result.ranks.find(o => o.slug === rank);
+        }
+
+        if(result.ranks){
+            let sortedRanks = _.sortBy( result.ranks, 'rank' );
+            let featuredCount = 0;
+            for(const rank of sortedRanks){
+                if(!rank.featured){
+                    continue;
+                }
+                data.featured_ranks.push({
+                    name: rank.name,
+                    slug: rank.slug,
+                    rank: rank.rank
+                });
+                featuredCount++;
+                if(featuredCount == FEATURED_RANK_LIMIT){
+                    break;
+                }
+            }
         }
 
         return data;
