@@ -385,7 +385,8 @@ module.exports = class providerService {
             },
             courses: courses,
             course_count: (result.course_count) ? result.course_count : 0,
-            featured_ranks: []
+            featured_ranks: [],
+            placements: {},
         };
 
         if(!isList){
@@ -398,15 +399,27 @@ module.exports = class providerService {
                 median_package_offered: result.median_package_offered
             };
 
-            data.placements = {
-                gender_diversity: result.gender_diversity,
-                recruiters_profile: result.recruiters_profile,
-                ctc: result.ctc,
-                highest_ctc: result.highest_ctc,
-                academic_background: result.academic_background,
-                professional_background: result.professional_background,
-                work_experience: result.work_experience
-            };
+            if(result.gender_diversity && result.gender_diversity.length > 0){
+                data.placements['gender_diversity'] = result.gender_diversity;
+            }
+            if(result.recruiters_profile && result.recruiters_profile.length > 0){
+                data.placements['recruiters_profile'] = result.recruiters_profile;
+            }
+            if(result.ctc && result.ctc.length > 0){
+                data.placements['ctc'] = result.ctc;
+            }
+            if(result.highest_ctc && result.highest_ctc.length > 0){
+                data.placements['highest_ctc'] = result.highest_ctc;
+            }
+            if(result.academic_background && result.academic_background.length > 0){
+                data.placements['academic_background'] = result.academic_background;
+            }
+            if(result.professional_background && result.professional_background.length > 0){
+                data.placements['professional_background'] = result.professional_background;
+            }
+            if(result.work_experience && result.work_experience.length > 0){
+                data.placements['work_experience'] = result.work_experience;
+            }
         }
 
         if(result.awards && result.awards.length > 0){
