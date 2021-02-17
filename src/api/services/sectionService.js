@@ -14,7 +14,7 @@ const buildSectionView = (section) => {
     }
 
     if (!!section.recent_articles && !!section.recent_articles.length) {
-      section.recent_articles = await ArticleService.getArticleByIds(section.recent_articles)
+      section.recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false)
       section.recent_articles =  section.recent_articles.filter(art => !!art)
 
     }
