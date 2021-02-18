@@ -183,22 +183,28 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
                     if(!elasticAttribute){
                         continue;
                     }
-                for(const esData of data){
+                    if(data && data.length > 0){
+                        console.log("Data found...", data);
+                        for(const esData of data){
                     
-                    const entity = esData._source; 
-                    let entityData = entity[elasticAttribute.elastic_attribute_name];
-                    if(entityData){
-                        if(Array.isArray(entityData)){
-                            if(entityData.includes(option.label)){
-                                option.count++;
-                            }
-                        }else{
-                            if(entityData == option.label){
-                                option.count++;
+                            const entity = esData._source; 
+                            let entityData = entity[elasticAttribute.elastic_attribute_name];
+                            if(entityData){
+                                if(Array.isArray(entityData)){
+                                    if(entityData.includes(option.label)){
+                                        option.count++;
+                                    }
+                                }else{
+                                    if(entityData == option.label){
+                                        option.count++;
+                                    }
+                                }
                             }
                         }
-                    }
-                }
+                    }else{
+                        console.log("Setting count to 0000");
+                        option.count = 0;
+                    }                
                 if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
                     option.disabled = true;
                 }

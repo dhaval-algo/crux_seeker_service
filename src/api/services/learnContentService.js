@@ -623,7 +623,7 @@ module.exports = class learnContentService {
                 "must": [
                     {term: { "status.keyword": 'published' }}                
                 ],
-                "filter": []
+                //"filter": []
             }
         };
 
@@ -678,7 +678,10 @@ module.exports = class learnContentService {
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-                    query.bool.filter.push({
+                    /* query.bool.filter.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     });
                 }
