@@ -174,9 +174,14 @@ module.exports = class articleService {
                     /* query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    query.bool.must.push({
+                    /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
-                    });
+                    }); */
+                    for(const fieldValue of filter.value){
+                        query.bool.must.push({
+                            "term": {[attribute_name]: fieldValue}
+                        });
+                    }
                 }
             }
         }
@@ -230,6 +235,7 @@ module.exports = class articleService {
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});

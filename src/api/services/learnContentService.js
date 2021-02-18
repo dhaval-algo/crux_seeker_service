@@ -681,9 +681,14 @@ module.exports = class learnContentService {
                     /* query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    query.bool.must.push({
+                    /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
-                    });
+                    }); */
+                    for(const fieldValue of filter.value){
+                        query.bool.must.push({
+                            "term": {[attribute_name]: fieldValue}
+                        });
+                    }
                 }
             }
         }
@@ -795,6 +800,7 @@ module.exports = class learnContentService {
         }else{
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
