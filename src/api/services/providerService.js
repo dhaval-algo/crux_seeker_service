@@ -153,12 +153,15 @@ module.exports = class providerService {
                 "must": [
                     {term: { "status.keyword": 'approved' }}                
                 ],
-                "filter": []
+                //"filter": []
             }
         };
 
         if(req.query['rank']){
-            query.bool.filter.push({
+            /* query.bool.filter.push({
+                "exists" : { "field" : `ranking_${req.query['rank']}` }
+            }); */
+            query.bool.must.push({
                 "exists" : { "field" : `ranking_${req.query['rank']}` }
             });
         }
@@ -206,9 +209,17 @@ module.exports = class providerService {
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-                    query.bool.filter.push({
+                    /* query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
-                    });
+                    }); */
+                    /* query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    for(const fieldValue of filter.value){
+                        query.bool.must.push({
+                            "term": {[attribute_name]: fieldValue}
+                        });
+                    }
                 }
             }
         }
@@ -288,6 +299,8 @@ module.exports = class providerService {
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
+                console.log("Filter applied and result is 0");
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});

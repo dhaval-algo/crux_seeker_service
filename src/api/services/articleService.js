@@ -130,7 +130,7 @@ module.exports = class articleService {
                 "must": [
                     {term: { "status.keyword": 'published' }}                
                 ],
-                "filter": []
+                //"filter": []
             }
         };
 
@@ -171,9 +171,17 @@ module.exports = class articleService {
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-                    query.bool.filter.push({
+                    /* query.bool.filter.push({
                         "terms": {[attribute_name]: filter.value}
-                    });
+                    }); */
+                    /* query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    for(const fieldValue of filter.value){
+                        query.bool.must.push({
+                            "term": {[attribute_name]: fieldValue}
+                        });
+                    }
                 }
             }
         }
@@ -227,6 +235,7 @@ module.exports = class articleService {
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
