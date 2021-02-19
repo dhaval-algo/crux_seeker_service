@@ -11,6 +11,7 @@ const {
     getPaginationQuery,
     getMediaurl,
     updateFilterCount,
+    calculateFilterCount,
     getFilterAttributeName,
     updateSelectedFilters,
     getRankingFilter,
@@ -283,7 +284,8 @@ module.exports = class providerService {
 
             //update selected flags
             if(parsedFilters.length > 0){
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                filters = calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -300,7 +302,8 @@ module.exports = class providerService {
         }else{
             if(parsedFilters.length > 0){
                 console.log("Filter applied and result is 0");
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                filters = calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});

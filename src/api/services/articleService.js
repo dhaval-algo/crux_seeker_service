@@ -6,6 +6,7 @@ const {
     getPaginationQuery,
     getMediaurl,
     updateFilterCount,
+    calculateFilterCount,
     getFilterAttributeName,
     updateSelectedFilters,
     sortFilterOptions
@@ -220,7 +221,8 @@ module.exports = class articleService {
             //update selected flags
             if(parsedFilters.length > 0){
                 //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -235,7 +237,8 @@ module.exports = class articleService {
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
-                filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+                filters = updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
@@ -302,7 +305,7 @@ module.exports = class articleService {
                 slug: result.author_slug
             };
         }else{
-            console.log("Author found...", author); 
+            console.log("Author found..."); 
         }
 
         let data = {

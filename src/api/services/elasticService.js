@@ -55,8 +55,6 @@ module.exports = {
     if(payload.sort !== null){
       finalQuery.sort = payload.sort;
     } 
-    
-    console.log("payload <> ", payload);
 
     const result = await client.search(finalQuery);
     if(result && result.body){
