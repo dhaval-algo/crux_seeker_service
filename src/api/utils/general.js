@@ -1,6 +1,16 @@
 const fetch = require("node-fetch");
 const _ = require('underscore');
+const elasticService = require("../services/elasticService");
 const apiBackendUrl = process.env.API_BACKEND_URL;
+
+const MAX_RESULT = 10000;
+const ENTRY_PER_PAGE = 25;
+
+const entity_filter_mapping = {
+    'learn-content': 'Learn_Content',
+    'provider': 'Provider',
+    'article': 'Article'
+};
 
 
 const getUserCurrency = async(request) => {
@@ -139,7 +149,7 @@ const round = (value, step) => {
 
 const getPaginationQuery = (query) => {
     let page = 1;
-    let size = 25;
+    let size = ENTRY_PER_PAGE;
     let from = 0;
     if(query['page']){
       page = parseInt(query['page']);
@@ -167,7 +177,16 @@ const getMediaurl = (mediaUrl) => {
     return mediaUrl;
 };
 
-const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZeroCountFields = []) => {
+const getAllResult = async(entity, query) => {
+    const result = await elasticService.search(entity, query, {from: 0, size: MAX_RESULT});
+        if(result.total && result.total.value > 0){
+            return result.hits;
+        }else{
+            return [];
+        }
+};
+
+const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity, result, totalCount, query, allowZeroCountFields = []) => {
     if(parsedFilters.length <= 0){
         return filters;
     }
@@ -175,7 +194,14 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
         if(filter.filter_type !== 'Checkboxes'){
             continue;
         }
-        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
+
+        let data = [];
+        if(totalCount > ENTRY_PER_PAGE){
+            data = await getAllResult(entity, query);
+        }else{
+            data = result;
+        }
+
         //if(!parsedFilter){
             for(let option of filter.options){
                 option.count = 0;
@@ -184,7 +210,7 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
                         continue;
                     }
                     if(data && data.length > 0){
-                        console.log("Data found...", data);
+                        //console.log("Data found...", data);
                         for(const esData of data){
                     
                             const entity = esData._source; 
@@ -202,7 +228,58 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
                             }
                         }
                     }else{
-                        console.log("Setting count to 0000");
+                        //console.log("Setting count to 0000");
+                        option.count = 0;
+                    }                
+                if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
+                    option.disabled = true;
+                }
+            }
+        //}
+
+        filter.options = filter.options.filter(function( obj ) {
+            return !obj.disabled;
+          });
+    }
+    return filters;
+};
+
+const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZeroCountFields = []) => {
+    if(parsedFilters.length <= 0){
+        return filters;
+    }
+    for(let filter of filters){
+        if(filter.filter_type !== 'Checkboxes'){
+            continue;
+        }
+        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
+        //if(!parsedFilter){
+            for(let option of filter.options){
+                option.count = 0;
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
+                    if(!elasticAttribute){
+                        continue;
+                    }
+                    if(data && data.length > 0){
+                        //console.log("Data found...", data);
+                        for(const esData of data){
+                    
+                            const entity = esData._source; 
+                            let entityData = entity[elasticAttribute.elastic_attribute_name];
+                            if(entityData){
+                                if(Array.isArray(entityData)){
+                                    if(entityData.includes(option.label)){
+                                        option.count++;
+                                    }
+                                }else{
+                                    if(entityData == option.label){
+                                        option.count++;
+                                    }
+                                }
+                            }
+                        }
+                    }else{
+                        //console.log("Setting count to 0000");
                         option.count = 0;
                     }                
                 if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
@@ -308,7 +385,8 @@ const getUserFromHeaders = async(headers) => {
     getRankingFilter,
     getRankingBySlug,
     sortFilterOptions,
-    getUserFromHeaders
+    getUserFromHeaders,
+    calculateFilterCount
 }
 
 

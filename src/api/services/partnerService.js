@@ -220,7 +220,7 @@ module.exports = class partnerService {
         }};
         console.log("Single partner query <> ", JSON.stringify(query));
         const result = await elasticService.search('partner', query);
-        console.log("result <> ", result);
+        //console.log("result <> ", result);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
