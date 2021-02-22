@@ -189,8 +189,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         }
         //queryPayload.from = 0;
         //queryPayload.size = count;
-        //console.log("queryPayload <> ", queryPayload);
-        //console.log("query <> ", query);
+        //console.log("queryPayload <> ", queryPayload);        
         const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
@@ -779,7 +778,7 @@ module.exports = class learnContentService {
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields); 
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -805,7 +804,7 @@ module.exports = class learnContentService {
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
