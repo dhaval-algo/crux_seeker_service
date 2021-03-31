@@ -36,7 +36,7 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
-const { getBucketNames, uploadImageToS3 } = require("../AWS");
+const { getBucketNames, uploadImageToS3, deleteObject } = require("../AWS");
 
 const login = async (req, res, next) => {
     try {
@@ -1143,13 +1143,14 @@ const uploadProfilePic =async (req,res) => {
     const {image} =req.body
     const {user}=req
     let imageB =  getImgBuffer(image)
-    let imageName = `86ab15d2${user.userId}EyroLPIJo`;
+    let imageName = `86ab15d2${user.userId}EyroLPIJo`+(new Date.getTime());
     let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
     const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     if(!existImg) {
         await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
     } else {
+        await deleteObject(existImg.value);
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
     const profileRes = await calculateProfileCompletion(user)
@@ -1158,7 +1159,13 @@ const uploadProfilePic =async (req,res) => {
 
 const removeProfilePic = async (req,res) => {
     const {user} = req
-    await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+
+    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
+
+    if(existImg) {
+        await deleteObject(existImg.value);
+        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+    }
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }

@@ -11,6 +11,25 @@ AWS.config.update({
 const s3Bucket = new AWS.S3({params: {Bucket: AWS_IMAGE_BUCKET}});
 
 
+const deleteObject = (path) => {
+  return new Promise( resolve => {
+    var params = {  
+      Bucket: AWS_IMAGE_BUCKET, 
+      Key: path 
+    };
+
+    new AWS.S3.deleteObject(params, function(err, data) {
+      if (err) 
+      {
+        resolve(err.message);
+      } 
+      else{
+        resolve(true);
+      } 
+    });
+  })
+}
+
 
 const uploadImageToS3 = (path, image) => {
     return new Promise( resolve => {
@@ -62,5 +81,6 @@ const uploadFileToS3 = (path, file, contentType) => {
 
 module.exports = { 
     uploadImageToS3,
-    uploadFileToS3
+    uploadFileToS3,
+    deleteObject
 }
