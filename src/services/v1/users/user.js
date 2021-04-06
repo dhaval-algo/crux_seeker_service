@@ -1150,7 +1150,7 @@ const uploadProfilePic =async (req,res) => {
     if(!existImg) {
         await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
     } else {
-        await deleteObject(existImg.value);
+       // await deleteObject(existImg.value);
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
     const profileRes = await calculateProfileCompletion(user)
@@ -1163,7 +1163,7 @@ const removeProfilePic = async (req,res) => {
     const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
 
     if(existImg) {
-        await deleteObject(existImg.value);
+      //  await deleteObject(existImg.value);
         await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
     }
     const profileRes = await calculateProfileCompletion(user)
