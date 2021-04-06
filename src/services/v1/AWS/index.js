@@ -18,7 +18,7 @@ const deleteObject = (path) => {
       Key: path 
     };
 
-    let remove = new AWS.S3.deleteObject(params);
+    let remove = new AWS.S3.deleteObject({params:params});
 
     let promise = remove.promise();
 
