@@ -18,15 +18,17 @@ const deleteObject = (path) => {
       Key: path 
     };
 
-    new AWS.S3.deleteObject(params, function(err, data) {
-      if (err) 
-      {
-        resolve(err.message);
-      } 
-      else{
+    let remove = new AWS.S3.deleteObject(params);
+
+    let promise = remove.promise();
+
+    promise.then(
+      function(data) {
         resolve(true);
-      } 
-    });
+      },
+      function(err) {resolve(err.message);
+      }
+    );
   })
 }
 
