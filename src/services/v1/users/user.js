@@ -1143,7 +1143,7 @@ const uploadProfilePic =async (req,res) => {
     const {image} =req.body
     const {user}=req
     let imageB =  getImgBuffer(image)
-    let imageName = `86ab15d2${user.userId}EyroLPIJo`+(new Date.getTime());
+    let imageName = `86ab15d2${user.userId}EyroLPIJo${new Date.getTime()}`;
     let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
     const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
