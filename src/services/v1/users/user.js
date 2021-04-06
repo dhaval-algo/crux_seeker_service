@@ -1020,7 +1020,7 @@ const wishListCourseData = async (req,res) => {
 // fetch list of the enquires
 const getEnquiryList = async (req,res) => {
     try {
-        let { limit=5, page=1 } = req.query;
+        let { limit=10, page=1 } = req.query;
     const { user } = req;
     let offset = 0
 
