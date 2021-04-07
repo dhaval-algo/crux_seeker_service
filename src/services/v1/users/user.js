@@ -1188,20 +1188,16 @@ const uploadResumeFile = async (req,res) =>{
     let path = `images/profile-images/${resumeName}`
     console.log(path,resumeB,resumeName);
     let s3Path = await uploadImageToS3(path,resumeB)
-    console.log('s3 path created');
     let fileValue = {
         filename:filename,
         filepath:s3Path
     }
     const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-    console.log('existResume',existResume);
     if(!existResume) {
         await models.user_meta.create({value:JSON.stringify(fileValue),key:'resumeFile',metaType:'primary',userId:user.userId})
     } else {
-        console.log('inside else');
         let pathObject = JSON.parse(existResume.value);
-        console.log(pathObject);
-        await deleteObject(JSON.parse(pathObject.filepath));
+        await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     }
     return res.status(200).json({success:true,resumeFile:fileValue})
