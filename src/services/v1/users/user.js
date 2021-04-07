@@ -13,6 +13,7 @@ const {
     calculateProfileCompletion,
     createSocialEntryIfNotExists,
     getImgBuffer,
+    getFileBuffer,
     generateSingleViewData
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
@@ -1179,6 +1180,28 @@ const fetchUserMetaObjByUserId = async (userId) => {
     return userMetaObj;
 }
 
+const uploadResumeFile = async (req,res) =>{
+    const {buffer, filename} =req.body
+    const {user}=req
+    let resumeB =  getFileBuffer(buffer)
+    let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
+    let path = `images/profile-images/${resumeName}`
+    let s3Path = await uploadImageToS3(path,resumeB)
+    let fileValue = {
+        filename:filename,
+        filepath:s3Path
+    }
+    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
+    if(!existResume) {
+        await models.user_meta.create({value:JSON.stringify(fileValue),key:'resumeFile',metaType:'primary',userId:user.userId})
+    } else {
+        let pathObject = JSON.parse(existResume.value);
+        await deleteObject(JSON.parse(pathObject.filepath));
+        await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
+    }
+    return res.status(200).json({success:true,resumeFile:fileValue})
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -1198,6 +1221,8 @@ module.exports = {
     wishListCourseData,
     getEnquiryList,
     uploadProfilePic,
+    uploadResumeFile,
     removeProfilePic,
     fetchUserMetaObjByUserId
+
 }

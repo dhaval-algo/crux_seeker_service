@@ -834,6 +834,12 @@ const getImgBuffer = (base64) => {
     const base64str = base64.replace(/^data:image\/\w+;base64,/,'');
     return Buffer.from(base64str, 'base64')
 }
+
+const getFileBuffer = (base64) => {
+    return Buffer.from(base64, 'base64')
+}
+
+
 const getMediaurl = (mediaUrl) => {
     if(mediaUrl !== null && mediaUrl !== undefined){
         const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
@@ -1144,6 +1150,7 @@ module.exports = {
     calculateProfileCompletion,
     createSocialEntryIfNotExists,
     getImgBuffer,
+    getFileBuffer,
     generateSingleViewData,
     generateReferenceId,
     roundOff
