@@ -1198,7 +1198,7 @@ const uploadResumeFile = async (req,res) =>{
     } else {
         let pathObject = JSON.parse(existResume.value);
         console.log(pathObject.filepath)
-        await deleteObject(pathObject.filepath);
+        // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     }
     return res.status(200).json({success:true,resumeFile:fileValue})
