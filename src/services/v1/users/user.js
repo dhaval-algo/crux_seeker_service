@@ -1177,7 +1177,9 @@ const uploadResumeFile = async (req,res) =>{
     let resumeB =  getFileBuffer(buffer)
     let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
     let path = `images/profile-images/${resumeName}`
+    console.log(path,resumeB,resumeName);
     let s3Path = await uploadImageToS3(path,resumeB)
+    console.log('s3 path created');
     let fileValue = {
         filename:filename,
         filepath:s3Path
