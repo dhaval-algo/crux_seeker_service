@@ -66,7 +66,7 @@ const uploadResumeToS3 = (path, image,contentType) => {
           params: {
             Bucket: AWS_IMAGE_BUCKET,
             Key: path,
-            Body: image,
+            Body: JSON.stringify(image, null, 2),
             ContentType:contentType,
             ACL: "public-read"
           }
