@@ -1224,7 +1224,7 @@ const uploadSkills = async (req,res) => {
     const {data} =req.body
     const { user} = req;
     const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'skills'}})
-    if(!existResume) {
+    if(!existSkills) {
         await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})
     } else {
         // await deleteObject(pathObject.filepath);
