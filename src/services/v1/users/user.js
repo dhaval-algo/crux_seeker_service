@@ -1197,7 +1197,7 @@ const uploadResumeFile = async (req,res) =>{
 
 const deleteResumeFile = async (req,res) => {
     const {user} = req
-
+    console.log('Reached delete resume')
     const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
 
     if(existResume) {
