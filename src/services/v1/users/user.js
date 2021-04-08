@@ -1195,6 +1195,18 @@ const uploadResumeFile = async (req,res) =>{
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
+const deleteResumeFile = async (req,res) => {
+    const {user} = req
+
+    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
+
+    if(existResume) {
+      //  await deleteObject(existImg.value);
+        await models.user_meta.destroy({where:{key:'resumeFile',metaType:'primary',userId:user.userId}})
+    }
+    return res.status(200).json({success:true, resumeFile:{}})
+}
+
 
 module.exports = {
     login,
@@ -1216,5 +1228,6 @@ module.exports = {
     getEnquiryList,
     uploadProfilePic,
     uploadResumeFile,
+    deleteResumeFile,
     removeProfilePic
 }
