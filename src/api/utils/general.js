@@ -186,8 +186,8 @@ const getAllResult = async(entity, query) => {
         }
 };
 
-const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity, result, totalCount, query, allowZeroCountFields = []) => {
-    if(parsedFilters.length <= 0){
+const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity, result, totalCount, query, allowZeroCountFields = [], parsedRangeFilters = []) => {
+    if(parsedFilters.length <= 0 && parsedRangeFilters.length <= 0){
         return filters;
     }
     for(let filter of filters){
