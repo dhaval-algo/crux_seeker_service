@@ -22,7 +22,7 @@ router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCour
 router.get('/fetch-enquiries', authenticateJWT, userService.getEnquiryList);
 router.post ('/upload-profile',authenticateJWT, userService.uploadProfilePic);
 router.post ('/upload-resume',authenticateJWT, userService.uploadResumeFile);
-router.post ('/delete-resume',authenticateJWT, userService.deleteResumeFile);
+router.get ('/delete-resume',authenticateJWT, userService.deleteResumeFile);
 router.get('/remove-profile', authenticateJWT, userService.removeProfilePic)
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
