@@ -836,8 +836,8 @@ const getImgBuffer = (base64) => {
 }
 
 const getFileBuffer = (base64) => {
-    console.log('base64 in get FileBuffer ',base64);
-    return Buffer.from(base64, 'base64')
+    const base64str = base64.replace(/^data:\/\w+;base64,/,'');
+    return Buffer.from(base64str, 'base64')
 }
 
 

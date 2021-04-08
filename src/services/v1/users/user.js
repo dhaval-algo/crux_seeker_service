@@ -37,7 +37,7 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
-const { getBucketNames, uploadImageToS3, deleteObject } = require("../AWS");
+const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
 
 const login = async (req, res, next) => {
     try {
@@ -1174,11 +1174,24 @@ const removeProfilePic = async (req,res) => {
 const uploadResumeFile = async (req,res) =>{
     const {buffer, filename} =req.body
     const {user}=req
-    let resumeB =  getFileBuffer(buffer)
+    let resumeB =  getFileBuffer(buffer),contentType='';
     let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
     let path = `images/profile-images/${resumeName}`
+    if(filename.endsWith('.doc')){
+        contentType = 'application/msword';
+    }
+    else if(filename.endsWith('.docx')){
+        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingm';
+    }
+    else if(filename.endsWith('.rtf')){
+        contentType = 'application/rtf';
+    }
+    else if(filename.endsWith('.pdf')){
+        contentType = 'application/pdf';
+    }
+
     console.log(path,resumeB,resumeName);
-    let s3Path = await uploadImageToS3(path,resumeB)
+    let s3Path = await uploadResumeToS3(path,resumeB,contentType)
     let fileValue = {
         filename:filename,
         filepath:s3Path
