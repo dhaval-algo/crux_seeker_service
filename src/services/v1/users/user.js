@@ -1171,15 +1171,6 @@ const removeProfilePic = async (req,res) => {
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
 
-const fetchUserMetaObjByUserId = async (userId) => {
-    let userMeta = await models.user_meta.findAll({ where: { userId: userId, metaType: "primary" } });
-    let userMetaObj = {};
-    for(let um of userMeta) {
-        userMetaObj[um.key] = um.value;
-    }
-    return userMetaObj;
-}
-
 const uploadResumeFile = async (req,res) =>{
     const {buffer, filename} =req.body
     const {user}=req
@@ -1204,8 +1195,6 @@ const uploadResumeFile = async (req,res) =>{
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
-<<<<<<< HEAD
-=======
 const deleteResumeFile = async (req,res) => {
     const {user} = req
 
@@ -1219,7 +1208,6 @@ const deleteResumeFile = async (req,res) => {
 }
 
 
->>>>>>> bug-fixes
 module.exports = {
     login,
     verifyOtp,
@@ -1240,12 +1228,6 @@ module.exports = {
     getEnquiryList,
     uploadProfilePic,
     uploadResumeFile,
-<<<<<<< HEAD
-    removeProfilePic,
-    fetchUserMetaObjByUserId
-
-=======
     deleteResumeFile,
     removeProfilePic
->>>>>>> bug-fixes
 }
