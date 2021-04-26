@@ -837,8 +837,8 @@ const getImgBuffer = (base64) => {
 
 const getFileBuffer = (base64) => {
     const base64str = base64.split(';base64,');
-    return base64str[1];
-    // return Buffer.from(base64str, 'base64')
+    // return base64str[1];
+    return Buffer.from(base64str[1], 'base64')
 }
 
 
