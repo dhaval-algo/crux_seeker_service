@@ -1174,24 +1174,24 @@ const removeProfilePic = async (req,res) => {
 const uploadResumeFile = async (req,res) =>{
     const {buffer, filename} =req.body
     const {user}=req
-    let resumeB =  getFileBuffer(buffer),contentType='';
+    let resumeB =  getFileBuffer(buffer);
     let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
     let path = `images/profile-images/${resumeName}`
-    if(filename.endsWith('.doc')){
-        contentType = 'application/msword';
-    }
-    else if(filename.endsWith('.docx')){
-        contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingm';
-    }
-    else if(filename.endsWith('.rtf')){
-        contentType = 'application/rtf';
-    }
-    else if(filename.endsWith('.pdf')){
-        contentType = 'application/pdf';
-    }
+    // if(filename.endsWith('.doc')){
+    //     contentType = 'application/msword';
+    // }
+    // else if(filename.endsWith('.docx')){
+    //     contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingm';
+    // }
+    // else if(filename.endsWith('.rtf')){
+    //     contentType = 'application/rtf';
+    // }
+    // else if(filename.endsWith('.pdf')){
+    //     contentType = 'application/pdf';
+    // }
 
     console.log(path,resumeB,resumeName);
-    let s3Path = await uploadResumeToS3(path,resumeB,contentType)
+    let s3Path = await uploadResumeToS3(path,resumeB)
     let fileValue = {
         filename:filename,
         filepath:s3Path
