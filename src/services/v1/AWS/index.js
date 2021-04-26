@@ -59,15 +59,14 @@ const uploadImageToS3 = (path, image) => {
 }
 
 
-const uploadResumeToS3 = (path, image,contentType) => {
+const uploadResumeToS3 = (path, image) => {
   return new Promise( resolve => {
       let imageUrl = `${S3Url}/${path}`;
       let upload = new AWS.S3.ManagedUpload({
           params: {
             Bucket: AWS_IMAGE_BUCKET,
             Key: path,
-            Body: JSON.stringify(image, null, 2),
-            ContentType:contentType,
+            Body: image,
             ACL: "public-read"
           }
         });
