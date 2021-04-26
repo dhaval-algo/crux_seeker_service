@@ -1056,7 +1056,7 @@ module.exports = class learnContentService {
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
-                instructor_duration:result.avg_session_duration_with_instructor+' Hours',
+                instructor_duration:result.avg_session_duration_with_instructor,
                 total_duration_unit: result.total_duration_unit, 
                 effort: effort,
                 total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
