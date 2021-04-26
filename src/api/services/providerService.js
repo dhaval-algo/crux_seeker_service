@@ -373,9 +373,9 @@ module.exports = class providerService {
             currency: result.currency,
             facilities: result.facilities,
             gender_accepted: result.gender_accepted,
-            establishment_year: result.establishment_year,
+          //  establishment_year: result.establishment_year,
             study_modes: (result.study_modes) ? result.study_modes : [],
-            program_types: (result.program_types) ? result.program_types : [],
+           // program_types: (result.program_types) ? result.program_types : [],
 
             
             reviews: [],
@@ -387,7 +387,7 @@ module.exports = class providerService {
             },
             accreditations: [],
             awards: [],
-            alumni: [],
+          //  alumni: [],
             contact_details: {
                 address_line1: result.address_line1,
                 address_line2: result.address_line2,
@@ -460,16 +460,16 @@ module.exports = class providerService {
             }
         }
 
-        if(result.alumni && result.alumni.length > 0){
-            for(let alum of result.alumni){                
-                if(!isList){
-                    if(alum.photo){
-                        alum.photo = getMediaurl(alum.photo.thumbnail);                    
-                    }
-                    data.alumni.push(alum);
-                }
-            }
-        }
+        // if(result.alumni && result.alumni.length > 0){
+        //     for(let alum of result.alumni){                
+        //         if(!isList){
+        //             if(alum.photo){
+        //                 alum.photo = getMediaurl(alum.photo.thumbnail);                    
+        //             }
+        //             data.alumni.push(alum);
+        //         }
+        //     }
+        // }
         
         if(result.reviews && result.reviews.length > 0){
             let totalRating = 0;
