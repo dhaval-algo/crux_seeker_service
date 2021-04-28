@@ -71,9 +71,9 @@ module.exports = {
             }
 
             /** Fetch the user details */
-         //   let userObj = await userService.fetchUserMetaObjByUserId(req.user.userId);
+            let tmpuserObj = await userService.fetchUserMetaObjByUserId(req.user.userId);
             let userObj = { ...req.user };
-            console.log(userObj);
+            console.log('First name===',tmpuserObj);
             /** Fetch the course details based on the course slug */
             let course = await LearnContentService.fetchCourseBySlug(courseSlug);
 
