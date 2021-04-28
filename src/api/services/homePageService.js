@@ -274,6 +274,9 @@ const getBlogHomeContent = async() => {
       if(recommended_courses.length<3){
         try{
           const randCourses = await searchCourseIdsByQueryString('marketing');
+          if(randCourses.length){
+            recommended_course_ids = [...recommended_course_ids, ...randCourses];
+          }
           console.log("Recommended ids",randCourses.length); 
         }catch (ex){
           console.log("Rand courses Error <> ", ex);
