@@ -809,7 +809,29 @@ module.exports = class learnContentService {
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
                 let cnt = await getFiltersModified(result);
-                const result55 = await elasticService.plainSearch('learn-content', query);
+                const queryBody22 = {
+                    "query": {
+                      "bool": {
+                        "must": [
+                          {"term":{"status":"published"}},
+                          {
+                            "query_string": {
+                              "query": "title:marketing",
+                              "fields": ["title","categories","sub_categories","provider_name","level","learning_mediums","partner_name"],
+                              "analyze_wildcard":true,
+                              "allow_leading_wildcard":true
+                            }
+                          },
+                          {
+                            "term": {
+                              "level": "intermediate"
+                            }
+                          }
+                        ]
+                      }
+                    }
+                   };
+                const result55 = await elasticService.plainSearch('learn-content', queryBody22);
                 console.log("Adv_cntttttt",cnt,result55.hits.length);
             }
 
