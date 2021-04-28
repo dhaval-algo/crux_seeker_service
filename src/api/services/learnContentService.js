@@ -808,9 +808,9 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-                let cnt = await getFiltersModified(result);
+               // let cnt = await getFiltersModified(result);
                 
-                console.log("Adv_cntttttt",cnt);
+             //   console.log("Adv_cntttttt",cnt);
             }
 
             
