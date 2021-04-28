@@ -809,8 +809,8 @@ module.exports = class learnContentService {
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
                 let cnt = await getFiltersModified(result);
-                
-                console.log("Adv_cntttttt",cnt,result.hits.length);
+                const result55 = await elasticService.plainSearch('learn-content', query);
+                console.log("Adv_cntttttt",cnt,result55.hits.length);
             }
 
             
