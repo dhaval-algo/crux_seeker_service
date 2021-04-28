@@ -834,7 +834,7 @@ module.exports = class learnContentService {
                         filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result55.hits.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                         filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
                       //  let ad_cnt = await getFiltersModified(result55.hits,filters);
-                        console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
+                     //   console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
                     }
                 } 
                 
