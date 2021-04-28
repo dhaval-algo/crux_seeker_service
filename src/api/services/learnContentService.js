@@ -565,6 +565,16 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
+const getFiltersModified = async (filters) => {
+    for(let i=0;i<filters.length;i++){
+        let label = filters[i].field;
+        for(let j=0;j<filters[i].options.length;j++){
+            let value = filters[i].options[j].label;
+
+        }
+    }
+}
+
 
 /* const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
     if(parsedFilters.length <= 0){
@@ -790,6 +800,16 @@ module.exports = class learnContentService {
                 }
             }
 
+            if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
+              //  const newFilters = await getFiltersModified(filters);
+               
+              let adv_cnt = result.hits.filter((item)=>{
+                item._source.level=="Advanced"
+              })
+              console.log("Adv_cntttttt",adv_cnt);
+            }
+
+            
 
               let data = {
                 list: list,
