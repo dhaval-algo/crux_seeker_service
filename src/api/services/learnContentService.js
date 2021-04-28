@@ -565,14 +565,14 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
-const getFiltersModified = async (result) => {
-    // for(let i=0;i<filters.length;i++){
-    //     let label = filters[i].field;
-    //     for(let j=0;j<filters[i].options.length;j++){
-    //         let value = filters[i].options[j].label;
+const getFiltersModified = async (result,filters) => {
+    for(let i=0;i<filters.length;i++){
+        let label = filters[i].field;
+        for(let j=0;j<filters[i].options.length;j++){
+            let value = filters[i].options[j].label;
 
-    //     }
-    // }
+        }
+    }
     let cnt = 0;
     for(let i=0;i<result.hits.length;i++){
         if(result.hits[i]._source.level=="Advanced"){
@@ -831,8 +831,9 @@ module.exports = class learnContentService {
                 const result55 = await elasticService.plainSearch('learn-content', queryBody22);
                 if(result55.hits){
                     if(result55.hits.hits && result55.hits.hits.length > 0){
-                        
-                        let ad_cnt = await getFiltersModified(result55.hits);
+                        filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result55.hits.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+                        filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+                      //  let ad_cnt = await getFiltersModified(result55.hits,filters);
                         console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
                     }
                 } 
