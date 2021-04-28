@@ -1239,7 +1239,9 @@ const fetchUserMetaObjByUserId = async (id) => {
         key: 'firstName',
         metaType: 'primary'
       };
-      let firstname = await models.user_meta.findOne({where});
+      let obj = await models.user_meta.findOne({where});
+      let firstname = obj.dataValues.value;
+      
       return firstname;
 }
 
