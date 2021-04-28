@@ -1236,7 +1236,7 @@ const uploadSkills = async (req,res) => {
 const fetchUserMetaObjByUserId = async (id) => {
     let where = {
         userId: id,
-        key: 'firstname',
+        key: 'firstName',
         metaType: 'primary'
       };
       let firstname = await models.user_meta.findOne({where});
