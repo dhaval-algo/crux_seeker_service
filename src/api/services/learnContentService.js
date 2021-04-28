@@ -566,13 +566,20 @@ const getSlugMapping = (req) => {
 };
 
 const getFiltersModified = async (filters) => {
-    for(let i=0;i<filters.length;i++){
-        let label = filters[i].field;
-        for(let j=0;j<filters[i].options.length;j++){
-            let value = filters[i].options[j].label;
+    // for(let i=0;i<filters.length;i++){
+    //     let label = filters[i].field;
+    //     for(let j=0;j<filters[i].options.length;j++){
+    //         let value = filters[i].options[j].label;
 
+    //     }
+    // }
+    let cnt = 0;
+    for(let i=0;i<result.hits.length;i++){
+        if(result.hits[i]._source.level=="Advanced"){
+            cnt++;
         }
     }
+    return cnt;
 }
 
 
@@ -801,13 +808,8 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-              //  const newFilters = await getFiltersModified(filters);
-                let cnt = 0;
-                for(let i=0;i<result.hits.length;i++){
-                    if(result.hits[i]._source.level=="Advanced"){
-                        cnt++;
-                    }
-                }
+                let cnt = await getFiltersModified(result);
+                
                 console.log("Adv_cntttttt",cnt);
             }
 
