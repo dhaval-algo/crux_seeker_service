@@ -808,8 +808,10 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-                let cnt = await getFiltersModified(result);
+                
                 const queryBody22 = {
+                    "size": 40,
+                    "from": 0,
                     "query": {
                       "bool": {
                         "must": [
@@ -830,6 +832,7 @@ module.exports = class learnContentService {
                 if(result55.hits){
                     if(result55.hits.hits && result55.hits.hits.length > 0){
                         console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",cnt,result55.hits.hits.length,result55.hits);
+                        let cnt = await getFiltersModified(result55.hits);
                     }
                 } 
                 
