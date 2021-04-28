@@ -73,6 +73,7 @@ module.exports = {
             /** Fetch the user details */
          //   let userObj = await userService.fetchUserMetaObjByUserId(req.user.userId);
             let userObj = { ...req.user };
+            console.log(JSON.parse(userObj));
             /** Fetch the course details based on the course slug */
             let course = await LearnContentService.fetchCourseBySlug(courseSlug);
 
