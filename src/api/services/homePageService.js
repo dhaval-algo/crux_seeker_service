@@ -253,6 +253,7 @@ const getBlogHomeContent = async() => {
           if(static_recommended_course_ids.length > 0){
             const remainingIds = static_recommended_course_ids.slice(0, remaining_count);
             recommended_course_ids = [...recommended_course_ids, ...remainingIds];
+            console.log('Remaining ids',remainingIds,"Recommended ids",recommended_course_ids);
           }
         }
       }catch (ex){
