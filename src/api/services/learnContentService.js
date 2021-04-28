@@ -565,7 +565,7 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
-const getFiltersModified = async (filters) => {
+const getFiltersModified = async (result) => {
     // for(let i=0;i<filters.length;i++){
     //     let label = filters[i].field;
     //     for(let j=0;j<filters[i].options.length;j++){
