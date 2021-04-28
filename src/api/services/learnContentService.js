@@ -827,7 +827,12 @@ module.exports = class learnContentService {
                     }
                 };
                 const result55 = await elasticService.plainSearch('learn-content', queryBody22);
-                console.log("Adv_cntttttttttttttttttttttttt",cnt,JSON.parse(result55));
+                if(result55.hits){
+                    if(result55.hits.hits && result55.hits.hits.length > 0){
+                        console.log("Adv_cntttttttttttttttttttttttt",cnt,JSON.parse(result55.hits.hits));
+                    }
+                } 
+                
             }
 
             
