@@ -821,18 +821,13 @@ module.exports = class learnContentService {
                               "analyze_wildcard":true,
                               "allow_leading_wildcard":true
                             }
-                          },
-                          {
-                            "term": {
-                              "level": "intermediate"
-                            }
                           }
                         ]
                       }
                     }
-                   };
+                };
                 const result55 = await elasticService.plainSearch('learn-content', queryBody22);
-                console.log("Adv_cntttttt",cnt,result55.hits.length);
+                console.log("Adv_cntttttttttttttttttttttttt",cnt,result55);
             }
 
             
