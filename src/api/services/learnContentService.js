@@ -802,11 +802,13 @@ module.exports = class learnContentService {
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
               //  const newFilters = await getFiltersModified(filters);
-               
-              let adv_cnt = result.hits.filter((item)=>{
-                item._source.level=="Advanced"
-              })
-              console.log("Adv_cntttttt",adv_cnt);
+                let cnt = 0;
+                for(let i=0;i<result.hits.length;i++){
+                    if(result.hits[i]._source.level=="Advanced"){
+                        cnt++;
+                    }
+                }
+                console.log("Adv_cntttttt",cnt);
             }
 
             
