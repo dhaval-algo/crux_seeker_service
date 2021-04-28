@@ -265,10 +265,22 @@ const getBlogHomeContent = async() => {
         recommended_courses = courses.filter(function (el) {
             return el != null;
         });
-        console.log("Recommended ids",recommended_courses.length);
+        
       }
     }catch(ex){
       console.log("Error <> ", ex);
+    }
+    try{
+      if(recommended_courses.length<3){
+        try{
+          const randCourses = await searchCourseIdsByQueryString('marketing');
+          console.log("Recommended ids",randCourses.length); 
+        }catch (ex){
+          console.log("Rand courses Error <> ", ex);
+        }
+      }
+    }catch (ex){
+      console.log("Rand courses recommended course Error <> ", ex);
     }
 
       return recommended_courses;
