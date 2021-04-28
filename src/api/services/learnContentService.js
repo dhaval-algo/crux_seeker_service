@@ -829,7 +829,7 @@ module.exports = class learnContentService {
                 const result55 = await elasticService.plainSearch('learn-content', queryBody22);
                 if(result55.hits){
                     if(result55.hits.hits && result55.hits.hits.length > 0){
-                        console.log("Adv_cntttttttttttttttttttttttt",cnt,result55.hits.hits.length);
+                        console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",cnt,result55.hits.hits.length,result55.hits.hits);
                     }
                 } 
                 
