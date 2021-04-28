@@ -810,7 +810,7 @@ module.exports = class learnContentService {
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
                 
                 const queryBody22 = {
-                    "size": 40,
+                    "size": 100,
                     "from": 0,
                     "query": {
                       "bool": {
@@ -831,8 +831,7 @@ module.exports = class learnContentService {
                 const result55 = await elasticService.plainSearch('learn-content', queryBody22);
                 if(result55.hits){
                     if(result55.hits.hits && result55.hits.hits.length > 0){
-                        filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result55.hits.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
-                        filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+                        filters = await formatFilters(result.hits.hits, filterConfigs, queryBody22, req.query['currency'])
                       //  let ad_cnt = await getFiltersModified(result55.hits,filters);
                      //   console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
                     }
