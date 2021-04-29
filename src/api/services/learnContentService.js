@@ -604,6 +604,9 @@ const calculateNewCnt = async (data,filters) => {
                     }
                 }
             }
+            if(cnt == 0){
+                filters[i].options.splice(j,1);
+            }
             filters[i].options[j].count = cnt;
         }
     }
