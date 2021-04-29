@@ -611,9 +611,10 @@ const calculateNewCnt = async (data,filters) => {
                     }
                 }
             }
-            if(field == "topics" && ops[j].label=="Leadership" ){
-                console.log('hit cnt',cnt)
+            if(field=="topics"){
+                console.log('hit cnt',ops[j].label,cnt)
             }
+            
             if(cnt == 0){
                 filters[i].options.splice(j,1);
             }else{
