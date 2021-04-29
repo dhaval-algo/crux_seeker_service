@@ -611,9 +611,6 @@ const calculateNewCnt = async (data,filters) => {
                     }
                 }
             }
-            if(field=="topics"){
-                console.log('hit cnt',ops[j].label,cnt)
-            }
             
             if(cnt == 0){
                 filters[i].options.splice(j,1);
@@ -621,6 +618,7 @@ const calculateNewCnt = async (data,filters) => {
                 filters[i].options[j].count = cnt;
             }
         }
+        console.log('Filter len',filters[i].label,filters[i].options.length)
     }
     return filters;
 }
