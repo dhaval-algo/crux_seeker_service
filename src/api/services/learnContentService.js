@@ -583,7 +583,7 @@ const getFiltersModified = async (result,filters) => {
 }
 
 const calculateNewCnt = async (data,filters) => {
-    let ogFilters = filters;
+    let ogFilters = JSON.parse(JSON.stringify(filters));
     for(let i=0;i<filters.length;i++){
         let field = filters[i].field;
         let ops = filters[i].options;
@@ -613,13 +613,13 @@ const calculateNewCnt = async (data,filters) => {
             }
             
             if(cnt == 0){
-                console.log('Need to delete',filters[i].field,filters[i].options[j].label,j);
+                console.log('Need to delete',filters[i].field,filters[i].options[j],j);
                 ogFilters[i].options.splice(j,1);
             }else{
                 ogFilters[i].options[j].count = cnt;
             }
         }
-        console.log('Filter len',filters[i].label,filters[i].options.length)
+        console.log('Filter len',ogFilters[i].label,ogFilters[i].options.length,Array.isArray(ogFilters[i].options))
     }
     return ogFilters;
 }
