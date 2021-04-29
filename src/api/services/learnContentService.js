@@ -592,12 +592,12 @@ const calculateNewCnt = async (data,filters) => {
             let cnt = 0;
             for(let dt of data){
                 let dtVal = dt._source[field];
-                console.log('Opsssssssssss',ops[j],dtVal,field);
-                if(dtVal == ops[j]){
+                console.log('Opsssssssssss',ops[j].label,dtVal);
+                if(dtVal == ops[j].label){
                     cnt++;
                 }
             }
-           // filters[i].options[j].cnt = cnt;
+            filters[i].options[j].count = cnt;
         }
     }
     // for(let i=0;i<data.length;i++){
@@ -835,7 +835,7 @@ module.exports = class learnContentService {
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
                 filters = await calculateNewCnt(result.hits,filters);
-                console.log('Resssssssssssssss',result.hits.length,cnt);
+                console.log('Resssssssssssssss',result.hits.length);
                 // const queryBody22 = {
                 //     "size": 100,
                 //     "from": 0,
