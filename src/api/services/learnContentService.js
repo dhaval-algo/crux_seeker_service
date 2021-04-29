@@ -818,6 +818,7 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
+                filters = formatFilters(result.hits, filterConfigs, query, req.query['currency'])
                 let cnt = await calculateNewCnt(result.hits);
                 console.log('Resssssssssssssss',result.hits.length,cnt);
                 const queryBody22 = {
