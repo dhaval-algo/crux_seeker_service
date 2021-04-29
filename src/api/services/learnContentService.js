@@ -603,7 +603,6 @@ const calculateNewCnt = async (data,filters) => {
                         cnt++;
                     }
                 }
-                console.log('Opsssssssssss',ops[j].label,dtVal);
             }
             filters[i].options[j].count = cnt;
         }
@@ -838,7 +837,6 @@ module.exports = class learnContentService {
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
                 filters = await calculateNewCnt(result.hits,filters);
-                console.log('Resssssssssssssss',result.hits.length);
                 
             }
 
