@@ -592,6 +592,7 @@ const calculateNewCnt = async (data,filters) => {
             let cnt = 0;
             for(let dt of data){
                 let dtVal = dt._source[field];
+                console.log('DTVAL type',typeof(dtVal));
                 if(Array.isArray(dtVal)){
                     for(let dtArrVal of dtVal){
                         if(dtArrVal == ops[j].label){
