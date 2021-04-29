@@ -1234,15 +1234,18 @@ const uploadSkills = async (req,res) => {
 }
 
 const fetchUserMetaObjByUserId = async (id) => {
-    let where = {
-        userId: id,
-        key: 'firstName',
-        metaType: 'primary'
-      };
-      let obj = await models.user_meta.findOne({where});
-      let firstname = obj.dataValues.value;
-      
-      return firstname;
+    let userData = {};
+    let keys = ['firstName','lastName','email','phone'];
+    for(key of keys){
+        let where = {
+            userId: id,
+            key: key,
+            metaType: 'primary'
+        };
+        let obj = await models.user_meta.findOne({where});
+        userData[key] = obj.dataValues.value;
+    }
+    return userData;
 }
 
 
