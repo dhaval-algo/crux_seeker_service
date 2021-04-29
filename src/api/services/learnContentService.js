@@ -582,6 +582,16 @@ const getFiltersModified = async (result,filters) => {
     return cnt;
 }
 
+const calculateNewCnt = async (data) => {
+    let cnt = 0;
+    for(let i=0;i<data.length;i++){
+        if(data[i]._source.level=="Advanced"){
+            cnt++;
+        }
+    }
+    return cnt;
+}
+
 
 /* const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
     if(parsedFilters.length <= 0){
@@ -808,7 +818,8 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-                console.log('Resssssssssssssss',result.hits.length);
+                let cnt = await calculateNewCnt(result.hits);
+                console.log('Resssssssssssssss',result.hits.length,cnt);
                 const queryBody22 = {
                     "size": 100,
                     "from": 0,
