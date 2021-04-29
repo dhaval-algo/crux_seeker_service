@@ -582,14 +582,30 @@ const getFiltersModified = async (result,filters) => {
     return cnt;
 }
 
-const calculateNewCnt = async (data) => {
-    let cnt = 0;
-    for(let i=0;i<data.length;i++){
-        if(data[i]._source.level=="Advanced"){
-            cnt++;
+const calculateNewCnt = async (data,filters) => {
+    
+    for(let i=0;i<filters.length;i++){
+        let field = filters[i].field;
+        let ops = filters[i].options;
+        for(let j=0;j<ops.length;j++){
+            
+            let cnt = 0;
+            for(let dt of data){
+                let dtVal = dt._source[field];
+                console.log('Opsssssssssss',ops[j],dtVal,field);
+                if(dtVal == ops[j]){
+                    cnt++;
+                }
+            }
+           // filters[i].options[j].cnt = cnt;
         }
     }
-    return cnt;
+    // for(let i=0;i<data.length;i++){
+    //     if(data[i]._source.level=="Advanced"){
+    //         cnt++;
+    //     }
+    // }
+    return filters;
 }
 
 
@@ -818,36 +834,35 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-                filters = formatFilters(result.hits, filterConfigs, query, req.query['currency'])
-                let cnt = await calculateNewCnt(result.hits);
+                filters = await calculateNewCnt(result.hits,filters);
                 console.log('Resssssssssssssss',result.hits.length,cnt);
-                const queryBody22 = {
-                    "size": 100,
-                    "from": 0,
-                    "query": {
-                      "bool": {
-                        "must": [
-                          {"term":{"status":"published"}},
-                          {
-                            "query_string": {
-                              "query": "title:marketing",
-                              "fields": ["title","categories","sub_categories","provider_name","level","learning_mediums","partner_name"],
-                              "analyze_wildcard":true,
-                              "allow_leading_wildcard":true
-                            }
-                          }
-                        ]
-                      }
-                    }
-                };
-                const result55 = await elasticService.plainSearch('learn-content', queryBody22);
-                if(result55.hits){
-                    if(result55.hits.hits && result55.hits.hits.length > 0){
-                      //  filters = await formatFilters(result.hits.hits, filterConfigs, queryBody22, req.query['currency'])
-                      //  let ad_cnt = await getFiltersModified(result55.hits,filters);
-                     //   console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
-                    }
-                } 
+                // const queryBody22 = {
+                //     "size": 100,
+                //     "from": 0,
+                //     "query": {
+                //       "bool": {
+                //         "must": [
+                //           {"term":{"status":"published"}},
+                //           {
+                //             "query_string": {
+                //               "query": "title:marketing",
+                //               "fields": ["title","categories","sub_categories","provider_name","level","learning_mediums","partner_name"],
+                //               "analyze_wildcard":true,
+                //               "allow_leading_wildcard":true
+                //             }
+                //           }
+                //         ]
+                //       }
+                //     }
+                // };
+                // const result55 = await elasticService.plainSearch('learn-content', queryBody22);
+                // if(result55.hits){
+                //     if(result55.hits.hits && result55.hits.hits.length > 0){
+                //       //  filters = await formatFilters(result.hits.hits, filterConfigs, queryBody22, req.query['currency'])
+                //       //  let ad_cnt = await getFiltersModified(result55.hits,filters);
+                //      //   console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
+                //     }
+                // } 
                 
             }
 
