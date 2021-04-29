@@ -763,7 +763,7 @@ module.exports = class learnContentService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
+                        "fields" : ['title','categories','sub_categories','provider_name','level','learning_mediums','partner_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -775,7 +775,7 @@ module.exports = class learnContentService {
         console.log("Final Query <> ", JSON.stringify(query));
         console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
-        const result = await elasticService.search('learn-content', query, queryPayload, queryString);
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
@@ -808,7 +808,7 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-                
+                console.log('Resssssssssssssss',result.hits.length);
                 const queryBody22 = {
                     "size": 100,
                     "from": 0,
@@ -831,7 +831,7 @@ module.exports = class learnContentService {
                 const result55 = await elasticService.plainSearch('learn-content', queryBody22);
                 if(result55.hits){
                     if(result55.hits.hits && result55.hits.hits.length > 0){
-                        filters = await formatFilters(result.hits.hits, filterConfigs, queryBody22, req.query['currency'])
+                      //  filters = await formatFilters(result.hits.hits, filterConfigs, queryBody22, req.query['currency'])
                       //  let ad_cnt = await getFiltersModified(result55.hits,filters);
                      //   console.log("AAAAAAAAdv_cntttttttttttttttttttttttt",ad_cnt);
                     }
