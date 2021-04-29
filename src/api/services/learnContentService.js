@@ -587,25 +587,32 @@ const calculateNewCnt = async (data,filters) => {
     for(let i=0;i<filters.length;i++){
         let field = filters[i].field;
         let ops = filters[i].options;
+        let cnt = 0;
         for(let j=0;j<ops.length;j++){
             
-            let cnt = 0;
+            cnt = 0;
             for(let dt of data){
                 let dtVal = dt._source[field];
                 if(Array.isArray(dtVal)){
-                    for(let dtArrVal of dtVal){
-                        if(field=='topics'){
-                            console.log('DTVAL type',dtArrVal,"<<>>",ops[j].label);
-                        }
-                        if(dtArrVal == ops[j].label){
-                            cnt++;
-                        }
+                    if(dtVal.includes(ops[j].label)){
+                        cnt++;
                     }
+                    // for(let dtArrVal of dtVal){
+                    //     if(field=='topics'){
+                    //         console.log('DTVAL type',dtArrVal,"<<>>",ops[j].label);
+                    //     }
+                    //     if(dtArrVal == ops[j].label){
+                    //         cnt++;
+                    //     }
+                    // }
                 }else{
                     if(dtVal == ops[j].label){
                         cnt++;
                     }
                 }
+            }
+            if(field == "topics" && ops[j].label=="Leadership" ){
+                console.log('hit cnt',cnt)
             }
             if(cnt == 0){
                 filters[i].options.splice(j,1);
