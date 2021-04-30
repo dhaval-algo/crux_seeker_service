@@ -613,8 +613,9 @@ const calculateNewCnt = async (data,filters) => {
             }
             
             if(cnt == 0){
-                console.log('Need to delete',filters[i].field,filters[i].options[j],j);
-                ogFilters[i].options.splice(j,1);
+                let resp = ogFilters[i].options.splice(j,1);
+                console.log('Need to delete',filters[i].field,filters[i].options[j],j,resp);
+                
             }else{
                 ogFilters[i].options[j].count = cnt;
             }
