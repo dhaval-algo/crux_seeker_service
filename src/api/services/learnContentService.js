@@ -592,8 +592,8 @@ const calculateNewCnt = async (data,filters) => {
         for(let j=0;j<ops.length;j++){
             
             cnt = 0;
-            for(let dt of data){
-                let dtVal = dt._source[field];
+            for(let k=0;k<data.length;k++){
+                let dtVal = data[k]._source[field];
                 if(Array.isArray(dtVal)){
                     if(dtVal.includes(ops[j].label)){
                         cnt++;
