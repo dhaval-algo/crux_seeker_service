@@ -619,7 +619,7 @@ const calculateNewCnt = async (data,filters) => {
                 console.log('Need to delete',filters[i].field,filters[i].options,j,ogFilters[i].options.length);
                 
             }else{
-                if(filter.filter_type == "Checkboxes"){
+                if(filters[i].filter_type == "Checkboxes"){
                     ogFilters[i].options[j].count = cnt;
                 }
             }
