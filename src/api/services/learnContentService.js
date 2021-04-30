@@ -420,7 +420,7 @@ const getDurationRangeOptions = (data, attribute) => {
 };
 
 
-const getFilterOption = async (data, filter) => {
+const getFilterOption = (data, filter) => {
     let options = [];
     let others = null;
     for(const esData of data){
@@ -583,55 +583,50 @@ const getFiltersModified = async (result,filters) => {
 }
 
 const calculateNewCnt = async (data,filters) => {
-    for(filter of filters){
-        if(filter.filter_type == "Checkboxes"){
-            console.log('Reached true');
-            filter.options = await getFilterOption(data, filter);
-        }else{
-            filter.options = [];
-        }
-    }
     
-    // let ogFilters = JSON.parse(JSON.stringify(filters));
-    // for(let i=0;i<filters.length;i++){
-    //     let field = filters[i].field;
-    //     let ops = filters[i].options;
-    //     let cnt = 0;
-    //     for(let j=0;j<ops.length;j++){
+    let ogFilters = JSON.parse(JSON.stringify(filters));
+    for(let i=0;i<filters.length;i++){
+        let field = filters[i].field;
+        let ops = filters[i].options;
+        let cnt = 0;
+        for(let j=0;j<ops.length;j++){
             
-    //         cnt = 0;
-    //         for(let dt of data){
-    //             let dtVal = dt._source[field];
-    //             if(Array.isArray(dtVal)){
-    //                 if(dtVal.includes(ops[j].label)){
-    //                     cnt++;
-    //                 }
-    //                 // for(let dtArrVal of dtVal){
-    //                 //     if(field=='topics'){
-    //                 //         console.log('DTVAL type',dtArrVal,"<<>>",ops[j].label);
-    //                 //     }
-    //                 //     if(dtArrVal == ops[j].label){
-    //                 //         cnt++;
-    //                 //     }
-    //                 // }
-    //             }else{
-    //                 if(dtVal == ops[j].label){
-    //                     cnt++;
-    //                 }
-    //             }
-    //         }
+            cnt = 0;
+            for(let dt of data){
+                let dtVal = dt._source[field];
+                if(Array.isArray(dtVal)){
+                    if(dtVal.includes(ops[j].label)){
+                        cnt++;
+                    }
+                    // for(let dtArrVal of dtVal){
+                    //     if(field=='topics'){
+                    //         console.log('DTVAL type',dtArrVal,"<<>>",ops[j].label);
+                    //     }
+                    //     if(dtArrVal == ops[j].label){
+                    //         cnt++;
+                    //     }
+                    // }
+                }else{
+                    if(dtVal == ops[j].label){
+                        cnt++;
+                    }
+                }
+            }
             
-    //         if(cnt == 0){
-    //             let resp = ogFilters[i].options.splice(j,1);
-    //             console.log('Need to delete',filters[i].field,filters[i].options[j],j,resp);
+            if(cnt == 0){
+
+                (ogFilters[i].options).splice(j,1);
+                console.log('Need to delete',filters[i].field,filters[i].options,j,ogFilters[i].options.length);
                 
-    //         }else{
-    //             ogFilters[i].options[j].count = cnt;
-    //         }
-    //     }
-    //     console.log('Filter len',ogFilters[i].label,ogFilters[i].options.length,Array.isArray(ogFilters[i].options))
-    // }
-    return filters;
+            }else{
+                if(filter.filter_type == "Checkboxes"){
+                    ogFilters[i].options[j].count = cnt;
+                }
+            }
+        }
+        console.log('Filter len',ogFilters[i].label,ogFilters[i].options.length)
+    }
+    return ogFilters;
 }
 
 
