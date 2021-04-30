@@ -420,7 +420,7 @@ const getDurationRangeOptions = (data, attribute) => {
 };
 
 
-const getFilterOption = (data, filter) => {
+const getFilterOption = async (data, filter) => {
     let options = [];
     let others = null;
     for(const esData of data){
@@ -584,7 +584,12 @@ const getFiltersModified = async (result,filters) => {
 
 const calculateNewCnt = async (data,filters) => {
     for(filter of filters){
-        filter.options = (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [];
+        if(filter.filter_type == "Checkboxes"){
+            console.log('Reached true');
+            filter.options = await getFilterOption(data, filter);
+        }else{
+            filter.options = [];
+        }
     }
     
     // let ogFilters = JSON.parse(JSON.stringify(filters));
