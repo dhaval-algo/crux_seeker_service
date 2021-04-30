@@ -616,7 +616,7 @@ const calculateNewCnt = async (data,filters) => {
             if(cnt == 0){
 
                 (ogFilters[i].options).splice(j,1);
-                console.log('Need to delete',filters[i].field,filters[i].options,j,ogFilters[i].options.length);
+                console.log('Need to delete',filters[i].field,j,ogFilters[i].options.length);
                 
             }else{
                 if(filters[i].filter_type == "Checkboxes" && ogFilters[i].options && ogFilters[i].options[j]){
@@ -855,6 +855,7 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
+                console.log('Dataaaaaaaaaaaaaaaaaaaaa',result.hits)
                 filters = await calculateNewCnt(result.hits,filters);
                 
             }
