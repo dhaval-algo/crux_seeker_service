@@ -856,7 +856,7 @@ module.exports = class learnContentService {
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
                 console.log('Dataaaaaaaaaaaaaaaaaaaaa',result.hits)
-                filters = await calculateNewCnt(result.hits,filters);
+              //  filters = await calculateNewCnt(result.hits,filters);
                 
             }
 
