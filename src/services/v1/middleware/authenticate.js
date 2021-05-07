@@ -2,6 +2,7 @@
 const DEFAULT_CODES = require("../../../utils/defaultCode").DEFAULT_CODES;
 
 module.exports  = async (req, res, next) => {
+    console.log('Reached awt')
     const authHeader = req.headers.authorization;
     const audience = req.headers.origin;
     let options = {

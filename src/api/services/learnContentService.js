@@ -24,6 +24,8 @@ const MAX_RESULT = 10000;
 const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
+const helperService = require("../../utils/helper");
+
 /* const getFilterConfigs = async () => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Learn_Content&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
@@ -187,8 +189,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         }
         //queryPayload.from = 0;
         //queryPayload.size = count;
-        //console.log("queryPayload <> ", queryPayload);
-        //console.log("query <> ", query);
+        //console.log("queryPayload <> ", queryPayload);        
         const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
@@ -777,7 +778,7 @@ module.exports = class learnContentService {
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields); 
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -803,7 +804,7 @@ module.exports = class learnContentService {
             //update selected flags
             if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
@@ -815,19 +816,28 @@ module.exports = class learnContentService {
         //const currency = await getUserCurrency(req);
         currencies = await getCurrencies();
 
+        const course = await this.fetchCourseBySlug(slug);
+        if(course){
+            const data = await this.generateSingleViewData(course, false, req.query.currency);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            callback({status: 'failed', message: 'Not found!'}, null);
+        }        
+    }
+
+    async fetchCourseBySlug(slug) {
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
               {term: { "status.keyword": 'published' }}
             ]
         }};
-        const result = await elasticService.search('learn-content', query);
-        if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+        let result = await elasticService.search('learn-content', query);
+        if(result.hits && result.hits.length > 0) {
+            return result.hits[0]._source;
+        } else {
+            return null;
+        }
     }
 
 
@@ -1000,7 +1010,17 @@ module.exports = class learnContentService {
             }
         }
 
+        let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
+        let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
+        let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
+        let tax = 0.0;
+        let canBuy = false;
+        if(result.partner_currency.iso_code === "INR") {
+            canBuy = true;
+            tax = helperService.roundOff(0.18 * partnerPrice, 2);
+        }
         let data = {
+            canBuy: canBuy,
             title: result.title,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
@@ -1036,6 +1056,7 @@ module.exports = class learnContentService {
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
+                instructor_duration:result.avg_session_duration_with_instructor+' Hours',
                 total_duration_unit: result.total_duration_unit, 
                 effort: effort,
                 total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
@@ -1064,7 +1085,13 @@ module.exports = class learnContentService {
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
                     finance_option: result.finance_option,
-                    finance_details: result.finance_details
+                    finance_details: result.finance_details,
+                    partnerPrice: partnerPrice,
+                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
+                    partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
+                    partnerSalePrice: helperService.roundOff(result.sale_price, 2),
+                    conversionRate: conversionRate,
+                    tax: tax
                 }                
             },
             provider_course_url: result.provider_course_url,
@@ -1257,5 +1284,50 @@ module.exports = class learnContentService {
         return datas;
     }
 
+    /** Creates order data with single payment mode */
+    async createOrderData(userId, userMeta, address, course, orderType, coursePrice, tax, currency, paymentGateway, transactionId, timezone) {
+        let orderData = {};
 
+        let regularPrice = parseFloat(course.regular_price);
+        let salePrice = course.sale_price ? parseFloat(course.sale_price) : 0.0;
+        
+        orderData = {
+            order_id: "ODR" + helperService.generateReferenceId(),
+            user_id: userId,
+            order_type: orderType,
+            partner: course.partner_id,
+            amount: coursePrice + tax,
+            status: "pending_payment",
+            order_items: [
+                {
+                    item_id: course.id,
+                    item_name: course.title,
+                    item_description: course.description,
+                    qty: 1,
+                    item_price: helperService.roundOff(regularPrice, 2),
+                    discount: helperService.roundOff(regularPrice - salePrice, 2),
+                    tax: tax,
+                    item_total: coursePrice + tax
+                }
+            ],
+            order_customer: {
+                first_name: (userMeta.firstName) ? userMeta.firstName : null,
+                last_name: (userMeta.lastName) ? userMeta.lastName : null,
+                email: (userMeta.email) ? userMeta.email : null,
+                phone: (userMeta.phone) ? userMeta.phone : null,
+                address: (address) ? address : null,
+                timezone: (timezone) ? timezone : null
+            },
+            order_payment: {
+                gateway: paymentGateway,
+                transaction_id: transactionId,
+                amount: coursePrice + tax,
+                currency: currency,
+                status: null,
+                reject_reason: null
+            }
+        }
+
+        return orderData;
+    }
 }

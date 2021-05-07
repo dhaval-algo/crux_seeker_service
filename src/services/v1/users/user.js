@@ -13,6 +13,7 @@ const {
     calculateProfileCompletion,
     createSocialEntryIfNotExists,
     getImgBuffer,
+    getFileBuffer,
     generateSingleViewData
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
@@ -36,7 +37,7 @@ const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
-const { getBucketNames, uploadImageToS3, deleteObject } = require("../AWS");
+const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
 
 const login = async (req, res, next) => {
     try {
@@ -1020,7 +1021,7 @@ const wishListCourseData = async (req,res) => {
 // fetch list of the enquires
 const getEnquiryList = async (req,res) => {
     try {
-        let { limit=5, page=1 } = req.query;
+        let { limit=10, page=1 } = req.query;
     const { user } = req;
     let offset = 0
 
@@ -1143,14 +1144,14 @@ const uploadProfilePic =async (req,res) => {
     const {image} =req.body
     const {user}=req
     let imageB =  getImgBuffer(image)
-    let imageName = `86ab15d2${user.userId}EyroLPIJo`+(new Date.getTime());
+    let imageName = `86ab15d2${user.userId}EyroLPIJo${new Date().getTime()}`;
     let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
     const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     if(!existImg) {
         await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
     } else {
-        await deleteObject(existImg.value);
+       // await deleteObject(existImg.value);
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
     const profileRes = await calculateProfileCompletion(user)
@@ -1163,12 +1164,76 @@ const removeProfilePic = async (req,res) => {
     const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
 
     if(existImg) {
-        await deleteObject(existImg.value);
+      //  await deleteObject(existImg.value);
         await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
     }
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
+
+const uploadResumeFile = async (req,res) =>{
+    const {buffer, filename} =req.body
+    const {user}=req
+    let resumeB =  getFileBuffer(buffer);
+    let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
+    let path = `images/profile-images/${resumeName}`
+    // if(filename.endsWith('.doc')){
+    //     contentType = 'application/msword';
+    // }
+    // else if(filename.endsWith('.docx')){
+    //     contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingm';
+    // }
+    // else if(filename.endsWith('.rtf')){
+    //     contentType = 'application/rtf';
+    // }
+    // else if(filename.endsWith('.pdf')){
+    //     contentType = 'application/pdf';
+    // }
+
+    console.log(path,resumeB,resumeName);
+    let s3Path = await uploadResumeToS3(path,resumeB)
+    let fileValue = {
+        filename:filename,
+        filepath:s3Path
+    }
+    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
+    if(!existResume) {
+        await models.user_meta.create({value:JSON.stringify(fileValue),key:'resumeFile',metaType:'primary',userId:user.userId})
+    } else {
+        let pathObject = JSON.parse(existResume.value);
+        console.log(pathObject.filepath)
+        // await deleteObject(pathObject.filepath);
+        await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
+    }
+    return res.status(200).json({success:true,resumeFile:fileValue})
+}
+
+const deleteResumeFile = async (req,res) => {
+    const {user} = req
+    console.log('Reached delete resume')
+    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
+
+    if(existResume) {
+      //  await deleteObject(existImg.value);
+        await models.user_meta.destroy({where:{key:'resumeFile',metaType:'primary',userId:user.userId}})
+    }
+    return res.status(200).json({success:true, resumeFile:{}})
+}
+
+const uploadSkills = async (req,res) => {
+    const {data} =req.body
+    const { user} = req;
+    const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'skills'}})
+    if(!existSkills) {
+        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})
+    } else {
+        // await deleteObject(pathObject.filepath);
+        await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'skills'}})
+    }
+    return res.status(200).json({success:true,data:data})
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -1188,5 +1253,8 @@ module.exports = {
     wishListCourseData,
     getEnquiryList,
     uploadProfilePic,
-    removeProfilePic
+    uploadResumeFile,
+    deleteResumeFile,
+    removeProfilePic,
+    uploadSkills
 }

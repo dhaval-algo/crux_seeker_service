@@ -12,21 +12,24 @@ const s3Bucket = new AWS.S3({params: {Bucket: AWS_IMAGE_BUCKET}});
 
 
 const deleteObject = (path) => {
+  console.log('path == ',path);
   return new Promise( resolve => {
     var params = {  
       Bucket: AWS_IMAGE_BUCKET, 
       Key: path 
     };
 
-    new AWS.S3.deleteObject(params, function(err, data) {
-      if (err) 
-      {
-        resolve(err.message);
-      } 
-      else{
+    let remove = new AWS.S3.deleteObject({params:params});
+
+    let promise = remove.promise();
+
+    promise.then(
+      function(data) {
         resolve(true);
-      } 
-    });
+      },
+      function(err) {resolve(err.message);
+      }
+    );
   })
 }
 
@@ -53,6 +56,31 @@ const uploadImageToS3 = (path, image) => {
             }
           );
     })
+}
+
+
+const uploadResumeToS3 = (path, image) => {
+  return new Promise( resolve => {
+      let imageUrl = `${S3Url}/${path}`;
+      let upload = new AWS.S3.ManagedUpload({
+          params: {
+            Bucket: AWS_IMAGE_BUCKET,
+            Key: path,
+            Body: image,
+            ACL: "public-read"
+          }
+        });
+        let promise = upload.promise();
+
+        promise.then(
+          function(data) {
+          //   alert("imageUrl uploaded photo.");
+            resolve(imageUrl);
+          },
+          function(err) {resolve(err.message);
+          }
+        );
+  })
 }
 
 const uploadFileToS3 = (path, file, contentType) => {
@@ -82,5 +110,6 @@ const uploadFileToS3 = (path, file, contentType) => {
 module.exports = { 
     uploadImageToS3,
     uploadFileToS3,
+    uploadResumeToS3,
     deleteObject
 }

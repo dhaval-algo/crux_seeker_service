@@ -834,6 +834,14 @@ const getImgBuffer = (base64) => {
     const base64str = base64.replace(/^data:image\/\w+;base64,/,'');
     return Buffer.from(base64str, 'base64')
 }
+
+const getFileBuffer = (base64) => {
+    const base64str = base64.split(';base64,');
+    // return base64str[1];
+    return Buffer.from(base64str[1], 'base64')
+}
+
+
 const getMediaurl = (mediaUrl) => {
     if(mediaUrl !== null && mediaUrl !== undefined){
         const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
@@ -1120,6 +1128,13 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
+const generateReferenceId = () => {
+    return Math.floor(Math.random() * 100)+''+new Date().getTime();
+}
+
+const roundOff = (number, precision) => {
+    return Math.round((number + Number.EPSILON) * Math.pow(10, precision)) / Math.pow(10, precision);
+}
 
 module.exports = {
     encryptStr,
@@ -1137,5 +1152,8 @@ module.exports = {
     calculateProfileCompletion,
     createSocialEntryIfNotExists,
     getImgBuffer,
-    generateSingleViewData
+    getFileBuffer,
+    generateSingleViewData,
+    generateReferenceId,
+    roundOff
 }

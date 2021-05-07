@@ -21,6 +21,9 @@ router.post('/fetch-wishlist',authenticateJWT, userService.fetchWishListIds);
 router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData);
 router.get('/fetch-enquiries', authenticateJWT, userService.getEnquiryList);
 router.post ('/upload-profile',authenticateJWT, userService.uploadProfilePic);
+router.post ('/upload-resume',authenticateJWT, userService.uploadResumeFile);
+router.post ('/upload-skills',authenticateJWT, userService.uploadSkills);
+router.get ('/delete-resume',authenticateJWT, userService.deleteResumeFile);
 router.get('/remove-profile', authenticateJWT, userService.removeProfilePic)
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
