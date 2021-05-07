@@ -3,7 +3,7 @@ const LearnContentService = new learnContentService();
 
 
 module.exports = class customPageController {
-    getCustomPageContent(res,res){
+    getCustomPageContent(req,res){
         const slug = req.params.slug;
         LearnContentService.getLearnContent(slug, (err, data) => {
             if (data) {
