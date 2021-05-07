@@ -1,8 +1,8 @@
 const elasticService = require("./elasticService");
 
-module.exports = class customPageService {
+module.exports = class CustomPageService {
     
-    async getLearnContentList(slug, callback){
+    async getCustomPageContent(slug, callback){
 
         const query = { 
             "bool": {

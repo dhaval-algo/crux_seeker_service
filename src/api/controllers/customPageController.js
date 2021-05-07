@@ -1,11 +1,11 @@
-const learnContentService = require("../services/customPageService");
-const LearnContentService = new learnContentService();
+const customPageService = require("../services/customPageService");
+const CustomPageService = new customPageService();
 
 
 module.exports = {
     getCustomPageContent(req,res){
         const slug = req.params.slug;
-        LearnContentService.getLearnContent(slug, (err, data) => {
+        CustomPageService.getCustomPageContent(slug, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
