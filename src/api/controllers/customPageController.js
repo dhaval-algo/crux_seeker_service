@@ -2,7 +2,7 @@ const learnContentService = require("../services/customPageService");
 const LearnContentService = new learnContentService();
 
 
-module.exports = class customPageController {
+module.exports = {
     getCustomPageContent(req,res){
         const slug = req.params.slug;
         LearnContentService.getLearnContent(slug, (err, data) => {
