@@ -8,7 +8,7 @@ const partnerController = require('../../../controllers/partnerController');
 const searchController = require('../../../controllers/searchController');
 const ArticleController = require('../../../controllers/articleController');
 const customPageController = require('../../../controllers/customPageController');
-
+const newsController = require('../../../controllers/newsController');
 const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
@@ -19,6 +19,7 @@ router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
 
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
+router.get('/news', newsController.getNewsContent)
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
