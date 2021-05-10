@@ -34,11 +34,13 @@ module.exports = class CustomPageService {
 
     async getNewsBySlug(slug, callback){
         console.log('Slug==',slug);
-        const query = { 
-            "bool": {
-                "must":[
-                    { "match": { "slug.keyword": slug}}
+        const query = {
+            "query": {
+              "bool": {
+                "must": [
+                  { "match": { "slug.keyword": slug}}
                 ]
+              }
             }
         };
         
