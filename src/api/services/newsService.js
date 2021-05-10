@@ -33,12 +33,12 @@ module.exports = class CustomPageService {
     }
 
     async getNewsBySlug(slug, callback){
-
+        console.log('Slug==',slug);
         const query = { 
             "bool": {
-             "must":[
-                { "match": { "slug.keyword": slug}}
-              ]
+                "must":[
+                    { "match": { "slug.keyword": slug}}
+                ]
             }
         };
         
@@ -51,7 +51,7 @@ module.exports = class CustomPageService {
             console.log('Error while retriving data',e);
         }
         if(result && result.hits && result.hits.length > 0) {
-            let newsData = await getNewsData(result.hits);
+           // let newsData = await getNewsData(result.hits);
             callback(null, {status: 'success', message: 'Fetched successfully!', data:newsData});
         } else {
             callback(null, {status: 'failed', message: 'No data available!', data: []});
