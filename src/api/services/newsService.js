@@ -11,6 +11,7 @@ module.exports = class CustomPageService {
         let result = null;
         try{
             result = await elasticService.search('in_the_news', query);
+            console.log(result);
         }catch(e){
             console.log('Error while retriving data',e);
         }
