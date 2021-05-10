@@ -6,9 +6,13 @@ module.exports = class CustomPageService {
 
         const query = {
             "query": {
-                "match_all": {}
+                "bool": {
+                  "must": [
+                   
+                  ]
+                }
             }
-        }
+        };
         console.log('Query',query);
         let result = null;
         try{
