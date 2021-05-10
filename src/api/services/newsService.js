@@ -9,6 +9,7 @@ module.exports = class CustomPageService {
                 "match_all": {}
             }
         }
+        console.log('Query',query);
         let result = null;
         try{
             result = await elasticService.search('in_the_news', query);
