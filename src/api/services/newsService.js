@@ -52,7 +52,7 @@ module.exports = class CustomPageService {
         }
         if(result && result.hits && result.hits.length > 0) {
            // let newsData = await getNewsData(result.hits);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:newsData});
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:result.hits[0]._source});
         } else {
             callback(null, {status: 'failed', message: 'No data available!', data: []});
         }
