@@ -11,13 +11,13 @@ module.exports = class CustomPageService {
                 "match_all": {}
             }
         }
-            
+        const result;
         try{
-            const result = await elasticService.search('in-the-news', query);
+            result = await elasticService.search('in_the_news', query);
         }catch(e){
             console.log('Error while retriving data',e);
         }
-        if(result.hits && result.hits.hits && result.hits.hits.length > 0) {
+        if(result && result.hits && result.hits.hits && result.hits.hits.length > 0) {
             callback(null, {status: 'success', message: 'Fetched successfully!', data:{ content:result.hits.hits} });
         } else {
             callback(null, {status: 'failed', message: 'No data available!', data: {}});
