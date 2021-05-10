@@ -11,7 +11,7 @@ module.exports = class CustomPageService {
                 "match_all": {}
             }
         }
-        const result;
+        const result = null;
         try{
             result = await elasticService.search('in_the_news', query);
         }catch(e){
