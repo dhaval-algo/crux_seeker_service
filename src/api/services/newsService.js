@@ -5,13 +5,7 @@ module.exports = class CustomPageService {
     async getNewsContent(slug, callback){
 
         const query = {
-            "query": {
-                "bool": {
-                  "must": [
-                   
-                  ]
-                }
-            }
+            "match_all": {}
         };
         console.log('Query',query);
         let result = null;
