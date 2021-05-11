@@ -16,7 +16,14 @@ module.exports = class FooterService {
             console.log('Error while retriving footer data',e);
         }
         if(result && result.hits && result.hits.length > 0) {
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:result.hits[0]._source.content});
+            let footerData = {};
+            for(let i=0;i<result.hits.length;i++){
+                if(Object.keys(result.hits[i]._source).length != 0){
+                    footerData = result.hits[i]._source.content;
+                    break;
+                }
+            }
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:footerData});
         } else {
             callback(null, {status: 'failed', message: 'No data available!', data: []});
         }
