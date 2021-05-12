@@ -13,19 +13,15 @@ module.exports = class CustomPageService {
     async getNewsContent(slug, callback){
 
         const query ={
-            "size": 20,  
-            "query": {
-            "bool": {
-              "must_not": [
-                  { "match": { "slug.keyword":   ""}}
-              ]
-            }
-            }
+            "match_all":{}
         };
+        const payload = {
+            "size":100
+        }
         console.log('Query',query);
         let result = null;
         try{
-            result = await elasticService.search('in_the_news', query);
+            result = await elasticService.search('in_the_news', query,payload);
             console.log(result);
         }catch(e){
             console.log('Error while retriving data',e);
