@@ -12,8 +12,10 @@ const customPageController = require('../../../controllers/customPageController'
 const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
+const footerController = require('../../../controllers/footerController');
 
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
+
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
@@ -44,5 +46,9 @@ router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
 
 router.get('/author/:slug', ArticleController.getAuthor);
+
+router.post('/contact-us',footerController.sendContactEmail);
+router.post('/feedback',footerController.sendFeedbackEmail)
+
 
 module.exports = router;
