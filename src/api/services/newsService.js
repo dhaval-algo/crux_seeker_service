@@ -12,11 +12,16 @@ module.exports = class CustomPageService {
     
     async getNewsContent(slug, callback){
 
-        const query = { 
-            "size": 1000,  
-            "query": {
-                "match_all": {}
-            }
+        const query = 
+        {
+        "size": 1000,  
+        "query": {
+        "bool": {
+          "must": [
+               
+          ]
+        }
+        }
         };
         console.log('Query',query);
         let result = null;
