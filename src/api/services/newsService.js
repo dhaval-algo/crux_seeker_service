@@ -14,7 +14,7 @@ module.exports = class CustomPageService {
 
         const query = 
         {
-        "size": 1000,  
+        "size": 20,  
         "query": {
         "bool": {
           "must": [
