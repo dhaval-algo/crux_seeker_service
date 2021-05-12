@@ -45,6 +45,32 @@ module.exports = {
          
     },
 
+    contactEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/contact-email.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment });
+         
+        let templateData = {subject:'Crux- Contact Us',message:emailTemplate};
+ 
+        return templateData 
+         
+    }, 
+
+    feedbackEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/feedback-email.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment });
+         
+        let templateData = {subject:'Crux- Feedback',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
     
 
 }
