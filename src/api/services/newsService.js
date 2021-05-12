@@ -14,14 +14,7 @@ module.exports = class CustomPageService {
 
         const query = 
         {
-        "size": 20,  
-        "query": {
-        "bool": {
-          "must": [
-               
-          ]
-        }
-        }
+            "match_all":{}
         };
         console.log('Query',query);
         let result = null;
