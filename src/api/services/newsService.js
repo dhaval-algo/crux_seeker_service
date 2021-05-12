@@ -17,7 +17,7 @@ module.exports = class CustomPageService {
             "query": {
             "bool": {
               "must_not": [
-                  { "match": { "slug":   ""}}
+                  { "match": { "slug.keyword":   ""}}
               ]
             }
             }
