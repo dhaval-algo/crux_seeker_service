@@ -54,7 +54,7 @@ module.exports = {
 
     if(payload.sort !== null){
       finalQuery.sort = payload.sort;
-      console.log('sorttttt valueee',payload.sort);
+      console.log('sorttttt valueee',payload);
     } 
     console.log('qqqq',JSON.stringify(finalQuery));
     const result = await client.search(finalQuery);
