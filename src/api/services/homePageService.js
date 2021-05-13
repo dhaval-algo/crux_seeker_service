@@ -265,6 +265,34 @@ const getBlogHomeContent = async() => {
         recommended_courses = courses.filter(function (el) {
             return el != null;
         });
+        
+      }
+    }catch(ex){
+      console.log("Error <> ", ex);
+    }
+    try{
+      if(recommended_courses.length<3){
+        try{
+          const randCourses = await searchCourseIdsByQueryString('marketing');
+          if(randCourses.length>0){
+            recommended_course_ids = [...recommended_course_ids, ...randCourses];
+          }
+          console.log("Recommended ids",recommended_course_ids.length); 
+        }catch (ex){
+          console.log("Rand courses Error <> ", ex);
+        }
+      }
+    }catch (ex){
+      console.log("Rand courses recommended course Error <> ", ex);
+    }
+
+    try{
+      if(recommended_course_ids.length > 0){
+        let courses = await LearnContentService.getCourseByIds({query: {currency: currency, ids: recommended_course_ids.join(",")}});
+        recommended_courses = courses.filter(function (el) {
+            return el != null;
+        });
+        
       }
     }catch(ex){
       console.log("Error <> ", ex);

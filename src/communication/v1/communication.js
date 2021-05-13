@@ -48,7 +48,7 @@ module.exports = {
                     // emailProviders.mailGunEmail(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SES'){
-                    emailProviders.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)
+                    await emailProviders.sendEmailSES(subject,message,fromemail,toemail,ccaddress,bccaddress)
                 }
                 else if(process.env.MAIL_PROVIDER == 'SANDGRID'){
                     
@@ -56,7 +56,6 @@ module.exports = {
                 else if(process.env.MAIL_PROVIDER == 'MAILCHIMP'){
                     
                 }
-
                 return resolve(true);
             }
             catch(err){
@@ -79,6 +78,10 @@ module.exports = {
                 return emailTemplate.welcomeEmail(templateData);
             case 'resetpassword_mail':
                 return emailTemplate.resetPasswordEmail(templateData)
+            case 'contact_email':
+                return emailTemplate.contactEmail(templateData)
+            case 'feedback_email':
+                return emailTemplate.feedbackEmail(templateData)
             default:
                 return false
                 break;

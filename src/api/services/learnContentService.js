@@ -565,6 +565,70 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
+const getFiltersModified = async (result,filters) => {
+    for(let i=0;i<filters.length;i++){
+        let label = filters[i].field;
+        for(let j=0;j<filters[i].options.length;j++){
+            let value = filters[i].options[j].label;
+
+        }
+    }
+    let cnt = 0;
+    for(let i=0;i<result.hits.length;i++){
+        if(result.hits[i]._source.level=="Advanced"){
+            cnt++;
+        }
+    }
+    return cnt;
+}
+
+const calculateNewCnt = async (data,filters) => {
+    
+    let ogFilters = JSON.parse(JSON.stringify(filters));
+    for(let i=0;i<filters.length;i++){
+        let field = filters[i].field;
+        let ops = filters[i].options;
+        let cnt = 0;
+        for(let j=0;j<ops.length;j++){
+            
+            cnt = 0;
+            for(let k=0;k<data.length;k++){
+                let dtVal = data[k]._source[field];
+                if(Array.isArray(dtVal)){
+                    if(dtVal.includes(ops[j].label)){
+                        cnt++;
+                    }
+                    // for(let dtArrVal of dtVal){
+                    //     if(field=='topics'){
+                    //         console.log('DTVAL type',dtArrVal,"<<>>",ops[j].label);
+                    //     }
+                    //     if(dtArrVal == ops[j].label){
+                    //         cnt++;
+                    //     }
+                    // }
+                }else{
+                    if(dtVal == ops[j].label){
+                        cnt++;
+                    }
+                }
+            }
+            
+            if(cnt == 0){
+
+                (ogFilters[i].options).splice(j,1);
+                console.log('Need to delete',filters[i].field,j,ogFilters[i].options.length);
+                
+            }else{
+                if(filters[i].filter_type == "Checkboxes" && ogFilters[i].options && ogFilters[i].options[j]){
+                    ogFilters[i].options[j].count = cnt;
+                }
+            }
+        }
+        console.log('Filter len',ogFilters[i].label,ogFilters[i].options.length)
+    }
+    return ogFilters;
+}
+
 
 /* const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
     if(parsedFilters.length <= 0){
@@ -759,7 +823,7 @@ module.exports = class learnContentService {
         console.log("Final Query <> ", JSON.stringify(query));
         console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
-        const result = await elasticService.search('learn-content', query, queryPayload, queryString);
+        const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
@@ -791,6 +855,11 @@ module.exports = class learnContentService {
                 }
             }
 
+            if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
+                console.log('Dataaaaaaaaaaaaaaaaaaaaa',result.hits)
+              //  filters = await calculateNewCnt(result.hits,filters);
+                
+            }
 
               let data = {
                 list: list,
@@ -1057,7 +1126,7 @@ module.exports = class learnContentService {
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
-                instructor_duration:result.avg_session_duration_with_instructor+' Hours',
+                instructor_duration:result.avg_session_duration_with_instructor,
                 total_duration_unit: result.total_duration_unit, 
                 effort: effort,
                 total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
