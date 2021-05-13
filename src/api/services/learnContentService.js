@@ -647,6 +647,7 @@ module.exports = class learnContentService {
                 sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
             }
             queryPayload.sort = [sort];
+            console.log('sort data value',[sort]);
         }
 
 
