@@ -823,7 +823,7 @@ module.exports = class learnContentService {
         console.log("Final Query <> ", JSON.stringify(query));
         console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        const result = await elasticService.search('learn-content', query, queryPayload);
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
