@@ -182,6 +182,7 @@ const getFilters = async (data, filterConfigs) => {
     return formatFilters(data, filterConfigs);
 };
 
+//
 const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) => {
         if(queryPayload.from !== null && queryPayload.size !== null){
             delete queryPayload['from'];
@@ -189,8 +190,9 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         }
         //queryPayload.from = 0;
         //queryPayload.size = count;
-        //console.log("queryPayload <> ", queryPayload);        
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        //console.log("queryPayload <> ", queryPayload);   
+      //  const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});     
+        const result = await elasticService.search('learn-content', query, {from: 0, size: 25});
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             return {
@@ -213,7 +215,7 @@ const getInitialData = async (query) => {
                 query.bool.must.splice(i, 1);
         }
     } 
-    const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+    const result = await elasticService.search('learn-content', query, {from: 0, size: 25});
     if(result.total && result.total.value > 0){
         return result.hits;
     }else{
@@ -678,6 +680,8 @@ const calculateNewCnt = async (data,filters) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
+        try{
+
         currencies = await getCurrencies();
 
         slugMapping = getSlugMapping(req);
@@ -878,7 +882,12 @@ module.exports = class learnContentService {
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
-        }        
+        }  
+    }catch(e){
+        console.log("getLearnContentList errorr",e);
+        callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: filters}});
+        
+    }      
     }
 
     async getLearnContent(req, callback){
