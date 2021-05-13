@@ -50,7 +50,7 @@ module.exports = {
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
-        let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment });
+        let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment, resource_link:process.env.SERVER_URL });
          
         let templateData = {subject:'Crux- Contact Us',message:emailTemplate};
  
@@ -63,7 +63,7 @@ module.exports = {
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
-        let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment });
+        let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment, resource_link:process.env.SERVER_URL });
          
         let templateData = {subject:'Crux- Feedback',message:emailTemplate};
  
