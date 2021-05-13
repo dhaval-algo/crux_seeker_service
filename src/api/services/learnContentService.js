@@ -743,6 +743,7 @@ module.exports = class learnContentService {
 
         console.log("getLearnContentList - filterQuery=====>",JSON.stringify(filterQuery))
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        console.log("filterResponse====>",filterResponse)
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         let filters = filterResponse.filters;
 
