@@ -888,7 +888,7 @@ module.exports = class learnContentService {
         }  
     }catch(e){
         console.log("getLearnContentList errorr",e);
-        callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: filters}});
+        callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
         
     }      
     }
