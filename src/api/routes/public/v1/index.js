@@ -8,17 +8,24 @@ const partnerController = require('../../../controllers/partnerController');
 const searchController = require('../../../controllers/searchController');
 const ArticleController = require('../../../controllers/articleController');
 const customPageController = require('../../../controllers/customPageController');
-
+const newsController = require('../../../controllers/newsController');
 const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
+const footerController = require('../../../controllers/footerController');
 
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
+
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
 
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
+
+router.get('/news', newsController.getNewsContent);
+router.get('/news/:slug', newsController.getNewsBySlug);
+
+router.get('/footer', footerController.getFooter);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
@@ -44,5 +51,9 @@ router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
 
 router.get('/author/:slug', ArticleController.getAuthor);
+
+router.post('/contact-us',footerController.sendContactEmail);
+router.post('/feedback',footerController.sendFeedbackEmail)
+
 
 module.exports = router;
