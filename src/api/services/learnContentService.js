@@ -722,9 +722,8 @@ module.exports = class learnContentService {
 
         if(req.query['courseIds']){
             let courseIds = req.query['courseIds'].split(",");
-            query.bool.must = [];
-            query.bool.should = [];
-            query.bool.should.push(
+            
+            query.bool.must.push(
                 {
                     "terms": {
                       "id": courseIds 

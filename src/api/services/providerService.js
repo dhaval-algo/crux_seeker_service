@@ -195,6 +195,17 @@ module.exports = class providerService {
             queryPayload.sort = [sort];
         }
 
+        if(req.query['instituteIds']){
+            let instituteIds = req.query['instituteIds'].split(",");
+            
+            query.bool.must.push(
+                {
+                    "terms": {
+                      "id": instituteIds 
+                    }
+                }
+            )
+        }
         let parsedFilters = [];
         let parsedRangeFilters = [];
         let ranking = null;
