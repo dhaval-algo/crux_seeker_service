@@ -720,6 +720,18 @@ module.exports = class learnContentService {
             console.log('sort data value',[sort]);
         }
 
+        if(req.query['courseIds']){
+            let courseIds = req.query['courseIds'].split(",");
+            query.bool.must = [];
+            query.bool.should = [];
+            query.bool.should.push(
+                {
+                    "terms": {
+                      "id": courseIds 
+                    }
+                }
+            )
+        }
 
         let slugs = [];
         if(req.query['slug']){
