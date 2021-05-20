@@ -55,7 +55,11 @@ module.exports = {
     if(payload.sort !== null){
       finalQuery.sort = payload.sort;
     } 
-    console.log('qqqq',JSON.stringify(finalQuery));
+
+    if(payload.aggs !== null){
+      finalQuery.aggs = payload.aggs;
+    }
+
     const result = await client.search(finalQuery);
     if(result && result.body){
         //return result.body.hits.hits;
