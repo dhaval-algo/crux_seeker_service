@@ -193,9 +193,9 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         //console.log("queryPayload <> ", queryPayload);   
       //  const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});  
         let aggQuery = { 
-                "max_price": { "max": { "field": "finalPrice" } },
-                "max_ratings": { "max": { "field": "ratings" } } ,
-                "max_duration": { "max": { "field": "total_duration_in_hrs" } } 
+                "maxprice": { "max": { "field": "finalPrice" } },
+                "maxratings": { "max": { "field": "ratings" } } ,
+                "maxduration": { "max": { "field": "total_duration_in_hrs" } } 
                 
               }   
         console.log("getAllFilters - query=====>",JSON.stringify(query))
