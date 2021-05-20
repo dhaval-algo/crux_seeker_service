@@ -200,7 +200,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
               }   
         console.log("getAllFilters - query=====>",JSON.stringify(query))
 
-        const result = await elasticService.search('learn-content', query, {from: 0, size: 0,aggs:aggQuery });
+        const result = await elasticService.searchWithAggregate('learn-content', query, {from: 0, size: 0,aggs:aggQuery });
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             console.log("result",result)
