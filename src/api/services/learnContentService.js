@@ -20,7 +20,7 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
-const MAX_RESULT = 10000;
+const MAX_RESULT = 50;
 const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
@@ -197,12 +197,14 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             return {
+                data: result.hits,
                 filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
                 total: result.total.value
             };
         }else{
             //return [];
             return {
+                data: [],
                 filters: [],
                 total: result.total.value
             }
@@ -681,6 +683,385 @@ const calculateNewCnt = async (data,filters) => {
 
 module.exports = class learnContentService {
 
+    async getLearnContentListing(req, callback){
+        currencies = await getCurrencies();
+
+        slugMapping = getSlugMapping(req);
+
+        const filterConfigs = await getFilterConfigs('Learn_Content');
+        const query = { 
+            "bool": {
+                //"should": [],
+                "must": [
+                    {term: { "status.keyword": 'published' }}                
+                ],
+                //"filter": []
+            }
+        };
+
+        let queryPayload = {};
+        let paginationQuery = await getPaginationQuery(req.query);
+        queryPayload.from = paginationQuery.from;
+        queryPayload.size = paginationQuery.size;
+
+        if(!req.query['sort']){
+            req.query['sort'] = "published_date:desc";
+        }
+
+        if(req.query['sort']){
+            console.log("Sort requested <> ", req.query['sort']);
+            const keywordFields = ['title'];
+            let sort = req.query['sort'];
+            let splitSort = sort.split(":");
+            if(keywordFields.includes(splitSort[0])){
+                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            }
+            queryPayload.sort = [sort];
+        }
+
+
+        let slugs = [];
+        if(req.query['slug']){
+            slugs = req.query['slug'].split(",");
+            for(let i=0; i<slugs.length; i++){
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                if(!slugLabel){
+                    slugLabel = slugs[i];                
+                }
+                query.bool.must.push({
+                    "terms": {[`${slugMapping[i].elastic_key}.keyword`]: [slugLabel]}
+                });
+            }           
+        }
+
+        /*
+        let parsedFilters = [];
+        let parsedRangeFilters = [];
+
+        let filterQuery = JSON.parse(JSON.stringify(query));
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+
+        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        let filters = filterResponse.filters;
+        */
+
+
+        if(req.query['f']){
+            parsedFilters = parseQueryFilters(req.query['f']);
+            for(const filter of parsedFilters){                
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+                    /* query.bool.filter.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    /* query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    for(const fieldValue of filter.value){
+                        query.bool.must.push({
+                            "term": {[attribute_name]: fieldValue}
+                        });
+                    }
+                }
+            }
+        }
+        
+        if(req.query['rf']){
+            parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            for(const filter of parsedRangeFilters){
+                /* if(filter.key == "Ratings"){
+                    if(filter.start !== "MIN"){
+                        filter.start = filter.start*100;
+                    }
+                    if(filter.end !== "MAX"){
+                        filter.end = filter.end*100;
+                    }
+                } */
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                    let rangeQuery = {};
+                    if(filter.start !== "MIN"){
+                        let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
+                        if(filter.key == 'Price'){
+                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');                            
+                        }
+                        rangeQuery["gte"] = startValue;
+                    }
+                    if(filter.end !== "MAX"){
+                        let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
+                        if(filter.key == 'Price'){
+                            endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
+                            rangeQuery["lte"] = endValue;
+                        }else{
+                            rangeQuery["lt"] = endValue;
+                        }
+                        
+                    }
+
+                    query.bool.must.push({
+                        "range": {
+                            [attribute_name]: rangeQuery
+                         }
+                    });                 
+                }
+            }
+        }
+
+        
+        
+        let queryString = null;
+        if(req.query['q']){
+            query.bool.must.push( 
+                {
+                    "query_string" : {
+                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
+                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
+                        "analyze_wildcard" : true,
+                        "allow_leading_wildcard": true
+                    }
+                }
+            );
+            
+        }
+
+        console.log("Final Query <> ", JSON.stringify(query));
+        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
+
+        const result = await elasticService.search('learn-content', query, {from: queryPayload.from, size: queryPayload.size});
+        if(result.total && result.total.value > 0){
+
+            const list = await this.generateListViewData(result.hits, req.query['currency']);
+
+            let pagination = {
+                page: paginationQuery.page,
+                count: list.length,
+                perPage: paginationQuery.size,
+                totalCount: result.total.value,
+                // total: filterResponse.total
+              }
+
+            //let filters = await getFilters(result.hits, filterConfigs);
+            //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
+            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);           
+            
+            //update selected flags
+            // if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+            //     //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields); 
+            //     filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+            //     filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            // }
+
+            // //Remove filters if requested by slug
+            // for(let i=0; i<slugs.length; i++){
+            //     const config = filterConfigs.find(o => o.elastic_attribute_name === slugMapping[i].elastic_key);
+            //     if(config){
+            //         filters = filters.filter(o => o.label !== config.label);
+            //     }
+            // }
+
+            // if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
+            //     console.log('Dataaaaaaaaaaaaaaaaaaaaa',result.hits)
+            //   //  filters = await calculateNewCnt(result.hits,filters);
+                
+            // }
+
+              let data = {
+                list: list,
+                //filters: filters,
+                pagination: pagination,
+                sort: req.query['sort']
+              };
+
+            
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            //update selected flags
+            // if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+            //     //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+            //     filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+            //     filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            // }
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: []}});
+        }        
+    }
+
+
+    async getLearnContentFilters(req, callback){
+        currencies = await getCurrencies();
+
+        slugMapping = getSlugMapping(req);
+
+        const filterConfigs = await getFilterConfigs('Learn_Content');
+        const query = { 
+            "bool": {
+                //"should": [],
+                "must": [
+                    {term: { "status.keyword": 'published' }}                
+                ],
+                //"filter": []
+            }
+        };
+
+        let slugs = [];
+        if(req.query['slug']){
+            slugs = req.query['slug'].split(",");
+            for(let i=0; i<slugs.length; i++){
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                if(!slugLabel){
+                    slugLabel = slugs[i];                
+                }
+                query.bool.must.push({
+                    "terms": {[`${slugMapping[i].elastic_key}.keyword`]: [slugLabel]}
+                });
+            }           
+        }
+
+        let parsedFilters = [];
+        let parsedRangeFilters = [];
+
+        if(req.query['f']){
+            parsedFilters = parseQueryFilters(req.query['f']);
+            for(const filter of parsedFilters){                
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+                    /* query.bool.filter.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    /* query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    }); */
+                    for(const fieldValue of filter.value){
+                        query.bool.must.push({
+                            "term": {[attribute_name]: fieldValue}
+                        });
+                    }
+                }
+            }
+        }
+        
+        if(req.query['rf']){
+            parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            for(const filter of parsedRangeFilters){
+                /* if(filter.key == "Ratings"){
+                    if(filter.start !== "MIN"){
+                        filter.start = filter.start*100;
+                    }
+                    if(filter.end !== "MAX"){
+                        filter.end = filter.end*100;
+                    }
+                } */
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                    let rangeQuery = {};
+                    if(filter.start !== "MIN"){
+                        let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
+                        if(filter.key == 'Price'){
+                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');                            
+                        }
+                        rangeQuery["gte"] = startValue;
+                    }
+                    if(filter.end !== "MAX"){
+                        let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
+                        if(filter.key == 'Price'){
+                            endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
+                            rangeQuery["lte"] = endValue;
+                        }else{
+                            rangeQuery["lt"] = endValue;
+                        }
+                        
+                    }
+
+                    query.bool.must.push({
+                        "range": {
+                            [attribute_name]: rangeQuery
+                         }
+                    });                 
+                }
+            }
+        }
+
+        
+        
+        let queryString = null;
+        if(req.query['q']){
+            query.bool.must.push( 
+                {
+                    "query_string" : {
+                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
+                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
+                        "analyze_wildcard" : true,
+                        "allow_leading_wildcard": true
+                    }
+                }
+            );
+            
+        }
+
+        
+
+        let filterQuery = JSON.parse(JSON.stringify(query));
+        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+
+        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        let filters = filterResponse.filters;
+
+        console.log("Final Query <> ", JSON.stringify(query));
+        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
+
+        
+        if(filterResponse.total && filterResponse.total > 0){
+
+
+            // update selected flags
+            if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields); 
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', filterResponse.data, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
+
+            //Remove filters if requested by slug
+            for(let i=0; i<slugs.length; i++){
+                const config = filterConfigs.find(o => o.elastic_attribute_name === slugMapping[i].elastic_key);
+                if(config){
+                    filters = filters.filter(o => o.label !== config.label);
+                }
+            }
+
+            if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
+                console.log('Dataaaaaaaaaaaaaaaaaaaaa',result.hits)
+              //  filters = await calculateNewCnt(result.hits,filters);
+                
+            }
+
+              let data = {
+                filters: filters
+            };
+
+            
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        }else{
+            //update selected flags
+            // if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
+            //     //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
+            //     filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+            //     filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            // }
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: []}});
+        }        
+    }
+
+
+
+
+    /*********Old listing code**********/
     async getLearnContentList(req, callback){
         try{
 
