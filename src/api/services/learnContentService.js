@@ -684,6 +684,8 @@ const calculateNewCnt = async (data,filters) => {
 module.exports = class learnContentService {
 
     async getLearnContentListing(req, callback){
+        try{
+        console.log("*******************getLearnContentListing")
         currencies = await getCurrencies();
 
         slugMapping = getSlugMapping(req);
@@ -828,10 +830,11 @@ module.exports = class learnContentService {
             
         }
 
-        console.log("Final Query <> ", JSON.stringify(query));
-        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
+        console.log("getLearnContentListing Final Query <> ", JSON.stringify(query));
+        console.log(" getLearnContentListing Final Query Payload <> ", JSON.stringify(queryPayload));
 
-        const result = await elasticService.search('learn-content', query, {from: queryPayload.from, size: queryPayload.size});
+        const result = await elasticService.search('learn-content', query, {from: 0, size: 20});
+        console.log("result========>",result)
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
@@ -886,7 +889,12 @@ module.exports = class learnContentService {
             //     filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             // }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: []}});
-        }        
+        } 
+
+        }catch(error){
+            console.log("getLearnContentListing error",error)
+
+        }       
     }
 
 
