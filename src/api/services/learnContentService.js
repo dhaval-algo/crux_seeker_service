@@ -899,6 +899,9 @@ module.exports = class learnContentService {
 
 
     async getLearnContentFilters(req, callback){
+        try{
+         console.log("*******************getLearnContentFilters")
+         
         currencies = await getCurrencies();
 
         slugMapping = getSlugMapping(req);
@@ -1021,9 +1024,9 @@ module.exports = class learnContentService {
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         let filters = filterResponse.filters;
 
-        console.log("Final Query <> ", JSON.stringify(query));
-        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
-
+        console.log("getLearnContentFiltersFinal Query <> ", JSON.stringify(query));
+        console.log("getLearnContentFilters Final Query Payload <> ", JSON.stringify(queryPayload));
+        console.log("filterResponse",filterResponse)
         
         if(filterResponse.total && filterResponse.total > 0){
 
@@ -1063,7 +1066,13 @@ module.exports = class learnContentService {
             //     filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             // }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: []}});
-        }        
+        }  
+
+        }
+        catch(err){
+             console.log("*******************getLearnContentFilters err",err)
+
+        }      
     }
 
 
