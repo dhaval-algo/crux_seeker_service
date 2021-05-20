@@ -16,6 +16,8 @@ const rankingController = require('../../../controllers/rankingController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
+router.get('/learn-content-list/', learnContentController.getLearnContentListing);
+router.get('/learn-content-filters/', learnContentController.getLearnContentFilters);
 router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
 
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
