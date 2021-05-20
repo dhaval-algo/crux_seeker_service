@@ -189,13 +189,24 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         }
         //queryPayload.from = 0;
         //queryPayload.size = count;
-        //console.log("queryPayload <> ", queryPayload);        
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+
+        //console.log("queryPayload <> ", queryPayload);   
+      //  const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});  
+        let aggQuery = { 
+                "max_price": { "max": { "field": "finalPrice" } },
+                "max_ratings": { "max": { "field": "ratings" } } ,
+                "max_duration": { "max": { "field": "total_duration_in_hrs" } } 
+                
+              }   
+        console.log("getAllFilters - query=====>",JSON.stringify(query))
+
+        const result = await elasticService.search('learn-content', query, {from: 0, size: 25,aggs:aggQuery });
+
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             return {
                 data: result.hits,
-                filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
+                filters: await formatFilters(result.hits,result.aggregations,filterConfigs, query, userCurrency),
                 total: result.total.value
             };
         }else{
@@ -223,9 +234,10 @@ const getInitialData = async (query) => {
     }
 };
 
-const formatFilters = async (data, filterData, query, userCurrency) => {
+const formatFilters = async (data, aggData, filterData, query, userCurrency) => {
     let filters = [];
-    const initialData = await getInitialData(query);
+    const initialData =  [];
+    // const initialData = await getInitialData(query);
     let emptyOptions = [];
     for(const filter of filterData){
 
@@ -265,10 +277,11 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
 
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
-                const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
-                if(maxValue <= 0){
-                    continue;
-                }
+                // const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
+                // if(maxValue <= 0){
+                //     continue;
+                // }
+                const maxValue = aggData.max_price.value
                 formatedFilters.min = 0;
                 formatedFilters.max = maxValue;
                 formatedFilters.minValue = 0;
@@ -328,12 +341,12 @@ const getRangeOptions = (data, attribute) => {
     let options = [];
     for(let i=0; i<predefinedOptions.length; i++){
         count = 0;
-        for(const esData of data){
-            const entity = esData._source;
-            if(entity[attribute] >= predefinedOptions[i]*100){                
-                count++;
-            }
-        }
+        // for(const esData of data){
+        //     const entity = esData._source;
+        //     if(entity[attribute] >= predefinedOptions[i]*100){                
+        //         count++;
+        //     }
+        // }
 
         let option = {
             label: `${predefinedOptions[i].toString()} & up`,
@@ -345,7 +358,7 @@ const getRangeOptions = (data, attribute) => {
         };
         options.push(option);
     }
-    options = options.filter(item => item.count > 0);
+    // options = options.filter(item => item.count > 0);
     return options;
 };
 
@@ -393,30 +406,30 @@ const getDurationRangeOptions = (data, attribute) => {
         }
     ];
 
-    for(let poption of options){
-        for(const esData of data){
-            const entity = esData._source;
-            if(poption.start !== 'MIN' && poption.end !== 'MAX'){
-                if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
-                    poption.count++;
-                }
-            }else{
-                if(poption.start == 'MIN'){
-                    if(entity[attribute] <= poption.end){
-                        poption.count++;
-                    }
-                }
-                if(poption.end == 'MAX'){
-                    if(entity[attribute] >= poption.start){
-                        poption.count++;
-                    }
-                }
-            }           
-        }
-        if(poption.count > 0){
-            poption.disabled = false;
-        }
-    }
+    // for(let poption of options){
+    //     for(const esData of data){
+    //         const entity = esData._source;
+    //         if(poption.start !== 'MIN' && poption.end !== 'MAX'){
+    //             if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
+    //                 poption.count++;
+    //             }
+    //         }else{
+    //             if(poption.start == 'MIN'){
+    //                 if(entity[attribute] <= poption.end){
+    //                     poption.count++;
+    //                 }
+    //             }
+    //             if(poption.end == 'MAX'){
+    //                 if(entity[attribute] >= poption.start){
+    //                     poption.count++;
+    //                 }
+    //             }
+    //         }           
+    //     }
+    //     if(poption.count > 0){
+    //         poption.disabled = false;
+    //     }
+    // }
     //options = options.filter(item => item.count > 0);
     return options;
 };
