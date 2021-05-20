@@ -905,7 +905,7 @@ module.exports = class learnContentService {
         currencies = await getCurrencies();
 
         slugMapping = getSlugMapping(req);
-
+        let queryPayload = {};
         const filterConfigs = await getFilterConfigs('Learn_Content');
         const query = { 
             "bool": {
@@ -916,7 +916,7 @@ module.exports = class learnContentService {
                 //"filter": []
             }
         };
-
+        
         let slugs = [];
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
