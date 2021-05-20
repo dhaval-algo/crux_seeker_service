@@ -20,7 +20,7 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
-const MAX_RESULT = 50;
+const MAX_RESULT = 10000;
 const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
