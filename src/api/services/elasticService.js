@@ -56,9 +56,17 @@ module.exports = {
       finalQuery.sort = payload.sort;
     } 
 
-    if(payload.aggs !== null){
-      finalQuery.body.aggs = payload.aggs;
-    }
+    // if(payload.aggs !== null){
+    //   finalQuery.body.aggs = payload.aggs;
+    // }
+
+    const resultqry = await client.sql.query({
+                                                body: {
+                                                  query: "SELECT COUNT(*) FROM \"learn-content\" "
+                                                }
+                                              });
+
+    console.log("resultqry",resultqry)
 
     const result = await client.search(finalQuery);
     if(result && result.body){
