@@ -201,21 +201,22 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         console.log("getAllFilters - query=====>",JSON.stringify(query))
 
         const result = await elasticService.searchWithAggregate('learn-content', query, {from: 0, size: 0,aggs:aggQuery });
-        if(result.total && result.total.value > 0){
+
+        if(result.hits.total && result.hits.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             console.log("result",result)
  
             return {
                 data: result.hits,
-                filters: await formatFilters(result.hits,result.aggregations,filterConfigs, query, userCurrency),
-                total: result.total.value
+                filters: await formatFilters(result.hits.hits,result.aggregations,filterConfigs, query, userCurrency),
+                total: result.hits.total.value
             };
         }else{
             //return [];
             return {
                 data: [],
                 filters: [],
-                total: result.total.value
+                total: result.hits.total.value
             }
         }
 };
