@@ -57,7 +57,7 @@ module.exports = {
     } 
 
     if(payload.aggs !== null){
-      finalQueryt.body.aggs = payload.aggs;
+      finalQuery.body.aggs = payload.aggs;
     }
 
     const result = await client.search(finalQuery);
