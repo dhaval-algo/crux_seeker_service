@@ -229,7 +229,7 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
     let filters = [];
     const initialData = await getInitialData(query);
     let emptyOptions = [];
-    console.log("aggData",aggData)
+ 
     for(const filter of filterData){
 
         let formatedFilters = {
