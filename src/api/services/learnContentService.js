@@ -190,31 +190,19 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         }
         //queryPayload.from = 0;
         //queryPayload.size = count;
-        //console.log("queryPayload <> ", queryPayload);   
-      //  const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});  
-        let aggQuery = { 
-                "maxprice": { "max": { "field": "finalPrice" } },
-                "maxratings": { "max": { "field": "ratings" } } ,
-                "maxduration": { "max": { "field": "total_duration_in_hrs" } } 
-                
-              }   
-        console.log("getAllFilters - query=====>",JSON.stringify(query))
 
-        const result = await elasticService.searchWithAggregate('learn-content', query, {from: 0, size: MAX_RESULT,aggs:aggQuery });
-
-        if(result.hits.total && result.hits.total.value > 0){
+        //console.log("queryPayload <> ", queryPayload);        
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             console.log("result",result)
- 
             return {
-                data: result.hits,
-                filters: await formatFilters(result.hits.hits,result.aggregations,filterConfigs, query, userCurrency),
-                total: result.hits.total.value
+                filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
+                total: result.total.value
             };
         }else{
             //return [];
             return {
-                data: [],
                 filters: [],
                 total: result.hits.total.value
             }
@@ -237,10 +225,9 @@ const getInitialData = async (query) => {
     }
 };
 
-const formatFilters = async (data, aggData, filterData, query, userCurrency) => {
+const formatFilters = async (data, filterData, query, userCurrency) => {
     let filters = [];
-    const initialData =  [];
-    // const initialData = await getInitialData(query);
+    const initialData = await getInitialData(query);
     let emptyOptions = [];
     console.log("aggData",aggData)
     for(const filter of filterData){
@@ -281,12 +268,12 @@ const formatFilters = async (data, aggData, filterData, query, userCurrency) => 
 
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
-                // const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
-                // if(maxValue <= 0){
-                //     continue;
-                // }
-         
-                const maxValue = aggData.maxprice.value
+
+                const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
+                if(maxValue <= 0){
+                    continue;
+                }
+
                 formatedFilters.min = 0;
                 formatedFilters.max = maxValue;
                 formatedFilters.minValue = 0;
@@ -1255,6 +1242,7 @@ module.exports = class learnContentService {
         console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
         const result = await elasticService.search('learn-content', query, queryPayload);
+
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
