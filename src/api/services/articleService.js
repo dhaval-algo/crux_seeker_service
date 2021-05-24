@@ -406,7 +406,7 @@ module.exports = class articleService {
             facebook_url: result.facebook_url,
             city: result.city
         };
-        if(!data.image){
+        if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
         }
 
