@@ -380,7 +380,10 @@ module.exports = class articleService {
                     }
                     for(const id of articleIds){
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
-                        articleOrdered.push(article);
+                        if(typeof article !='undefined')
+                        {
+                            articleOrdered.push(article);
+                        }
                     }
                 }
             }            
