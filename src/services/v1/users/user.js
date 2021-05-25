@@ -263,7 +263,6 @@ const socialSignIn = async (req, res, next) => {
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
-        console.log('Provide res',providerRes.data);
         //check if user exists
         let verificationRes = await userExist(providerRes.data.username, LOGIN_TYPES.LOCAL);
         if (!verificationRes.success) {
@@ -405,6 +404,7 @@ const userExist = (username, provider) => {
 
             //check in db
             let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
+            console.log('Userlogin res',userLogin);
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
                 if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
