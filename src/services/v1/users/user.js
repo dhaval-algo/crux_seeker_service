@@ -407,7 +407,8 @@ const userExist = (username, provider) => {
             console.log('Userlogin res',userLogin);
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
-                if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
+             //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
+                if (!user.verified) {
 
                     await models.user.update({
                         verified: true,
@@ -435,7 +436,7 @@ const userExist = (username, provider) => {
                 return resolve(response)
             }
         } catch (error) {
-            console.log(error);
+            console.log('Social signin err ',error);
             response = {
                 code: DEFAULT_CODES.INVALID_USER.code,
                 message: DEFAULT_CODES.INVALID_USER.message,
