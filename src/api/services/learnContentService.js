@@ -727,7 +727,20 @@ module.exports = class learnContentService {
                 });
             }           
         }
-
+        let queryString = null;
+        if(req.query['q']){
+            query.bool.must.push( 
+                {
+                    "query_string" : {
+                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
+                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
+                        "analyze_wildcard" : true,
+                        "allow_leading_wildcard": true
+                    }
+                }
+            );
+            
+        }
         let parsedFilters = [];
         let parsedRangeFilters = [];
 
@@ -804,20 +817,7 @@ module.exports = class learnContentService {
 
         
         
-        let queryString = null;
-        if(req.query['q']){
-            query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
-                }
-            );
-            
-        }
+
 
         console.log("Final Query <> ", JSON.stringify(query));
         console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
