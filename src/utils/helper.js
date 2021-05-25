@@ -763,16 +763,6 @@ const calculateProfileCompletion =  (userObj) => {
                     fieldCount: 1,
                     fields: ["profilePicture"]
                 },
-                "education": {
-                    weightage:25,
-                    fieldCount:5,
-                    fields: ["instituteName","degree", "specialization", "graduationYear", "grade"]
-                },
-                "work_experience":{
-                    weightage:25,
-                    fieldCount:4,
-                    fields: ["experience","jobTitle", "industry", "company"]
-                },
                 "basic_information":{
                     weightage:25,
                     fieldCount:7,
@@ -782,6 +772,7 @@ const calculateProfileCompletion =  (userObj) => {
             let profileCompleted = 0
         
             for (const key in sections) {
+                console.log(sections[key].fields)
                 const element = sections[key];
                 const meta = await models.user_meta.findAll({
                     where:{
@@ -821,6 +812,35 @@ const calculateProfileCompletion =  (userObj) => {
                 }
                     
             }
+            let newKeys = [{name:"education",fieldcount:5},{name:"workExp",fieldCount:4}]
+            for(const key in newKeys){
+                const meta = await models.user_meta.findAll({
+                    where:{
+                        metaType:"primary",
+                        key:{[Op.in]:key.name},
+                        userId:userObj.userId || userObj.id
+                    },
+                    order: [
+                        ['createdAt', 'DESC']
+                    ]
+                })
+                console.log('metaaa',meta);
+                if(meta.length>0){
+                    let vals = Object.keys(meta[0]);
+                    console.log('valss',vals);
+                    for(let i=0;i<vals;i++){
+                        console.log(meta[0][vals[i]]);
+                        let currVal = meta[0][vals[i]];
+                        if(currVal!=""){
+                            const secComltd = (25/key.fieldCount);
+                            profileCompleted = profileCompleted + secComltd;
+                        }
+                    }
+                }else{
+                    profileCompleted = profileCompleted + 0
+                }
+            }
+
             resolve(Math.ceil(profileCompleted))
             
         } catch (error) {
@@ -830,10 +850,92 @@ const calculateProfileCompletion =  (userObj) => {
     })
 }
 
+
+
+// const calculateProfileCompletion =  (userObj) => {
+//     return new Promise(async (resolve) => {
+//         try {
+//             const sections = {
+//                 "education": {
+//                     weightage:25,
+//                     fieldCount:5,
+//                     fields: ["instituteName","degree", "specialization", "graduationYear", "grade"]
+//                 },
+//                 "profile_picture": {
+//                     weightage: 25,
+//                     fieldCount: 1,
+//                     fields: ["profilePicture"]
+//                 },
+//                 "work_experience":{
+//                     weightage:25,
+//                     fieldCount:4,
+//                     fields: ["experience","jobTitle", "industry", "company"]
+//                 },
+//                 "basic_information":{
+//                     weightage:25,
+//                     fieldCount:7,
+//                     fields: ["firstName","lastName", 'gender', "dob", "phone","city", "email"]
+//                 }
+//             }
+//             let profileCompleted = 0
+        
+//             for (const key in sections) {
+//                 console.log(sections[key].fields)
+//                 const element = sections[key];
+//                 const meta = await models.user_meta.findAll({
+//                     where:{
+//                         metaType:"primary",
+//                         key:{[Op.in]:sections[key].fields},
+//                         userId:userObj.userId || userObj.id
+//                     },
+//                     order: [
+//                         ['createdAt', 'DESC']
+//                     ]
+//                 })
+//                 if(meta.length) {
+//                     const formValues = meta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                        
+//                         for (var key in x) {
+//                             if(!acc[key])
+//                                 acc[key] = x[key]
+//                         };
+//                         return acc;
+//                     }, {});
+//                     let fieldEntered = 0
+//                     sections[key].fields.forEach( field => {
+//                        if(formValues[field]) {
+//                            fieldEntered++
+//                        }
+//                     });
+//                     let fieldCount = sections[key].fieldCount
+//                     if(key =="work_experience" && formValues['experience']){
+//                         if (JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
+//                             fieldCount = 1
+//                         }
+//                     }
+//                     const secComltd = (sections[key].weightage/fieldCount) * fieldEntered
+//                     profileCompleted = profileCompleted + secComltd;
+//                 } else {
+//                     profileCompleted = profileCompleted + 0
+//                 }
+                    
+//             }
+//             resolve(Math.ceil(profileCompleted))
+            
+//         } catch (error) {
+//             console.log(error);
+//             resolve(0)
+//         }
+//     })
+// }
+
 const getImgBuffer = (base64) => {
     const base64str = base64.replace(/^data:image\/\w+;base64,/,'');
     return Buffer.from(base64str, 'base64')
 }
+
+
+
 
 const getFileBuffer = (base64) => {
     const base64str = base64.split(';base64,');
