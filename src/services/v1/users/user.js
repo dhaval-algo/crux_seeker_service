@@ -263,7 +263,7 @@ const socialSignIn = async (req, res, next) => {
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
-
+        console.log('Provide res',providerRes.data);
         //check if user exists
         let verificationRes = await userExist(providerRes.data.username, LOGIN_TYPES.LOCAL);
         if (!verificationRes.success) {
