@@ -362,7 +362,10 @@ module.exports = class homePageService {
       const query = {
         "match_all": {}
       };
-      const result = await elasticService.search('home-page', query);
+      const payload = {
+        "size":100
+      };
+      const result = await elasticService.search('home-page', query,payload);
       if (result.hits && result.hits.length) {
         data = await formatHomepageData(result.hits[0]._source, req.user, req.query['currency'])
         return callback(null, { success: true, data })
