@@ -1071,7 +1071,7 @@ const getEnquiryList = async (req,res) => {
     }
     let enquiriesDone = []
 
-    for (const key in enquiryRecs) {
+    for (let key = 0; key < enquiryRecs.length ; key++) {
         let enquiry = {
             sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
             courseName:'',
