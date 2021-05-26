@@ -923,7 +923,7 @@ const calculateProfileCompletion =  (userObj) => {
             resolve(Math.ceil(profileCompleted))
             
         } catch (error) {
-            console.log(error);
+            console.log("Profile progress err",error);
             resolve(0)
         }
     })
