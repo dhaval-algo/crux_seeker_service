@@ -222,7 +222,9 @@ module.exports = class articleService {
             if(parsedFilters.length > 0){
                 //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
+               // filters = await updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, result.hits, filterResponse.total, query, allowZeroCountFields);
+
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
