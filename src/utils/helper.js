@@ -908,11 +908,11 @@ const calculateProfileCompletion =  (userObj) => {
                        }
                     });
                     let fieldCount = sections[key].fieldCount
-                    if(key =="work_experience" && formValues['experience']){
-                        if (JSON.parse(formValues['experience'])!=null && JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
-                            fieldCount = 1
-                        }
-                    }
+                    // if(key =="work_experience" && formValues['experience']){
+                    //     if (JSON.parse(formValues['experience'])!=null && JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
+                    //         fieldCount = 1
+                    //     }
+                    // }
                     const secComltd = (sections[key].weightage/fieldCount) * fieldEntered
                     profileCompleted = profileCompleted + secComltd;
                 } else {
