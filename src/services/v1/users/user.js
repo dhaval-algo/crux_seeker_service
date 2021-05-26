@@ -1058,7 +1058,7 @@ const getEnquiryList = async (req,res) => {
         formSubConfig.offset = offset
       }
       let enquiryRecs = await models.form_submission.findAll(formSubConfig)
-      console.log('enq recs',enquiryRecs.length);
+      console.log('enq recs',JSON.stringify(enquiryRecs));
         // no enquiries return
     if(!enquiryRecs.length) {
         return res.status(200).send({
@@ -1087,18 +1087,21 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
+        console.log(queryBody,'Query body');
         // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                // console.log(result.hits.hits.length,'-------------------------------');
+                 console.log(result.hits.hits,'hits value');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     // for(const hit of result.hits.hits){
                         let hit =  result.hits.hits[0]
+                        console.log(result.hits.hit[0],'hits array');
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
+                        
                     // }
                 }
             }
