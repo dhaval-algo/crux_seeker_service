@@ -265,15 +265,17 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
                         for(const esData of data){
                     
                             const entity = esData._source; 
-                            let entityData = entity[elasticAttribute.elastic_attribute_name];
-                            if(entityData){
-                                if(Array.isArray(entityData)){
-                                    if(entityData.includes(option.label)){
-                                        option.count++;
-                                    }
-                                }else{
-                                    if(entityData == option.label){
-                                        option.count++;
+                            if(entity[elasticAttribute]){
+                                let entityData = entity[elasticAttribute.elastic_attribute_name];
+                                if(entityData){
+                                    if(Array.isArray(entityData)){
+                                        if(entityData.includes(option.label)){
+                                            option.count++;
+                                        }
+                                    }else{
+                                        if(entityData == option.label){
+                                            option.count++;
+                                        }
                                     }
                                 }
                             }
