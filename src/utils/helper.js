@@ -909,7 +909,7 @@ const calculateProfileCompletion =  (userObj) => {
                     });
                     let fieldCount = sections[key].fieldCount
                     if(key =="work_experience" && formValues['experience']){
-                        if (JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
+                        if (JSON.parse(formValues['experience'])!=null && JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
                             fieldCount = 1
                         }
                     }
