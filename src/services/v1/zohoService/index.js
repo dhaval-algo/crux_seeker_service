@@ -197,7 +197,7 @@ const prepareLeadData = (enquiry_id) => {
                 leadObj.Grade = metaObjVal.grade || "";
                 leadObj.Email = metaObjVal.email || "";
                 leadObj.Graduation_Year = metaObjVal.graduationYear || "";
-                leadObj.experience = metaObjVal.experience || "";
+                leadObj.Experience = metaObjVal.experience || "";
 
                 if(metaObjVal.specialization) {
                     leadObj.Specialization = JSON.parse(metaObjVal.specialization).label
