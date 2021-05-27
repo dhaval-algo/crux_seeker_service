@@ -197,6 +197,7 @@ const prepareLeadData = (enquiry_id) => {
                 leadObj.Grade = metaObjVal.grade || "";
                 leadObj.Email = metaObjVal.email || "";
                 leadObj.Graduation_Year = metaObjVal.graduationYear || "";
+                leadObj.experience = metaObjVal.experience || "";
 
                 if(metaObjVal.specialization) {
                     leadObj.Specialization = JSON.parse(metaObjVal.specialization).label
@@ -208,11 +209,7 @@ const prepareLeadData = (enquiry_id) => {
 
                 if(metaObjVal.instituteName) {
                     leadObj.Institute = JSON.parse(metaObjVal.instituteName).label
-                }
-
-                if(metaObjVal.experience) {
-                    leadObj.Experience = JSON.parse(metaObjVal.experience).label
-                }
+                }                
 
                 if(metaObjVal.jobTitle) {
                     leadObj.Job_Title = JSON.parse(metaObjVal.jobTitle).label
