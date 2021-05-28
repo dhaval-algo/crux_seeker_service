@@ -831,7 +831,7 @@ module.exports = class learnContentService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title','categories','sub_categories','provider_name','level','medium','partner_name'],
+                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -1146,8 +1146,11 @@ module.exports = class learnContentService {
             slugs = req.query['slug'].split(",");
             console.log("slugMapping===>",slugMapping)
             for(let i=0; i<slugs.length; i++){
-                let query_slug = slugs[i].replace("&", "%26");
-                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
+                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
+                console.log("slugMapping[i].entity_key  slugs[i]===>",slugs[i])
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                console.log("getEntityLabelBySlug -- slugLabel===>",slugLabel)
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -1163,7 +1166,7 @@ module.exports = class learnContentService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'],
+                        "fields" : ['title','categories','sub_categories','provider_name','level','medium','partner_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
