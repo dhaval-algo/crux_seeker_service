@@ -53,6 +53,7 @@ const getBaseCurrency = (result) => {
 
 const getEntityLabelBySlug = async (entity, slug) => {
     let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
+    console.log("getEntityLabelBySlug",getEntityLabelBySlug)
     if (response.ok) {
     let json = await response.json();
     if(json && json.length){
@@ -1148,6 +1149,7 @@ module.exports = class learnContentService {
                 console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
                 console.log("slugMapping[i].entity_key  slugs[i]===>",slugs[i])
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                console.log("getEntityLabelBySlug -- slugLabel===>",slugLabel)
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
