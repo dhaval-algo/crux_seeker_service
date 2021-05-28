@@ -20,7 +20,7 @@ module.exports = {
     },
    
     welcomeEmail: function(messagData){
-        let templatesPath = path.join(__dirname, './templates/welcome-mail.hbs');
+        let templatesPath = path.join(__dirname, './templates/welcome2.hbs');
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
