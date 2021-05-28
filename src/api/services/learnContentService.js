@@ -1139,9 +1139,14 @@ module.exports = class learnContentService {
         }
 
         let slugs = [];
+        console.log("req.query['slug']====>",req.query['slug'])
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
+            console.log("slugMapping===>",slugMapping)
             for(let i=0; i<slugs.length; i++){
+                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
+                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
+                console.log("slugMapping[i].entity_key  slugs[i]===>",slugs[i])
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
                 if(!slugLabel){
                     slugLabel = slugs[i];                
@@ -1151,6 +1156,7 @@ module.exports = class learnContentService {
                 });
             }           
         }
+
         let queryString = null;
         if(req.query['q']){
             query.bool.must.push( 
