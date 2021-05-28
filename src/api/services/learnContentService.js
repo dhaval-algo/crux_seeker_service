@@ -53,9 +53,10 @@ const getBaseCurrency = (result) => {
 
 const getEntityLabelBySlug = async (entity, slug) => {
     let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
-    console.log("getEntityLabelBySlug",getEntityLabelBySlug)
+
     if (response.ok) {
     let json = await response.json();
+    console.log("getEntityLabelBySlug",json)
     if(json && json.length){
         return json[0].default_display_label;
     }else{
