@@ -33,7 +33,7 @@ module.exports = {
     },
 
     resetPasswordEmail: function(messagData){
-        let templatesPath = path.join(__dirname, './templates/resetpassword-email.hbs');
+        let templatesPath = path.join(__dirname, './templates/resetpassword-email2.hbs');
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
