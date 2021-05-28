@@ -263,7 +263,6 @@ const socialSignIn = async (req, res, next) => {
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
-
         //check if user exists
         let verificationRes = await userExist(providerRes.data.username, LOGIN_TYPES.LOCAL);
         if (!verificationRes.success) {
@@ -405,9 +404,11 @@ const userExist = (username, provider) => {
 
             //check in db
             let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
+            console.log('Userlogin res',userLogin);
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
-                if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
+             //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
+                if (!user.verified) {
 
                     await models.user.update({
                         verified: true,
@@ -435,7 +436,7 @@ const userExist = (username, provider) => {
                 return resolve(response)
             }
         } catch (error) {
-            console.log(error);
+            console.log('Social signin err ',error);
             response = {
                 code: DEFAULT_CODES.INVALID_USER.code,
                 message: DEFAULT_CODES.INVALID_USER.message,
@@ -1057,6 +1058,7 @@ const getEnquiryList = async (req,res) => {
         formSubConfig.offset = offset
       }
       let enquiryRecs = await models.form_submission.findAll(formSubConfig)
+      console.log('enq recs',JSON.stringify(enquiryRecs));
         // no enquiries return
     if(!enquiryRecs.length) {
         return res.status(200).send({
@@ -1069,7 +1071,7 @@ const getEnquiryList = async (req,res) => {
     }
     let enquiriesDone = []
 
-    for (const key in enquiryRecs) {
+    for (let key = 0; key < enquiryRecs.length ; key++) {
         let enquiry = {
             sourceUrl:enquiryRecs[key].otherInfo.sourceUrl,
             courseName:'',
@@ -1085,18 +1087,21 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
+        console.log(queryBody,'Query body');
         // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                // console.log(result.hits.hits.length,'-------------------------------');
+                 console.log(result.hits.hits,'hits value');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     // for(const hit of result.hits.hits){
                         let hit =  result.hits.hits[0]
+                        console.log(result.hits.hit[0],'hits array');
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
+                        
                     // }
                 }
             }

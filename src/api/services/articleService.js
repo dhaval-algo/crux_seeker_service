@@ -222,7 +222,9 @@ module.exports = class articleService {
             if(parsedFilters.length > 0){
                 //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
+               // filters = await updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, result.hits, filterResponse.total, query, allowZeroCountFields);
+
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -238,7 +240,8 @@ module.exports = class articleService {
         }else{
             if(parsedFilters.length > 0){
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+             //   filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
@@ -380,7 +383,10 @@ module.exports = class articleService {
                     }
                     for(const id of articleIds){
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
-                        articleOrdered.push(article);
+                        if(typeof article !='undefined')
+                        {
+                            articleOrdered.push(article);
+                        }
                     }
                 }
             }            
@@ -406,7 +412,7 @@ module.exports = class articleService {
             facebook_url: result.facebook_url,
             city: result.city
         };
-        if(!data.image){
+        if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
         }
 

@@ -7,7 +7,7 @@ module.exports = {
 
  
     activiationLink: function(messagData){
-        let templatesPath = path.join(__dirname, './templates/verification-email.hbs');
+        let templatesPath = path.join(__dirname, './templates/verifyemail2.hbs');
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
@@ -20,7 +20,7 @@ module.exports = {
     },
    
     welcomeEmail: function(messagData){
-        let templatesPath = path.join(__dirname, './templates/welcome-mail.hbs');
+        let templatesPath = path.join(__dirname, './templates/welcome2.hbs');
 
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
