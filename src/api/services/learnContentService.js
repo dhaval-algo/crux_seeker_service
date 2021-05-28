@@ -724,6 +724,7 @@ module.exports = class learnContentService {
 
 
         let slugs = [];
+        console.log("req.query['slug']====>",req.query['slug'])
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
             console.log("slugMapping===>",slugMapping)
