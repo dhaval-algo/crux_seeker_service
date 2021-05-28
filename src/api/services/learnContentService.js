@@ -335,12 +335,12 @@ const getRangeOptions = (data, attribute) => {
     let options = [];
     for(let i=0; i<predefinedOptions.length; i++){
         count = 0;
-        // for(const esData of data){
-        //     const entity = esData._source;
-        //     if(entity[attribute] >= predefinedOptions[i]*100){                
-        //         count++;
-        //     }
-        // }
+        for(const esData of data){
+            const entity = esData._source;
+            if(entity[attribute] >= predefinedOptions[i]*100){                
+                count++;
+            }
+        }
 
         let option = {
             label: `${predefinedOptions[i].toString()} & up`,
@@ -352,7 +352,7 @@ const getRangeOptions = (data, attribute) => {
         };
         options.push(option);
     }
-    // options = options.filter(item => item.count > 0);
+    options = options.filter(item => item.count > 0);
     return options;
 };
 
@@ -400,31 +400,31 @@ const getDurationRangeOptions = (data, attribute) => {
         }
     ];
 
-    // for(let poption of options){
-    //     for(const esData of data){
-    //         const entity = esData._source;
-    //         if(poption.start !== 'MIN' && poption.end !== 'MAX'){
-    //             if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
-    //                 poption.count++;
-    //             }
-    //         }else{
-    //             if(poption.start == 'MIN'){
-    //                 if(entity[attribute] <= poption.end){
-    //                     poption.count++;
-    //                 }
-    //             }
-    //             if(poption.end == 'MAX'){
-    //                 if(entity[attribute] >= poption.start){
-    //                     poption.count++;
-    //                 }
-    //             }
-    //         }           
-    //     }
-    //     if(poption.count > 0){
-    //         poption.disabled = false;
-    //     }
-    // }
-    //options = options.filter(item => item.count > 0);
+    for(let poption of options){
+        for(const esData of data){
+            const entity = esData._source;
+            if(poption.start !== 'MIN' && poption.end !== 'MAX'){
+                if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
+                    poption.count++;
+                }
+            }else{
+                if(poption.start == 'MIN'){
+                    if(entity[attribute] <= poption.end){
+                        poption.count++;
+                    }
+                }
+                if(poption.end == 'MAX'){
+                    if(entity[attribute] >= poption.start){
+                        poption.count++;
+                    }
+                }
+            }           
+        }
+        if(poption.count > 0){
+            poption.disabled = false;
+        }
+    }
+    options = options.filter(item => item.count > 0);
     return options;
 };
 
