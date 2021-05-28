@@ -195,7 +195,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
-            console.log("result",result)
+            // console.log("result",result)
             return {
                 filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
                 total: result.total.value
@@ -726,7 +726,11 @@ module.exports = class learnContentService {
         let slugs = [];
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
+            console.log("slugMapping===>",slugMapping)
             for(let i=0; i<slugs.length; i++){
+                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
+                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
+                console.log("slugMapping[i].entity_key  slugs[i]===>",slugs[i])
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
                 if(!slugLabel){
                     slugLabel = slugs[i];                
@@ -736,6 +740,8 @@ module.exports = class learnContentService {
                 });
             }           
         }
+
+        console.log("query====>",query)
 
         /*
         let parsedFilters = [];
@@ -835,7 +841,7 @@ module.exports = class learnContentService {
         console.log(" getLearnContentListing Final Query Payload <> ", JSON.stringify(queryPayload));
 
         const result = await elasticService.search('learn-content', query, {from: 0, size: 20});
-        console.log("result========>",result)
+        // console.log("result========>",result)
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
