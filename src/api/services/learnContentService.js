@@ -1146,11 +1146,8 @@ module.exports = class learnContentService {
             slugs = req.query['slug'].split(",");
             console.log("slugMapping===>",slugMapping)
             for(let i=0; i<slugs.length; i++){
-                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
-                console.log("slugMapping[i].entity_key===>",slugMapping[i].entity_key)
-                console.log("slugMapping[i].entity_key  slugs[i]===>",slugs[i])
-                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
-                console.log("getEntityLabelBySlug -- slugLabel===>",slugLabel)
+                let query_slug = slugs[i].replace("&", "%26");
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
