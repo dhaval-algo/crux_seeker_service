@@ -141,7 +141,7 @@ module.exports = class articleService {
         queryPayload.size = paginationQuery.size;
         console.log("paginationQuery <> ", paginationQuery);
 
-        if(!req.query['sort']){
+        if(!req.query['sort'] && !req.query['q']){
             req.query['sort'] = "published_date:desc";
         }
 
