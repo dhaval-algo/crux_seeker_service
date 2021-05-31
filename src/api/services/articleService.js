@@ -296,19 +296,43 @@ module.exports = class articleService {
         }
 
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
-        if(!author){
-            console.log("Author not found...");
+        let auth = await this.getAuthor(result.author_id);
+        console.log("Authhhhh",(auth && auth.firstname))
+        // if(!author){
+        //     console.log("Author not found...");
+            // author = {
+            //     id: result.author_id,
+            //     username: result.author_username,
+            //     firstname: result.author_first_name,
+            //     lastname: result.last_name ? result.author_last_name:"",
+            //     designation: result.author_designation,
+            //     bio: result.author_bio,
+            //     slug: result.author_slug
+            // };
+        // }else{
+        //     console.log("Author found..."); 
+        // }
+
+        if(auth){
+            author = {
+                id: auth.author_id,
+                username: auth.username,
+                firstname: auth.firstname,
+                lastname: auth.lastname ? auth.lastname:"",
+                designation: auth.designation,
+                bio: auth.bio,
+                slug: auth.slug
+            };
+        }else{
             author = {
                 id: result.author_id,
                 username: result.author_username,
                 firstname: result.author_first_name,
-                lastname: result.author_last_name,
+                lastname: result.last_name ? result.author_last_name:"",
                 designation: result.author_designation,
                 bio: result.author_bio,
                 slug: result.author_slug
             };
-        }else{
-            console.log("Author found..."); 
         }
 
         let data = {
