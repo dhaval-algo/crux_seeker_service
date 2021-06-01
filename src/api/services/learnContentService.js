@@ -718,7 +718,8 @@ module.exports = class learnContentService {
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
             for(let i=0; i<slugs.length; i++){
-                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, slugs[i]);
+                let query_slug = slugs[i].replace("&", "%26");
+                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
