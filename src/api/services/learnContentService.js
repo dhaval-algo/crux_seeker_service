@@ -53,8 +53,10 @@ const getBaseCurrency = (result) => {
 
 const getEntityLabelBySlug = async (entity, slug) => {
     let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
+
     if (response.ok) {
     let json = await response.json();
+    console.log("getEntityLabelBySlug",json)
     if(json && json.length){
         return json[0].default_display_label;
     }else{
@@ -182,6 +184,7 @@ const getFilters = async (data, filterConfigs) => {
     return formatFilters(data, filterConfigs);
 };
 
+//
 const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) => {
         if(queryPayload.from !== null && queryPayload.size !== null){
             delete queryPayload['from'];
@@ -189,10 +192,12 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         }
         //queryPayload.from = 0;
         //queryPayload.size = count;
+
         //console.log("queryPayload <> ", queryPayload);        
         const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
+            // console.log("result",result)
             return {
                 filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
                 total: result.total.value
@@ -201,7 +206,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
             //return [];
             return {
                 filters: [],
-                total: result.total.value
+                total: result.hits.total.value
             }
         }
 };
@@ -213,7 +218,8 @@ const getInitialData = async (query) => {
                 query.bool.must.splice(i, 1);
         }
     } 
-    const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+    console.log("getInitialData - query=====>",JSON.stringify(query))
+    const result = await elasticService.search('learn-content', query, {from: 0, size: 25});
     if(result.total && result.total.value > 0){
         return result.hits;
     }else{
@@ -225,6 +231,7 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
     let filters = [];
     const initialData = await getInitialData(query);
     let emptyOptions = [];
+ 
     for(const filter of filterData){
 
         let formatedFilters = {
@@ -263,10 +270,12 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
 
         if(rangeFilterTypes.includes(filter.filter_type)){
             if(filter.filter_type == 'RangeSlider'){
+
                 const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
                 if(maxValue <= 0){
                     continue;
                 }
+
                 formatedFilters.min = 0;
                 formatedFilters.max = maxValue;
                 formatedFilters.minValue = 0;
@@ -415,7 +424,7 @@ const getDurationRangeOptions = (data, attribute) => {
             poption.disabled = false;
         }
     }
-    //options = options.filter(item => item.count > 0);
+    options = options.filter(item => item.count > 0);
     return options;
 };
 
@@ -678,6 +687,8 @@ const calculateNewCnt = async (data,filters) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback){
+        try{
+
         currencies = await getCurrencies();
 
         slugMapping = getSlugMapping(req);
@@ -711,12 +722,26 @@ module.exports = class learnContentService {
                 sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
             }
             queryPayload.sort = [sort];
+            console.log('sort data value',[sort]);
         }
 
+        if(req.query['courseIds']){
+            let courseIds = req.query['courseIds'].split(",");
+            
+            query.bool.must.push(
+                {
+                    "terms": {
+                      "id": courseIds 
+                    }
+                }
+            )
+        }
 
         let slugs = [];
+        console.log("req.query['slug']====>",req.query['slug'])
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
+            console.log("slugMapping===>",slugMapping)
             for(let i=0; i<slugs.length; i++){
                 let query_slug = slugs[i].replace("&", "%26");
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
@@ -729,13 +754,29 @@ module.exports = class learnContentService {
             }           
         }
 
+        let queryString = null;
+        if(req.query['q']){
+            query.bool.must.push( 
+                {
+                    "query_string" : {
+                        "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+")}*`,
+                        "fields" : ['title','categories','sub_categories','provider_name','level','medium','partner_name'],
+                        "analyze_wildcard" : true,
+                        "allow_leading_wildcard": true
+                    }
+                }
+            );
+            
+        }
         let parsedFilters = [];
         let parsedRangeFilters = [];
 
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
+        console.log("getLearnContentList - filterQuery=====>",JSON.stringify(filterQuery))
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        console.log("filterResponse====>",filterResponse)
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         let filters = filterResponse.filters;
 
@@ -805,25 +846,13 @@ module.exports = class learnContentService {
 
         
         
-        let queryString = null;
-        if(req.query['q']){
-            query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+")}*`,
-                        "fields" : ['title','categories','sub_categories','provider_name','level','medium','partner_name'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
-                }
-            );
-            
-        }
+
 
         console.log("Final Query <> ", JSON.stringify(query));
         console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
 
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        const result = await elasticService.search('learn-content', query, queryPayload);
+
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits, req.query['currency']);
@@ -878,7 +907,12 @@ module.exports = class learnContentService {
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
-        }        
+        }  
+    }catch(e){
+        console.log("getLearnContentList errorr",e);
+        callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+        
+    }      
     }
 
     async getLearnContent(req, callback){

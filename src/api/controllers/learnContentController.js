@@ -17,6 +17,29 @@ module.exports = {
         });        
     },
 
+    getLearnContentListing: async (req, res) => {
+        LearnContentService.getLearnContentListing(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
+
+    getLearnContentFilters: async (req, res) => {
+        LearnContentService.getLearnContentFilters(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
+
+
+
+
     getSingleLearnContent: async (req, res) => {
         const slug = req.params.slug;
         LearnContentService.getLearnContent(req, (err, data) => {

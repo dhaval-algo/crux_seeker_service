@@ -122,6 +122,7 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.email = metaObjVal.email || "";
         strapiObj.date_of_birth = metaObjVal.dob || "";
         strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
+        strapiObj.experience = metaObjVal.experience || "";
     
         if (metaObjVal.specialization) {
             strapiObj.specialization = JSON.parse(metaObjVal.specialization).label
@@ -133,11 +134,7 @@ const createLoggedUserMeta = async (userId) => {
     
         if (metaObjVal.instituteName) {
             strapiObj.institute = JSON.parse(metaObjVal.instituteName).label
-        }
-    
-        if (metaObjVal.experience) {
-            strapiObj.experience = JSON.parse(metaObjVal.experience).label
-        }
+        }        
     
         if (metaObjVal.jobTitle) {
             strapiObj.job_title = JSON.parse(metaObjVal.jobTitle).label
@@ -236,6 +233,7 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.email = metaObjVal.email || "";
                 strapiObj.date_of_birth = metaObjVal.dob || "";
                 strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
+                strapiObj.experience = metaObjVal.experience || "";
 
                 if(metaObjVal.specialization) {
                     strapiObj.specialization = JSON.parse(metaObjVal.specialization).label
@@ -247,11 +245,7 @@ const prepareStrapiData = (enquiry_id) => {
 
                 if(metaObjVal.instituteName) {
                     strapiObj.institute = JSON.parse(metaObjVal.instituteName).label
-                }
-
-                if(metaObjVal.experience) {
-                    strapiObj.experience = JSON.parse(metaObjVal.experience).label
-                }
+                }               
 
                 if(metaObjVal.jobTitle) {
                     strapiObj.job_title = JSON.parse(metaObjVal.jobTitle).label
