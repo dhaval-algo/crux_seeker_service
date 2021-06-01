@@ -5,7 +5,7 @@ const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 
 const entityQueryMapping = {
-    'learn-content': {label: 'Course', status: 'published', fields: ['title','categories','sub_categories','provider_name','level','learnng_mediums','partner_name'], source_fields: ['title']},
+    'learn-content': {label: 'Course', status: 'published', fields: ['title','categories','sub_categories','provider_name','level','medium','partner_name'], source_fields: ['title']},
     'provider': {label: 'Institute', status: 'approved', fields: ['name','program_types'], source_fields: ['name','slug']},
     'article': {label: 'Article', status: 'published', fields: ['title', 'section_name', 'author_first_name', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
 };
@@ -31,7 +31,7 @@ const generateEntityQuery = (entity, keyword) => {
             }, */
             {
             "query_string" : {
-                "query" : `*${decodeURIComponent(keyword)}*`,
+                "query" : `*${decodeURIComponent(keyword).replace("+","//+")}*`,
                 "fields" : entityConfig.fields,
                 "analyze_wildcard" : true,
                 "allow_leading_wildcard": true
