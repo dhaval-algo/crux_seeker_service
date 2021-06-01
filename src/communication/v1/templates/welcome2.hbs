@@ -8,11 +8,41 @@
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
     <title>welcome</title>
+    <style>
+        .gs li {
+            margin-left: 0px !important;
+        }
+        
+        .bdr {
+            position: relative;
+        }
+        
+        .bdr::before {
+            position: absolute;
+            content: '';
+            background: linear-gradient(90deg, #5DC1FC 0%, #FFD600 100%);
+            height: 5px;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        .bdr::after {
+            position: absolute;
+            content: '';
+            background: linear-gradient(90deg, #5DC1FC 0%, #FFD600 100%);
+            height: 6px;
+            width: 100%;
+            bottom: 0;
+            left: 0;
+        }
+    </style>
 </head>
 
-<body style="font-family: Montserrat;line-height: 25px;color: #010010;font-size: 16px;margin: 0;padding: 0;box-sizing: border-box;">
+<body class="bdr" style="font-family: Montserrat;line-height: 25px;color: #010010;font-size: 16px;margin: 0;padding: 0;box-sizing: border-box;">
 
-    <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" style="padding: 30px;">
+
+    <table class="main" width="100%" border="0" align="center" cellpadding="0" cellspacing="0" style="padding: 30px 0 0;">
 
         <!-- START HEADER/BANNER -->
 
@@ -37,67 +67,37 @@
                             <tr>
                                 <td>
                                     <p style="margin: 24px 0;">Thank you for signing up. We are glad to have you here. As a new member you will get:</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </td>
-            </tr>
-
-            <tr>
-                <td align="center">
-                    <table width="700" border="0" align="center" cellpadding="0" cellspacing="0">
-                        <tbody>
-
-                            <tr>
-                                <td>
-
-
                                     <div style="text-align:center;display:flex;">
                                         <div style="width: 33%;">
                                             <img style="display:block;margin: auto; line-height:0px; font-size:0px; border:0px;" src="https://ik.imagekit.io/adi1239457/Group_1904_-19TYsyQk.png" width="67" height="68" alt="icon">
-                                            <p style="margin-top: 12px;">View, <br> Learn content</p>
+                                            <p style="margin-top: 8px;">View, <br> Learn content</p>
                                         </div>
 
 
                                         <div style="width: 33%;">
                                             <img style="display:block;margin: auto; line-height:0px; font-size:0px; border:0px;" src="https://ik.imagekit.io/adi1239457/Group_1903_HxNHMSGxXd.png" width="67" height="68" alt="icon">
-                                            <p style="">Enquire</p>
+                                            <p style="margin-top: 8px;">Enquire</p>
                                         </div>
                                         <div style="width: 33%;">
                                             <img style="display:block;margin: auto; line-height:0px; font-size:0px; border:0px;" src="https://ik.imagekit.io/adi1239457/Group_1877_rj1mEl5bEh.png" width="67" height="68" alt="icon">
-                                            <p style="">Buy courses</p>
+                                            <p style="margin-top: 8px;">Buy courses</p>
                                         </div>
 
                                     </div>
+                                    <p style="margin: 24px 0;">Thank you again for being a part of this. It means a lot to all of us.</p>
 
+                                    <p style="margin-top: 0;margin-bottom: 24px;">Cheers, <br> The Careervira Team</p>
                                 </td>
-                                <td>
-                                    <tr>
-                                        <td>
-                                            <p style="margin: 24px 0;">Thank you again for being a part of this. It means a lot to all of us.</p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <p style="margin-top: 0;">Cheers, <br> The Careervira Team</p>
-                                        </td>
-                                    </tr>
-                                    <table>
-                                        <tbody>
-                                            <tr>
-                                                <td>
 
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </td>
                             </tr>
+
+
                         </tbody>
                     </table>
                 </td>
             </tr>
+
+
             <tr>
                 <td align="center">
                     <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" style="background: #F7F7F7;">
@@ -110,20 +110,23 @@
                                                 <td>
                                                     <footer style="line-height: 25px; color: #6a6a6a;">
                                                         <tr>
-                                                            <td><img src="https://d2uwy4ckc30nxc.cloudfront.net/media/email/new_logo.png" alt=""></td>
+                                                            <td><img src="https://d2uwy4ckc30nxc.cloudfront.net/media/email/new_logo.png" alt="" style="margin-bottom: 11px;"></td>
                                                         </tr>
                                                         <tr>
                                                             <td>
-                                                                <div style="clear: both;margin-top: 10px;">
-                                                                    <p style="margin-top:0;margin-bottom: 12px;float: left;color: #6a6a6a;">
-                                                                        <span>20 square Road, <br> #02-01, 049, <br> Unites States</span>
+                                                                <div>
+                                                                    <p style="margin-top:0;margin-bottom: 24px;float: left;color: #6a6a6a;">
+                                                                        <span>20 square Road, <br> #02-01, 049, <br> United States</span>
                                                                     </p>
-                                                                    <p style="margin-top:0;margin-bottom: 12px;float: right;text-align:right;color: #6a6a6a;width: 55%;">
-                                                                        <span> Need help? <br> Contact us at <a href="mailto:customercare@careervira.com" style="color: #6a6a6a;">customercare@careervira.com</a></span>
+                                                                    <p style="margin-top:0;margin-bottom: 24px;float: right;text-align:right;color: #6a6a6a;">
+                                                                        <span> Need help? <br> Contact us at <a href="mailto:customercare@careervira.com" style="color: #6a6a6a;">mailto:customercare@careervira.com</a> </span><br>2021. Ideasatscale. All
+                                                                        Rights reserved.
                                                                     </p>
                                                                 </div>
                                                                 <div style="clear: both">
-                                                                    <p style="text-align:center;font-size: 16px;text-decoration: underline;color: #6a6a6a;"> Privacy Policy</p>
+                                                                    <a href="https://crux.ajency.in/privacy-policy">
+                                                                        <p style="text-align:center;font-size: 16px;text-decoration: underline;color: #6a6a6a;margin-bottom: 24px;"> Privacy Policy</p>
+                                                                    </a>
                                                                 </div>
                                                                 <ul style="text-align: center;margin: auto;padding-left: 0;">
                                                                     <li style="list-style: none;display: inline-block;">
