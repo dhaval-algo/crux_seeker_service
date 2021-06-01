@@ -643,7 +643,8 @@ const getLoginToken = async (userObj) => {
         const signOptions = {
             audience: userObj.audience,
             issuer: process.env.HOST,
-            expiresIn: parseInt(defaults.getValue('tokenExpiry'))
+           // expiresIn: parseInt(defaults.getValue('tokenExpiry'))
+            expiresIn: 100
         }
         const payload = {
             user: {
