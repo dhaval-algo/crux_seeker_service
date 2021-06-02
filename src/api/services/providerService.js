@@ -356,10 +356,17 @@ module.exports = class providerService {
             coverImageSize = 'thumbnail';
         }
         let cover_image = null;
+        let logo = null;
         if(result.cover_image){
             cover_image = getMediaurl(result.cover_image[coverImageSize]);
             if(!cover_image){
                 cover_image = getMediaurl(result.cover_image['thumbnail']);
+            }
+        }
+        if(result.logo){
+            logo = getMediaurl(result.logo[coverImageSize]);
+            if(!logo){
+                logo = getMediaurl(result.logo['thumbnail']);
             }
         }
 
@@ -377,6 +384,7 @@ module.exports = class providerService {
             id: `PVDR_${result.id}`,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: cover_image,
+            logo:logo,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             overview: result.overview,
             programs: (result.programs) ? result.programs : [],
