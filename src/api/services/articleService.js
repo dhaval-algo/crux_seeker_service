@@ -222,7 +222,9 @@ module.exports = class articleService {
             if(parsedFilters.length > 0){
                 //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
+               // filters = await updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, result.hits, filterResponse.total, query, allowZeroCountFields);
+
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
@@ -238,7 +240,8 @@ module.exports = class articleService {
         }else{
             if(parsedFilters.length > 0){
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+             //   filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
             callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
@@ -293,19 +296,43 @@ module.exports = class articleService {
         }
 
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
-        if(!author){
-            console.log("Author not found...");
+        let auth = await this.getAuthor(result.author_id);
+        console.log("Authhhhh",(auth && auth.firstname))
+        // if(!author){
+        //     console.log("Author not found...");
+            // author = {
+            //     id: result.author_id,
+            //     username: result.author_username,
+            //     firstname: result.author_first_name,
+            //     lastname: result.last_name ? result.author_last_name:"",
+            //     designation: result.author_designation,
+            //     bio: result.author_bio,
+            //     slug: result.author_slug
+            // };
+        // }else{
+        //     console.log("Author found..."); 
+        // }
+
+        if(auth){
+            author = {
+                id: auth.author_id,
+                username: auth.username,
+                firstname: auth.firstname,
+                lastname: auth.lastname ? auth.lastname:"",
+                designation: auth.designation,
+                bio: auth.bio,
+                slug: auth.slug
+            };
+        }else{
             author = {
                 id: result.author_id,
                 username: result.author_username,
                 firstname: result.author_first_name,
-                lastname: result.author_last_name,
+                lastname: result.last_name ? result.author_last_name:"",
                 designation: result.author_designation,
                 bio: result.author_bio,
                 slug: result.author_slug
             };
-        }else{
-            console.log("Author found..."); 
         }
 
         let data = {
@@ -406,7 +433,7 @@ module.exports = class articleService {
             facebook_url: result.facebook_url,
             city: result.city
         };
-        if(!data.image){
+        if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
         }
 
