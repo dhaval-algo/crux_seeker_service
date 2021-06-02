@@ -6,35 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;200;300;400;500;600&family=Roboto:wght@100;300;400;500;700&display=swap" rel="stylesheet">
     <title>welcome</title>
     <style>
         .gs li {
             margin-left: 0px !important;
-        }
-        
-        .bdr {
-            position: relative;
-        }
-        
-        .bdr::before {
-            position: absolute;
-            content: '';
-            background: linear-gradient(90deg, #5DC1FC 0%, #FFD600 100%);
-            height: 5px;
-            width: 100%;
-            top: 0;
-            left: 0;
-        }
-        
-        .bdr::after {
-            position: absolute;
-            content: '';
-            background: linear-gradient(90deg, #5DC1FC 0%, #FFD600 100%);
-            height: 6px;
-            width: 100%;
-            bottom: 0;
-            left: 0;
         }
         
         @media only screen and (max-width:480px) {
@@ -46,16 +23,19 @@
 </head>
 
 
-<body class="bdr" style="font-family: Montserrat;color: #010010;font-size: 16px;margin: 0;padding: 0;box-sizing: border-box;line-height: 25px;  padding-top: 30px;">
-    <div class="main " style="margin:  auto; max-width: 750px; width:100%; ">
-        <div class="template-card" style="max-width: 750px; width:100%; margin: auto; ">
-            <img src="https://d2uwy4ckc30nxc.cloudfront.net/media/email/new_logo.png" alt="" style="padding: 0 6px;">
+<body class="bdr" style="font-family: Montserrat,'Roboto',sans-serif;color: #010010;margin: 0;padding: 0;box-sizing: border-box;">
+    <hr style="background: linear-gradient(90deg, #5DC1FC 0%, #FFD600 100%);height: 5px;margin: 0;">
+
+    <div class="main " style="margin:  auto; max-width: 750px; width:100%; padding-top: 30px; ">
+        <div class="template-card" style="max-width: 750px; width:100%; margin: auto;font-size: 16px; ">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTY4IiBoZWlnaHQ9IjI1IiB2aWV3Qm94PSIwIDAgMTY4IDI1IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTAuNTYgMjQuNTRDOC40NCAyNC41NCA2LjU4IDI0LjE2IDQuOTggMjMuNEMzLjM4IDIyLjYyIDIuMTUgMjEuNTMgMS4yOSAyMC4xM0MwLjQzIDE4LjczIDAgMTcuMTIgMCAxNS4zQzAgMTIuOSAwLjU1IDEwLjc0IDEuNjUgOC44MkMyLjc3IDYuOSA0LjMzIDUuNCA2LjMzIDQuMzJDOC4zMyAzLjI0IDEwLjYxIDIuNyAxMy4xNyAyLjdDMTUuMTEgMi43IDE2LjgzIDMuMDUgMTguMzMgMy43NUMxOS44MyA0LjQzIDIwLjk1IDUuNCAyMS42OSA2LjY2TDE3LjQgMTAuMDhDMTYuMzggOC40NCAxNC44NCA3LjYyIDEyLjc4IDcuNjJDMTEuNDQgNy42MiAxMC4yNiA3Ljk0IDkuMjQgOC41OEM4LjIyIDkuMiA3LjQyIDEwLjA3IDYuODQgMTEuMTlDNi4yOCAxMi4yOSA2IDEzLjUzIDYgMTQuOTFDNiAxNi4zMyA2LjQ2IDE3LjQ3IDcuMzggMTguMzNDOC4zIDE5LjE5IDkuNTUgMTkuNjIgMTEuMTMgMTkuNjJDMTMuMTMgMTkuNjIgMTQuODQgMTguODEgMTYuMjYgMTcuMTlMMTkuNzcgMjAuNjRDMTguNjMgMjIuMDIgMTcuMyAyMy4wMiAxNS43OCAyMy42NEMxNC4yNiAyNC4yNCAxMi41MiAyNC41NCAxMC41NiAyNC41NFoiIGZpbGw9IiMxNDgzREMiLz4KPHBhdGggZD0iTTQwLjkxMDQgNy44NkwzNy42NzA0IDI0LjEySDMyLjI3MDRMMzIuNjAwNCAyMi41OUMzMS4zMDA0IDIzLjc5IDI5LjczMDQgMjQuMzkgMjcuODkwNCAyNC4zOUMyNi42OTA0IDI0LjM5IDI1LjU2MDQgMjQuMSAyNC41MDA0IDIzLjUyQzIzLjQ2MDQgMjIuOTIgMjIuNjIwNCAyMi4wNiAyMS45ODA0IDIwLjk0QzIxLjM0MDQgMTkuODIgMjEuMDIwNCAxOC41IDIxLjAyMDQgMTYuOThDMjEuMDIwNCAxNS4yMiAyMS40MTA0IDEzLjYzIDIyLjE5MDQgMTIuMjFDMjIuOTkwNCAxMC43NyAyNC4wNjA0IDkuNjQgMjUuNDAwNCA4LjgyQzI2Ljc2MDQgOCAyOC4yNDA0IDcuNTkgMjkuODQwNCA3LjU5QzMyLjIwMDQgNy41OSAzMy44NjA0IDguMzMgMzQuODIwNCA5LjgxTDM1LjIxMDQgNy44Nkg0MC45MTA0Wk0yOS44NzA0IDE5LjhDMzEuMDEwNCAxOS44IDMxLjk0MDQgMTkuMzggMzIuNjYwNCAxOC41NEMzMy4zODA0IDE3LjcgMzMuNzQwNCAxNi42MSAzMy43NDA0IDE1LjI3QzMzLjc0MDQgMTQuMzEgMzMuNDYwNCAxMy41NSAzMi45MDA0IDEyLjk5QzMyLjM2MDQgMTIuNDMgMzEuNjEwNCAxMi4xNSAzMC42NTA0IDEyLjE1QzI5LjUxMDQgMTIuMTUgMjguNTgwNCAxMi41NyAyNy44NjA0IDEzLjQxQzI3LjE0MDQgMTQuMjUgMjYuNzgwNCAxNS4zNSAyNi43ODA0IDE2LjcxQzI2Ljc4MDQgMTcuNjcgMjcuMDUwNCAxOC40MyAyNy41OTA0IDE4Ljk5QzI4LjE1MDQgMTkuNTMgMjguOTEwNCAxOS44IDI5Ljg3MDQgMTkuOFoiIGZpbGw9IiMxNDgzREMiLz4KPHBhdGggZD0iTTQ5LjYxOTggOS42NkM1MC45Nzk4IDguMjggNTIuOTM5OCA3LjU5IDU1LjQ5OTggNy41OUw1NC41MDk4IDEyLjcyQzU0LjAwOTggMTIuNjYgNTMuNTc5OCAxMi42MyA1My4yMTk4IDEyLjYzQzUxLjkzOTggMTIuNjMgNTAuOTA5OCAxMi45NCA1MC4xMjk4IDEzLjU2QzQ5LjM2OTggMTQuMTYgNDguODU5OCAxNS4xMiA0OC41OTk4IDE2LjQ0TDQ3LjAzOTggMjQuMTJINDEuMzM5OEw0NC41Nzk4IDcuODZINDkuOTc5OEw0OS42MTk4IDkuNjZaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik03Mi44MjU1IDE0LjczQzcyLjgyNTUgMTUuNTEgNzIuNzE1NSAxNi40IDcyLjQ5NTUgMTcuNEg2MC41NTU1QzYwLjc1NTUgMTkuMTYgNjEuOTg1NSAyMC4wNCA2NC4yNDU1IDIwLjA0QzY0Ljk2NTUgMjAuMDQgNjUuNjY1NSAxOS45MyA2Ni4zNDU1IDE5LjcxQzY3LjAyNTUgMTkuNDkgNjcuNjM1NSAxOS4xNiA2OC4xNzU1IDE4LjcyTDcwLjU0NTUgMjIuMjlDNjguNjQ1NSAyMy42OSA2Ni4zMzU1IDI0LjM5IDYzLjYxNTUgMjQuMzlDNjEuODk1NSAyNC4zOSA2MC4zNzU1IDI0LjA5IDU5LjA1NTUgMjMuNDlDNTcuNzU1NSAyMi44NyA1Ni43NDU1IDIyLjAxIDU2LjAyNTUgMjAuOTFDNTUuMzI1NSAxOS43OSA1NC45NzU1IDE4LjQ4IDU0Ljk3NTUgMTYuOThDNTQuOTc1NSAxNS4yIDU1LjM4NTUgMTMuNiA1Ni4yMDU1IDEyLjE4QzU3LjA0NTUgMTAuNzQgNTguMjA1NSA5LjYyIDU5LjY4NTUgOC44MkM2MS4xODU1IDggNjIuODk1NSA3LjU5IDY0LjgxNTUgNy41OUM2Ni40MzU1IDcuNTkgNjcuODQ1NSA3Ljg5IDY5LjA0NTUgOC40OUM3MC4yNjU1IDkuMDcgNzEuMTk1NSA5LjkgNzEuODM1NSAxMC45OEM3Mi40OTU1IDEyLjA2IDcyLjgyNTUgMTMuMzEgNzIuODI1NSAxNC43M1pNNjQuNTQ1NSAxMS42NEM2My42MjU1IDExLjY0IDYyLjg1NTUgMTEuODkgNjIuMjM1NSAxMi4zOUM2MS42MTU1IDEyLjg3IDYxLjE2NTUgMTMuNTQgNjAuODg1NSAxNC40SDY3LjU3NTVDNjcuNTk1NSAxMy41NCA2Ny4zMjU1IDEyLjg3IDY2Ljc2NTUgMTIuMzlDNjYuMjA1NSAxMS44OSA2NS40NjU1IDExLjY0IDY0LjU0NTUgMTEuNjRaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik05MS45NTYzIDE0LjczQzkxLjk1NjMgMTUuNTEgOTEuODQ2MyAxNi40IDkxLjYyNjMgMTcuNEg3OS42ODYzQzc5Ljg4NjMgMTkuMTYgODEuMTE2MyAyMC4wNCA4My4zNzYzIDIwLjA0Qzg0LjA5NjMgMjAuMDQgODQuNzk2MyAxOS45MyA4NS40NzYzIDE5LjcxQzg2LjE1NjMgMTkuNDkgODYuNzY2MyAxOS4xNiA4Ny4zMDYzIDE4LjcyTDg5LjY3NjMgMjIuMjlDODcuNzc2MyAyMy42OSA4NS40NjYzIDI0LjM5IDgyLjc0NjMgMjQuMzlDODEuMDI2MyAyNC4zOSA3OS41MDYzIDI0LjA5IDc4LjE4NjMgMjMuNDlDNzYuODg2MyAyMi44NyA3NS44NzYzIDIyLjAxIDc1LjE1NjMgMjAuOTFDNzQuNDU2MyAxOS43OSA3NC4xMDYzIDE4LjQ4IDc0LjEwNjMgMTYuOThDNzQuMTA2MyAxNS4yIDc0LjUxNjMgMTMuNiA3NS4zMzYzIDEyLjE4Qzc2LjE3NjMgMTAuNzQgNzcuMzM2MyA5LjYyIDc4LjgxNjMgOC44MkM4MC4zMTYzIDggODIuMDI2MyA3LjU5IDgzLjk0NjMgNy41OUM4NS41NjYzIDcuNTkgODYuOTc2MyA3Ljg5IDg4LjE3NjMgOC40OUM4OS4zOTYzIDkuMDcgOTAuMzI2MyA5LjkgOTAuOTY2MyAxMC45OEM5MS42MjYzIDEyLjA2IDkxLjk1NjMgMTMuMzEgOTEuOTU2MyAxNC43M1pNODMuNjc2MyAxMS42NEM4Mi43NTYzIDExLjY0IDgxLjk4NjMgMTEuODkgODEuMzY2MyAxMi4zOUM4MC43NDYzIDEyLjg3IDgwLjI5NjMgMTMuNTQgODAuMDE2MyAxNC40SDg2LjcwNjNDODYuNzI2MyAxMy41NCA4Ni40NTYzIDEyLjg3IDg1Ljg5NjMgMTIuMzlDODUuMzM2MyAxMS44OSA4NC41OTYzIDExLjY0IDgzLjY3NjMgMTEuNjRaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik0xMDAuOTc3IDkuNjZDMTAyLjMzNyA4LjI4IDEwNC4yOTcgNy41OSAxMDYuODU3IDcuNTlMMTA1Ljg2NyAxMi43MkMxMDUuMzY3IDEyLjY2IDEwNC45MzcgMTIuNjMgMTA0LjU3NyAxMi42M0MxMDMuMjk3IDEyLjYzIDEwMi4yNjcgMTIuOTQgMTAxLjQ4NyAxMy41NkMxMDAuNzI3IDE0LjE2IDEwMC4yMTcgMTUuMTIgOTkuOTU3MiAxNi40NEw5OC4zOTcyIDI0LjEySDkyLjY5NzJMOTUuOTM3MiA3Ljg2SDEwMS4zMzdMMTAwLjk3NyA5LjY2WiIgZmlsbD0iIzE0ODNEQyIvPgo8cGF0aCBkPSJNMTI2LjgwNyA3Ljg2TDExNi44NzcgMjQuMTJIMTEwLjk2N0wxMDcuNTE3IDcuODZIMTEzLjE1N0wxMTUuMTM3IDE3LjgyTDEyMS4xNjcgNy44NkgxMjYuODA3WiIgZmlsbD0iIzE0ODNEQyIvPgo8cGF0aCBkPSJNMTI4LjI4MSA3Ljg2SDEzMy45NTFMMTMwLjcxMSAyNC4xMkgxMjUuMDQxTDEyOC4yODEgNy44NlpNMTMxLjkxMSA2LjA2QzEzMC45MzEgNi4wNiAxMzAuMTQxIDUuNzkgMTI5LjU0MSA1LjI1QzEyOC45NDEgNC43MSAxMjguNjQxIDQuMDQgMTI4LjY0MSAzLjI0QzEyOC42NDEgMi4zIDEyOC45NzEgMS41MyAxMjkuNjMxIDAuOTI5OTk5QzEzMC4zMTEgMC4zMSAxMzEuMjAxIDAgMTMyLjMwMSAwQzEzMy4zMDEgMCAxMzQuMTAxIDAuMjYgMTM0LjcwMSAwLjc3OTk5OUMxMzUuMzAxIDEuMjggMTM1LjYwMSAxLjkzIDEzNS42MDEgMi43M0MxMzUuNjAxIDMuNzEgMTM1LjI2MSA0LjUxIDEzNC41ODEgNS4xM0MxMzMuOTAxIDUuNzUgMTMzLjAxMSA2LjA2IDEzMS45MTEgNi4wNloiIGZpbGw9IiMxNDgzREMiLz4KPHBhdGggZD0iTTE0Mi42NjcgOS42NkMxNDQuMDI3IDguMjggMTQ1Ljk4NyA3LjU5IDE0OC41NDcgNy41OUwxNDcuNTU3IDEyLjcyQzE0Ny4wNTcgMTIuNjYgMTQ2LjYyNyAxMi42MyAxNDYuMjY3IDEyLjYzQzE0NC45ODcgMTIuNjMgMTQzLjk1NyAxMi45NCAxNDMuMTc3IDEzLjU2QzE0Mi40MTcgMTQuMTYgMTQxLjkwNyAxNS4xMiAxNDEuNjQ3IDE2LjQ0TDE0MC4wODcgMjQuMTJIMTM0LjM4N0wxMzcuNjI3IDcuODZIMTQzLjAyN0wxNDIuNjY3IDkuNjZaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik0xNjcuOTEyIDcuODZMMTY0LjY3MiAyNC4xMkgxNTkuMjcyTDE1OS42MDIgMjIuNTlDMTU4LjMwMiAyMy43OSAxNTYuNzMyIDI0LjM5IDE1NC44OTIgMjQuMzlDMTUzLjY5MiAyNC4zOSAxNTIuNTYyIDI0LjEgMTUxLjUwMiAyMy41MkMxNTAuNDYyIDIyLjkyIDE0OS42MjIgMjIuMDYgMTQ4Ljk4MiAyMC45NEMxNDguMzQyIDE5LjgyIDE0OC4wMjIgMTguNSAxNDguMDIyIDE2Ljk4QzE0OC4wMjIgMTUuMjIgMTQ4LjQxMiAxMy42MyAxNDkuMTkyIDEyLjIxQzE0OS45OTIgMTAuNzcgMTUxLjA2MiA5LjY0IDE1Mi40MDIgOC44MkMxNTMuNzYyIDggMTU1LjI0MiA3LjU5IDE1Ni44NDIgNy41OUMxNTkuMjAyIDcuNTkgMTYwLjg2MiA4LjMzIDE2MS44MjIgOS44MUwxNjIuMjEyIDcuODZIMTY3LjkxMlpNMTU2Ljg3MiAxOS44QzE1OC4wMTIgMTkuOCAxNTguOTQyIDE5LjM4IDE1OS42NjIgMTguNTRDMTYwLjM4MiAxNy43IDE2MC43NDIgMTYuNjEgMTYwLjc0MiAxNS4yN0MxNjAuNzQyIDE0LjMxIDE2MC40NjIgMTMuNTUgMTU5LjkwMiAxMi45OUMxNTkuMzYyIDEyLjQzIDE1OC42MTIgMTIuMTUgMTU3LjY1MiAxMi4xNUMxNTYuNTEyIDEyLjE1IDE1NS41ODIgMTIuNTcgMTU0Ljg2MiAxMy40MUMxNTQuMTQyIDE0LjI1IDE1My43ODIgMTUuMzUgMTUzLjc4MiAxNi43MUMxNTMuNzgyIDE3LjY3IDE1NC4wNTIgMTguNDMgMTU0LjU5MiAxOC45OUMxNTUuMTUyIDE5LjUzIDE1NS45MTIgMTkuOCAxNTYuODcyIDE5LjhaIiBmaWxsPSIjMTQ4M0RDIi8+Cjwvc3ZnPgo="
+                alt="" style="padding: 0 6px;">
             <h1 style="font-size: 24px;font-weight: 700;color: #666666;margin-bottom: 24px;margin-top: 30px;padding: 0 6px;">WELCOME TO CAREERVIRA</h1>
             <div style="padding: 0 6px;">
                 <img style="display:block; line-height:0px; font-size:0px; border:0px;" src="https://ik.imagekit.io/adi1239457/image_724_F5yq9I-MOO.png" width="100%" alt="logo">
             </div>
             <p style="margin: 24px 0;padding: 0 6px;">Thank you for signing up. We are glad to have you here. As a new member you will get:</p>
-            <div style="text-align:center;display:flex;">
+            <div style="text-align:center;display:flex;font-size: 14px;">
                 <div style="width: 33%;">
                     <img style="display:block;margin: auto; line-height:0px; font-size:0px; border:0px;" src="https://ik.imagekit.io/adi1239457/Group_1904_-19TYsyQk.png" width="67" height="68" alt="icon">
                     <p style="margin-top: 8px;">View, <br> Learn content</p>
@@ -75,18 +55,20 @@
             <p style="margin-top: 0;margin-bottom: 24px;padding: 0 6px;">Cheers, <br> The Careervira Team</p>
         </div>
     </div>
-    <div class="main " style="width:100%; background: #F7F7F7;font-size: ;">
+    <div class="main " style="width:100%; background: #F7F7F7;font-size: 14px;">
         <div class="template-card" style="max-width: 750px; width:100%; margin: auto;">
             <footer class="main" style="line-height: 25px; color: #6a6a6a;">
                 <div style="padding:6px ;padding-top: 24px;">
 
-                    <img src="https://d2uwy4ckc30nxc.cloudfront.net/media/email/new_logo.png" alt="">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTY4IiBoZWlnaHQ9IjI1IiB2aWV3Qm94PSIwIDAgMTY4IDI1IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTAuNTYgMjQuNTRDOC40NCAyNC41NCA2LjU4IDI0LjE2IDQuOTggMjMuNEMzLjM4IDIyLjYyIDIuMTUgMjEuNTMgMS4yOSAyMC4xM0MwLjQzIDE4LjczIDAgMTcuMTIgMCAxNS4zQzAgMTIuOSAwLjU1IDEwLjc0IDEuNjUgOC44MkMyLjc3IDYuOSA0LjMzIDUuNCA2LjMzIDQuMzJDOC4zMyAzLjI0IDEwLjYxIDIuNyAxMy4xNyAyLjdDMTUuMTEgMi43IDE2LjgzIDMuMDUgMTguMzMgMy43NUMxOS44MyA0LjQzIDIwLjk1IDUuNCAyMS42OSA2LjY2TDE3LjQgMTAuMDhDMTYuMzggOC40NCAxNC44NCA3LjYyIDEyLjc4IDcuNjJDMTEuNDQgNy42MiAxMC4yNiA3Ljk0IDkuMjQgOC41OEM4LjIyIDkuMiA3LjQyIDEwLjA3IDYuODQgMTEuMTlDNi4yOCAxMi4yOSA2IDEzLjUzIDYgMTQuOTFDNiAxNi4zMyA2LjQ2IDE3LjQ3IDcuMzggMTguMzNDOC4zIDE5LjE5IDkuNTUgMTkuNjIgMTEuMTMgMTkuNjJDMTMuMTMgMTkuNjIgMTQuODQgMTguODEgMTYuMjYgMTcuMTlMMTkuNzcgMjAuNjRDMTguNjMgMjIuMDIgMTcuMyAyMy4wMiAxNS43OCAyMy42NEMxNC4yNiAyNC4yNCAxMi41MiAyNC41NCAxMC41NiAyNC41NFoiIGZpbGw9IiMxNDgzREMiLz4KPHBhdGggZD0iTTQwLjkxMDQgNy44NkwzNy42NzA0IDI0LjEySDMyLjI3MDRMMzIuNjAwNCAyMi41OUMzMS4zMDA0IDIzLjc5IDI5LjczMDQgMjQuMzkgMjcuODkwNCAyNC4zOUMyNi42OTA0IDI0LjM5IDI1LjU2MDQgMjQuMSAyNC41MDA0IDIzLjUyQzIzLjQ2MDQgMjIuOTIgMjIuNjIwNCAyMi4wNiAyMS45ODA0IDIwLjk0QzIxLjM0MDQgMTkuODIgMjEuMDIwNCAxOC41IDIxLjAyMDQgMTYuOThDMjEuMDIwNCAxNS4yMiAyMS40MTA0IDEzLjYzIDIyLjE5MDQgMTIuMjFDMjIuOTkwNCAxMC43NyAyNC4wNjA0IDkuNjQgMjUuNDAwNCA4LjgyQzI2Ljc2MDQgOCAyOC4yNDA0IDcuNTkgMjkuODQwNCA3LjU5QzMyLjIwMDQgNy41OSAzMy44NjA0IDguMzMgMzQuODIwNCA5LjgxTDM1LjIxMDQgNy44Nkg0MC45MTA0Wk0yOS44NzA0IDE5LjhDMzEuMDEwNCAxOS44IDMxLjk0MDQgMTkuMzggMzIuNjYwNCAxOC41NEMzMy4zODA0IDE3LjcgMzMuNzQwNCAxNi42MSAzMy43NDA0IDE1LjI3QzMzLjc0MDQgMTQuMzEgMzMuNDYwNCAxMy41NSAzMi45MDA0IDEyLjk5QzMyLjM2MDQgMTIuNDMgMzEuNjEwNCAxMi4xNSAzMC42NTA0IDEyLjE1QzI5LjUxMDQgMTIuMTUgMjguNTgwNCAxMi41NyAyNy44NjA0IDEzLjQxQzI3LjE0MDQgMTQuMjUgMjYuNzgwNCAxNS4zNSAyNi43ODA0IDE2LjcxQzI2Ljc4MDQgMTcuNjcgMjcuMDUwNCAxOC40MyAyNy41OTA0IDE4Ljk5QzI4LjE1MDQgMTkuNTMgMjguOTEwNCAxOS44IDI5Ljg3MDQgMTkuOFoiIGZpbGw9IiMxNDgzREMiLz4KPHBhdGggZD0iTTQ5LjYxOTggOS42NkM1MC45Nzk4IDguMjggNTIuOTM5OCA3LjU5IDU1LjQ5OTggNy41OUw1NC41MDk4IDEyLjcyQzU0LjAwOTggMTIuNjYgNTMuNTc5OCAxMi42MyA1My4yMTk4IDEyLjYzQzUxLjkzOTggMTIuNjMgNTAuOTA5OCAxMi45NCA1MC4xMjk4IDEzLjU2QzQ5LjM2OTggMTQuMTYgNDguODU5OCAxNS4xMiA0OC41OTk4IDE2LjQ0TDQ3LjAzOTggMjQuMTJINDEuMzM5OEw0NC41Nzk4IDcuODZINDkuOTc5OEw0OS42MTk4IDkuNjZaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik03Mi44MjU1IDE0LjczQzcyLjgyNTUgMTUuNTEgNzIuNzE1NSAxNi40IDcyLjQ5NTUgMTcuNEg2MC41NTU1QzYwLjc1NTUgMTkuMTYgNjEuOTg1NSAyMC4wNCA2NC4yNDU1IDIwLjA0QzY0Ljk2NTUgMjAuMDQgNjUuNjY1NSAxOS45MyA2Ni4zNDU1IDE5LjcxQzY3LjAyNTUgMTkuNDkgNjcuNjM1NSAxOS4xNiA2OC4xNzU1IDE4LjcyTDcwLjU0NTUgMjIuMjlDNjguNjQ1NSAyMy42OSA2Ni4zMzU1IDI0LjM5IDYzLjYxNTUgMjQuMzlDNjEuODk1NSAyNC4zOSA2MC4zNzU1IDI0LjA5IDU5LjA1NTUgMjMuNDlDNTcuNzU1NSAyMi44NyA1Ni43NDU1IDIyLjAxIDU2LjAyNTUgMjAuOTFDNTUuMzI1NSAxOS43OSA1NC45NzU1IDE4LjQ4IDU0Ljk3NTUgMTYuOThDNTQuOTc1NSAxNS4yIDU1LjM4NTUgMTMuNiA1Ni4yMDU1IDEyLjE4QzU3LjA0NTUgMTAuNzQgNTguMjA1NSA5LjYyIDU5LjY4NTUgOC44MkM2MS4xODU1IDggNjIuODk1NSA3LjU5IDY0LjgxNTUgNy41OUM2Ni40MzU1IDcuNTkgNjcuODQ1NSA3Ljg5IDY5LjA0NTUgOC40OUM3MC4yNjU1IDkuMDcgNzEuMTk1NSA5LjkgNzEuODM1NSAxMC45OEM3Mi40OTU1IDEyLjA2IDcyLjgyNTUgMTMuMzEgNzIuODI1NSAxNC43M1pNNjQuNTQ1NSAxMS42NEM2My42MjU1IDExLjY0IDYyLjg1NTUgMTEuODkgNjIuMjM1NSAxMi4zOUM2MS42MTU1IDEyLjg3IDYxLjE2NTUgMTMuNTQgNjAuODg1NSAxNC40SDY3LjU3NTVDNjcuNTk1NSAxMy41NCA2Ny4zMjU1IDEyLjg3IDY2Ljc2NTUgMTIuMzlDNjYuMjA1NSAxMS44OSA2NS40NjU1IDExLjY0IDY0LjU0NTUgMTEuNjRaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik05MS45NTYzIDE0LjczQzkxLjk1NjMgMTUuNTEgOTEuODQ2MyAxNi40IDkxLjYyNjMgMTcuNEg3OS42ODYzQzc5Ljg4NjMgMTkuMTYgODEuMTE2MyAyMC4wNCA4My4zNzYzIDIwLjA0Qzg0LjA5NjMgMjAuMDQgODQuNzk2MyAxOS45MyA4NS40NzYzIDE5LjcxQzg2LjE1NjMgMTkuNDkgODYuNzY2MyAxOS4xNiA4Ny4zMDYzIDE4LjcyTDg5LjY3NjMgMjIuMjlDODcuNzc2MyAyMy42OSA4NS40NjYzIDI0LjM5IDgyLjc0NjMgMjQuMzlDODEuMDI2MyAyNC4zOSA3OS41MDYzIDI0LjA5IDc4LjE4NjMgMjMuNDlDNzYuODg2MyAyMi44NyA3NS44NzYzIDIyLjAxIDc1LjE1NjMgMjAuOTFDNzQuNDU2MyAxOS43OSA3NC4xMDYzIDE4LjQ4IDc0LjEwNjMgMTYuOThDNzQuMTA2MyAxNS4yIDc0LjUxNjMgMTMuNiA3NS4zMzYzIDEyLjE4Qzc2LjE3NjMgMTAuNzQgNzcuMzM2MyA5LjYyIDc4LjgxNjMgOC44MkM4MC4zMTYzIDggODIuMDI2MyA3LjU5IDgzLjk0NjMgNy41OUM4NS41NjYzIDcuNTkgODYuOTc2MyA3Ljg5IDg4LjE3NjMgOC40OUM4OS4zOTYzIDkuMDcgOTAuMzI2MyA5LjkgOTAuOTY2MyAxMC45OEM5MS42MjYzIDEyLjA2IDkxLjk1NjMgMTMuMzEgOTEuOTU2MyAxNC43M1pNODMuNjc2MyAxMS42NEM4Mi43NTYzIDExLjY0IDgxLjk4NjMgMTEuODkgODEuMzY2MyAxMi4zOUM4MC43NDYzIDEyLjg3IDgwLjI5NjMgMTMuNTQgODAuMDE2MyAxNC40SDg2LjcwNjNDODYuNzI2MyAxMy41NCA4Ni40NTYzIDEyLjg3IDg1Ljg5NjMgMTIuMzlDODUuMzM2MyAxMS44OSA4NC41OTYzIDExLjY0IDgzLjY3NjMgMTEuNjRaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik0xMDAuOTc3IDkuNjZDMTAyLjMzNyA4LjI4IDEwNC4yOTcgNy41OSAxMDYuODU3IDcuNTlMMTA1Ljg2NyAxMi43MkMxMDUuMzY3IDEyLjY2IDEwNC45MzcgMTIuNjMgMTA0LjU3NyAxMi42M0MxMDMuMjk3IDEyLjYzIDEwMi4yNjcgMTIuOTQgMTAxLjQ4NyAxMy41NkMxMDAuNzI3IDE0LjE2IDEwMC4yMTcgMTUuMTIgOTkuOTU3MiAxNi40NEw5OC4zOTcyIDI0LjEySDkyLjY5NzJMOTUuOTM3MiA3Ljg2SDEwMS4zMzdMMTAwLjk3NyA5LjY2WiIgZmlsbD0iIzE0ODNEQyIvPgo8cGF0aCBkPSJNMTI2LjgwNyA3Ljg2TDExNi44NzcgMjQuMTJIMTEwLjk2N0wxMDcuNTE3IDcuODZIMTEzLjE1N0wxMTUuMTM3IDE3LjgyTDEyMS4xNjcgNy44NkgxMjYuODA3WiIgZmlsbD0iIzE0ODNEQyIvPgo8cGF0aCBkPSJNMTI4LjI4MSA3Ljg2SDEzMy45NTFMMTMwLjcxMSAyNC4xMkgxMjUuMDQxTDEyOC4yODEgNy44NlpNMTMxLjkxMSA2LjA2QzEzMC45MzEgNi4wNiAxMzAuMTQxIDUuNzkgMTI5LjU0MSA1LjI1QzEyOC45NDEgNC43MSAxMjguNjQxIDQuMDQgMTI4LjY0MSAzLjI0QzEyOC42NDEgMi4zIDEyOC45NzEgMS41MyAxMjkuNjMxIDAuOTI5OTk5QzEzMC4zMTEgMC4zMSAxMzEuMjAxIDAgMTMyLjMwMSAwQzEzMy4zMDEgMCAxMzQuMTAxIDAuMjYgMTM0LjcwMSAwLjc3OTk5OUMxMzUuMzAxIDEuMjggMTM1LjYwMSAxLjkzIDEzNS42MDEgMi43M0MxMzUuNjAxIDMuNzEgMTM1LjI2MSA0LjUxIDEzNC41ODEgNS4xM0MxMzMuOTAxIDUuNzUgMTMzLjAxMSA2LjA2IDEzMS45MTEgNi4wNloiIGZpbGw9IiMxNDgzREMiLz4KPHBhdGggZD0iTTE0Mi42NjcgOS42NkMxNDQuMDI3IDguMjggMTQ1Ljk4NyA3LjU5IDE0OC41NDcgNy41OUwxNDcuNTU3IDEyLjcyQzE0Ny4wNTcgMTIuNjYgMTQ2LjYyNyAxMi42MyAxNDYuMjY3IDEyLjYzQzE0NC45ODcgMTIuNjMgMTQzLjk1NyAxMi45NCAxNDMuMTc3IDEzLjU2QzE0Mi40MTcgMTQuMTYgMTQxLjkwNyAxNS4xMiAxNDEuNjQ3IDE2LjQ0TDE0MC4wODcgMjQuMTJIMTM0LjM4N0wxMzcuNjI3IDcuODZIMTQzLjAyN0wxNDIuNjY3IDkuNjZaIiBmaWxsPSIjMTQ4M0RDIi8+CjxwYXRoIGQ9Ik0xNjcuOTEyIDcuODZMMTY0LjY3MiAyNC4xMkgxNTkuMjcyTDE1OS42MDIgMjIuNTlDMTU4LjMwMiAyMy43OSAxNTYuNzMyIDI0LjM5IDE1NC44OTIgMjQuMzlDMTUzLjY5MiAyNC4zOSAxNTIuNTYyIDI0LjEgMTUxLjUwMiAyMy41MkMxNTAuNDYyIDIyLjkyIDE0OS42MjIgMjIuMDYgMTQ4Ljk4MiAyMC45NEMxNDguMzQyIDE5LjgyIDE0OC4wMjIgMTguNSAxNDguMDIyIDE2Ljk4QzE0OC4wMjIgMTUuMjIgMTQ4LjQxMiAxMy42MyAxNDkuMTkyIDEyLjIxQzE0OS45OTIgMTAuNzcgMTUxLjA2MiA5LjY0IDE1Mi40MDIgOC44MkMxNTMuNzYyIDggMTU1LjI0MiA3LjU5IDE1Ni44NDIgNy41OUMxNTkuMjAyIDcuNTkgMTYwLjg2MiA4LjMzIDE2MS44MjIgOS44MUwxNjIuMjEyIDcuODZIMTY3LjkxMlpNMTU2Ljg3MiAxOS44QzE1OC4wMTIgMTkuOCAxNTguOTQyIDE5LjM4IDE1OS42NjIgMTguNTRDMTYwLjM4MiAxNy43IDE2MC43NDIgMTYuNjEgMTYwLjc0MiAxNS4yN0MxNjAuNzQyIDE0LjMxIDE2MC40NjIgMTMuNTUgMTU5LjkwMiAxMi45OUMxNTkuMzYyIDEyLjQzIDE1OC42MTIgMTIuMTUgMTU3LjY1MiAxMi4xNUMxNTYuNTEyIDEyLjE1IDE1NS41ODIgMTIuNTcgMTU0Ljg2MiAxMy40MUMxNTQuMTQyIDE0LjI1IDE1My43ODIgMTUuMzUgMTUzLjc4MiAxNi43MUMxNTMuNzgyIDE3LjY3IDE1NC4wNTIgMTguNDMgMTU0LjU5MiAxOC45OUMxNTUuMTUyIDE5LjUzIDE1NS45MTIgMTkuOCAxNTYuODcyIDE5LjhaIiBmaWxsPSIjMTQ4M0RDIi8+Cjwvc3ZnPgo="
+                        alt="">
 
 
 
                     <div style="clear: both;margin-top: 14px;">
                         <p style="margin-top:0;margin-bottom: 12px;float: left;color: #6a6a6a;width: 40%;">
-                            <span>20 square Road, <br> #02-01, 049, <br> United States</span>
+                            <span> <a href="https://crux.ajency.in/"><span style="text-decoration: underline;color: #6a6a6a;">Careervira.com</span></a> <br> Ideas At Scale India Pvt. Ltd <br> WeWork 32nd Milestone <br> Gurugram 122001 <br> Haryana,
+                            India</span>
                         </p>
                         <p style="margin-top:0;float: right;text-align:right;color: #6a6a6a;width: 58%;">
                             <span> Need help? <br> Contact us at <a href="mailto:customercare@careervira.com" style="color: #6a6a6a;overflow-wrap: break-word;"><span style="text-decoration: underline;">customercare@careervira.com</span></a>
@@ -101,15 +83,15 @@
                     <ul style="text-align: center;margin: auto;padding-left: 0;margin-bottom: 24px;">
                         <li style="list-style: none;display: inline-block;">
 
-                            <a href="https://www.facebook.com/careervira" target="_blank"><img src="https://ik.imagekit.io/adi1239457/facebook_qLj53TlT2.png" alt="" style="height: 18px"></a>
+                            <a href="https://www.facebook.com/careervira" target="_blank"><img src="https://ik.imagekit.io/adi1239457/email_templates/Vector__20__5mp3DQDjq.png" alt="" style="height: 18px"></a>
 
                         </li>
                         <li style="list-style: none;display: inline-block;margin: 0 52px;">
-                            <a href="https://www.twitter.com/careervira" target="_blank"><img src="https://ik.imagekit.io/adi1239457/twitter_ORZHBm6SA.png" alt="" style="height: 18px"></a>
+                            <a href="https://www.twitter.com/careervira" target="_blank"><img src="https://ik.imagekit.io/adi1239457/email_templates/Vector__21__Z80osbgF8.png" alt="" style="height: 18px"></a>
                         </li>
 
                         <li style="list-style: none;display: inline-block;margin-left:0 !important;">
-                            <a href="https://www.linkedin.com/company/careervira" target="_blank"><img src="https://ik.imagekit.io/adi1239457/linkd_Rt2xw1f1bO.png" alt="" style="height: 18px"></a>
+                            <a href="https://www.linkedin.com/company/careervira" target="_blank"><img src="https://ik.imagekit.io/adi1239457/email_templates/Group_837_39aIW-ZqIW.png" alt="" style="height: 18px"></a>
                         </li>
                     </ul>
 
@@ -118,6 +100,8 @@
             </footer>
         </div>
     </div>
+    <hr style="background: linear-gradient(90deg, #5DC1FC 0%, #FFD600 100%);height: 5px;margin: 0;">
+
 </body>
 
 </html>
