@@ -172,7 +172,7 @@ module.exports = class providerService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort']){
+        if(!req.query['sort'] && !req.query['q']){
             if(req.query['rank']){
                 req.query['sort'] = "rank:asc";
             }else{
