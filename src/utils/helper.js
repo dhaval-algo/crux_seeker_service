@@ -714,7 +714,7 @@ const sendWelcomeEmail  = (userObj) => {
         try {
             console.log(userObj);
             let emailPayload = {
-                fromemail: "latesh@ajency.in",
+                fromemail: "hello@careervira.com",
                 toemail: userObj.email,
                 email_type: "welcome_mail",
             }
@@ -738,7 +738,7 @@ const sendResetPasswordLink = (userObj, useQueue) => {
             }
             let link = `${defaults.getValue('resetPasswordUrl')}?${stringify(params)}`
             let emailPayload = {
-                fromemail: "latesh@ajency.in",
+                fromemail: "hello@careervira.com",
                 toemail: userObj.email,
                 email_type: "resetpassword_mail",
                 email_data: {
