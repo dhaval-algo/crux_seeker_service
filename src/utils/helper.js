@@ -564,7 +564,7 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
             }
             let link = `${defaults.getValue('verificationUrl')}?${stringify(params)}`
             let emailPayload = {
-                fromemail: "latesh@ajency.in",
+                fromemail: "hello@careervira.com",
                 toemail: userObj.email,
                 email_type: "activiation_mail",
                 email_data: {
