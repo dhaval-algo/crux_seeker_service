@@ -407,6 +407,7 @@ module.exports = class articleService {
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         const article = await this.generateSingleViewData(hit._source, isListing);
+                        console.log("article-->>",article)
                         articles.push(article);
                     }
                     console.log("articles-->>",articles)
