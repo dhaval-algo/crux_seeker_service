@@ -564,7 +564,7 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
             }
             let link = `${defaults.getValue('verificationUrl')}?${stringify(params)}`
             let emailPayload = {
-                fromemail: "latesh@ajency.in",
+                fromemail: process.env.FROM_EMAIL_VERIFICATION_EMAIL,
                 toemail: userObj.email,
                 email_type: "activiation_mail",
                 email_data: {
@@ -714,7 +714,7 @@ const sendWelcomeEmail  = (userObj) => {
         try {
             console.log(userObj);
             let emailPayload = {
-                fromemail: "latesh@ajency.in",
+                fromemail: process.env.FROM_EMAIL_WELCOME_EMAIL,
                 toemail: userObj.email,
                 email_type: "welcome_mail",
             }
@@ -738,7 +738,7 @@ const sendResetPasswordLink = (userObj, useQueue) => {
             }
             let link = `${defaults.getValue('resetPasswordUrl')}?${stringify(params)}`
             let emailPayload = {
-                fromemail: "latesh@ajency.in",
+                fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
                 toemail: userObj.email,
                 email_type: "resetpassword_mail",
                 email_data: {
