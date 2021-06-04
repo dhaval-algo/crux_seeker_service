@@ -39,7 +39,8 @@ module.exports = class FooterService {
             let comment = (requestData.comment != undefined ) ? requestData.comment :''
 
             let emailPayload = {
-                fromemail: process.env.FROM_EMAIL,
+            //    fromemail: process.env.FROM_EMAIL,
+                fromemail: "customercare@careervira.com",
                 toemail: process.env.TO_EMAIL,
                 ccaddress : [],
                 bccaddress : [],
@@ -70,7 +71,8 @@ module.exports = class FooterService {
             let comment = (requestData.comment != undefined ) ? requestData.comment :''
 
             let emailPayload = {
-                fromemail: process.env.FROM_EMAIL,
+              //  fromemail: process.env.FROM_EMAIL,
+                fromemail: "customercare@careervira.com",
                 toemail: process.env.TO_EMAIL,
                 ccaddress : [],
                 bccaddress : [],
