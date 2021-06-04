@@ -282,7 +282,7 @@ module.exports = class articleService {
         if(isList){
             coverImageSize = 'thumbnail';
         }
-
+        console.log("1--------->")
         let cover_image = null;
         if(result.cover_image){
             if(result.cover_image[coverImageSize]){
@@ -294,9 +294,11 @@ module.exports = class articleService {
         if(!cover_image){
             cover_image = getMediaurl(result.cover_image['url']);
         }
-
+        console.log("2--------->")
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
+         console.log("3--------->")
         let auth = await this.getAuthor(result.author_id);
+         console.log("4--------->")
         console.log("Authhhhh",(auth && auth.firstname))
         // if(!author){
         //     console.log("Author not found...");
