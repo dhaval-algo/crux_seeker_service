@@ -1,13 +1,14 @@
 {
   "development": {
-    "username": "postgres",
-    "password": "postgres",
-    "database": "crux_seeker_dev",
+    "username": "${process.env.DATABASE_USERNAME}",
+    "password": "${process.env.DATABASE_PASSWORD}",
+    "database": "${process.env.DATABASE_NAME}",
     "host": "127.0.0.1",
     "dialect": "postgres",
     "dialectOptions": {
       "useUTC":true
     },
+    "logging":false,
     "timezone": "+05:30"
   },
   "test": {
@@ -30,17 +31,21 @@
     "dialectOptions": {
       "useUTC":true
     },
+    "logging":false,
     "timezone": "+05:30"
   },
   "staging":{
-    "username": "crux_dev",
-    "password": "Ajency#123",
-    "database": "crux_seeker_dev",
+    "username": "${process.env.DATABASE_USERNAME}",
+    "password": "${process.env.DATABASE_PASSWORD}",
+    "database": "${process.env.DATABASE_NAME}",
     "host": "127.0.0.1",
     "dialect": "postgres",
     "dialectOptions": {
       "useUTC":true
     },
+    "logging":false,
     "timezone": "+05:30"
   } 
 }
+
+
