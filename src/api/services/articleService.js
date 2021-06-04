@@ -409,6 +409,7 @@ module.exports = class articleService {
                         const article = await this.generateSingleViewData(hit._source, isListing);
                         articles.push(article);
                     }
+                    console.log("articles-->>",articles)
                     for(const id of articleIds){
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
                         if(typeof article !='undefined')
