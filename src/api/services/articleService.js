@@ -277,7 +277,7 @@ module.exports = class articleService {
 
 
     async generateSingleViewData(result, isList = false){
-        
+        try{
         let coverImageSize = 'small';
         if(isList){
             coverImageSize = 'thumbnail';
@@ -372,6 +372,10 @@ module.exports = class articleService {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
         return data;
+        }
+        catch(err){
+            console.log("ERROR: ",err)
+        }
     }
 
 
