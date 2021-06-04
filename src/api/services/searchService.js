@@ -31,7 +31,7 @@ const generateEntityQuery = (entity, keyword) => {
             }, */
             {
             "query_string" : {
-                "query" : `*${decodeURIComponent(keyword).replace("+","//+")}*`,
+                "query" : `*${decodeURIComponent(keyword).replace("+","//+").trim()}*`,
                 "fields" : entityConfig.fields,
                 "analyze_wildcard" : true,
                 "allow_leading_wildcard": true

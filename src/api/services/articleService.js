@@ -192,7 +192,7 @@ module.exports = class articleService {
             query.bool.must.push( 
                 {
                     "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
+                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
                         "fields" : ['title', 'section_name', 'author_first_name', 'author_last_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
