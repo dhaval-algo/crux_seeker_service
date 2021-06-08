@@ -192,8 +192,8 @@ module.exports = class articleService {
             query.bool.must.push( 
                 {
                     "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['title', 'section_name', 'author_first_name', 'author_last_name'],
+                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                        "fields" : ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -277,12 +277,12 @@ module.exports = class articleService {
 
 
     async generateSingleViewData(result, isList = false){
-        
+        try{
         let coverImageSize = 'small';
         if(isList){
             coverImageSize = 'thumbnail';
         }
-
+        console.log("1--------->")
         let cover_image = null;
         if(result.cover_image){
             if(result.cover_image[coverImageSize]){
@@ -294,9 +294,11 @@ module.exports = class articleService {
         if(!cover_image){
             cover_image = getMediaurl(result.cover_image['url']);
         }
-
+        console.log("2--------->")
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
+         console.log("3--------->")
         let auth = await this.getAuthor(result.author_id);
+         console.log("4--------->")
         console.log("Authhhhh",(auth && auth.firstname))
         // if(!author){
         //     console.log("Author not found...");
@@ -372,6 +374,10 @@ module.exports = class articleService {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
         return data;
+        }
+        catch(err){
+            console.log("ERROR: ",err)
+        }
     }
 
 
@@ -403,8 +409,10 @@ module.exports = class articleService {
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         const article = await this.generateSingleViewData(hit._source, isListing);
+                        console.log("article-->>",article)
                         articles.push(article);
                     }
+                    console.log("articles-->>",articles)
                     for(const id of articleIds){
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
                         if(typeof article !='undefined')

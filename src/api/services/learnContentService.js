@@ -759,8 +759,8 @@ module.exports = class learnContentService {
             query.bool.must.push( 
                 {
                     "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+")}*`,
-                        "fields" : ['title','categories','sub_categories','provider_name','level','medium','partner_name'],
+                        "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
+                        "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }

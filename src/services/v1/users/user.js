@@ -1097,7 +1097,7 @@ const getEnquiryList = async (req,res) => {
                 if(result.hits.hits && result.hits.hits.length > 0){
                     // for(const hit of result.hits.hits){
                         let hit =  result.hits.hits[0]
-                        console.log(result.hits.hit[0],'hits array');
+                        console.log(result.hits.hits[0],'hits array');
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name

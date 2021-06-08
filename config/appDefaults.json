@@ -23,8 +23,8 @@
     "otpSpan": 10,
     "otpMaxSent": 3,
     "otpInvalidTries": 3,
-    "verificationUrl":"",
-    "resetPasswordUrl":"",
+    "verificationUrl":"https://prod.careervira.com/verify-account",
+    "resetPasswordUrl":"https://prod.careervira.com/reset-password",
     "redirectUrl":"/"
   },
   "staging": {
