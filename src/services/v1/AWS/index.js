@@ -1,8 +1,8 @@
 let AWS = require('aws-sdk');      
 
 
-const {AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_IMAGE_BUCKET} = process.env
-const S3Url = `https://crux-dev.s3.ap-south-1.amazonaws.com`
+const {AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_IMAGE_BUCKET, ASW_S3_URL} = process.env
+const S3Url = ASW_S3_URL
 AWS.config.update({
     accessKeyId:AWS_ACCESS_KEY_ID,
     secretAccessKey:AWS_SECRET_ACCESS_KEY,
