@@ -193,7 +193,7 @@ module.exports = class articleService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                        "fields" : ['title', 'section_name', 'author_first_name', 'author_last_name'],
+                        "fields" : ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }

@@ -5,9 +5,9 @@ const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 
 const entityQueryMapping = {
-    'learn-content': {label: 'Course', status: 'published', fields: ['title','categories','sub_categories','provider_name','level','medium','partner_name'], source_fields: ['title']},
-    'provider': {label: 'Institute', status: 'approved', fields: ['name','program_types'], source_fields: ['name','slug']},
-    'article': {label: 'Article', status: 'published', fields: ['title', 'section_name', 'author_first_name', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
+    'learn-content': {label: 'Course', status: 'published', fields: ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'], source_fields: ['title']},
+    'provider': {label: 'Institute', status: 'approved', fields: ['name^2','program_types'], source_fields: ['name','slug']},
+    'article': {label: 'Article', status: 'published', fields: ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
 };
 
 const MAX_PER_ENTITY = 20;

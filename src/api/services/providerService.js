@@ -256,7 +256,7 @@ module.exports = class providerService {
                 {
                     "query_string" : {
                         "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                        "fields" : ['name','program_types'],
+                        "fields" : ['name^2','program_types'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
