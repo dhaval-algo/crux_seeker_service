@@ -1049,8 +1049,7 @@ module.exports = class learnContentService {
         }
 
         if(categories.length > 0){
-            const queryBody = {
-                "query": {
+            const query = {
                     "bool": {
                         "must": [
                           {
@@ -1066,14 +1065,13 @@ module.exports = class learnContentService {
                               }
                             }
                           ]
-                    }
-                }
+                    }               
             };
-            const result = await elasticService.plainSearch('learn-content', queryBody);
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    //console.log("result.hits.hits <> ", result.hits.hits);
-                    courses = result.hits.hits.map(function(obj) {
+            let payload  ={size:1000}
+            const result = await elasticService.search('learn-content', query, payload);
+            if(result){
+                if(result.hits && result.hits.length > 0){                  
+                    courses = result.hits.map(function(obj) {
                         return {"label": obj['_source']['title'], "value": `LRN_CNT_PUB_${obj['_source']['id']}`};
                       });
                 }
