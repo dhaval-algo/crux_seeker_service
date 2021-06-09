@@ -709,7 +709,7 @@ module.exports = class learnContentService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort']){
+        if(!req.query['sort'] && !req.query['q']){
             req.query['sort'] = "published_date:desc";
         }
 
