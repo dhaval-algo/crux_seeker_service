@@ -323,7 +323,8 @@ module.exports = class articleService {
                 lastname: auth.lastname ? auth.lastname:"",
                 designation: auth.designation,
                 bio: auth.bio,
-                slug: auth.slug
+                slug: auth.slug,
+                image:auth.image
             };
         }else{
             author = {
