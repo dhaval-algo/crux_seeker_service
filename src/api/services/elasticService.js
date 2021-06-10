@@ -55,11 +55,52 @@ module.exports = {
     if(payload.sort !== null){
       finalQuery.sort = payload.sort;
     } 
-    console.log('qqqq',JSON.stringify(finalQuery));
+
     const result = await client.search(finalQuery);
     if(result && result.body){
         //return result.body.hits.hits;
         return result.body.hits;
+    }else{
+        return [];
+    } 
+  }, 
+
+  searchWithAggregate: async (index, query, payload={}, q) => {
+    const client = elasticClient();
+    let finalQuery = {
+      index: index,
+      body: {
+        query: query
+      }
+    };
+    //if(q){
+      //finalQuery.q = q;
+    //}
+    console.log('sorttttt valueee',payload);
+    if(payload.from !== null){
+      finalQuery.from = payload.from;
+    }else{
+      finalQuery.from = 0;
+    }
+
+    if(payload.size !== null){
+      finalQuery.size = payload.size;
+    }else{
+      finalQuery.size = 10000;
+    }
+
+    if(payload.sort !== null){
+      finalQuery.sort = payload.sort;
+    } 
+
+    if(payload.aggs !== null){
+      finalQuery.body.aggs = payload.aggs;
+    }
+
+    const result = await client.search(finalQuery);
+    if(result && result.body){
+        //return result.body.hits.hits;
+        return result.body;
     }else{
         return [];
     } 

@@ -172,7 +172,7 @@ module.exports = class providerService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort']){
+        if(!req.query['sort'] && !req.query['q']){
             if(req.query['rank']){
                 req.query['sort'] = "rank:asc";
             }else{
@@ -255,8 +255,8 @@ module.exports = class providerService {
             query.bool.must.push( 
                 {
                     "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q'])}*`,
-                        "fields" : ['name','program_types'],
+                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                        "fields" : ['name^2','programs'],
                         "analyze_wildcard" : true,
                         "allow_leading_wildcard": true
                     }
@@ -356,10 +356,17 @@ module.exports = class providerService {
             coverImageSize = 'thumbnail';
         }
         let cover_image = null;
+        let logo = null;
         if(result.cover_image){
             cover_image = getMediaurl(result.cover_image[coverImageSize]);
             if(!cover_image){
                 cover_image = getMediaurl(result.cover_image['thumbnail']);
+            }
+        }
+        if(result.logo){
+            logo = getMediaurl(result.logo[coverImageSize]);
+            if(!logo){
+                logo = getMediaurl(result.logo['thumbnail']);
             }
         }
 
@@ -377,6 +384,7 @@ module.exports = class providerService {
             id: `PVDR_${result.id}`,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: cover_image,
+            logo:logo,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             overview: result.overview,
             programs: (result.programs) ? result.programs : [],
