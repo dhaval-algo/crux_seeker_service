@@ -351,7 +351,7 @@ module.exports = class providerService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, rank = null){
-        let coverImageSize = 'small';
+        let coverImageSize = 'large';
         if(isList){
             coverImageSize = 'thumbnail';
         }
