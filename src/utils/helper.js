@@ -888,10 +888,7 @@ const calculateProfileCompletion =  (userObj) => {
                         metaType:"primary",
                         key:{[Op.in]:sections[key].fields},
                         userId:userObj.userId || userObj.id
-                    },
-                    order: [
-                        ['createdAt', 'DESC']
-                    ]
+                    }
                 })
                 if(meta.length) {
                     const formValues = meta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
