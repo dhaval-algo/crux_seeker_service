@@ -23,7 +23,7 @@ const MAX_RESULT = 10000;
 const keywordFields = ['name'];
 const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
 const allowZeroCountFields = ['programs','study_modes'];
-const FEATURED_RANK_LIMIT = 4;
+const FEATURED_RANK_LIMIT = 2;
 
 
 
@@ -550,7 +550,7 @@ module.exports = class providerService {
                     rank: rank.rank
                 });
                 featuredCount++;
-                if(featuredCount == FEATURED_RANK_LIMIT){
+                if(featuredCount == FEATURED_RANK_LIMIT && isList){
                     break;
                 }
             }
