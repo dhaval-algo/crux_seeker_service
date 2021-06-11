@@ -437,7 +437,7 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ? getMediaurl(result.image.thumbnail) : null,
+            image: (result.image) ?( (result.image.large) ? getMediaurl(result.image.large):  getMediaurl(result.image.thumbnail)): null,
             slug: result.slug,
             email: result.email,
             twitter_url: result.twitter_url,
