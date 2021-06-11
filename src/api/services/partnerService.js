@@ -243,7 +243,7 @@ module.exports = class partnerService {
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
         
-        let coverImageSize = 'small';
+        let coverImageSize = 'large';
         if(isList){
             coverImageSize = 'thumbnail';
         }

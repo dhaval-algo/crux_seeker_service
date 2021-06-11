@@ -278,7 +278,7 @@ module.exports = class articleService {
 
     async generateSingleViewData(result, isList = false){
         try{
-        let coverImageSize = 'small';
+        let coverImageSize = 'large';
         if(isList){
             coverImageSize = 'thumbnail';
         }
