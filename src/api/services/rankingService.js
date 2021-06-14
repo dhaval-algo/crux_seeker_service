@@ -5,7 +5,7 @@ const ArticleService = new articleService();
 
 const formatHomepageData = async(data) => {    
     if(data.top_articles.length){
-        data.top_articles = await ArticleService.getArticleByIds(data.top_articles);
+        data.top_articles = await ArticleService.getArticleByIds(data.top_articles, false);
     }
     if(data.trending_articles.length){
         data.trending_articles = await ArticleService.getArticleByIds(data.trending_articles);
