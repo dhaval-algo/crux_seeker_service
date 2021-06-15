@@ -228,6 +228,13 @@ module.exports = class articleService {
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
+            for (let filter of filters)
+            {
+                if(filter.label =="Tag")
+                {
+                    filter.label ="Author Type";
+                }
+            }
               let data = {
                 list: list,
                 filters: filters,
