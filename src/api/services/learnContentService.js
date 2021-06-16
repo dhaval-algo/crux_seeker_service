@@ -258,7 +258,7 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
         //Force level options to predefined order
         if(filter.elastic_attribute_name == 'level'){
             let newOptions = [];
-            let orderedLabels = ['Beginner','Intermediate','Advance'];
+            let orderedLabels = ['Beginner','Intermediate','Advanced'];
             for(const label of orderedLabels){
                 let opt = formatedFilters.options.find(o => o.label === label);
                 if(opt){
