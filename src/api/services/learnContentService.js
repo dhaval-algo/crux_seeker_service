@@ -1117,7 +1117,7 @@ module.exports = class learnContentService {
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
         let canBuy = false;
-        if(result.partner_currency.iso_code === "INR") {
+        if(result.partner_currency.iso_code === "INR" && result.pricing_type !="Free") {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
