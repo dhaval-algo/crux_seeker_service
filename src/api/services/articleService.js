@@ -228,6 +228,13 @@ module.exports = class articleService {
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
+            for (let filter of filters)
+            {
+                if(filter.label =="Tag")
+                {
+                    filter.label ="Author Type";
+                }
+            }
               let data = {
                 list: list,
                 filters: filters,
@@ -278,10 +285,10 @@ module.exports = class articleService {
 
     async generateSingleViewData(result, isList = false){
         try{
-        let coverImageSize = 'small';
-        if(isList){
-            coverImageSize = 'thumbnail';
-        }
+        let coverImageSize = 'large';
+        //if(isList){
+            //coverImageSize = 'thumbnail';
+       // }
         console.log("1--------->")
         let cover_image = null;
         if(result.cover_image){
@@ -437,7 +444,7 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ? getMediaurl(result.image.thumbnail) : null,
+            image: (result.image) ?( (result.image.large) ? getMediaurl(result.image.large):  getMediaurl(result.image.thumbnail)): null,
             slug: result.slug,
             email: result.email,
             twitter_url: result.twitter_url,

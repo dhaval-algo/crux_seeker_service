@@ -1092,10 +1092,10 @@ module.exports = class learnContentService {
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
         }
-        let coverImageSize = 'small';
-        if(isList){
-            coverImageSize = 'thumbnail';
-        }
+        let coverImageSize = 'large';
+        //if(isList){
+           // coverImageSize = 'thumbnail';
+        //}
 
         for(let i=0; i<result.reviews.length; i++){
             if(result.reviews[i]['reviewer_name'] == 'Other'){
@@ -1117,7 +1117,7 @@ module.exports = class learnContentService {
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
         let canBuy = false;
-        if(result.partner_currency.iso_code === "INR") {
+        if(result.partner_currency.iso_code === "INR" && result.pricing_type !="Free") {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }

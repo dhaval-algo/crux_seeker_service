@@ -183,7 +183,7 @@ module.exports = class sectionService {
               type: "category",
               count: section.doc_count,
               short_description: hit._source.short_description,
-              cover_image: (hit._source.cover_image) ? hit._source.cover_image['thumbnail'] : null,
+              cover_image: (hit._source.cover_image) ?((hit._source.cover_image['large']) ?hit._source.cover_image['large'] : hit._source.cover_image['thumbnail']) : null,
               child: []
             }
             data.push(secR)
