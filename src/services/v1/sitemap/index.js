@@ -218,7 +218,7 @@ function createNews() {
                 if (result.hits.hits && result.hits.hits.length > 0) {
                     for (const hit of result.hits.hits) {
                         smStream.write({
-                            url: `${process.env.FRONTEND_URL}/news/${hit._source.slug}`,
+                            url: `/news/${hit._source.slug}`,
                             lastmod: hit._source.updated_at
                         });
                     }
