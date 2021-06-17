@@ -199,6 +199,54 @@ function createPartner() {
     })
 }
 
+function createNews() {
+    return new Promise(async (resolve) => {
+        try {
+
+            let queryBody = {
+                "_source": ["slug", "updated_at"],
+                "query": {
+                    "match_all": {}
+                }
+            }
+
+            const result = await elasticService.plainSearch('in_the_news', queryBody);
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            if (result.hits) {
+                if (result.hits.hits && result.hits.hits.length > 0) {
+                    for (const hit of result.hits.hits) {
+                        smStream.write({
+                            url: `/news/${hit._source.slug}`,
+                            lastmod: hit._source.updated_at
+                        });
+                    }
+                }
+
+
+                // fetch category tree
+
+                //generate course url 
+
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'news.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
+
 function createCategories() {
     return new Promise(async resolve => {
         try {
@@ -275,6 +323,7 @@ module.exports = {
                 await createCourse()
                 await createPartner()
                 await createProvider()
+                await createNews()
                 resolve(result)
             } catch (error) {
                 console.log(error);
