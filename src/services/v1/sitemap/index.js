@@ -209,7 +209,7 @@ function createNews() {
                     "match_all": {}
                 }
             }
-
+            console.log('Url',process.env.FRONTEND_URL)
             const result = await elasticService.plainSearch('in_the_news', queryBody);
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
