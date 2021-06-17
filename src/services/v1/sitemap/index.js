@@ -209,7 +209,7 @@ function createNews() {
                     "match_all": {}
                 }
             }
-            console.log('Url',process.env.FRONTEND_URL)
+            
             const result = await elasticService.plainSearch('in_the_news', queryBody);
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
@@ -230,6 +230,7 @@ function createNews() {
                 //generate course url 
 
                 smStream.end();
+                console.log('Url',process.env.FRONTEND_URL,smStream.toString())
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
