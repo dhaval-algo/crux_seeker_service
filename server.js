@@ -36,7 +36,7 @@ app.use("/api", require("./src/api/routes"));
 routes.init(app);
 
 // cron jobs
-cron.schedule('* * * * *', async function () {
+cron.schedule('0 3 * * *', async function () {
     console.log('running a task every minute');
     try {
         
