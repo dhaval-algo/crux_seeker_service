@@ -212,7 +212,7 @@ function createNews() {
             
             const result = await elasticService.plainSearch('in_the_news', queryBody);
             let smStream = new SitemapStream({
-                hostname: process.env.FRONTEND_URL,
+                hostname: "https://prod.careervira.com/",
             });
             if (result.hits) {
                 if (result.hits.hits && result.hits.hits.length > 0) {
