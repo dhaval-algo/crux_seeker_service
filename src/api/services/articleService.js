@@ -168,6 +168,15 @@ module.exports = class articleService {
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
+            
+            for(let parsedFilter of parsedFilters)
+            {
+                if(parsedFilter.key =="Author Type")
+                {
+                    parsedFilter.key ="Tag";
+                }
+            }
+           
             for(const filter of parsedFilters){
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
