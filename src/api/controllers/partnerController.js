@@ -14,7 +14,7 @@ module.exports = {
     },
 
     getSinglePartner: async (req, res) => {
-        console.log("Request <> ",req);        
+               
         PartnerService.getPartner(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);

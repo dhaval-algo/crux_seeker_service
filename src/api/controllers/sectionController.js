@@ -12,7 +12,7 @@ module.exports = {
     },
     getSectionContent: async (req, res) => {
         const slug = req.params.slug;
-        console.log(slug);
+        
         SectionService.getSectionContent(slug, (err, data) => {
             if (data) {
                 res.status(200).send(data);
@@ -23,7 +23,7 @@ module.exports = {
     },
     getBlogHomePageContent: async (req, res) => {
         const slug = req.params.slug;
-        console.log(slug);
+        
         SectionService.getBlogHomePageContent(slug, (err, data) => {
             if (data) {
                 res.status(200).send(data);

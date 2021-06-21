@@ -139,14 +139,14 @@ module.exports = class articleService {
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
-        console.log("paginationQuery <> ", paginationQuery);
+        
 
         if(!req.query['sort'] && !req.query['q']){
             req.query['sort'] = "published_date:desc";
         }
 
         if(req.query['sort']){
-            console.log("Sort requested <> ", req.query['sort']);
+            
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
             if(splitSort[0] == 'title'){
@@ -209,7 +209,7 @@ module.exports = class articleService {
                 }
             );         
         }
-        console.log("Final Query <> ", JSON.stringify(query));
+        
 
         const result = await elasticService.search('article', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -298,7 +298,7 @@ module.exports = class articleService {
         //if(isList){
             //coverImageSize = 'thumbnail';
        // }
-        console.log("1--------->")
+        
         let cover_image = null;
         if(result.cover_image){
             if(result.cover_image[coverImageSize]){
@@ -310,12 +310,12 @@ module.exports = class articleService {
         if(!cover_image){
             cover_image = getMediaurl(result.cover_image['url']);
         }
-        console.log("2--------->")
+        
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
-         console.log("3--------->")
+         
         let auth = await this.getAuthor(result.author_id);
-         console.log("4--------->")
-        console.log("Authhhhh",(auth && auth.firstname))
+         
+        
         // if(!author){
         //     console.log("Author not found...");
             // author = {
@@ -426,10 +426,10 @@ module.exports = class articleService {
                 if(result.hits.hits && result.hits.hits.length > 0){
                     for(const hit of result.hits.hits){
                         const article = await this.generateSingleViewData(hit._source, isListing);
-                        console.log("article-->>",article)
+                        
                         articles.push(article);
                     }
-                    console.log("articles-->>",articles)
+                    
                     for(const id of articleIds){
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
                         if(typeof article !='undefined')

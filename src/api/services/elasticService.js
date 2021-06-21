@@ -39,7 +39,7 @@ module.exports = {
     //if(q){
       //finalQuery.q = q;
     //}
-    console.log('sorttttt valueee',payload);
+    
     if(payload.from !== null){
       finalQuery.from = payload.from;
     }else{
@@ -76,7 +76,7 @@ module.exports = {
     //if(q){
       //finalQuery.q = q;
     //}
-    console.log('sorttttt valueee',payload);
+    
     if(payload.from !== null){
       finalQuery.from = payload.from;
     }else{

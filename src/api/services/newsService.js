@@ -18,11 +18,11 @@ module.exports = class CustomPageService {
         const payload = {
             "size":100
         }
-        console.log('Query',query);
+        
         let result = null;
         try{
             result = await elasticService.search('in_the_news', query,payload);
-            console.log(result);
+            
         }catch(e){
             console.log('Error while retriving data',e);
         }
@@ -36,7 +36,7 @@ module.exports = class CustomPageService {
     }
 
     async getNewsBySlug(slug, callback){
-        console.log('Slug==',slug);
+        
         const query = { 
             "bool": {
              "must":[
@@ -45,11 +45,11 @@ module.exports = class CustomPageService {
             }
         };
         
-        console.log('Query',query);
+        
         let result = null;
         try{
             result = await elasticService.search('in_the_news', query);
-            console.log(result);
+            
         }catch(e){
             console.log('Error while retriving data',e);
         }

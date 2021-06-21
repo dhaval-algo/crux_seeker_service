@@ -152,9 +152,9 @@ module.exports = class sectionService {
         },
         "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "short_description"]
       }
-      console.log('here1');
+      
       const result = await elasticService.plainSearch('section', query);
-      console.log('here2');
+      
 
       const { hits } = result.hits
 
@@ -166,9 +166,9 @@ module.exports = class sectionService {
         }
         
       }
-      console.log('here3');
+      
       const aggrResult = await elasticService.plainSearch('article', aggregateQ);
-      console.log('here4');
+      
 
       const { buckets } = aggrResult.aggregations.distinct_title;
       let data = []
@@ -224,7 +224,7 @@ module.exports = class sectionService {
           ]
         }
       };
-      console.log(query);
+      
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
         data = await buildSectionView(result.hits[0]._source)
@@ -243,7 +243,7 @@ module.exports = class sectionService {
       const query = {
         "match_all": {}
       };
-      console.log(query);
+      
       const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
       console.log("BLOG_RESULT================", result);
       if (result.hits && result.hits.length) {

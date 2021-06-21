@@ -277,7 +277,7 @@ const getBlogHomeContent = async() => {
           if(randCourses.length>0){
             recommended_course_ids = [...recommended_course_ids, ...randCourses];
           }
-          console.log("Recommended ids",recommended_course_ids.length); 
+           
         }catch (ex){
           console.log("Rand courses Error <> ", ex);
         }
