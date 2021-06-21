@@ -263,7 +263,7 @@ module.exports = class providerService {
                 }
             );         
         }
-        console.log("Final Query <> ", JSON.stringify(query));
+        
 
         /* let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
@@ -312,7 +312,7 @@ module.exports = class providerService {
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
-                console.log("Filter applied and result is 0");
+                
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);

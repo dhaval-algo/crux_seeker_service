@@ -53,7 +53,7 @@ const getPartnerCoursesData = async (partner_name) => {
             ]
          }
     };
-    console.log("query <> ", query);  
+     
     const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
     if(result.total && result.total.value > 0){
         return result.hits;
@@ -183,7 +183,7 @@ module.exports = class partnerService {
                 }
             );            
         }
-        console.log("Final Query <> ", JSON.stringify(query));
+        
 
         const result = await elasticService.search('partner', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -218,7 +218,7 @@ module.exports = class partnerService {
               {term: { "slug.keyword": slug }}
             ]
         }};
-        console.log("Single partner query <> ", JSON.stringify(query));
+        
         const result = await elasticService.search('partner', query);
         //console.log("result <> ", result);
         if(result.hits && result.hits.length > 0){

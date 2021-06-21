@@ -56,7 +56,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
 
     if (response.ok) {
     let json = await response.json();
-    console.log("getEntityLabelBySlug",json)
+    
     if(json && json.length){
         return json[0].default_display_label;
     }else{
@@ -218,7 +218,7 @@ const getInitialData = async (query) => {
                 query.bool.must.splice(i, 1);
         }
     } 
-    console.log("getInitialData - query=====>",JSON.stringify(query))
+   
     const result = await elasticService.search('learn-content', query, {from: 0, size: 25});
     if(result.total && result.total.value > 0){
         return result.hits;
@@ -625,7 +625,7 @@ const calculateNewCnt = async (data,filters) => {
             if(cnt == 0){
 
                 (ogFilters[i].options).splice(j,1);
-                console.log('Need to delete',filters[i].field,j,ogFilters[i].options.length);
+               
                 
             }else{
                 if(filters[i].filter_type == "Checkboxes" && ogFilters[i].options && ogFilters[i].options[j]){
@@ -633,7 +633,7 @@ const calculateNewCnt = async (data,filters) => {
                 }
             }
         }
-        console.log('Filter len',ogFilters[i].label,ogFilters[i].options.length)
+        
     }
     return ogFilters;
 }
@@ -714,7 +714,7 @@ module.exports = class learnContentService {
         }
 
         if(req.query['sort']){
-            console.log("Sort requested <> ", req.query['sort']);
+            
             const keywordFields = ['title'];
             let sort = req.query['sort'];
             let splitSort = sort.split(":");
@@ -722,7 +722,7 @@ module.exports = class learnContentService {
                 sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
             }
             queryPayload.sort = [sort];
-            console.log('sort data value',[sort]);
+            
         }
 
         if(req.query['courseIds']){
@@ -738,10 +738,9 @@ module.exports = class learnContentService {
         }
 
         let slugs = [];
-        console.log("req.query['slug']====>",req.query['slug'])
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
-            console.log("slugMapping===>",slugMapping)
+            
             for(let i=0; i<slugs.length; i++){
                 let query_slug = slugs[i].replace("&", "%26");
                 let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
@@ -774,9 +773,9 @@ module.exports = class learnContentService {
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
-        console.log("getLearnContentList - filterQuery=====>",JSON.stringify(filterQuery))
+        
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
-        console.log("filterResponse====>",filterResponse)
+        
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         let filters = filterResponse.filters;
 
@@ -848,8 +847,7 @@ module.exports = class learnContentService {
         
 
 
-        console.log("Final Query <> ", JSON.stringify(query));
-        console.log("Final Query Payload <> ", JSON.stringify(queryPayload));
+        
 
         const result = await elasticService.search('learn-content', query, queryPayload);
 
@@ -885,7 +883,7 @@ module.exports = class learnContentService {
             }
 
             if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-                console.log('Dataaaaaaaaaaaaaaaaaaaaa',result.hits)
+               
               //  filters = await calculateNewCnt(result.hits,filters);
                 
             }

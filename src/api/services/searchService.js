@@ -79,7 +79,7 @@ module.exports = class searchService {
             return self.indexOf(item) == pos;
         });
 
-        console.log("Query <> ", JSON.stringify(query));       
+              
 
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
         //console.log("Result Reponse <<>>>>>> <> ", JSON.stringify(result));
