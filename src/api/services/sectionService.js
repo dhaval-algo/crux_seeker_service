@@ -244,7 +244,7 @@ module.exports = class sectionService {
         "match_all": {}
       };
       console.log(query);
-      const result = await elasticService.search('blog_home_page', query)
+      const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
       if (result.hits && result.hits.length) {
         data = await buildSectionView(result.hits[0]._source)
         return callback(null, { success: true, data })
