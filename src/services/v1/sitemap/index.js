@@ -65,6 +65,13 @@ function createCourse() {
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
+              //link for institute listing page
+              smStream.write({
+                url: `/courses/search`,
+                changefreq: 'daily', 
+                priority: 0.8
+            });
+            
             if (result.hits) {
                 if (result.hits && result.hits.length > 0) {
                     for (const hit of result.hits) {
@@ -74,10 +81,6 @@ function createCourse() {
                         });
                     }
                 }
-
-
-                // fetch category tree
-
                 //generate course url 
 
                 smStream.end();
@@ -109,6 +112,14 @@ function createProvider() {
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
+
+             //link for institute listing page
+             smStream.write({
+                url: `/institutes`,
+                changefreq: 'daily', 
+                priority: 0.8
+            });
+           
             if (result.hits) {
                 if (result.hits && result.hits.length > 0) {
                     for (const hit of result.hits) {
@@ -118,11 +129,6 @@ function createProvider() {
                         });
                     }
                 }
-
-
-                // fetch category tree
-
-                //generate course url 
 
                 smStream.end();
                 // generate a sitemap and add the XML feed to a url which will be used later on.
@@ -301,6 +307,197 @@ function createTopic(obj, smsStream) {
         }
     })
 }
+
+function createAdvice() {
+    return new Promise(async (resolve) => {
+        try {
+
+            let query = { 
+                "match_all": {}
+            };
+            let  payload= {from: 0, size: MAX_RESULT,_source:["slug"] }
+
+            const result = await elasticService.search('section', query, payload);
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            if (result.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {                        
+                        smStream.write({
+                            url: `/advice/${hit._source.slug}`,
+                            changefreq: 'daily', 
+                            priority: 0.8
+                        });
+                    }
+                }
+                //link for article search page
+                smStream.write({
+                    url: `/advice/search`,
+                    changefreq: 'daily', 
+                    priority: 0.8
+                });
+                //fetch articles
+                let query = { 
+                    "bool": {                   
+                        "must": [
+                            {term: { "status.keyword": 'published' }}                
+                        ]
+                    }
+                };
+                payload= {from: 0, size: MAX_RESULT,_source:["slug","section_slug","updated_at"] }
+                const articleResult = await elasticService.search('article', query, payload);
+                if (articleResult.hits) {
+                    if (articleResult.hits && articleResult.hits.length > 0) {
+                        for (const hit of articleResult.hits) {
+                            smStream.write({
+                                url: `/advice/${hit._source.section_slug}/${hit._source.slug}`,
+                                lastmod: hit._source.updated_at,
+                                changefreq: 'daily', 
+                                priority: 0.9
+                            });
+                        }
+                    }
+                }
+
+                //fetch Authors
+                query = { 
+                    "match_all": {}
+                };
+                payload= {from: 0, size: MAX_RESULT,_source:["slug"] }
+                const authorResult = await elasticService.search('author', query, payload);
+                if (authorResult.hits) {
+                    if (authorResult.hits && authorResult.hits.length > 0) {
+                        for (const hit of authorResult.hits) {
+                            smStream.write({
+                                url: `/author/${hit._source.slug}`,
+                                changefreq: 'daily', 
+                                priority: 0.9
+                            });
+                        }
+                    }
+                }
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'advice.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
+
+function createRanking() {
+    return new Promise(async (resolve) => {
+        try {
+          
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            smStream.write({
+                url: `/ranking`,
+                changefreq: 'daily', 
+                priority: 0.8
+            });
+            
+            const query = { 
+                "match_all": {}
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["ranks"] }
+            const result = await elasticService.search('provider', query, payload);
+            let ranking_slug =[]
+            if (result.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {  
+                        for(const rank of hit._source.ranks)
+                        {
+                            ranking_slug.push(rank.slug)
+                        }
+                    }
+                    let unique_ranking_slug = ranking_slug.filter((x, i, a) => a.indexOf(x) == i)
+                    for(const rank of unique_ranking_slug)
+                    {
+                        smStream.write({
+                            url: `/institute-ranking/${rank}`,
+                            changefreq: 'daily', 
+                            priority: 0.8
+                        });
+                    } 
+                }               
+            }
+            
+            smStream.end();
+            // generate a sitemap and add the XML feed to a url which will be used later on.
+            const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+            //write to aws 
+            let path = 'ranking.xml'
+            let contentType = 'text/xml'
+            const res = await uploadFileToS3(path, sitemap, contentType)
+            resolve(sitemap)
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
+
+function createTrendingNow() {
+    return new Promise(async (resolve) => {
+        try {
+          
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });          
+            
+            const query = { 
+                "match_all": {}
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["trending_now"] }
+            const result = await elasticService.search('home-page', query, payload);
+            if (result.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) { 
+                        if(hit._source.trending_now && hit._source.trending_now.length>0)
+                        {
+                            for(const trending_now of hit._source.trending_now)
+                            {
+                                smStream.write({
+                                    url: `/collection/${trending_now.slug}`,
+                                    changefreq: 'daily', 
+                                    priority: 0.8
+                                });
+                            }
+                        }
+                    }
+                }               
+            }
+            
+            smStream.end();
+            // generate a sitemap and add the XML feed to a url which will be used later on.
+            const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+            //write to aws 
+            let path = 'trending-now.xml'
+            let contentType = 'text/xml'
+            const res = await uploadFileToS3(path, sitemap, contentType)
+            resolve(sitemap)
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
 module.exports = {
     createSiteMap: () => {
         return new Promise(async (resolve) => {
@@ -311,6 +508,9 @@ module.exports = {
                 await createPartner()
                 await createProvider()
                 await createNews()
+                await createAdvice()
+                await createRanking()
+                await createTrendingNow()
                 resolve(result)
             } catch (error) {
                 console.log(error);

@@ -36,9 +36,10 @@ app.use("/api", require("./src/api/routes"));
 routes.init(app);
 
 // cron jobs
-cron.schedule('0 3 * * *', async function () {   
+cron.schedule('* * * * *', async function () {   
     try {        
-        await createSiteMap()        
+        await createSiteMap()
+        console.log("site map generated");        
     } catch (error) {
         console.log("Error in cron");        
     }
