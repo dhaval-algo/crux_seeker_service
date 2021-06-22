@@ -4,6 +4,7 @@ const { default: Axios } = require('axios');
 const elasticService = require('../../../api/services/elasticService');
 const { uploadFileToS3 } = require('../AWS');
 let slugs = []
+const MAX_RESULT = 10000;
 const iterate = (obj, smStream, route) => {
     Object.keys(obj).forEach(key => {
 
@@ -56,22 +57,17 @@ function createCourse() {
     return new Promise(async (resolve) => {
         try {
 
-            let queryBody = {
-
-                "_source": ["slug", "updated_at"],
-                "query": {
-                    "match_all": {}
-                }
-
-            }
-
-            const result = await elasticService.plainSearch('learn-content', queryBody);
+            const query = { 
+                "match_all": {}
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
+            const result = await elasticService.search('learn-content', query, payload );
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
             if (result.hits) {
-                if (result.hits.hits && result.hits.hits.length > 0) {
-                    for (const hit of result.hits.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
                         smStream.write({
                             url: `/course/${hit._source.slug}`,
                             lastmod: hit._source.updated_at
@@ -105,22 +101,17 @@ function createCourse() {
 function createProvider() {
     return new Promise(async (resolve) => {
         try {
-
-            let queryBody = {
-                "_source": ["slug", "updated_at"],
-                "query": {
-                    "match_all": {}
-                }
-
-            }
-
-            const result = await elasticService.plainSearch('provider', queryBody);
+            const query = { 
+                "match_all": {}
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
+            const result = await elasticService.search('provider', query, payload);
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
             if (result.hits) {
-                if (result.hits.hits && result.hits.hits.length > 0) {
-                    for (const hit of result.hits.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
                         smStream.write({
                             url: `/institute/${hit._source.slug}`,
                             lastmod: hit._source.updated_at
@@ -155,20 +146,18 @@ function createPartner() {
     return new Promise(async (resolve) => {
         try {
 
-            let queryBody = {
-                "_source": ["slug", "updated_at"],
-                "query": {
-                    "match_all": {}
-                }
-            }
+            const query = { 
+                "match_all": {}
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
 
-            const result = await elasticService.plainSearch('partner', queryBody);
+            const result = await elasticService.search('partner', query, payload);
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
             if (result.hits) {
-                if (result.hits.hits && result.hits.hits.length > 0) {
-                    for (const hit of result.hits.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
                         smStream.write({
                             url: `/partner/${hit._source.slug}`,
                             lastmod: hit._source.updated_at
@@ -203,20 +192,18 @@ function createNews() {
     return new Promise(async (resolve) => {
         try {
 
-            let queryBody = {
-                "_source": ["slug", "updated_at"],
-                "query": {
-                    "match_all": {}
-                }
-            }
+            const query = { 
+                "match_all": {}
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
             
-            const result = await elasticService.plainSearch('in_the_news', queryBody);
+            const result = await elasticService.search('in_the_news', query, payload);
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
             if (result.hits) {
-                if (result.hits.hits && result.hits.hits.length > 0) {
-                    for (const hit of result.hits.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
                         smStream.write({
                             url: `/news/${hit._source.slug}`,
                             lastmod: hit._source.updated_at
@@ -263,7 +250,7 @@ function createCategories() {
 
             // fetch category tree
             const backEndUrl = `${process.env.API_BACKEND_URL}/category-tree`;
-            const categoryTreeRes = await Axios.get('https://crux-backend.ajency.in/category-tree')
+            const categoryTreeRes = await Axios.get(backEndUrl)
             let { final_tree } = categoryTreeRes.data
             smStream = iterate(final_tree, smStream, "courses")
 
@@ -294,7 +281,7 @@ function createTopic(obj, smsStream) {
 
             // fetch category tree
             const backEndUrl = `${process.env.API_BACKEND_URL}/category-tree`;
-            const categoryTreeRes = await Axios.get('https://crux-backend.ajency.in/category-tree')
+            const categoryTreeRes = await Axios.get(backEndUrl)
             let { final_tree } = categoryTreeRes.data
             smStream = iterate(final_tree, smStream, "topic")
 
