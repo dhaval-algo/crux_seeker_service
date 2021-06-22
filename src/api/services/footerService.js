@@ -11,7 +11,6 @@ module.exports = class FooterService {
         let result = null;
         try{
             result = await elasticService.search('footer', query);
-            console.log(result);
         }catch(e){
             console.log('Error while retriving footer data',e);
         }

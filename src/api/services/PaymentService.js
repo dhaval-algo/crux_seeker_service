@@ -35,7 +35,6 @@ module.exports = class PaymentService {
         if(paymentIntent) {
             return paymentIntent.client_secret;
         } else {
-            console.log("Payment intent not created");
             return null;
         }
     }

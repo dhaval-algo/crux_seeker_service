@@ -26,7 +26,6 @@ const submitForm = async (req, res) => {
             if (!signupResponse.success) {
                 return res.status(200).json(sendSystemError);
             }
-            console.log(signupResponse);
             return res.status(200).json(signupResponse)
             break;
         default:

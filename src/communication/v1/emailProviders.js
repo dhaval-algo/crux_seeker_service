@@ -18,7 +18,6 @@ module.exports = {
                 };
                  
                 mailgun.messages().send(data, function (error, body) {
-                   console.log(body);
                   return resolve(body)
                 });
             }
@@ -68,7 +67,6 @@ module.exports = {
             // Handle promise's fulfilled/rejected states
             sendPromise.then(
               function(data) {
-                console.log(data);
                 return resolve(data);
               }).catch(
                 function(err) {

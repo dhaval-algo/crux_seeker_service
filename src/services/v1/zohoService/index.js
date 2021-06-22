@@ -25,7 +25,7 @@ const generateAccessToken = (code) => {
         redirect_uri: zohoConfig.redirect_uri,
         code: code
     }).then((response) => {
-        console.log(response.data);
+        
     }, (error) => {
         console.log(error.error);
     });
@@ -44,7 +44,7 @@ const generateNewAccessToken = () => {
         let request_url = "https://accounts.zoho.in/oauth/v2/token?refresh_token=" + refresh_token.dataValue + "&client_id=" + zohoConfig.client_id + "&client_secret=" + zohoConfig.client_secret + "&grant_type=refresh_token"
 
         axios.post(request_url).then((response) => {
-            console.log('generateNewAccessToken', response.data.access_token);
+            
             let new_access_token = response.data.access_token
             let expiry_min = response.data.expires_in
             let expiry_date = moment().add(expiry_min, 's').toString();
@@ -55,7 +55,7 @@ const generateNewAccessToken = () => {
                 metaData: meta_data_value
             }
             models.global_defaults.update(values, { where: { dataType: 'access_token' } }).then((tokenupdate) => {
-                console.log("data successfully updated to tokenupdate")
+                
             }).catch((err) => console.log(err));
 
             return resolve(response.data.access_token);
@@ -181,7 +181,6 @@ const prepareLeadData = (enquiry_id) => {
             if(formSubValRec != null) {
                 let metaObj = {} 
                 formSubValRec.map((rec) => {
-                    console.log(rec.objectType);
                     if(metaObj[rec.objectType]) {
                         metaObj[rec.objectType].push(rec.objectId)
                     } else {
@@ -258,13 +257,12 @@ const createLead = async (enquiry_id) => {
     const access_token = await getAccessToken();
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLeadData(enquiry_id)
-    console.log("data zoho", data, access_token);
     axios.post(request_url, data,{headers}).then((response) => {
         if(response.data.details) {
             
-            console.log("created lead",response.data.details);
+            
         } else {
-            console.log("created lead",response.data);
+           
 
         }
         

@@ -228,7 +228,6 @@ const updateProfileMeta = (formData, userObj) => {
             for(let key in formData ) {
                 formData[key]['userId'] = userObj.userId
                 formData[key]['metaType'] = "primary"
-                console.log();
                 const where = {
                     metaType: 'primary',
                     userId: userObj.userId,

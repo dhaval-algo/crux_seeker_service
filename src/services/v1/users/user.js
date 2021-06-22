@@ -61,7 +61,7 @@ const login = async (req, res, next) => {
             });
         }
         //userSigin Fuction
-        console.log(typeof audience);
+        
         const response = await signInUser({ username, password, audience, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).json(response);
 
@@ -90,7 +90,7 @@ const sendOtp = async (req, res, next) => {
         const audience = req.headers.origin;
         const { username = "" } = body;
         // validate input
-        console.log();
+        
         if (!username.trim()) {
             return res.status(200).json({
                 'success': false,
@@ -191,7 +191,7 @@ const signUp = async (req, res) => {
     //if orivude is socila login veriffy token
     if(provider !=LOGIN_TYPES.LOCAL){
         providerRes = await verifySocialToken(req.body)
-        console.log(providerRes);
+        
         if (!providerRes.success) {
             return res.status(200).send(providerRes)
         }
@@ -209,7 +209,7 @@ const signUp = async (req, res) => {
     req.body.tokenPayload = req.user;
     req.body.audience = audience;
     req.body.provider = req.body.provider || LOGIN_TYPES.LOCAL
-    console.log(verificationRes);
+    
     let userres = await createUser({...req.body,...verificationRes.data, ...providerRes.data})
     if (!userres.success) {
         return res.status(500).send(userres)
@@ -296,7 +296,7 @@ const socialSignIn = async (req, res, next) => {
         }
         //create token
         const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data,...resForm.data.requestFieldValues, audience: req.headers.origin, provider: providerRes.data.provider });
-        console.log(tokenRes);
+        
         return res.status(200).json(tokenRes);
 
     } catch (error) {
@@ -384,7 +384,7 @@ const signInUser = async (resData) => {
 const userExist = (username, provider) => {
 
     return new Promise(async (resolve, reject) => {
-        console.log(username, provider);
+        
         // return resolve({success:true})
         let response = {
             code: DEFAULT_CODES.INVALID_USER.code,
@@ -404,7 +404,7 @@ const userExist = (username, provider) => {
 
             //check in db
             let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
-            console.log('Userlogin res',userLogin);
+            
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
              //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
@@ -418,7 +418,6 @@ const userExist = (username, provider) => {
                         }
                     });
                 }
-                console.log(user);
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
                 response.code = DEFAULT_CODES.VALID_USER;
@@ -595,7 +594,7 @@ const startVerifyOtp = async (resData) => {
              input => audience- origin(client), provider-> (google facebook or linked in or local)
              */
             const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
-            console.log(tokenRes);
+            
             return resolve(tokenRes);
         } catch (error) {
             return resolve({
@@ -654,7 +653,7 @@ const validateOtp = async (username, otp, otpType) => {
                     return { "code": DEFAULT_CODES.INVALID_OTP.code, "message": DEFAULT_CODES.INVALID_OTP.message, success: false, data: {} };
                 }
             } else {
-                console.log(moment().subtract(defaults.getValue('otpSpan'), "minutes").toISOString());
+               
                 /** Clear out old otps */
                 models.otp.destroy({
                     where: {
@@ -677,7 +676,7 @@ const validateOtp = async (username, otp, otpType) => {
 
             }
         } else {
-            console.log('No otp for user');
+            
             return {
                 code: DEFAULT_CODES.OTP_EXPIRED.code,
                 message: DEFAULT_CODES.OTP_EXPIRED.message,
@@ -985,7 +984,7 @@ const wishListCourseData = async (req,res) => {
             delete queryBody.query.match_phrase
         }
 
-        console.log(queryBody);
+        
         const result = await elasticService.plainSearch('learn-content', queryBody);
         let courses = []
         if(result.hits){
@@ -1029,7 +1028,7 @@ const getEnquiryList = async (req,res) => {
     if(page>1) {
         offset =  (page-1)* limit
     }
-    console.log("offset ", offset, page);
+    
     const count = await models.form_submission.findAll({
 	
         attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
@@ -1058,7 +1057,7 @@ const getEnquiryList = async (req,res) => {
         formSubConfig.offset = offset
       }
       let enquiryRecs = await models.form_submission.findAll(formSubConfig)
-      console.log('enq recs',JSON.stringify(enquiryRecs));
+      
         // no enquiries return
     if(!enquiryRecs.length) {
         return res.status(200).send({
@@ -1087,17 +1086,14 @@ const getEnquiryList = async (req,res) => {
               },
             }
         };
-        console.log(queryBody,'Query body');
-        // console.log(`enquiry on ${enquiryRecs[key].targetEntityType}`);
+        
         if(enquiryRecs[key].targetEntityType =='course') {
             enquiry.enquiryOn = 'course';
             const result = await elasticService.plainSearch('learn-content', queryBody);
             if(result.hits){
-                 console.log(result.hits.hits,'hits value');
                 if(result.hits.hits && result.hits.hits.length > 0){
                     // for(const hit of result.hits.hits){
                         let hit =  result.hits.hits[0]
-                        console.log(result.hits.hits[0],'hits array');
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
@@ -1195,7 +1191,6 @@ const uploadResumeFile = async (req,res) =>{
     //     contentType = 'application/pdf';
     // }
 
-    console.log(path,resumeB,resumeName);
     let s3Path = await uploadResumeToS3(path,resumeB)
     let fileValue = {
         filename:filename,
@@ -1206,7 +1201,7 @@ const uploadResumeFile = async (req,res) =>{
         await models.user_meta.create({value:JSON.stringify(fileValue),key:'resumeFile',metaType:'primary',userId:user.userId})
     } else {
         let pathObject = JSON.parse(existResume.value);
-        console.log(pathObject.filepath)
+        
         // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     }
@@ -1215,7 +1210,7 @@ const uploadResumeFile = async (req,res) =>{
 
 const deleteResumeFile = async (req,res) => {
     const {user} = req
-    console.log('Reached delete resume')
+    
     const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
 
     if(existResume) {

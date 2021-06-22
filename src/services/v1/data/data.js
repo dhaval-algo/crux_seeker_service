@@ -6,7 +6,6 @@ const models = require("../../../../models");
 
 const fetchSuggestions = async (req,res) => {
     const {searchType, searchQuery } = req.query
-    console.log( searchQuery,searchType);
     try {
         
         if(searchQuery) {
@@ -35,7 +34,6 @@ const insertDegree = async (req, res) => {
     const jsonArray=await csv().fromFile(`${global.appRoot}/data_files/default_select_options.csv`);
     res.status(200).json(jsonArray)
     for(let i=0; i<jsonArray.length;i++){
-        console.log(jsonArray[i]);
         await models.default_select_options.create(jsonArray[i])
     }
 }
@@ -47,7 +45,6 @@ const placesAutoComplete = async (req, res) => {
   
     axios.get(url)
       .then(function (response) {
-          console.log(response.data);
           response.data.predictions.map((p) => {
             let city = {
                 value:'',

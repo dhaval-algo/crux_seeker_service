@@ -17,7 +17,6 @@ module.exports = {
     *///
 
     sendEmail:function(payload,useQueue=false){
-        console.log("payload",payload)
         let thatObj = this
         return new Promise(async (resolve, reject) => { 
             try{            
@@ -40,9 +39,7 @@ module.exports = {
                 //     ccaddress = emailConfig.test.ccaddress
                 //     bccaddress = emailConfig.test.bccaddress
                 // }
-                console.log("fromemail",fromemail)
-                console.log("toemail",toemail)
-                console.log("ccaddress",ccaddress)
+
 
                 if(process.env.MAIL_PROVIDER == 'MAILGUN'){
                     // emailProviders.mailGunEmail(subject,message,fromemail,toemail,ccaddress,bccaddress)

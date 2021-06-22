@@ -12,7 +12,6 @@ const s3Bucket = new AWS.S3({params: {Bucket: AWS_IMAGE_BUCKET}});
 
 
 const deleteObject = (path) => {
-  console.log('path == ',path);
   return new Promise( resolve => {
     var params = {  
       Bucket: AWS_IMAGE_BUCKET, 
@@ -98,7 +97,6 @@ const uploadFileToS3 = (path, file, contentType) => {
 
         promise.then(
           function(data) {
-            console.log("sitemap uploaded");
             resolve(true);
           },
           function(err) {resolve(err.message);

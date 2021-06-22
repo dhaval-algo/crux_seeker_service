@@ -94,9 +94,9 @@ const verifyLinkedInToken = async (resData) => {
                     'Authorization': 'Bearer ' + resp.data.access_token
                 }
             })
-            console.log(userProfileRes);
+            
             if (!userProfileRes.data.localizedLastName) {
-                console.log("ffffffff");
+                
                 return resolve({
                     code: DEFAULT_CODES.SYSTEM_ERROR.code,
                     message: DEFAULT_CODES.SYSTEM_ERROR.message,
@@ -712,7 +712,7 @@ const invalidateTokens = (userObj) => {
 const sendWelcomeEmail  = (userObj) => {
     return new Promise(async(resolve,reject) => {
         try {
-            console.log(userObj);
+            
             let emailPayload = {
                 fromemail: process.env.FROM_EMAIL_WELCOME_EMAIL,
                 toemail: userObj.email,
@@ -731,7 +731,7 @@ const sendResetPasswordLink = (userObj, useQueue) => {
     return new Promise(async (resolve, reject) => {
         try {
             let tokenRes = await createToken(userObj, TOKEN_TYPES.RESETPASSWORD)
-            console.log(tokenRes);
+            
             let params = {
                 redirect_url: '/',
                 reset_token: tokenRes.data.x_token
@@ -881,7 +881,6 @@ const calculateProfileCompletion =  (userObj) => {
             let profileCompleted = 0
         
             for (const key in sections) {
-                console.log(sections[key].fields)
                 const element = sections[key];
                 const meta = await models.user_meta.findAll({
                     where:{

@@ -216,7 +216,6 @@ const prepareStrapiData = (enquiry_id) => {
             if(formSubValRec != null) {
                 let metaObj = {} 
                 formSubValRec.map((rec) => {
-                    console.log(rec.objectType);
                     if(metaObj[rec.objectType]) {
                         metaObj[rec.objectType].push(rec.objectId)
                     } else {
@@ -277,7 +276,6 @@ const prepareStrapiData = (enquiry_id) => {
                 };
                 const result = await elasticService.plainSearch('learn-content', queryBody);
                 if(result.hits){
-                    console.log(result.hits.hits.length,'-------------------------------');
                     if(result.hits.hits && result.hits.hits.length > 0){
                         for(const hit of result.hits.hits){
                             strapiObj.course_name = hit._source.title
