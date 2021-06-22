@@ -256,6 +256,8 @@ function createCategories() {
             });
             smStream.write({
                 url: "/",
+                changefreq: 'daily', 
+                priority: 0.9
             });
             // Add a static url to ex: about page
             smStream.write({
