@@ -19,6 +19,8 @@ const iterate = (obj, smStream, route) => {
                         // }
                         smStream.write({
                             url: `/courses/${obj.slug}`,
+                            changefreq: 'daily', 
+                            priority: 0.9
                         })
                         break;
                     default:
@@ -77,7 +79,9 @@ function createCourse() {
                     for (const hit of result.hits) {
                         smStream.write({
                             url: `/course/${hit._source.slug}`,
-                            lastmod: hit._source.updated_at
+                            lastmod: hit._source.updated_at,
+                            changefreq: 'daily', 
+                            priority: 0.9
                         });
                     }
                 }
@@ -125,7 +129,9 @@ function createProvider() {
                     for (const hit of result.hits) {
                         smStream.write({
                             url: `/institute/${hit._source.slug}`,
-                            lastmod: hit._source.updated_at
+                            lastmod: hit._source.updated_at,
+                            changefreq: 'weekly', 
+                            priority: 0.8
                         });
                     }
                 }
@@ -166,7 +172,9 @@ function createPartner() {
                     for (const hit of result.hits) {
                         smStream.write({
                             url: `/partner/${hit._source.slug}`,
-                            lastmod: hit._source.updated_at
+                            lastmod: hit._source.updated_at,
+                            changefreq: 'weekly', 
+                            priority: 0.8
                         });
                     }
                 }
@@ -212,7 +220,9 @@ function createNews() {
                     for (const hit of result.hits) {
                         smStream.write({
                             url: `/news/${hit._source.slug}`,
-                            lastmod: hit._source.updated_at
+                            lastmod: hit._source.updated_at,
+                            changefreq: 'daily', 
+                            priority: 0.9
                         });
                     }
                 }
@@ -248,6 +258,8 @@ function createCategories() {
             });
             smStream.write({
                 url: "/",
+                changefreq: 'daily', 
+                priority: 1
             });
             // Add a static url to ex: about page
             smStream.write({
