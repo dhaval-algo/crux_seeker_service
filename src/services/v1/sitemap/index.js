@@ -109,10 +109,13 @@ function createCourse() {
 function createProvider() {
     return new Promise(async (resolve) => {
         try {
-            const query = { 
-                "match_all": {}
+            let query = { 
+                "bool": {                   
+                    "must": [
+                        {term: { "status.keyword": 'approved' }}                
+                    ]
+                }
             };
-            
             const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
             const result = await elasticService.search('provider', query, payload);
             let smStream = new SitemapStream({
