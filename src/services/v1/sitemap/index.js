@@ -69,9 +69,16 @@ function createCourse() {
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
-              //link for institute listing page
+              //link for course  listing page
               smStream.write({
                 url: `/courses/search`,
+                changefreq: 'daily', 
+                priority: 0.8
+            });
+
+             //link for comapre listing page
+             smStream.write({
+                url: `/compare`,
                 changefreq: 'daily', 
                 priority: 0.8
             });
