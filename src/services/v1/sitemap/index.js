@@ -565,7 +565,6 @@ module.exports = {
         })
     },
     copySiteMapS3ToFolder: () => {
-        console.log("into the fucntion");
         const sitemaps = ['advice.xml', 'course.xml','courses.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
         const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
         const PROJECT_DIR = process.env.PROJECT_DIR || "/home/ubuntu";
@@ -593,8 +592,7 @@ module.exports = {
                 // node couldn't execute the command
                 console.log("Error in restarting frontend", err )
                 return;
-            }
-            console.log("frontend restarted ")
+            }            
         })
     }
 }
