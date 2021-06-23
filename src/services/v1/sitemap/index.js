@@ -3,6 +3,7 @@ const streamToPromise = require('sitemap').streamToPromise
 const { default: Axios } = require('axios');
 const elasticService = require('../../../api/services/elasticService');
 const { uploadFileToS3 } = require('../AWS');
+const { exec } = require('child_process');
 let slugs = []
 const MAX_RESULT = 10000;
 const iterate = (obj, smStream, route) => {
@@ -530,5 +531,13 @@ module.exports = {
 
             }
         })
+    },
+    copySiteMapS3ToFolder: () => {
+        try {
+            exec('aws s3 cp s3://crux-assets-production/advice.xml sitemapfiles/advice.xml') 
+        } catch (error) {
+            console.log("Shellerorr===========",error )
+        }
+   
     }
 }
