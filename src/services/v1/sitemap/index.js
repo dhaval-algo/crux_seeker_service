@@ -1,3 +1,4 @@
+require('dotenv').config();
 const SitemapStream = require('sitemap').SitemapStream
 const streamToPromise = require('sitemap').streamToPromise
 const { default: Axios } = require('axios');
@@ -521,6 +522,8 @@ function createTrendingNow() {
         resolve(true)
     })
 }
+
+
 module.exports = {
     createSiteMap: () => {
         return new Promise(async (resolve) => {
@@ -544,17 +547,20 @@ module.exports = {
     },
     copySiteMapS3ToFolder: () => {
         console.log("into the fucntion");
-        const sitemaps = ['advice.xml', 'course.xml']
+        const sitemaps = ['advice.xml', 'course.xml','courses.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
+        const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
+        const PROJECT_DIR = process.env.PROJECT_DIR || "/home/ubuntu";
+        const FRONTEND_PUBLIC_DIR = process.env.FRONTEND_PUBLIC_DIR || "/home/ubuntu/apps/crux-frontend/public";
         for (const sitemap of sitemaps)
         {
-            exec(`aws s3 cp s3://crux-assets-production/${sitemap} /home/ubuntu/sitemapfiles/${sitemap}`,( err, stdout, stderr) => {
+            exec(`aws s3 cp s3://${AWS_CDN_BUCKET}/${sitemap} ${PROJECT_DIR}/sitemapfiles/${sitemap}`,( err, stdout, stderr) => {
                 if (err) {
                     // node couldn't execute the command
                     console.log("Error in copying",err )
                     return;
                 }
 
-                exec(`cp /home/ubuntu/sitemapfiles/${sitemap} /home/ubuntu/apps/crux-frontend/public/${sitemap}`,( err, stdout, stderr) => {
+                exec(`cp ${PROJECT_DIR}/sitemapfiles/${sitemap} ${FRONTEND_PUBLIC_DIR}/${sitemap}`,( err, stdout, stderr) => {
                     if (err) {
                         // node couldn't execute the command
                         console.log("Error in copying to public folder",err )
@@ -569,6 +575,7 @@ module.exports = {
                 console.log("Error in restarting frontend", err )
                 return;
             }
+            console.log("frontend restarted ")
         })
     }
 }
