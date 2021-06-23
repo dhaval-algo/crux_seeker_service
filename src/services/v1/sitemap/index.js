@@ -295,7 +295,7 @@ function createCategories() {
             // generate a sitemap and add the XML feed to a url which will be used later on.
             const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
             //write to aws 
-            let path = 'courses.xml'
+            let path = 'categories-subcategories.xml'
             let contentType = 'text/xml'
             const res = await uploadFileToS3(path, sitemap, contentType)
             resolve(sitemap)
@@ -310,26 +310,47 @@ function createCategories() {
 function createTopic(obj, smsStream) {
     return new Promise(async resolve => {
         try {
+            let query = {
+                "bool": {     
+                    "must": [
+                        {term: { "status.keyword": 'published' }}
+                    ]
+                }
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["topics_list"] }
+            const result = await elasticService.search('learn-content', query, payload );
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
+            let topic_slug =[];
+            if (result.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
+                        for(const topic of hit._source.topics_list)
+                        {
+                            topic_slug.push(topic.slug)
+                        }
+                    }
+                    let unique_topic_slug = topic_slug.filter((x, i, a) => a.indexOf(x) == i)
+                    for(const topic of unique_topic_slug)
+                    {
+                        smStream.write({
+                            url: `/topic/${topic}`,
+                            changefreq: 'daily', 
+                            priority: 0.8
+                        });
+                    }       
+                }
 
-            // fetch category tree
-            const backEndUrl = `${process.env.API_BACKEND_URL}/category-tree`;
-            const categoryTreeRes = await Axios.get(backEndUrl)
-            let { final_tree } = categoryTreeRes.data
-            smStream = iterate(final_tree, smStream, "topic")
-
-            //generate course url 
-
-            smStream.end();
-            // generate a sitemap and add the XML feed to a url which will be used later on.
-            const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
-            //write to aws 
-            let path = 'topic.xml'
-            let contentType = 'text/xml'
-            const res = await uploadFileToS3(path, sitemap, contentType)
-            resolve(true)
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'topic.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
         } catch (error) {
             console.log(error);
             resolve(true)
@@ -565,7 +586,7 @@ module.exports = {
         })
     },
     copySiteMapS3ToFolder: () => {
-        const sitemaps = ['advice.xml', 'course.xml','courses.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
+        const sitemaps = ['advice.xml', 'course.xml','categories-subcategories.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
         const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
         const PROJECT_DIR = process.env.PROJECT_DIR || "/home/ubuntu";
         const FRONTEND_PUBLIC_DIR = process.env.FRONTEND_PUBLIC_DIR || "/home/ubuntu/apps/crux-frontend/public";
