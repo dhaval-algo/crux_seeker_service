@@ -499,6 +499,7 @@ function createTrendingNow() {
             };
             const  payload= {from: 0, size: MAX_RESULT,_source:["trending_now"] }
             const result = await elasticService.search('home-page', query, payload);
+            let trending_now_slug =[]
             if (result.hits) {
                 if (result.hits && result.hits.length > 0) {
                     for (const hit of result.hits) { 
@@ -506,14 +507,21 @@ function createTrendingNow() {
                         {
                             for(const trending_now of hit._source.trending_now)
                             {
-                                smStream.write({
-                                    url: `/collection/${trending_now.slug}`,
-                                    changefreq: 'daily', 
-                                    priority: 0.8
-                                });
+                                 trending_now_slug.push(trending_now.slug )
+                                
                             }
                         }
                     }
+                    let unique_trending_now_slug = trending_now_slug.filter((x, i, a) => a.indexOf(x) == i)
+                    for(const slug of unique_trending_now_slug)
+                    {
+                        smStream.write({
+                            url: `/collection/${slug}`,
+                            changefreq: 'daily', 
+                            priority: 0.8
+                        });
+                    }          
+
                 }               
             }
             
