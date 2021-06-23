@@ -534,6 +534,7 @@ module.exports = {
     },
     copySiteMapS3ToFolder: () => {
         try {
+            console.log("into the fucntion");
             exec('aws s3 cp s3://crux-assets-production/advice.xml sitemapfiles/advice.xml') 
         } catch (error) {
             console.log("Shellerorr===========",error )
