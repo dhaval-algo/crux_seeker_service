@@ -45,6 +45,14 @@ cron.schedule('0 3 * * *', async function () {
     }
 });
 
+cron.schedule('0 2 * * * *', async function () {
+    try {        
+        await copySiteMapS3ToFolder()
+        console.log("Site map file  copied");
+    } catch (error) {
+        console.log("Error in copying");
+    }
+});
 
 //start server
 const port = process.env.PORT || "3001";
