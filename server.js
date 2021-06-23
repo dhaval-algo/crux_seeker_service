@@ -10,7 +10,7 @@ const cron = require('node-cron')
 global.appRoot = path.resolve(__dirname);
 
 const routes = require('./src/routes');
-const { createSiteMap } = require('./src/services/v1/sitemap');
+const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 
 
 // create 
