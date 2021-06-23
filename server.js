@@ -36,23 +36,27 @@ app.use("/api", require("./src/api/routes"));
 routes.init(app);
 
 // cron jobs
-cron.schedule('0 3 * * *', async function () {
-    try {        
-        await createSiteMap()
-        console.log("Site map generated");
-    } catch (error) {
-        console.log("Error in cron");
-    }
-});
+const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
+if(ENABLE_SITEMAP_CRON)
+{
+    cron.schedule('0 3 * * *', async function () {
+        try {        
+            await createSiteMap()
+            console.log("Site map generated");
+        } catch (error) {
+            console.log("Error in cron");
+        }
+    });
 
-cron.schedule('* 5 * * * ', async function () {
-    try {        
-        await copySiteMapS3ToFolder()
-        
-    } catch (error) {
-        console.log("Error in copying", error);
-    }
-});
+    cron.schedule('*/5 * * * * ', async function () {
+        try {        
+            await copySiteMapS3ToFolder()
+            
+        } catch (error) {
+            console.log("Error in copying", error);
+        }
+    });
+}
 
 //start server
 const port = process.env.PORT || "3001";
