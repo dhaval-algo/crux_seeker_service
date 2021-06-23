@@ -45,7 +45,7 @@ cron.schedule('0 3 * * *', async function () {
     }
 });
 
-cron.schedule('0 2 * * * *', async function () {
+cron.schedule('5 * * * * *', async function () {
     try {        
         await copySiteMapS3ToFolder()
         console.log("Site map file  copied");
