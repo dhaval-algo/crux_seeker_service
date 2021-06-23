@@ -39,7 +39,7 @@ routes.init(app);
 const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
 if(ENABLE_SITEMAP_CRON)
 {
-    cron.schedule('0 3 * * *', async function () {
+    cron.schedule('*/3 * * * *', async function () {
         try {        
             await createSiteMap()
         } catch (error) {
@@ -47,9 +47,10 @@ if(ENABLE_SITEMAP_CRON)
         }
     });
 
-    cron.schedule('0 4 * * * ', async function () {
+    cron.schedule('*/5 * * * * ', async function () {
         try {        
-            await copySiteMapS3ToFolder()            
+            await copySiteMapS3ToFolder()  
+            console.log("sitemap copied")          
         } catch (error) {
             console.log("Error in copying", error);
         }
