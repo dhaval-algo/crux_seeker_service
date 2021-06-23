@@ -50,7 +50,7 @@ cron.schedule('5 * * * * *', async function () {
         await copySiteMapS3ToFolder()
         console.log("Site map file  copied");
     } catch (error) {
-        console.log("Error in copying");
+        console.log("Error in copying", error);
     }
 });
 
