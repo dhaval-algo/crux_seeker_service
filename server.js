@@ -39,7 +39,7 @@ routes.init(app);
 const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
 if(ENABLE_SITEMAP_CRON)
 {
-    cron.schedule('0 3 * * *', async function () {
+    cron.schedule('*/3 * * * *', async function () {
         try {        
             await createSiteMap()
             console.log("Site map generated");
