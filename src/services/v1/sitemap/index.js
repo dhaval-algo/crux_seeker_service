@@ -542,7 +542,7 @@ module.exports = {
                 return;
             }
 
-            exec('/home/ubuntu/sitemapfiles/advice.xml /home/ubuntu/apps/crux-frontend/public/advice.xml',( err, stdout, stderr) => {
+            exec('cp /home/ubuntu/sitemapfiles/advice.xml /home/ubuntu/apps/crux-frontend/public/advice.xml',( err, stdout, stderr) => {
                 if (err) {
                     // node couldn't execute the command
                     console.log("Error in copying to public folder",err )
