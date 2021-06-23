@@ -42,7 +42,6 @@ if(ENABLE_SITEMAP_CRON)
     cron.schedule('0 3 * * *', async function () {
         try {        
             await createSiteMap()
-            console.log("Site map generated");
         } catch (error) {
             console.log("Error in cron");
         }
@@ -50,8 +49,7 @@ if(ENABLE_SITEMAP_CRON)
 
     cron.schedule('0 4 * * * ', async function () {
         try {        
-            await copySiteMapS3ToFolder()
-            
+            await copySiteMapS3ToFolder()            
         } catch (error) {
             console.log("Error in copying", error);
         }
