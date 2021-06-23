@@ -533,13 +533,22 @@ module.exports = {
         })
     },
     copySiteMapS3ToFolder: () => {
-        try {
-            console.log("into the fucntion");
-            exec('aws s3 cp s3://crux-assets-production/advice.xml /home/ubuntu/sitemapfiles/advice.xml') 
-            console.log("Site map file  copied");
-        } catch (error) {
-            console.log("Shellerorr===========",error )
-        }
-   
+       
+        console.log("into the fucntion");
+        exec('aws s3 cp s3://crux-assets-production/advice.xml /home/ubuntu/sitemapfiles/advice.xml',( err, stdout, stderr) => {
+            if (err) {
+                // node couldn't execute the command
+                console.log("Error in copying",err )
+                return;
+            }
+
+            exec('/home/ubuntu/sitemapfiles/advice.xml /home/ubuntu/apps/crux-frontend/public/advice.xml',( err, stdout, stderr) => {
+                if (err) {
+                    // node couldn't execute the command
+                    console.log("Error in copying to public folder",err )
+                    return;
+                }
+            });
+        });
     }
 }
