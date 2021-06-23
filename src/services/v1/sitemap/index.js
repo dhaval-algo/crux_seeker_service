@@ -112,13 +112,7 @@ function createProvider() {
             const query = { 
                 "match_all": {}
             };
-            let query = { 
-                "bool": {                   
-                    "must": [
-                        {term: { "status.keyword": 'published' }}                
-                    ]
-                }
-            };
+            
             const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
             const result = await elasticService.search('provider', query, payload);
             let smStream = new SitemapStream({
