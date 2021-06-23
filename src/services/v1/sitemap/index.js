@@ -112,6 +112,13 @@ function createProvider() {
             const query = { 
                 "match_all": {}
             };
+            let query = { 
+                "bool": {                   
+                    "must": [
+                        {term: { "status.keyword": 'published' }}                
+                    ]
+                }
+            };
             const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
             const result = await elasticService.search('provider', query, payload);
             let smStream = new SitemapStream({
@@ -344,6 +351,12 @@ function createAdvice() {
                         });
                     }
                 }
+                //link for advice page
+                smStream.write({
+                    url: `/advice`,
+                    changefreq: 'daily', 
+                    priority: 0.8
+                });
                 //link for article search page
                 smStream.write({
                     url: `/advice/search`,
@@ -533,22 +546,32 @@ module.exports = {
         })
     },
     copySiteMapS3ToFolder: () => {
-       
         console.log("into the fucntion");
-        exec('aws s3 cp s3://crux-assets-production/advice.xml /home/ubuntu/sitemapfiles/advice.xml',( err, stdout, stderr) => {
-            if (err) {
-                // node couldn't execute the command
-                console.log("Error in copying",err )
-                return;
-            }
-
-            exec('cp /home/ubuntu/sitemapfiles/advice.xml /home/ubuntu/apps/crux-frontend/public/advice.xml',( err, stdout, stderr) => {
+        const sitemaps = ['advice.xml', 'course.xml']
+        for (const sitemap of sitemaps)
+        {
+            exec(`aws s3 cp s3://crux-assets-production/${sitemap} /home/ubuntu/sitemapfiles/${sitemap}`,( err, stdout, stderr) => {
                 if (err) {
                     // node couldn't execute the command
-                    console.log("Error in copying to public folder",err )
+                    console.log("Error in copying",err )
                     return;
                 }
+
+                exec(`cp /home/ubuntu/sitemapfiles/${sitemap} /home/ubuntu/apps/crux-frontend/public/${sitemap}`,( err, stdout, stderr) => {
+                    if (err) {
+                        // node couldn't execute the command
+                        console.log("Error in copying to public folder",err )
+                        return;
+                    }
+                });
             });
-        });
+        }
+        exec(`pm2 restart frontend`, ( err, stdout, stderr) => {
+            if (err) {
+                // node couldn't execute the command
+                console.log("Error in restarting frontend", err )
+                return;
+            }
+        })
     }
 }
