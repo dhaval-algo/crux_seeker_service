@@ -270,35 +270,75 @@ function createNews() {
 function createCategories() {
     return new Promise(async resolve => {
         try {
-            let smStream = new SitemapStream({
-                hostname: process.env.FRONTEND_URL,
-            });
-            smStream.write({
-                url: "/",
-                changefreq: 'daily', 
-                priority: 1
-            });
-            // Add a static url to ex: about page
-            smStream.write({
-                url: "/about",
-            });
-
+           
             // fetch category tree
             const backEndUrl = `${process.env.API_BACKEND_URL}/category-tree`;
             const categoryTreeRes = await Axios.get(backEndUrl)
             let { final_tree } = categoryTreeRes.data
-            smStream = iterate(final_tree, smStream, "courses")
+            let sub_category_parent = []
+            for (let category of final_tree)
+            {
+                for(let subcategory of category.child)
+                {
+                    sub_category_parent[subcategory.slug] = category.slug;
+                }
+            }            
+            let query = {
+                "bool": {     
+                    "must": [
+                        {term: { "status.keyword": 'published' }}
+                    ]
+                }
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["categories_list","sub_categories_list"] }
+            const result = await elasticService.search('learn-content', query, payload );
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+            let categories_slug =[];
+            let sub_categories_slug =[];
+            if (result.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
+                        for(const category of hit._source.categories_list)
+                        {
+                            categories_slug.push(category.slug)
+                        }
+                        for(const sub_category of hit._source.sub_categories_list)
+                        {
+                            sub_categories_slug.push(sub_category.slug)
+                        }
 
-            //generate course url 
+                    }
+                    let unique_categories_slug = categories_slug.filter((x, i, a) => a.indexOf(x) == i)
+                    let unique_sub_categories_slug = sub_categories_slug.filter((x, i, a) => a.indexOf(x) == i)
+                    for(const category of unique_categories_slug)
+                    {
+                        smStream.write({
+                            url: `/courses/${category}`,
+                            changefreq: 'daily', 
+                            priority: 1
+                        });
+                    }
+                    for(const sub_category of unique_sub_categories_slug)
+                    {
+                        smStream.write({
+                            url: `/courses/${sub_category_parent[sub_category]}/${sub_category}`,
+                            changefreq: 'daily', 
+                            priority: 1
+                        });
+                    }        
+                }
+                smStream.end();
 
-            smStream.end();
-            // generate a sitemap and add the XML feed to a url which will be used later on.
-            const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
-            //write to aws 
-            let path = 'categories-subcategories.xml'
-            let contentType = 'text/xml'
-            const res = await uploadFileToS3(path, sitemap, contentType)
-            resolve(sitemap)
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'categories-subcategories.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                resolve(sitemap)
+            }
         } catch (error) {
             console.log(error);
 
