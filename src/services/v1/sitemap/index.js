@@ -376,8 +376,8 @@ function createTopic(obj, smsStream) {
                     {
                         smStream.write({
                             url: `/topic/${topic}`,
-                            changefreq: 'daily', 
-                            priority: 0.8
+                            // changefreq: 'daily', 
+                            // priority: 0.8
                         });
                     }       
                 }
