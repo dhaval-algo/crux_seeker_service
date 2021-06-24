@@ -106,7 +106,10 @@ const getJobTitle = async(user) => {
   let jobTitleRecord = await models.user_meta.findOne({where});
   if(jobTitleRecord){
     let jsonValue = JSON.parse(jobTitleRecord.value);
-    jobTitle = jsonValue.label;
+    if(jsonValue && jsonValue.label)
+    {
+      jobTitle = jsonValue.label;
+    }    
   }
   return jobTitle;
 };
