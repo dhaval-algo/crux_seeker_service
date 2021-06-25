@@ -626,7 +626,7 @@ module.exports = {
             }
         })
     },
-    copySiteMapS3ToFolder: () => {
+    copySiteMapS3ToFolder: async () => {
         const sitemaps = ['advice.xml', 'course.xml','categories-subcategories.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
         const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
         const PROJECT_DIR = process.env.PROJECT_DIR || "/home/ubuntu";
