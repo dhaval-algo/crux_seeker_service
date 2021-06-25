@@ -317,7 +317,7 @@ function createCategories() {
                         smStream.write({
                             url: `/courses/${category}`,
                             changefreq: 'daily', 
-                            priority: 1
+                            priority: 1,
                         });
                     }
                     for(const sub_category of unique_sub_categories_slug)
@@ -325,8 +325,9 @@ function createCategories() {
                         smStream.write({
                             url: `/courses/${sub_category_parent[sub_category]}/${sub_category}`,
                             changefreq: 'daily', 
-                            priority: 1
-                        });
+                            priority: 1,
+                        }); 
+
                     }        
                 }
                 smStream.end();
@@ -376,8 +377,8 @@ function createTopic(obj, smsStream) {
                     {
                         smStream.write({
                             url: `/topic/${topic}`,
-                            // changefreq: 'daily', 
-                            // priority: 0.8
+                            changefreq: 'daily', 
+                            priority: 0.8
                         });
                     }       
                 }
