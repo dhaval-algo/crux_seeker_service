@@ -13,7 +13,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({ full_name: messagData.full_name,account_email: messagData.account_email,verification_link: messagData.verification_link, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Verify your crux account',message:emailTemplate};
+        let templateData = {subject:'Verify your Careervira account',message:emailTemplate};
  
         return templateData 
          
@@ -26,7 +26,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Welcome To Crux',message:emailTemplate};
+        let templateData = {subject:'Welcome To Careervira',message:emailTemplate};
  
         return templateData 
          
@@ -39,7 +39,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({reset_link:messagData.reset_link, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Crux- reset password',message:emailTemplate};
+        let templateData = {subject:'Careervira- reset password',message:emailTemplate};
  
         return templateData 
          
@@ -52,7 +52,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Crux- Contact Us',message:emailTemplate};
+        let templateData = {subject:'Careervira- Contact Us',message:emailTemplate};
  
         return templateData 
          
@@ -65,7 +65,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({name: messagData.name,email: messagData.email,phone: messagData.phone,comment: messagData.comment, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Crux- Feedback',message:emailTemplate};
+        let templateData = {subject:'Careervira- Feedback',message:emailTemplate};
  
         return templateData 
          
