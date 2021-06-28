@@ -16,7 +16,8 @@ const {
     updateSelectedFilters,
     getRankingFilter,
     getRankingBySlug,
-    sortFilterOptions
+    sortFilterOptions,
+    generateMetaInfo
 } = require('../utils/general');
 
 const MAX_RESULT = 10000;
@@ -300,13 +301,19 @@ module.exports = class providerService {
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
 
-              let data = {
+            let data = {
                 list: list,
                 ranking: ranking,
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort']
-              };
+            };
+
+            let meta_information = generateMetaInfo  ('provider-list', result, list);
+            if(meta_information)
+            {
+                data.meta_information  = meta_information;
+            }
 
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
@@ -425,14 +432,11 @@ module.exports = class providerService {
         };
 
         if(!isList){
-            data.meta_information = {
-                student_educational_background_diversity: result.student_educational_background_diversity,
-                student_nationality_diversity: result.student_nationality_diversity,
-                student_gender_diversity: result.student_gender_diversity,
-                student_avg_experience_diversity: result.student_avg_experience_diversity,
-                highest_package_offered: result.highest_package_offered,
-                median_package_offered: result.median_package_offered
-            };
+            let meta_information = generateMetaInfo  ('provider', result);
+            if(meta_information)
+            {
+                data.meta_information  = meta_information;
+            } 
 
             if(result.gender_diversity && result.gender_diversity.length > 0){
                 data.placements['gender_diversity'] = result.gender_diversity;

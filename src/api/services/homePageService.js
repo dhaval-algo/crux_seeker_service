@@ -2,6 +2,7 @@ const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const sectionService = require('./sectionService');
 const models = require("../../../models");
+const {generateMetaInfo} = require('../utils/general');
 
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
@@ -326,6 +327,13 @@ const formatHomepageData = async(data, user = null, currency) => {
     }else{
         data.recommended_courses = [];
     } */
+    let i = 0;
+    for(trending_now of data.trending_now)
+    {
+      let meta_information = generateMetaInfo  ('trending-now', trending_now);
+      data.trending_now[i].meta_information = meta_information;
+      i++;
+    }
 
     if(!user){
         data.trending_now = [];

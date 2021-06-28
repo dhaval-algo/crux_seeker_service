@@ -370,6 +370,301 @@ const getUserFromHeaders = async(headers) => {
     return user;
 };
 
+const getDurationText = (duration, duration_unit) => {
+    if(!duration){
+        return null;
+    }
+    if(duration == 0){
+        return null;
+    }
+    let duration_text = "";
+    if(duration_unit){
+        duration_unit = duration_unit.toLowerCase();
+        duration_text += duration;
+        if(parseInt(duration) <= 1){
+            duration_unit = pluralize.singular(duration_unit);
+        }
+        duration_text += " "+duration_unit;
+    }else{
+        duration_text = calculateDuration(duration); 
+    }
+    return duration_text;
+}
+
+const generateMetaInfo = (page, result, list) => {
+    let meta_information = null;
+    let categories = [];
+    let sub_categories = [];
+    let topics = [];
+    let keywords  = [];
+    let extra_keyword = [];
+    let meta_keywords = null;
+    let meta_title = null;
+    let meta_description = null;
+    
+    switch (page) {
+        case 'learn-content':
+            meta_title = `${result.title} | ${result.provider_name} | ${process.env.SITE_URL_FOR_META_DATA}`;
+            
+            if(result.categories)
+            {
+                let unique_categories =  result.categories.filter((x, i, a) => a.indexOf(x) == i)
+                categories = unique_categories.join(", ");
+            }
+            
+            meta_description = `${result.title} by ${result.provider_name} is top course`;
+            if(categories)
+            {
+                meta_description += ` for ${categories}.`;
+            }
+            else
+            {
+                meta_description += `.`;
+            }
+            if(result.medium)
+            {
+                meta_description += ` It is an ${result.medium} course and is ${result.pricing_type}`;
+            }
+
+            if(result.topics_list)
+            {
+                for(let topic of result.topics_list)
+                {
+                    topics.push(topic.default_display_label)
+                }
+            }
+            
+            keywords  = [result.title];
+            keywords = [...keywords, ...result.categories, ...result.sub_categories, ...topics];
+            keywords.push(result.provider_name);
+            keywords.push(result.partner_name);
+            keywords = [...keywords, ...result.skills];
+            keywords.push(result.pricing_type);
+            keywords.push(result.medium);
+            
+            extra_keyword = ['careervira courses', 'available courses'];
+            keywords = [...keywords, ...extra_keyword];
+            if(result.total_duration)
+            {
+             keywords.push(getDurationText(result.total_duration, result.total_duration_unit));
+            }
+            if(result.instruction_type)
+            {
+             keywords.push(result.instruction_type);
+            }
+            if(result.languages)
+            {
+             keywords.push(result.languages.join(", "));
+            }            
+            if(result.learn_type)
+            {
+             keywords.push(result.learn_type);
+            }
+
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                meta_keywords = keywords.join(", ");
+            }
+
+            meta_information = {
+                meta_title: meta_title,
+                meta_description: meta_description,
+                meta_keywords: meta_keywords,
+                add_type: result.add_type,
+                import_source: result.import_source,
+                external_source_id: result.external_source_id,
+                application_seat_ratio: result.application_seat_ratio,
+                bounce_rate: result.bounce_rate,
+                completion_ratio: result.completion_ratio,
+                enrollment_ratio: result.enrollment_ratio,
+                faculty_student_ratio: result.faculty_student_ratio,
+                gender_diversity: result.gender_diversity,
+                student_stream_diversity: result.student_stream_diversity,
+                student_nationality_diversity: result.student_nationality_diversity,
+                average_salary_hike: result.average_salary_hike,
+                instructor_citations: result.instructor_citations
+            }
+            break;
+        case 'learn-content-list':
+
+            for (let hits of result.hits)
+            {
+                let course = hits._source;
+                categories = [...categories, ...course.categories ];
+                sub_categories = [...sub_categories, ...course.sub_categories ];
+                topics = [...topics, ...course.topics ];
+            }           
+            
+            categories =  categories.filter((x, i, a) => a.indexOf(x) == i)       
+            sub_categories =  sub_categories.filter((x, i, a) => a.indexOf(x) == i)
+            topics =  topics.filter((x, i, a) => a.indexOf(x) == i)
+            
+            keywords = [...keywords, ...categories, ...sub_categories, ...topics];
+            
+            extra_keyword = ["online courses", "learning courses", "paid courses", "degrees", "certifications", "offline courses", "instructor courses", "courses near me", "top courses"];
+            keywords = [...keywords, ...extra_keyword];
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                meta_keywords = keywords.join(", ");
+            }
+            meta_information = {meta_keywords :meta_keywords}
+            break;
+        case 'provider':
+            meta_title = `${result.name} | ${result.city}`;
+            let location  = result.city;
+            if(result.country)
+            {
+                meta_title += `, ${result.country}`
+                location += `, ${result.country}`
+            }
+            
+            meta_title += ` | ${process.env.SITE_URL_FOR_META_DATA}`;
+
+            let overview = result.overview;       
+            overview = overview.replace(/<(.|\n)*?>/g, '');
+            overview = overview.replace(/&nbsp;/g, ' ');       
+            let index = overview.indexOf(".")       
+            overview = overview.substring(0, (index > 0)? index :100);
+            let course_count = (result.course_count)? result.course_count : 0
+            meta_description = `${result.name}, ${location} has over ${course_count} courses. ${overview}. `;
+            let program_names_str = null;
+            let study_modes_names_str = null;
+            if(result.programs)
+            {
+                program_names_str = result.programs.join(", ");
+            }
+            if(result.study_modes)
+            {
+                study_modes_names_str = result.study_modes.join(", ");
+            }
+            
+
+            if(program_names_str && study_modes_names_str)
+            {
+                meta_description += ` It offers ${program_names_str} and ${study_modes_names_str}`;
+            }
+            else if(program_names_str)
+            {
+                meta_description += ` It offers ${program_names_str}`;
+            }
+            else if(study_modes_names_str)
+            {
+                meta_description += ` It offers ${study_modes_names_str}`;
+            }
+            meta_description += `. Structured Data - |Institutes| Courses | Partners | Free courses|`;
+                        
+            keywords  = [result.name];
+            extra_keyword = ['top institutes', 'indian institutess', 'free courses', 'online courses', 'top institutes','careervira institutes','institutes near me','free online courses','learning', 'list of institutes', 'top universities', 'universities'];
+            keywords = [...keywords, ...extra_keyword];
+            keywords.push(location);
+            keywords = [...keywords, ...result.programs, ...result.study_modes];
+
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                meta_keywords = keywords.join(", ");
+            }
+            meta_information = {
+                meta_title: meta_title,
+                meta_description: meta_description,
+                meta_keywords: meta_keywords,
+                student_educational_background_diversity: result.student_educational_background_diversity,
+                student_nationality_diversity: result.student_nationality_diversity,
+                student_gender_diversity: result.student_gender_diversity,
+                student_avg_experience_diversity: result.student_avg_experience_diversity,
+                highest_package_offered: result.highest_package_offered,
+                median_package_offered: result.median_package_offered
+            };
+            break;
+        case 'provider-list':
+            let providers = [];
+            let locations = [];
+           
+            for (let provider of list)
+            {
+                providers.push(provider.title);
+                
+                if(provider.contact_details.city)
+                {
+                    locations.push(provider.contact_details.city);
+                }
+                // if(provider.contact_details.state)
+                // {
+                //     locations.push(provider.contact_details.state);
+                // }
+                if(provider.contact_details.country)
+                {
+                    locations.push(provider.contact_details.country);
+                }
+            }
+            
+            locations =  locations.filter((x, i, a) => a.indexOf(x) == i) 
+
+            keywords = [...keywords, ...providers, ...locations];
+            
+            extra_keyword = ["courses", "free courses", "online courses", "courses near me", "careervira courses", "available courses", "self paced/instructors", "english courses", "degrees", "certifications"];
+            keywords = [...keywords, ...extra_keyword];
+
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                 meta_keywords = keywords.join(", ");
+            }
+            meta_information = {meta_keywords :meta_keywords}
+            break;
+        case 'partner' :
+            let awards = [];
+            let courses_names = [];
+            
+            keywords  = [result.name];
+            if(result.awards && result.awards.length > 0){
+                for(let award of result.awards){
+                    awards.push(award.name);
+                }
+            }
+
+            if(result.courses.list && result.courses.list.length > 0){
+                for(let course of result.courses.list){
+                    courses_names.push(course.title);
+                }
+            }
+            
+            keywords = [...keywords, ...awards, ...courses_names];
+            
+            extra_keyword = [ "free courses", "online courses", "courses near me", "careervira courses", "available courses", "self paced/instructors", "english courses", "degrees", "certifications"];
+            keywords = [...keywords, ...extra_keyword];
+            
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                 meta_keywords = keywords.join(", ");
+            }
+            meta_information = {meta_keywords :meta_keywords}
+            break;
+        case 'trending-now' :
+            meta_description = `Browse the best ${result.title} offered by Careervira and choose the best program and institute that fits your specifications. `;
+            let courses =[];
+            if(result.type =="Learn_content")
+            {
+              if(result.learn_contents)
+              {
+                for (learn_content of result.learn_contents)
+                {
+                  courses.push(learn_content.title);
+                }
+              }
+              if(courses.length > 0){
+               
+                meta_course_description = courses.join(", ");
+                meta_description += meta_course_description+`. Choose the right program for you.`
+              }
+            }
+            meta_information = {meta_description : meta_description}
+            break;
+        default:
+            break;
+    }
+
+    return meta_information;
+
+}
 
 
   module.exports = {
@@ -388,7 +683,8 @@ const getUserFromHeaders = async(headers) => {
     getRankingBySlug,
     sortFilterOptions,
     getUserFromHeaders,
-    calculateFilterCount
+    calculateFilterCount,
+    generateMetaInfo
 }
 
 

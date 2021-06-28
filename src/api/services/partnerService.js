@@ -2,11 +2,13 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
+const {generateMetaInfo} = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
+
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -259,6 +261,7 @@ module.exports = class partnerService {
             list: [],
             total: 0
         };
+ 
         if(!isList){
             courses = await this.getPartnerCourses(result.name, currency);
         }
@@ -298,7 +301,14 @@ module.exports = class partnerService {
             user_id: result.user_id,
             category_tree: await getCategoryTree(result.name)
         };
-
+        if(!isList){
+            result.courses  =  courses;
+            let meta_information = generateMetaInfo  ('partner', result);
+            if(meta_information)
+            {
+                data.meta_information  = meta_information;
+            }
+        }
         if(result.awards && result.awards.length > 0){
             for(let award of result.awards){                
                 if(!isList){
