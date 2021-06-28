@@ -1,7 +1,7 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const { getCurrencies, getCurrencyAmount } = require('../utils/general');
+const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
 
 const { 
     getFilterConfigs, 
@@ -888,13 +888,17 @@ module.exports = class learnContentService {
                 
             }
 
-              let data = {
+            let data = {
                 list: list,
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort']
-              };
-
+            };
+            let meta_information = generateMetaInfo  ('learn-content-list', result);
+            if(meta_information)
+            {
+                data.meta_information  = meta_information;
+            } 
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
@@ -1231,24 +1235,12 @@ module.exports = class learnContentService {
         };
 
         if(!isList){
-            data.meta_information = {
-                meta_title: result.meta_title,
-                meta_description: result.meta_description,
-                meta_keywords: result.meta_keywords,
-                add_type: result.add_type,
-                import_source: result.import_source,
-                external_source_id: result.external_source_id,
-                application_seat_ratio: result.application_seat_ratio,
-                bounce_rate: result.bounce_rate,
-                completion_ratio: result.completion_ratio,
-                enrollment_ratio: result.enrollment_ratio,
-                faculty_student_ratio: result.faculty_student_ratio,
-                gender_diversity: result.gender_diversity,
-                student_stream_diversity: result.student_stream_diversity,
-                student_nationality_diversity: result.student_nationality_diversity,
-                average_salary_hike: result.average_salary_hike,
-                instructor_citations: result.instructor_citations
-            }
+           
+            let meta_information = generateMetaInfo  ('learn-content', result);
+            if(meta_information)
+            {
+                data.meta_information  = meta_information;
+            }            
         }
 
         if(!isList){
