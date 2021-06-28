@@ -590,7 +590,7 @@ const generateMetaInfo = (page, result, list) => {
             meta_description += `. `;
                         
             keywords  = [result.name];
-            extra_keyword = ['top institutes', 'indian institutess', 'free courses', 'online courses', 'top institutes','careervira institutes','institutes near me','free online courses','learning', 'list of institutes', 'top universities', 'universities'];
+            extra_keyword = ['top institutes', 'indian institutes', 'free courses', 'online courses', 'top institutes','careervira institutes','institutes near me','free online courses','learning', 'list of institutes', 'top universities', 'universities'];
             keywords = [...keywords, ...extra_keyword];
             keywords.push(location);
             keywords = [...keywords, ...result.programs, ...result.study_modes];
