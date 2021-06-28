@@ -551,7 +551,7 @@ const generateMetaInfo = (page, result, list) => {
             {
                 meta_description += ` It offers ${study_modes_names_str}`;
             }
-            meta_description += `. Structured Data - |Institutes| Courses | Partners | Free courses|`;
+            meta_description += `. `;
                         
             keywords  = [result.name];
             extra_keyword = ['top institutes', 'indian institutess', 'free courses', 'online courses', 'top institutes','careervira institutes','institutes near me','free online courses','learning', 'list of institutes', 'top universities', 'universities'];
