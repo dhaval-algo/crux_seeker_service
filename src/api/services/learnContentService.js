@@ -894,7 +894,7 @@ module.exports = class learnContentService {
                 pagination: pagination,
                 sort: req.query['sort']
             };
-            let meta_information = generateMetaInfo  ('learn-content-list', result);
+            let meta_information = await generateMetaInfo  ('learn-content-list', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
@@ -1236,7 +1236,7 @@ module.exports = class learnContentService {
 
         if(!isList){
            
-            let meta_information = generateMetaInfo  ('learn-content', result);
+            let meta_information = await generateMetaInfo  ('learn-content', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
