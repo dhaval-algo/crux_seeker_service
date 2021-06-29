@@ -330,14 +330,14 @@ const formatHomepageData = async(data, user = null, currency) => {
     let i = 0;
     for(trending_now of data.trending_now)
     {
-      let meta_information = generateMetaInfo  ('trending-now', trending_now);
+      let meta_information = await generateMetaInfo  ('trending-now', trending_now);
       data.trending_now[i].meta_information = meta_information;
       i++;
     }
 
-    if(!user){
-        data.trending_now = [];
-    }
+     if(!user){
+         data.trending_now = [];
+     }
 
     const blogHomeData = await getBlogHomeContent();
     if(blogHomeData['featured_articles']){

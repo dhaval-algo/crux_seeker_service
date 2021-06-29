@@ -309,7 +309,7 @@ module.exports = class providerService {
                 sort: req.query['sort']
             };
 
-            let meta_information = generateMetaInfo  ('provider-list', result, list);
+            let meta_information = await generateMetaInfo  ('provider-list', result, list);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
@@ -432,7 +432,7 @@ module.exports = class providerService {
         };
 
         if(!isList){
-            let meta_information = generateMetaInfo  ('provider', result);
+            let meta_information = await generateMetaInfo  ('provider', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;

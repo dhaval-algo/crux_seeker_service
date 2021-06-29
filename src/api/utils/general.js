@@ -427,7 +427,7 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
-const generateMetaInfo = (page, result, list) => {
+const generateMetaInfo = async (page, result, list) => {
     let meta_information = null;
     let categories = [];
     let sub_categories = [];
@@ -692,14 +692,51 @@ const generateMetaInfo = (page, result, list) => {
                 meta_description += meta_course_description+`. Choose the right program for you.`
               }
             }
+            else if (result.type =="Institute")
+            {
+                if(result.institutes)
+                {
+                    let instituteId = []
+                    for (institute of result.institutes)
+                    {
+                        instituteId.push(institute.id);
+                    }
+                    let institutes = [];
+                    let query = { 
+                        "bool": {
+                            "must": [
+                                {term: { "status.keyword": 'approved' }}                
+                            ],
+                            //"filter": []
+                        }
+                    };
+                    query.bool.must.push(
+                        {
+                            "terms": {
+                              "id": instituteId 
+                            }
+                        }
+                    )
+                   
+                    let institutes_hits = await elasticService.search('provider', query);
+                    for(hit of institutes_hits.hits)
+                    {
+                        institutes.push( hit._source.name)
+                    }
+                    if(institutes.length > 0){  
+                        let  meta_institutes_description = institutes.join(", ");
+                        meta_description += meta_institutes_description+`. Choose the right program for you.`
+                    }
+                }
+                
+            }
             meta_information = {meta_description : meta_description}
             break;
         default:
             break;
     }
-
+    
     return meta_information;
-
 }
 
 

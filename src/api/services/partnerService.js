@@ -303,7 +303,7 @@ module.exports = class partnerService {
         };
         if(!isList){
             result.courses  =  courses;
-            let meta_information = generateMetaInfo  ('partner', result);
+            let meta_information = await generateMetaInfo  ('partner', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
