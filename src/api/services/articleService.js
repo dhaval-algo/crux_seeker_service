@@ -245,6 +245,7 @@ module.exports = class articleService {
                     filter.label ="Author Type";
                 }
             }
+
               let data = {
                 list: list,
                 filters: filters,
@@ -252,6 +253,11 @@ module.exports = class articleService {
                 sort: req.query['sort']
               };
 
+              let meta_information = await generateMetaInfo  ('article-list', result.hits);
+              if(meta_information)
+              {
+                  data.meta_information  = meta_information;
+              }    
             
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{

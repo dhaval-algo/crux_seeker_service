@@ -733,6 +733,7 @@ const generateMetaInfo = async (page, result, list) => {
             meta_information = {meta_description : meta_description}
             break;
         case 'article':
+            meta_title = `${result.title} | ${process.env.SITE_URL_FOR_META_DATA}`;
             if(result.short_description)
             {
                 meta_description = result.short_description;
@@ -749,10 +750,50 @@ const generateMetaInfo = async (page, result, list) => {
                 meta_description = content.substring(0, (content_index > 0)? content_index :100);
             }       
             
+            keywords =[result.title]
+            keywords = [...keywords, ...result.categories];
+            keywords.push(`${result.author_first_name} ${result.author_last_name}`);
+            keywords = [...keywords, ...result.tags];
+            
+            extra_keyword = [ "careervira advice", "online marketplace", "learn content", "courses near me", "courses near me", "careervira articles", "english courses", "free articles", "learning advice", "institute advice", "ranking articles", "ranking advice", "career advice", "career path", "top courses", "experts", "top professionals", "industry experts", "careervira content", "institutes", "degrees", "certifications", "courses"];
+            keywords = [...keywords, ...extra_keyword];
+            
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                 meta_keywords = keywords.join(", ");
+            }
             meta_information = {
-                meta_tile: result.meta_title,
+                meta_tile: meta_title,
                 meta_description: meta_description,
-                meta_keywords: result.meta_keywords
+                meta_keywords: meta_keywords
+            }
+            break;
+        case 'article-list':
+            meta_title = `Advice by Careervira | Get advice from top professionals, experts and learners  | ${process.env.SITE_URL_FOR_META_DATA}`;
+            meta_description = `You can get expert advice with Careervira.com’s personalised career services. Get advice from top professionals, industry experts, academics and learners on career guide, learn path and how to master a subject. You can navigate through your career path to reach your target role based on your skill assessment`
+            let author_names = [];
+            let tags = []
+            for(article of result)
+            {
+                categories = [...categories, ...article._source.categories];
+                author_names.push(`${article._source.author_first_name} ${article._source.author_last_name}`);
+                tags = [...tags, ...article._source.tags];
+            }
+            
+            categories =  categories.filter((x, i, a) => a.indexOf(x) == i);
+            author_names =  author_names.filter((x, i, a) => a.indexOf(x) == i);
+            tags =  tags.filter((x, i, a) => a.indexOf(x) == i) ;
+
+            extra_keyword = ["careervira advice", "online marketplace", "learn content", "courses near me", "careervira courses", "careervira articles", "free articles", "learning advice", "institute advice", "ranking articles", "ranking advice", "career advice", "career path", "top courses", "experts", "top professionals", "industry experts", "careervira content", "institutes", "degrees", "certifications" ];
+            keywords = [...keywords, ...categories,...author_names,...tags, ...extra_keyword];
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                 meta_keywords = keywords.join(", ");
+            }
+            meta_information = {
+                meta_tile: meta_title,
+                meta_description: meta_description,
+                meta_keywords: meta_keywords
             }
             break;
         default:
