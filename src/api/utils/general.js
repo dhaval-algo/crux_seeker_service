@@ -763,7 +763,7 @@ const generateMetaInfo = async (page, result, list) => {
                  meta_keywords = keywords.join(", ");
             }
             meta_information = {
-                meta_tile: meta_title,
+                meta_title: meta_title,
                 meta_description: meta_description,
                 meta_keywords: meta_keywords
             }
@@ -791,7 +791,7 @@ const generateMetaInfo = async (page, result, list) => {
                  meta_keywords = keywords.join(", ");
             }
             meta_information = {
-                meta_tile: meta_title,
+                meta_title: meta_title,
                 meta_description: meta_description,
                 meta_keywords: meta_keywords
             }
