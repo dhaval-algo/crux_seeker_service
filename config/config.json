@@ -1,0 +1,51 @@
+{
+  "development": {
+    "username": "${process.env.DATABASE_USERNAME}",
+    "password": "${process.env.DATABASE_PASSWORD}",
+    "database": "${process.env.DATABASE_NAME}",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "logging":false,
+    "timezone": "+05:30"
+  },
+  "test": {
+    "username": "root",
+    "password": null,
+    "database": "database_test",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "timezone": "+05:30"
+  },
+  "production": {
+    "username": "root",
+    "password": null,
+    "database": "database_production",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "logging":false,
+    "timezone": "+05:30"
+  },
+  "staging":{
+    "username": "${process.env.DATABASE_USERNAME}",
+    "password": "${process.env.DATABASE_PASSWORD}",
+    "database": "${process.env.DATABASE_NAME}",
+    "host": "127.0.0.1",
+    "dialect": "postgres",
+    "dialectOptions": {
+      "useUTC":true
+    },
+    "logging":false,
+    "timezone": "+05:30"
+  } 
+}
+
+
