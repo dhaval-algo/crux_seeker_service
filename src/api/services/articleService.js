@@ -9,7 +9,8 @@ const {
     calculateFilterCount,
     getFilterAttributeName,
     updateSelectedFilters,
-    sortFilterOptions
+    sortFilterOptions,
+    generateMetaInfo
 } = require('../utils/general');
 
 const MAX_RESULT = 10000;
@@ -380,10 +381,10 @@ module.exports = class articleService {
         };
 
         if(!isList){
-            data.meta_information = {
-                meta_tile: result.meta_title,
-                meta_description: result.meta_description,
-                meta_keywords: result.meta_keywords
+            let meta_information = await generateMetaInfo  ('article', result);
+            if(meta_information)
+            {
+                data.meta_information  = meta_information;
             }
         }
         

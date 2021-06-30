@@ -732,6 +732,29 @@ const generateMetaInfo = async (page, result, list) => {
             }
             meta_information = {meta_description : meta_description}
             break;
+        case 'article':
+            if(result.short_description)
+            {
+                meta_description = result.short_description;
+                let position = meta_description.indexOf(".")
+                if(position >0 )  
+                {
+                    meta_description =  meta_description.substring(0, position);
+                }
+            }else
+            {
+                content = result.content.replace(/<(.|\n)*?>/g, '');
+                content = content.replace(/&nbsp;/g, ' ');
+                let content_index = content.indexOf(".")       
+                meta_description = content.substring(0, (content_index > 0)? content_index :100);
+            }       
+            
+            meta_information = {
+                meta_tile: result.meta_title,
+                meta_description: meta_description,
+                meta_keywords: result.meta_keywords
+            }
+            break;
         default:
             break;
     }
