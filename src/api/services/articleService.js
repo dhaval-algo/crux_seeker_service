@@ -1,4 +1,5 @@
 const elasticService = require("./elasticService");
+const fetch = require("node-fetch");
 
 const { 
     getFilterConfigs, 
@@ -12,6 +13,7 @@ const {
     sortFilterOptions,
     generateMetaInfo
 } = require('../utils/general');
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
@@ -210,7 +212,57 @@ module.exports = class articleService {
                 }
             );         
         }
-        
+
+         /*Ordering as per category tree*/
+         let formatCategory = true;
+         if(parsedFilters)
+         {
+             for (let parsedFilter of parsedFilters)
+             {
+                 if (parsedFilter.key =="Industry")
+                 {
+                     formatCategory = false;
+                 }
+             }
+         }
+        if(formatCategory)
+        {
+           let category_tree =[];
+           let categoryFiletrOption =[];
+           let categorykey = 0;
+           let response = await fetch(`${apiBackendUrl}/category-tree`);
+            if (response.ok) {
+               let json = await response.json();
+               if(json && json.final_tree){
+                   category_tree = json.final_tree;
+                }
+            }
+            if(category_tree && category_tree.length)
+            {
+                for(let category of category_tree )
+                {
+                    let i= 0;
+                    for(let filter of filters)
+                    {
+                        if(filter.field =="categories")
+                        {
+                            for(let option of filter.options)
+                            {
+                                if(category.label == option.label)
+                                {
+                                    categoryFiletrOption.push(option);
+                                }
+                            }
+                            categorykey = i;
+                            
+                        }
+                        i++;
+                    }
+                }
+            }
+            filters[categorykey].options = categoryFiletrOption;
+
+        }
 
         const result = await elasticService.search('article', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
