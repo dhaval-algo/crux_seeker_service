@@ -10,6 +10,6 @@ router.post("/course/buy", authenticateJWT, learnContentController.buyCourse);
 router.get("/order/status", authenticateJWT, orderController.getOrderStatus);
 
 router.post("/user-last-search", authenticateJWT, searchController.userLastSearch);
-router.post("/get-user-last-search", authenticateJWT, searchController.getUserLastSearch);
+router.get("/get-user-last-search", authenticateJWT, searchController.getUserLastSearch);
 
 module.exports = router;

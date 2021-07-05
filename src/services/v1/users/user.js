@@ -1307,7 +1307,6 @@ module.exports = {
 
     getUserLastSearch: async (req,callback) => {
         
-        const {search} =req.body
         const { user} = req;
         let userId = user.userId
 
