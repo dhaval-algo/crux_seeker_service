@@ -1288,7 +1288,7 @@ module.exports = {
         let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
         
         if( !suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
-            if(suggestionList[search.type].length == 5 ) {
+            if(suggestionList[search.type].length == process.env.LAST_SEARCH_LIMIT ) {
                 suggestionList[search.type].shift();
             }            
             suggestionList[search.type].push(search);
