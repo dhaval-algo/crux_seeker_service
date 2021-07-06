@@ -1026,6 +1026,7 @@ const generateSingleViewData = (result, isList = false) => {
             topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,
             tags: [],
             pricing: {
+                display_price: (result.display_price)? result.display_price:false,
                 pricing_type: result.pricing_type,
                 currency: result.pricing_currency,
                 regular_price: result.regular_price,
