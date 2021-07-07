@@ -254,13 +254,27 @@ module.exports = class providerService {
         let queryString = null;
         if(req.query['q']){
             query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                        "fields" : ['name^2','programs'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
+                {                    
+                "bool": {
+                    "should": [
+                        {
+                            "query_string" : {
+                                "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                                "fields" : ['name^2','programs'],
+                                "analyze_wildcard" : true,
+                                "allow_leading_wildcard": true
+                            }
+                        },
+                        {
+                            "multi_match": {
+                                "fields":  ['name^2','programs'],
+                                "query": decodeURIComponent(req.query['q']).trim(),
+                                "fuzziness": "AUTO",
+                                "prefix_length": 0                              
+                            }
+                        }           
+                    ]
+                    }                    
                 }
             );         
         }
