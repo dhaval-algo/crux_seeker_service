@@ -107,7 +107,7 @@ module.exports = class searchService {
             sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
             const entityQuery = generateEntityQuery(entity, keyword);
             query.bool.should.push(entityQuery);
-            const entityFuzzyQuery = generateEntityFuzzyQuery(key, keyword);
+            const entityFuzzyQuery = generateEntityFuzzyQuery(entity, keyword);
             query.bool.should.push(entityFuzzyQuery);
         }
 
