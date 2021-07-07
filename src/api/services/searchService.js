@@ -49,6 +49,37 @@ const generateEntityQuery = (entity, keyword) => {
 };
 
 
+const generateEntityFuzzyQuery = (entity, keyword) => {
+    let entityConfig = entityQueryMapping[entity];
+    let entity_query = {
+        "bool": {
+          "must": [
+            {
+              "term": {
+                "status.keyword": entityConfig.status
+              }
+            },
+            {
+                "multi_match": {
+                        "fields": entityConfig.fields,
+                        "query": decodeURIComponent(keyword).trim(),
+                        "fuzziness": "AUTO",
+                        "prefix_length": 0
+                    
+                }
+            },      
+            {
+              "term": {
+                "_index": entity
+              }
+            }
+          ]
+        }
+      };
+      return entity_query;
+};
+
+
 module.exports = class searchService {
     async getSearchResult(req, callback){
         const keyword = decodeURIComponent(req.params.keyword);
@@ -67,19 +98,22 @@ module.exports = class searchService {
                 sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
                 const entityQuery = generateEntityQuery(key, keyword);
                 query.bool.should.push(entityQuery);
+                const entityFuzzyQuery = generateEntityFuzzyQuery(key, keyword);
+                query.bool.should.push(entityFuzzyQuery);
+
             }            
         }else{
             queryEntities.push(entity);
             sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
             const entityQuery = generateEntityQuery(entity, keyword);
             query.bool.should.push(entityQuery);
+            const entityFuzzyQuery = generateEntityFuzzyQuery(key, keyword);
+            query.bool.should.push(entityFuzzyQuery);
         }
 
         const uniqueFields = sourceFields.filter(function(item, pos, self) {
             return self.indexOf(item) == pos;
         });
-
-              
 
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
         //console.log("Result Reponse <<>>>>>> <> ", JSON.stringify(result));
