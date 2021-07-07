@@ -201,15 +201,30 @@ module.exports = class articleService {
         
         let queryString = null;
         if(req.query['q']){
-            query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                        "fields" : ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
+            query.bool.must.push(
+                {                    
+                    "bool": {
+                        "should": [
+                            {
+                                "query_string" : {
+                                    "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                                    "fields" : ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                    "analyze_wildcard" : true,
+                                    "allow_leading_wildcard": true
+                                }
+                            },
+                            {
+                                "multi_match": {
+                                    "fields":  ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                    "query": decodeURIComponent(req.query['q']).trim(),
+                                    "fuzziness": "AUTO",
+                                    "prefix_length": 0                              
+                                }
+                            }           
+                        ]
+                        }                    
                     }
-                }
+                
             );         
         }
 
