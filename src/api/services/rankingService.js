@@ -60,25 +60,30 @@ const formatHomepageData = async(data) => {
 
 module.exports = class rankingService {  
 
-  async getHomePageContent(req, callback) {
+  async getHomePageContent(req, callback, skipCache) {
     let data = {};
     let loggedIn = false;
     if(req.query['loggedIn']){
         loggedIn = (req.query['loggedIn'] == 'true');
     }
     try {
-      const query = {
-        "match_all": {}
-      };
-      const result = await elasticService.search('ranking-home-page', query);
-      if (result.hits && result.hits.length) {
-        let response = await formatHomepageData(result.hits[0]._source);
-        RedisConnection.set('ranking-article-slug', response.articles);
-        RedisConnection.set('ranking-page', response.data);
-        return callback(null, { success: true, data:response.data });
-      }
-      return callback(null, { success: true, data:data })
-
+        if(skipCache != true) {
+            let cacheData = RedisConnection.getValuesSync('ranking-page');
+            if(cacheData.noCacheData) {
+                return callback(null, { success: true, data:cacheData });
+            }
+        }
+        const query = {
+            "match_all": {}
+        };
+        const result = await elasticService.search('ranking-home-page', query);
+        if (result.hits && result.hits.length) {
+            let response = await formatHomepageData(result.hits[0]._source);
+            RedisConnection.set('ranking-article-slug', response.articles);
+            RedisConnection.set('ranking-page', response.data);
+            return callback(null, { success: true, data:response.data });
+        }
+        return callback(null, { success: true, data:data })
     } catch (error) {
       return callback(null, { success: true, data: data })
     }
