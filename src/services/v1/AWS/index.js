@@ -109,5 +109,31 @@ module.exports = {
     uploadImageToS3,
     uploadFileToS3,
     uploadResumeToS3,
-    deleteObject
+    deleteObject,
+
+    getArn: function(type,region,owner,name){
+        let arn = 'arn:aws:'+type+':'+region+':'+owner+':'+name
+        return arn;
+    },
+    getUrl: function(type,region,owner,name){
+        let url = 'https://'+type+'.'+region+'.amazonaws.com/'+owner+'/'+name
+        return url;
+    },
+
+    deleteQueue: function(deleteParams){
+        let this_obj = this;
+        return new Promise(async (resolve, reject) => {    
+            var sqs = new AWS.SQS({ region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY });
+
+            sqs.deleteMessage(deleteParams, function(err, data) {
+              if (err) {
+                return reject(err);
+              } else {
+                console.log("Queue delete sucess")
+                return resolve(data);
+              }
+            });
+            
+        })
+    },
 }
