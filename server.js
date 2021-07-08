@@ -54,7 +54,15 @@ if(ENABLE_SITEMAP_CRON)
             console.log("Error in copying", error);
         }
     });
+
+
+    
 }
+
+//Redis SQS consumers
+    const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
+    const rankingHome = new rankingHomeService();
+    rankingHome.rankingHomeSQSConsumer();
 
 //start server
 const port = process.env.PORT || "3001";

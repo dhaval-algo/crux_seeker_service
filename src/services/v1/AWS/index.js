@@ -136,4 +136,26 @@ module.exports = {
             
         })
     },
+
+    deleteFailedQueue: function(subject,queueURL,messageData,approximateReceiveCount,delete_params){
+        let this_obj = this;
+        return new Promise(async (resolve, reject) => {   
+            if(parseInt(approximateReceiveCount) >= parseInt(process.env.AWS_SQS_RECIEVE_LIMIT)) {
+
+                // let failedQueuesData = {
+                //     name :subject,
+                //     payload:JSON.stringify(messageData) 
+                // }
+                // let failedQueuesFields= ['name','payload']
+                // await models.failed_queues.create(failedQueuesData,  { fields: failedQueuesFields })
+
+                await this_obj.deleteQueue(delete_params) 
+                return resolve(delete_params)
+            }
+            else{
+                return resolve(false)
+            }
+            
+        })
+    },
 }

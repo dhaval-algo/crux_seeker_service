@@ -1,4 +1,6 @@
 let client = require('redis');
+const AWS = require('aws-sdk');
+const { Consumer } = require('sqs-consumer');
 
 let config = {
     url: process.env.REDIS_URL
@@ -10,13 +12,15 @@ const awsService = require("../AWS/index");
 const rankingService = require('../../../api/services/rankingService');
 const RankingService = new rankingService();
 
-module.exports = class REDIS {
+module.exports = class RankingHomeService {
 
     rankingHomeSQSConsumer(){
+        console.log("rankingHomeSQSConsumer")
         return new Promise(async (resolve, reject) => {
             try{
                 let queueName = process.env.REDIS_RANKING_HM_QUEUE
                 let queueURL =  awsService.getUrl('sqs',process.env.AWS_REGION,process.env.AWS_OWNER,queueName)
+                console.log("queueURL",queueURL)
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
                 const app = Consumer.create({
                     queueUrl: queueURL,
@@ -37,7 +41,7 @@ module.exports = class REDIS {
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
                         console.log("rankingHomeSQSConsumer->",)
-                        RankingService.getHomePageContent({}, (err, data) => {}, true); 
+                        RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
                          
                     },
                     sqs: new AWS.SQS()
@@ -64,6 +68,6 @@ module.exports = class REDIS {
             }
         
         })
-    },
+    }
 
 }
