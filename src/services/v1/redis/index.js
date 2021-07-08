@@ -60,6 +60,7 @@ module.exports = class REDIS {
                     }
                     else{
                         console.log('REDIS:: Cache available for key = ',key);
+                        console.log('REDIS:: Cache data = ',data);
                         resolve(data);
                     }
                 }
