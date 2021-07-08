@@ -206,7 +206,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
             //return [];
             return {
                 filters: [],
-                total: result.hits.total.value
+                total: 0
             }
         }
 };
@@ -756,20 +756,34 @@ module.exports = class learnContentService {
         let queryString = null;
         if(req.query['q']){
             query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                        "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
+                {                    
+                "bool": {
+                    "should": [
+                      {
+                        "query_string" : {
+                            "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
+                            "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
+                            "analyze_wildcard" : true,
+                            "allow_leading_wildcard": true
+                        }
+                      },
+                      {
+                          "multi_match": {
+                                  "fields": ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
+                                  "query": decodeURIComponent(req.query['q']).trim(),
+                                  "fuzziness": "AUTO",
+                                  "prefix_length": 0                              
+                          }
+                      }           
+                    ]
+                  }                    
                 }
             );
             
         }
         let parsedFilters = [];
         let parsedRangeFilters = [];
-
+        
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
@@ -893,13 +907,7 @@ module.exports = class learnContentService {
                 }
             }
         }
-
         
-        
-
-
-        
-
         const result = await elasticService.search('learn-content', query, queryPayload);
 
         if(result.total && result.total.value > 0){
@@ -1197,6 +1205,7 @@ module.exports = class learnContentService {
                 topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
                 tags: [],
                 pricing: {
+                    display_price: (result.display_price)? result.display_price:false,
                     pricing_type: result.pricing_type,
                     currency: result.pricing_currency,
                     base_currency: baseCurrency,
