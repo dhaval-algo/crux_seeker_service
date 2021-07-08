@@ -68,7 +68,7 @@ module.exports = class rankingService {
     }
     try {
         if(skipCache != true) {
-            let cacheData = RedisConnection.getValuesSync('ranking-page');
+            let cacheData = await RedisConnection.getValuesSync('ranking-page');
             if(cacheData.noCacheData != true) {
                 return callback(null, { success: true, data:cacheData });
             }
@@ -85,7 +85,7 @@ module.exports = class rankingService {
         }
         return callback(null, { success: true, data:data })
     } catch (error) {
-      return callback(null, { success: true, data: data })
+        return callback(null, { success: true, data: data })
     }
   }
 }
