@@ -206,7 +206,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
             //return [];
             return {
                 filters: [],
-                total: result.hits.total.value
+                total: 0
             }
         }
 };
