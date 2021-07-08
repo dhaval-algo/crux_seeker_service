@@ -69,12 +69,9 @@ module.exports = class rankingService {
     try {
         if(skipCache != true) {
             let cacheData = RedisConnection.getValuesSync('ranking-page');
-            console.log('REDIS:: getValuesSync');
             if(cacheData.noCacheData != true) {
-                console.log('REDIS:: cacheData');
                 return callback(null, { success: true, data:cacheData });
             }
-            console.log('REDIS:: noCacheData');
         }
         const query = {
             "match_all": {}
@@ -88,7 +85,6 @@ module.exports = class rankingService {
         }
         return callback(null, { success: true, data:data })
     } catch (error) {
-        console.log('getHomePageContent:: error', error);
       return callback(null, { success: true, data: data })
     }
   }
