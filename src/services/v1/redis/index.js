@@ -24,7 +24,7 @@ module.exports = class REDIS {
         redis.get(key,callback);
     }
 
-    getValues(configKey,key,callback){
+    getValues(key,callback){
         this.connect();
         key='apiData-'+key;
         redis.get(key,(err,data)=>{
@@ -44,7 +44,7 @@ module.exports = class REDIS {
         });
     }
 
-    getValuesSync(configKey,key){
+    getValuesSync(key){
         let that = this;
         return new Promise(function(resolve,reject){
             that.connect();
@@ -83,7 +83,7 @@ module.exports = class REDIS {
     delete(key){
         this.connect(); 
         key='apiData-'+key;
-        console.log("CRON::Delete key for  "+key);
+        console.log("REDIS::Delete key for  "+key);
         redis.del(key);
     }
 }
