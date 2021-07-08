@@ -44,7 +44,7 @@ module.exports = class REDIS {
         });
     }
 
-    getValuesSync(key){
+    async getValuesSync(key){
         let that = this;
         return new Promise(function(resolve,reject){
             that.connect();
