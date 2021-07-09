@@ -7,6 +7,7 @@ const {
     getFilterConfigs, 
     parseQueryFilters,
     getPaginationQuery,
+    getPaginationDefaultSize,
     getMediaurl,
     updateFilterCount,
     calculateFilterCount,
@@ -14,6 +15,10 @@ const {
     updateSelectedFilters,
     sortFilterOptions
 } = require('../utils/general');
+
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -686,8 +691,46 @@ const calculateNewCnt = async (data,filters) => {
 
 module.exports = class learnContentService {
 
-    async getLearnContentList(req, callback){
+    async getLearnContentList(req, callback, skipCache){
         try{
+        let defaultSize = await getPaginationDefaultSize();
+        let defaultSort = "published_date:desc";
+        let useCache = false;
+        let cacheName = "";
+        if(
+            req.query['courseIds'] == undefined
+            && req.query['f'] == undefined
+            && req.query['rf'] == undefined
+            && (
+                req.query['page'] == undefined
+                || req.query['page'] == "1"
+            )
+            && (
+                req.query['size'] == undefined
+                || req.query['size'] == defaultSize
+            )
+            && (
+                req.query['sort'] == undefined
+                || req.query['sort'] == defaultSort
+            )
+        ) {
+            useCache = true;
+            let apiCurrency = process.env.DEFAULT_CURRENCY;
+            if(req.query['currency'] != undefined){
+                apiCurrency = req.query['currency'];
+            }
+            if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
+                cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
+            } else if(req.query['pageType'] == "search" && (req.query['q'] == undefined || req.query['q'] == "")) {
+                cacheName = "listing-search_"+apiCurrency;
+            }
+            if(skipCache != true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }
+        }
 
         currencies = await getCurrencies();
 
@@ -710,7 +753,7 @@ module.exports = class learnContentService {
         queryPayload.size = paginationQuery.size;
 
         if(!req.query['sort'] && !req.query['q']){
-            req.query['sort'] = "published_date:desc";
+            req.query['sort'] = defaultSort;
         }
 
         if(req.query['sort']){
@@ -959,6 +1002,18 @@ module.exports = class learnContentService {
                 data.meta_information  = meta_information;
             } 
             
+            if(useCache) {
+                list.forEach((course) => {
+                    let courseSlugs = {
+                        course_slug: course.slug,
+                        categories: course.categories_list.map(cat => cat.slug),
+                        sub_categories: course.sub_categories_list.map(subcat => subcat.slug),
+                        topics: course.topics_list.map(topc => topc.slug)
+                    }
+                    RedisConnection.set("listing-course-"+course.slug, courseSlugs);
+                });
+                RedisConnection.set(cacheName, data);
+            }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             //update selected flags
