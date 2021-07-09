@@ -8,52 +8,44 @@ const RedisConnection = new redisConnection();
 const formatHomepageData = async(data) => {
     let articles = [];
     if(data.top_articles.length){
-        data.top_articles = await ArticleService.getArticleByIds(data.top_articles, false);
-        data.top_articles.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let top_articles = await ArticleService.getArticleByIds(data.top_articles, false, true);
+        data.top_articles = top_articles.articles;
+        articles = articles.concat(top_articles.articleSlugs);
     }
     if(data.trending_articles.length){
-        data.trending_articles = await ArticleService.getArticleByIds(data.trending_articles);
-        data.trending_articles.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let trending_articles = await ArticleService.getArticleByIds(data.trending_articles, true, true);
+        data.trending_articles = trending_articles.articles;
+        articles = articles.concat(trending_articles.articleSlugs);
     }
     if(data.featured_articles.length){
-        data.featured_articles = await ArticleService.getArticleByIds(data.featured_articles, false);
-        data.featured_articles.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let featured_articles = await ArticleService.getArticleByIds(data.featured_articles, false, true);
+        data.featured_articles = featured_articles.articles;
+        articles = articles.concat(featured_articles.articleSlugs);
     }
     if(data.online_tech_articles.length){
-        data.online_tech_articles = await ArticleService.getArticleByIds(data.online_tech_articles);
-        data.online_tech_articles.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let online_tech_articles = await ArticleService.getArticleByIds(data.online_tech_articles, true, true);
+        data.online_tech_articles = online_tech_articles.articles;
+        articles = articles.concat(online_tech_articles.articleSlugs);
     }
     if(data.online_non_tech_articles.length){
-        data.online_non_tech_articles = await ArticleService.getArticleByIds(data.online_non_tech_articles);
-        data.online_non_tech_articles.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let online_non_tech_articles = await ArticleService.getArticleByIds(data.online_non_tech_articles, true, true);
+        data.online_non_tech_articles = online_non_tech_articles.articles;
+        articles = articles.concat(online_non_tech_articles.articleSlugs);
     }
     if(data.executive_education.length){
-        data.executive_education = await ArticleService.getArticleByIds(data.executive_education);
-        data.executive_education.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let executive_education = await ArticleService.getArticleByIds(data.executive_education, true, true);
+        data.executive_education = executive_education.articles;
+        articles = articles.concat(executive_education.articleSlugs);
     }
     if(data.mba_rankings.length){
-        data.mba_rankings = await ArticleService.getArticleByIds(data.mba_rankings);
-        data.mba_rankings.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let mba_rankings = await ArticleService.getArticleByIds(data.mba_rankings, true, true);
+        data.mba_rankings = mba_rankings.articles;
+        articles = articles.concat(mba_rankings.articleSlugs);
     }
     if(data.engineering_rankings.length){
-        data.engineering_rankings = await ArticleService.getArticleByIds(data.engineering_rankings);
-        data.engineering_rankings.forEach(obj => {
-            articles.push(obj.slug);
-        });
+        let engineering_rankings = await ArticleService.getArticleByIds(data.engineering_rankings, true, true);
+        data.engineering_rankings = engineering_rankings.articles;
+        articles = articles.concat(engineering_rankings.articleSlugs);
     }
     return {data:data, articles:articles};
 };

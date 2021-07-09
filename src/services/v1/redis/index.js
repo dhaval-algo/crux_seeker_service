@@ -38,7 +38,7 @@ module.exports = class REDIS {
                 }
                 else{
                     console.log('REDIS:: Cache available for key = ',key);
-                    callback(null,data);
+                    callback(null,JSON.parse(data));
                 }
             }
         });
@@ -60,7 +60,7 @@ module.exports = class REDIS {
                     }
                     else{
                         console.log('REDIS:: Cache available for key = ',key);
-                        resolve(data);
+                        resolve(JSON.parse(data));
                     }
                 }
             }); 
