@@ -97,6 +97,7 @@ module.exports = class LearnContentListService {
 
         let courseRedisSlug = 'listing-course-'+queueData.course_slug
         let cacheData = await RedisConnection.getValuesSync(courseRedisSlug);
+        console.log("cacheData",cacheData)
         let mergeCollection = {}
         if(cacheData.noCacheData != true) {
             console.log("cacheData.noCacheData false")
