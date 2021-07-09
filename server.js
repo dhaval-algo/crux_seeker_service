@@ -56,13 +56,18 @@ if(ENABLE_SITEMAP_CRON)
     });
 
 
+    const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
+    const rankingHome = new rankingHomeService();
+    rankingHome.rankingHomeSQSConsumer();
+
+    const learnContentListService = require('./src/services/v1/redis/learnContentListService');
+    const learnContentList = new learnContentListService();
+    learnContentList.learnContentListSQSConsumer(); 
     
 }
 
 //Redis SQS consumers
-    const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
-    const rankingHome = new rankingHomeService();
-    rankingHome.rankingHomeSQSConsumer();
+   
 
 //start server
 const port = process.env.PORT || "3001";
