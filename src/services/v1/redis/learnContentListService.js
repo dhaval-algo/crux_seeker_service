@@ -43,8 +43,7 @@ module.exports = class LearnContentListService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                        console.log("queueData",queueData)
-                        that.recacheCouseList(queueData)
+                        that.recacheCouseList(JSON.parse(queueData))
                          
                     },
                     sqs: new AWS.SQS()
@@ -130,28 +129,34 @@ module.exports = class LearnContentListService {
             for (var t = 0; t < mergeCollection.topics.length; t++) {
                 let topic = mergeCollection.topics[t]
                 let querytopicPayload = {
-                                          pageType: 'topic',
-                                          slug: topic,
-                                          currency: currency
+                                            query: {
+                                              pageType: 'topic',
+                                              slug: topic,
+                                              currency: currency
+                                            }
                                         }
-                learnContent.getLearnContentList(querytopicPayload , (err, data) => {},true)
+                    learnContent.getLearnContentList(querytopicPayload , (err, data) => {},true)
             }
 
             for (var c = 0; c < mergeCollection.categories.length; c++) {
                 let category = mergeCollection.categories[c]
                 let querysearchPayload = {
-                                          pageType: 'category',
-                                          slug: category,
-                                          currency: currency
+                                            query:{
+                                              pageType: 'category',
+                                              slug: category,
+                                              currency: currency
+                                            }
                                         }
                 learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
 
                 for (var sc = 0; sc < mergeCollection.categories.length; sc++) {
                     let subcategory = mergeCollection.categories[sc]
                     let querysearchPayload = {
-                                              pageType: 'category',
-                                              slug: category+','+subcategory,
-                                              currency: currency
+                                                query:{
+                                                  pageType: 'category',
+                                                  slug: category+','+subcategory,
+                                                  currency: currency
+                                                }
                                             }
                     learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
 
@@ -162,7 +167,7 @@ module.exports = class LearnContentListService {
 
 
             //search
-            let querysearchPayload = { pageType: 'search', q: '', currency: currency }
+            let querysearchPayload = {query:{ pageType: 'search', q: '', currency: currency }}
             learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
             
         }
