@@ -37,6 +37,15 @@ module.exports = {
         });        
     },
 
-    
+    removeUserLastSearch: async (req, res) => {
+
+        await userService.removeUserLastSearch(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
 
 };
