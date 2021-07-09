@@ -31,7 +31,7 @@ module.exports = class LearnContentListService {
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
                         let subject = message_body.subject
-                        let message_data = message_body.message
+                        let message_data = message_body.Message
                         let queueData = message_data
 
                         // /*****delete from queue ****/
@@ -74,9 +74,8 @@ module.exports = class LearnContentListService {
     }
 
     mergeArrayValues(arr1,arr2){
-        let array3 = arr1.concat(arr2);
-        array3 = [...new Set([...arr1,...arr2])]
-
+        let array3 = [...new Set([...arr1,...arr2])]
+        console.log("array3",array3)
         return array3;
     }
 
@@ -100,6 +99,7 @@ module.exports = class LearnContentListService {
         let cacheData = await RedisConnection.getValuesSync(courseRedisSlug);
         let mergeCollection = {}
         if(cacheData.noCacheData != true) {
+            console.log("cacheData.noCacheData false")
             mergeCollection = {
                 categories: this.mergeArrayValues(queueData.categories,cacheData.categories),
                 sub_categories: this.mergeArrayValues(queueData.sub_categories,cacheData.sub_categories),
@@ -108,6 +108,7 @@ module.exports = class LearnContentListService {
 
         }
         else{
+             console.log("cacheData.noCacheData true")
             mergeCollection = {
                 categories: queueData.categories,
                 sub_categories: queueData.sub_categories,
