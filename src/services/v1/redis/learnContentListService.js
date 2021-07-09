@@ -134,7 +134,7 @@ module.exports = class LearnContentListService {
                                               currency: currency
                                             }
                                         }
-                    learnContent.getLearnContentList(querytopicPayload , (err, data) => {},true)
+                    await learnContent.getLearnContentList(querytopicPayload , (err, data) => {},true)
             }
 
             for (var c = 0; c < mergeCollection.categories.length; c++) {
@@ -146,7 +146,7 @@ module.exports = class LearnContentListService {
                                               currency: currency
                                             }
                                         }
-                learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
+                await learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
 
                 for (var sc = 0; sc < mergeCollection.categories.length; sc++) {
                     let subcategory = mergeCollection.categories[sc]
@@ -157,7 +157,7 @@ module.exports = class LearnContentListService {
                                                   currency: currency
                                                 }
                                             }
-                    learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
+                    await learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
 
                     
                 }
@@ -167,7 +167,7 @@ module.exports = class LearnContentListService {
 
             //search
             let querysearchPayload = {query:{ pageType: 'search', q: '', currency: currency }}
-            learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
+            await learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
             
         }
 
