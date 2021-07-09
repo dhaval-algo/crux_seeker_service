@@ -1205,7 +1205,8 @@ module.exports = class learnContentService {
                 topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
                 tags: [],
                 pricing: {
-                    display_price: (result.display_price)? result.display_price:false,
+                    
+                    display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
                     currency: result.pricing_currency,
                     base_currency: baseCurrency,
