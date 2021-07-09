@@ -904,7 +904,9 @@ module.exports = class learnContentService {
                     }
                 }
             }
-            filters[categorykey].options = categoryFiletrOption;
+            if(filters[categorykey]) {
+                filters[categorykey].options = categoryFiletrOption;
+            }
 
         }
         
