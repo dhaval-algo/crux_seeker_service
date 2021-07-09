@@ -11,5 +11,6 @@ router.get("/order/status", authenticateJWT, orderController.getOrderStatus);
 
 router.post("/user-last-search", authenticateJWT, searchController.userLastSearch);
 router.get("/get-user-last-search", authenticateJWT, searchController.getUserLastSearch);
+router.post("/remove-search-record", authenticateJWT, searchController.removeUserLastSearch);
 
 module.exports = router;
