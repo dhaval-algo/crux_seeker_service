@@ -15,6 +15,7 @@ const RankingService = new rankingService();
 module.exports = class ArticleService {
 
     articleSQSConsumer(){
+        let that = this 
         console.log("articleSQSConsumer")
         return new Promise(async (resolve, reject) => {
             try{
