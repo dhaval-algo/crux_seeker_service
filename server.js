@@ -64,6 +64,9 @@ if(ENABLE_SITEMAP_CRON)
     const learnContentList = new learnContentListService();
     learnContentList.learnContentListSQSConsumer(); 
     
+    const articleService = require('./src/services/v1/redis/articleService');
+    const article = new articleService();
+    article.articleSQSConsumer(); 
 }
 
 //Redis SQS consumers
