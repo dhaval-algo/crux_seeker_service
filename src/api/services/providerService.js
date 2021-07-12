@@ -207,6 +207,34 @@ module.exports = class providerService {
                 }
             )
         }
+
+        if(req.query['q']){
+            query.bool.must.push( 
+                {                    
+                "bool": {
+                    "should": [
+                        {
+                            "query_string" : {
+                                "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                                "fields" : ['name^2','programs'],
+                                "analyze_wildcard" : true,
+                                "allow_leading_wildcard": true
+                            }
+                        },
+                        {
+                            "multi_match": {
+                                "fields":  ['name^2','programs'],
+                                "query": decodeURIComponent(req.query['q']).trim(),
+                                "fuzziness": "AUTO",
+                                "prefix_length": 0                              
+                            }
+                        }           
+                    ]
+                    }                    
+                }
+            );         
+        }
+        
         let parsedFilters = [];
         let parsedRangeFilters = [];
         let ranking = null;
@@ -251,20 +279,7 @@ module.exports = class providerService {
         }
         
         
-        let queryString = null;
-        if(req.query['q']){
-            query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                        "fields" : ['name^2','programs'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
-                }
-            );         
-        }
-        
+        let queryString = null;        
 
         /* let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
