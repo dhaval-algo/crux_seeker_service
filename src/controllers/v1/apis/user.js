@@ -25,6 +25,9 @@ router.post ('/upload-resume',authenticateJWT, userService.uploadResumeFile);
 router.post ('/upload-skills',authenticateJWT, userService.uploadSkills);
 router.get ('/delete-resume',authenticateJWT, userService.deleteResumeFile);
 router.get('/remove-profile', authenticateJWT, userService.removeProfilePic)
+router.post('/bookmark-article',authenticateJWT, userService.bookmarkArticle);
+router.post('/remove-bookmark-article',authenticateJWT, userService.removeBookmarkArticle);
+router.get('/fetch-bookmark-article',authenticateJWT, userService.bookmarkArticleData);
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
     res.setHeader('Content-Type', 'text/json')
