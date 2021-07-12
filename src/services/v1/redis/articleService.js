@@ -29,7 +29,7 @@ module.exports = class ArticleService {
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
                         let subject = message_body.subject
-                        let message_data = message_body.message
+                        let message_data = message_body.Message
                         let queueData = message_data
 
                         // /*****delete from queue ****/
