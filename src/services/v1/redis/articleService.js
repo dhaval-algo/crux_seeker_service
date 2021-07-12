@@ -12,6 +12,9 @@ const awsService = require("../AWS/index");
 const rankingService = require('../../../api/services/rankingService');
 const RankingService = new rankingService();
 
+const redisConnection = require('./index');
+const RedisConnection = new redisConnection();
+
 module.exports = class ArticleService {
 
     articleSQSConsumer(){
