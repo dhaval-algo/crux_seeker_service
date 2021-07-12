@@ -99,7 +99,7 @@ module.exports = class LearnContentListService {
         console.log("cacheData",cacheData)
         let mergeCollection = {}
         if(cacheData.noCacheData != true) {
-            console.log("cacheData.noCacheData false")
+ 
             mergeCollection = {
                 categories: this.mergeArrayValues(queueData.categories,cacheData.categories),
                 sub_categories: this.mergeArrayValues(queueData.sub_categories,cacheData.sub_categories),
@@ -108,7 +108,7 @@ module.exports = class LearnContentListService {
 
         }
         else{
-             console.log("cacheData.noCacheData true")
+ 
             mergeCollection = {
                 categories: queueData.categories,
                 sub_categories: queueData.sub_categories,
@@ -116,10 +116,7 @@ module.exports = class LearnContentListService {
             }
         }
      
-        console.log("mergeCollection",mergeCollection)
         //update search
-
-
 
         for (var i = 0; i < queueData.currencies.length; i++) {
             let currency = queueData.currencies[i]
@@ -171,6 +168,8 @@ module.exports = class LearnContentListService {
             await learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
             
         }
+
+        return true;
 
     }
 
