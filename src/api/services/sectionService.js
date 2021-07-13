@@ -237,7 +237,7 @@ module.exports = class sectionService {
     }
   }
 
-  async getSectionContent(slug, callback) {
+  async getSectionContent(slug, callback,skipCache) {
     console.log("api/public/v1/section/learning-path")
     let data = {}
     try {
