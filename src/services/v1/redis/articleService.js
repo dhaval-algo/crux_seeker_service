@@ -101,6 +101,7 @@ module.exports = class ArticleService {
                 if(cacheData.includes(articleSlug)){
                     console.log("articleSlug*******xxxx***********",articleSlug)
                     SectionService.getSectionContent(articleSlug, (err, data) => {}, true); 
+                    SectionService.getSectionContent(sectionKey, (err, data) => {}, true); 
                 } 
             }
         }
