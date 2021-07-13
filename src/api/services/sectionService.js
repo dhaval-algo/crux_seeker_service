@@ -7,154 +7,140 @@ const RedisConnection = new redisConnection();
 
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
-    try {
-      let articles = [];
-      if (!!section.featured_articles && !!section.featured_articles.length) {
-        let featured_articles = await getActiveArticles(section.featured_articles, true)
-        section.featured_articles =  featured_articles.articles.filter(art => !!art)
-        articles = articles.concat(featured_articles.articleSlugs);
-        console.log("featured_articles",articles)
-      }
-      if (!!section.trending_articles && !!section.trending_articles.length) {
-        let trending_articles = await ArticleService.getArticleByIds(section.trending_articles, true, true)
-        section.trending_articles =  trending_articles.articles.filter(art => !!art)
-        articles = articles.concat(trending_articles.articleSlugs);
-      }
-
-      if (!!section.recent_articles && !!section.recent_articles.length) {
-        let recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false, true)
-        section.recent_articles =  recent_articles.articles.filter(art => !!art)
-        articles = articles.concat(recent_articles.articleSlugs);
-
-      }
-      if (!!section.recommended_articles && !!section.recommended_articles.length) {
-        let recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles, true, true)
-        section.recommended_articles =  recommended_articles.articles.filter(art => !!art)
-        articles = articles.concat(recommended_articles.articleSlugs);
-      }
-      if (!!section.location_display_labels && !!section.location_display_labels.length) {
-        let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
-        section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
-        articles = articles.concat(location_display_labels.articleSlugs);
-      }
-    
-      if (!!section.career_guidance && !!section.career_guidance.length) {
-        let career_guidance = await ArticleService.getArticleByIds(section.career_guidance, true, true)
-        section.career_guidance =  career_guidance.articles.filter(art => !!art)
-        articles = articles.concat(career_guidance.articleSlugs);
-      }
-      if (!!section.expert_interview_advice && !!section.expert_interview_advice.length) {
-        let expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice, true, true)
-        section.expert_interview_advice =  expert_interview_advice.articles.filter(art => !!art)
-        articles = articles.concat(expert_interview_advice.articleSlugs);
-      }
-      if (!!section.improve_your_resume && !!section.improve_your_resume.length) {
-        let improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume, true, true)
-        section.improve_your_resume =  improve_your_resume.articles.filter(art => !!art)
-        articles = articles.concat(improve_your_resume.articleSlugs);
-      }
-    
-      if (!!section.all_about_linkedin && !!section.all_about_linkedin.length) {
-        let all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin, true, true)
-        section.all_about_linkedin =  all_about_linkedin.articles.filter(art => !!art)
-        articles = articles.concat(all_about_linkedin.articleSlugs);
-      }
-      if (!!section.best_ways_to_learn && !!section.best_ways_to_learn.length) {
-        let best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn, true, true)
-        section.best_ways_to_learn =  best_ways_to_learn.articles.filter(art => !!art)
-        articles = articles.concat(best_ways_to_learn.articleSlugs);
-      }
-      if (!!section.top_skills_of_the_future && !!section.top_skills_of_the_future.length) {
-        let top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future, true, true)
-        section.top_skills_of_the_future =  top_skills_of_the_future.articles.filter(art => !!art)
-        articles = articles.concat(top_skills_of_the_future.articleSlugs);
-      }
-      if (!!section.important_skills_of_the_future && !!section.important_skills_of_the_future.length) {
-        let important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future, true, true)
-        section.important_skills_of_the_future =  important_skills_of_the_future.articles.filter(art => !!art)
-        articles = articles.concat(important_skills_of_the_future.articleSlugs);
-      }
-    
-      if (!!section.tips_for_learners && !!section.tips_for_learners.length) {
-        let tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners, true, true)
-        section.tips_for_learners =  tips_for_learners.articles.filter(art => !!art)
-        articles = articles.concat(tips_for_learners.articleSlugs);
-      }
-
-      if (!!section.best_certifications && !!section.best_certifications.length) {
-        let best_certifications = await ArticleService.getArticleByIds(section.best_certifications, true, true)
-        section.best_certifications =  best_certifications.articles.filter(art => !!art)
-        articles = articles.concat(best_certifications.articleSlugs);
-      }
-
-      if (!!section.top_stories && !!section.top_stories.length) {
-        let top_stories = await ArticleService.getArticleByIds(section.top_stories, true, true)
-        section.top_stories =  top_stories.articles.filter(art => !!art)
-        articles = articles.concat(top_stories.articleSlugs);
-      }
-
-      if (!!section.latest_stories && !!section.latest_stories.length) {
-        let latest_stories = await ArticleService.getArticleByIds(section.latest_stories, true, true)
-        section.latest_stories =  latest_stories.articles.filter(art => !!art)
-        articles = articles.concat(latest_stories.articleSlugs);
-      }
-      console.log("featured_articles")
-      return resolve({data:section, articles:articles});
+    let articles = [];
+    if (!!section.featured_articles && !!section.featured_articles.length) {
+      let featured_articles = await getActiveArticles(section.featured_articles, true)
+      section.featured_articles =  featured_articles.articles.filter(art => !!art)
+      articles = articles.concat(featured_articles.articleSlugs);
     }
-    catch (error) {
-      console.log("ERROR:",error)
-      return resolve({data:[], articles:[]});
+    if (!!section.trending_articles && !!section.trending_articles.length) {
+      let trending_articles = await ArticleService.getArticleByIds(section.trending_articles, true, true)
+      section.trending_articles =  trending_articles.articles.filter(art => !!art)
+      articles = articles.concat(trending_articles.articleSlugs);
     }
+
+    if (!!section.recent_articles && !!section.recent_articles.length) {
+      let recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false, true)
+      section.recent_articles =  recent_articles.articles.filter(art => !!art)
+      articles = articles.concat(recent_articles.articleSlugs);
+
+    }
+    if (!!section.recommended_articles && !!section.recommended_articles.length) {
+      let recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles, true, true)
+      section.recommended_articles =  recommended_articles.articles.filter(art => !!art)
+      articles = articles.concat(recommended_articles.articleSlugs);
+    }
+    if (!!section.location_display_labels && !!section.location_display_labels.length) {
+      let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
+      section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
+      articles = articles.concat(location_display_labels.articleSlugs);
+    }
+  
+    if (!!section.career_guidance && !!section.career_guidance.length) {
+      let career_guidance = await ArticleService.getArticleByIds(section.career_guidance, true, true)
+      section.career_guidance =  career_guidance.articles.filter(art => !!art)
+      articles = articles.concat(career_guidance.articleSlugs);
+    }
+    if (!!section.expert_interview_advice && !!section.expert_interview_advice.length) {
+      let expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice, true, true)
+      section.expert_interview_advice =  expert_interview_advice.articles.filter(art => !!art)
+      articles = articles.concat(expert_interview_advice.articleSlugs);
+    }
+    if (!!section.improve_your_resume && !!section.improve_your_resume.length) {
+      let improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume, true, true)
+      section.improve_your_resume =  improve_your_resume.articles.filter(art => !!art)
+      articles = articles.concat(improve_your_resume.articleSlugs);
+    }
+  
+    if (!!section.all_about_linkedin && !!section.all_about_linkedin.length) {
+      let all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin, true, true)
+      section.all_about_linkedin =  all_about_linkedin.articles.filter(art => !!art)
+      articles = articles.concat(all_about_linkedin.articleSlugs);
+    }
+    if (!!section.best_ways_to_learn && !!section.best_ways_to_learn.length) {
+      let best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn, true, true)
+      section.best_ways_to_learn =  best_ways_to_learn.articles.filter(art => !!art)
+      articles = articles.concat(best_ways_to_learn.articleSlugs);
+    }
+    if (!!section.top_skills_of_the_future && !!section.top_skills_of_the_future.length) {
+      let top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future, true, true)
+      section.top_skills_of_the_future =  top_skills_of_the_future.articles.filter(art => !!art)
+      articles = articles.concat(top_skills_of_the_future.articleSlugs);
+    }
+    if (!!section.important_skills_of_the_future && !!section.important_skills_of_the_future.length) {
+      let important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future, true, true)
+      section.important_skills_of_the_future =  important_skills_of_the_future.articles.filter(art => !!art)
+      articles = articles.concat(important_skills_of_the_future.articleSlugs);
+    }
+  
+    if (!!section.tips_for_learners && !!section.tips_for_learners.length) {
+      let tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners, true, true)
+      section.tips_for_learners =  tips_for_learners.articles.filter(art => !!art)
+      articles = articles.concat(tips_for_learners.articleSlugs);
+    }
+
+    if (!!section.best_certifications && !!section.best_certifications.length) {
+      let best_certifications = await ArticleService.getArticleByIds(section.best_certifications, true, true)
+      section.best_certifications =  best_certifications.articles.filter(art => !!art)
+      articles = articles.concat(best_certifications.articleSlugs);
+    }
+
+    if (!!section.top_stories && !!section.top_stories.length) {
+      let top_stories = await ArticleService.getArticleByIds(section.top_stories, true, true)
+      section.top_stories =  top_stories.articles.filter(art => !!art)
+      articles = articles.concat(top_stories.articleSlugs);
+    }
+
+    if (!!section.latest_stories && !!section.latest_stories.length) {
+      let latest_stories = await ArticleService.getArticleByIds(section.latest_stories, true, true)
+      section.latest_stories =  latest_stories.articles.filter(art => !!art)
+      articles = articles.concat(latest_stories.articleSlugs);
+    }
+    return {data:section, articles:articles};
   })
   
 }
 
 const getActiveArticles =  (articles,returnSlugs) => {
   return new Promise(async(resolve) => {
-    try{
-      const query = {
-        "query": {
-          /* "ids": {
-              "values": ids
-          }, */
-          "bool": {
-            "must": [
-              {term: { "status.keyword": 'published' }},
-              {terms: { "id": articles }}
-            ]
-         }
-        }
-      
+    const query = {
+      "query": {
+        /* "ids": {
+            "values": ids
+        }, */
+        "bool": {
+          "must": [
+            {term: { "status.keyword": 'published' }},
+            {terms: { "id": articles }}
+          ]
+       }
       }
     
-      const resultT = await elasticService.plainSearch('article',query)
-      let dataArray = []
-      let articleSlugs = [];
-      if(resultT.hits.hits){
-        if(resultT.hits.hits && resultT.hits.hits.length > 0){
-            //console.log("result.hits.hits <> ", result.hits.hits);
-            let articles = resultT.hits.hits;
-            for (let index = 0; index < articles.length; index++) {
-              const element = articles[index];
-              let artcl = await ArticleService.generateSingleViewData(element._source)
-              if(typeof artcl !='undefined')
-              {
-                  articleSlugs.push(artcl.slug);
-                  dataArray.push(artcl);
-              }
-               
+    }
+  
+    const resultT = await elasticService.plainSearch('article',query)
+    let dataArray = []
+    let articleSlugs = [];
+    if(resultT.hits.hits){
+      if(resultT.hits.hits && resultT.hits.hits.length > 0){
+          //console.log("result.hits.hits <> ", result.hits.hits);
+          let articles = resultT.hits.hits;
+          for (let index = 0; index < articles.length; index++) {
+            const element = articles[index];
+            let artcl = await ArticleService.generateSingleViewData(element._source)
+            if(typeof artcl !='undefined')
+            {
+                articleSlugs.push(artcl.slug);
+                dataArray.push(artcl);
             }
-        }
+             
+          }
       }
-      if(returnSlugs) {
-          return resolve({articles:dataArray, articleSlugs:articleSlugs})
-      }
-      return resolve(dataArray)
-     }
-    catch (error) {
-      console.log("ERROR:",error)
-      return resolve([])
-    } 
+    }
+    if(returnSlugs) {
+        return resolve({articles:dataArray, articleSlugs:articleSlugs})
+    }
+    return resolve(dataArray)
   })
 }
 module.exports = class sectionService {
@@ -279,7 +265,6 @@ module.exports = class sectionService {
       if (result.hits && result.hits.length) {
         console.log("asdas")
         let response = await buildSectionView(result.hits[0]._source)
-        console.log("132132")
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.set('section-page-'+slug, response.data);
 
