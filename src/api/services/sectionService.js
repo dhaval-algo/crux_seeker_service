@@ -13,6 +13,7 @@ const buildSectionView = (section) => {
         let featured_articles = await getActiveArticles(section.featured_articles, true)
         section.featured_articles =  featured_articles.articles.filter(art => !!art)
         articles = articles.concat(featured_articles.articleSlugs);
+        console.log("featured_articles",articles)
       }
       if (!!section.trending_articles && !!section.trending_articles.length) {
         let trending_articles = await ArticleService.getArticleByIds(section.trending_articles, true, true)
@@ -97,6 +98,7 @@ const buildSectionView = (section) => {
         section.latest_stories =  latest_stories.articles.filter(art => !!art)
         articles = articles.concat(latest_stories.articleSlugs);
       }
+      console.log("featured_articles")
       return {data:section, articles:articles};
     }
     catch (error) {
@@ -277,6 +279,7 @@ module.exports = class sectionService {
       if (result.hits && result.hits.length) {
         console.log("asdas")
         let response = await buildSectionView(result.hits[0]._source)
+        console.log("132132")
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.set('section-page-'+slug, response.data);
 
