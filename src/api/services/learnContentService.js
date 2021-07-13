@@ -7,6 +7,7 @@ const {
     getFilterConfigs, 
     parseQueryFilters,
     getPaginationQuery,
+    getPaginationDefaultSize,
     getMediaurl,
     updateFilterCount,
     calculateFilterCount,
@@ -14,6 +15,10 @@ const {
     updateSelectedFilters,
     sortFilterOptions
 } = require('../utils/general');
+
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -206,7 +211,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
             //return [];
             return {
                 filters: [],
-                total: result.hits.total.value
+                total: 0
             }
         }
 };
@@ -686,8 +691,46 @@ const calculateNewCnt = async (data,filters) => {
 
 module.exports = class learnContentService {
 
-    async getLearnContentList(req, callback){
+    async getLearnContentList(req, callback, skipCache){
         try{
+        let defaultSize = await getPaginationDefaultSize();
+        let defaultSort = "published_date:desc";
+        let useCache = false;
+        let cacheName = "";
+        if(
+            req.query['courseIds'] == undefined
+            && req.query['f'] == undefined
+            && req.query['rf'] == undefined
+            && (
+                req.query['page'] == undefined
+                || req.query['page'] == "1"
+            )
+            && (
+                req.query['size'] == undefined
+                || req.query['size'] == defaultSize
+            )
+            && (
+                req.query['sort'] == undefined
+                || req.query['sort'] == defaultSort
+            )
+        ) {
+            useCache = true;
+            let apiCurrency = process.env.DEFAULT_CURRENCY;
+            if(req.query['currency'] != undefined){
+                apiCurrency = req.query['currency'];
+            }
+            if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
+                cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
+            } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == "")) {
+                cacheName = "listing-search_"+apiCurrency;
+            }
+            if(skipCache != true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }
+        }
 
         currencies = await getCurrencies();
 
@@ -710,7 +753,7 @@ module.exports = class learnContentService {
         queryPayload.size = paginationQuery.size;
 
         if(!req.query['sort'] && !req.query['q']){
-            req.query['sort'] = "published_date:desc";
+            req.query['sort'] = defaultSort;
         }
 
         if(req.query['sort']){
@@ -756,20 +799,34 @@ module.exports = class learnContentService {
         let queryString = null;
         if(req.query['q']){
             query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                        "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
+                {                    
+                "bool": {
+                    "should": [
+                      {
+                        "query_string" : {
+                            "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
+                            "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
+                            "analyze_wildcard" : true,
+                            "allow_leading_wildcard": true
+                        }
+                      },
+                      {
+                          "multi_match": {
+                                  "fields": ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
+                                  "query": decodeURIComponent(req.query['q']).trim(),
+                                  "fuzziness": "AUTO",
+                                  "prefix_length": 0                              
+                          }
+                      }           
+                    ]
+                  }                    
                 }
             );
             
         }
         let parsedFilters = [];
         let parsedRangeFilters = [];
-
+        
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
@@ -777,8 +834,9 @@ module.exports = class learnContentService {
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+       
         let filters = filterResponse.filters;
-
+        
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){                
@@ -798,6 +856,58 @@ module.exports = class learnContentService {
                     }
                 }
             }
+        }
+        /*Ordering as per category tree*/
+        let formatCategory = true;
+        if(parsedFilters)
+        {
+            for (let parsedFilter of parsedFilters)
+            {
+                if (parsedFilter.key =="Category")
+                {
+                    formatCategory = false;
+                }
+            }
+        }
+        if(formatCategory)
+        {
+           let category_tree =[];
+           let categoryFiletrOption =[];
+           let categorykey = 0;
+           let response = await fetch(`${apiBackendUrl}/category-tree`);
+            if (response.ok) {
+               let json = await response.json();
+               if(json && json.final_tree){
+                   category_tree = json.final_tree;
+                }
+            }
+            if(category_tree && category_tree.length)
+            {
+                for(let category of category_tree )
+                {
+                    let i= 0;
+                    for(let filter of filters)
+                    {
+                        if(filter.field =="categories")
+                        {
+                            for(let option of filter.options)
+                            {
+                                if(category.label == option.label)
+                                {
+                                    categoryFiletrOption.push(option);
+                                }
+                            }
+                            categorykey = i;
+                            
+                        }
+                        i++;
+                    }
+                }
+            }
+            if(filters[categorykey]) {
+                filters[categorykey].options = categoryFiletrOption;
+            }
+
         }
         
         if(req.query['rf']){
@@ -842,13 +952,7 @@ module.exports = class learnContentService {
                 }
             }
         }
-
         
-        
-
-
-        
-
         const result = await elasticService.search('learn-content', query, queryPayload);
 
         if(result.total && result.total.value > 0){
@@ -900,6 +1004,18 @@ module.exports = class learnContentService {
                 data.meta_information  = meta_information;
             } 
             
+            if(useCache) {
+                list.forEach((course) => {
+                    let courseSlugs = {
+                        course_slug: course.slug,
+                        categories: course.categories_list.map(cat => cat.slug),
+                        sub_categories: course.sub_categories_list.map(subcat => subcat.slug),
+                        topics: course.topics_list.map(topc => topc.slug)
+                    }
+                    RedisConnection.set("listing-course-"+course.slug, courseSlugs);
+                });
+                RedisConnection.set(cacheName, data);
+            }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             //update selected flags
@@ -948,55 +1064,25 @@ module.exports = class learnContentService {
 
 
     async getCategories(callback){
-        let categories = [];       
 
-        const queryBody = {
-            "query": {
-              "bool": {
-                "must": [
-                  {
-                    "term": {
-                      "status.keyword": "published"
-                    }
-                  }
-                ]
-              }
-            },
-            "size": 0,
-            "aggs": {
-              "categories": {
-                "terms": {
-                  "field": "categories.keyword",
-                  "size": 100
-                }
-              }
+        let categories = [];
+        let category_tree = [];
+        let response = await fetch(`${apiBackendUrl}/category-tree`);
+        if (response.ok) {
+            let json = await response.json();
+            if(json && json.final_tree){
+                category_tree = json.final_tree;
             }
-          };
-        const result = await elasticService.plainSearch('learn-content', queryBody);
-
-        if(result.aggregations){
-            let categoriesData = result.aggregations.categories.buckets;
-            //categories = categoriesData.map(o => {"label": o['key'], "value": o['key']} );
-
-            let others = null;
-            for(const category of categoriesData){
-                if(category.key == 'Others'){
-                    others = {"label": category['key'], "value": category['key']};
-                }else{
-                    categories.push({"label": category['key'], "value": category['key']});
-                }
-            }
-            if(others){
-                categories.push(others);
-            }
-
-            /* categories = categoriesData.map(function(obj) {
-                return {"label": obj['key'], "value": obj['key']};
-              });
-
-              console.log("categories <> ", categories); */
         }
-
+        if(category_tree && category_tree.length > 0 )
+        {
+            for (let category of category_tree)
+            {
+                if(category.count > 0){
+                    categories.push({"label": category.label, "value": category.label});
+                }    
+            }
+        }
         callback(null, {status: 'success', message: 'Fetched successfully!', data: categories});
     }
 
@@ -1176,6 +1262,8 @@ module.exports = class learnContentService {
                 topics: (result.topics.length  > 0) ? result.topics.join(", ") : null,                
                 tags: [],
                 pricing: {
+                    
+                    display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
                     currency: result.pricing_currency,
                     base_currency: baseCurrency,

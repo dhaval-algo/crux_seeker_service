@@ -1304,6 +1304,7 @@ const bookmarkArticleData = async (req,res) => {
     }
 }
 
+
 const fetchbookmarkIds = async (req,res) => {
     const { user } = req
     
@@ -1353,7 +1354,67 @@ module.exports = {
     bookmarkArticle,
     removeBookmarkArticle,
     bookmarkArticleData,
-    fetchbookmarkIds
+    fetchbookmarkIds,
 
+
+
+    saveUserLastSearch: async (req,callback) => {
+                
+        const {search} =req.body
+        const { user} = req;
+        let userId = user.userId
+
+        const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
+
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
+        
+        if( !suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
+            if(suggestionList[search.type].length == process.env.LAST_SEARCH_LIMIT ) {
+                suggestionList[search.type].shift();
+            }            
+            suggestionList[search.type].push(search);
+        } 
+
+        if(!existSearch) {
+              await models.user_meta.create({value:JSON.stringify(suggestionList),key:'last_search',userId:userId})
+            callback({success:true,data:suggestionList})
+        } else {
+            await models.user_meta.update({value:JSON.stringify(suggestionList)},{where:{userId:userId, key:'last_search'}})
+ 
+            callback({success:true,data:suggestionList})
+        }
+
+    },
+
+    getUserLastSearch: async (req,callback) => {
+        
+        const { user} = req;
+        let userId = user.userId
+
+         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
+        
+        callback({success:true,data:suggestionList}) 
+
+    },
+
+    removeUserLastSearch: async (req, callback) => {
+        
+        const {search} = req.body
+        const { user} = req;
+        let userId = user.userId
+
+        const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
+        suggestionList[search.type] = suggestionList[search.type].filter(function (e) {
+            return (e.title != search.title && e.slug != search.slug)
+        });
+        await models.user_meta.update({value:JSON.stringify(suggestionList)},{where:{userId:userId, key:'last_search'}})
+        callback({success:true,data:suggestionList}) 
+
+    }
 
 }

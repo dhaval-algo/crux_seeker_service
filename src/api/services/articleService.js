@@ -1,4 +1,5 @@
 const elasticService = require("./elasticService");
+const fetch = require("node-fetch");
 
 const { 
     getFilterConfigs, 
@@ -12,6 +13,7 @@ const {
     sortFilterOptions,
     generateMetaInfo
 } = require('../utils/general');
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
@@ -207,18 +209,83 @@ module.exports = class articleService {
         
         let queryString = null;
         if(req.query['q']){
-            query.bool.must.push( 
-                {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                        "fields" : (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
+            query.bool.must.push(
+                {                    
+                    "bool": {
+                        "should": [
+                            {
+                                "query_string" : {
+                                    "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                                    "fields" :(req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                    "analyze_wildcard" : true,
+                                    "allow_leading_wildcard": true
+                                }
+                            },
+                            {
+                                "multi_match": {
+                                    "fields": (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                    "query": decodeURIComponent(req.query['q']).trim(),
+                                    "fuzziness": "AUTO",
+                                    "prefix_length": 0                              
+                                }
+                            }           
+                        ]
+                        }                    
                     }
-                }
+                
             );         
         }
-        
+
+         /*Ordering as per category tree*/
+         let formatCategory = true;
+         if(parsedFilters)
+         {
+             for (let parsedFilter of parsedFilters)
+             {
+                 if (parsedFilter.key =="Industry")
+                 {
+                     formatCategory = false;
+                 }
+             }
+         }
+        if(formatCategory)
+        {
+           let category_tree =[];
+           let categoryFiletrOption =[];
+           let categorykey = 0;
+           let response = await fetch(`${apiBackendUrl}/category-tree`);
+            if (response.ok) {
+               let json = await response.json();
+               if(json && json.final_tree){
+                   category_tree = json.final_tree;
+                }
+            }
+            if(category_tree && category_tree.length)
+            {
+                for(let category of category_tree )
+                {
+                    let i= 0;
+                    for(let filter of filters)
+                    {
+                        if(filter.field =="categories")
+                        {
+                            for(let option of filter.options)
+                            {
+                                if(category.label == option.label)
+                                {
+                                    categoryFiletrOption.push(option);
+                                }
+                            }
+                            categorykey = i;
+                            
+                        }
+                        i++;
+                    }
+                }
+            }
+            filters[categorykey].options = categoryFiletrOption;
+
+        }
 
         const result = await elasticService.search('article', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -413,9 +480,10 @@ module.exports = class articleService {
     }
 
 
-    async getArticleByIds(articleIds, isListing = true){
+    async getArticleByIds(articleIds, isListing = true, returnSlugs){
         let articles = [];
         let articleOrdered = [];
+        let articleSlugs = [];
         /* let ids = [];
         const idPrefix = "ARTCL_PUB_";
         if(articleIds){
@@ -449,11 +517,15 @@ module.exports = class articleService {
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
                         if(typeof article !='undefined')
                         {
+                            articleSlugs.push(article.slug);
                             articleOrdered.push(article);
                         }
                     }
                 }
             }            
+        }
+        if(returnSlugs) {
+            return {articles:articleOrdered, articleSlugs:articleSlugs}
         }
         return articleOrdered;
     }
