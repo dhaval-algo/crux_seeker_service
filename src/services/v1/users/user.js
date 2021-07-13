@@ -1304,6 +1304,28 @@ const bookmarkArticleData = async (req,res) => {
     }
 }
 
+const fetchbookmarkIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['article_bookmark'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let bookmarks = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            userId: user.userId,
+            articles:bookmarks
+        }
+    })
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -1330,7 +1352,8 @@ module.exports = {
     fetchUserMetaObjByUserId,
     bookmarkArticle,
     removeBookmarkArticle,
-    bookmarkArticleData
+    bookmarkArticleData,
+    fetchbookmarkIds
 
 
 }
