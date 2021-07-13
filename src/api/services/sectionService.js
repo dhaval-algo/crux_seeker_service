@@ -259,6 +259,7 @@ module.exports = class sectionService {
       
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
+        console.log("asdas")
         let response = await buildSectionView(result.hits[0]._source)
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.set('section-page-'+slug, response.data);
@@ -268,6 +269,7 @@ module.exports = class sectionService {
       return callback(null, { success: true, data:data })
 
     } catch (error) {
+      console.log("ERROR:",error)
       return callback(null, { success: true, data:data })
     }
   }
