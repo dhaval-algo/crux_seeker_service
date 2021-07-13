@@ -10,42 +10,42 @@ const formatHomepageData = async(data) => {
     if(data.top_articles.length){
         let top_articles = await ArticleService.getArticleByIds(data.top_articles, false, true);
         data.top_articles = top_articles.articles;
-        articles = articles.concat(top_articles.articleSlugs);
+        articles = [...new Set([...articles,...top_articles.articleSlugs])]
     }
     if(data.trending_articles.length){
         let trending_articles = await ArticleService.getArticleByIds(data.trending_articles, true, true);
         data.trending_articles = trending_articles.articles;
-        articles = articles.concat(trending_articles.articleSlugs);
+        articles = [...new Set([...articles,...trending_articles.articleSlugs])]
     }
     if(data.featured_articles.length){
         let featured_articles = await ArticleService.getArticleByIds(data.featured_articles, false, true);
         data.featured_articles = featured_articles.articles;
-        articles = articles.concat(featured_articles.articleSlugs);
+        articles = [...new Set([...articles,...featured_articles.articleSlugs])]
     }
     if(data.online_tech_articles.length){
         let online_tech_articles = await ArticleService.getArticleByIds(data.online_tech_articles, true, true);
         data.online_tech_articles = online_tech_articles.articles;
-        articles = articles.concat(online_tech_articles.articleSlugs);
+        articles = [...new Set([...articles,...online_tech_articles.articleSlugs])]
     }
     if(data.online_non_tech_articles.length){
         let online_non_tech_articles = await ArticleService.getArticleByIds(data.online_non_tech_articles, true, true);
         data.online_non_tech_articles = online_non_tech_articles.articles;
-        articles = articles.concat(online_non_tech_articles.articleSlugs);
+        articles = [...new Set([...articles,...online_non_tech_articles.articleSlugs])]
     }
     if(data.executive_education.length){
         let executive_education = await ArticleService.getArticleByIds(data.executive_education, true, true);
         data.executive_education = executive_education.articles;
-        articles = articles.concat(executive_education.articleSlugs);
+        articles = [...new Set([...articles,...executive_education.articleSlugs])]
     }
     if(data.mba_rankings.length){
         let mba_rankings = await ArticleService.getArticleByIds(data.mba_rankings, true, true);
         data.mba_rankings = mba_rankings.articles;
-        articles = articles.concat(mba_rankings.articleSlugs);
+        articles = [...new Set([...articles,...mba_rankings.articleSlugs])]
     }
     if(data.engineering_rankings.length){
         let engineering_rankings = await ArticleService.getArticleByIds(data.engineering_rankings, true, true);
         data.engineering_rankings = engineering_rankings.articles;
-        articles = articles.concat(engineering_rankings.articleSlugs);
+        articles = [...new Set([...articles,...engineering_rankings.articleSlugs])]
     }
     return {data:data, articles:articles};
 };
