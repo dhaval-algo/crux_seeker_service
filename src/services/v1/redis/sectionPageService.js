@@ -15,7 +15,7 @@ const SectionService = new sectionService();
 module.exports = class sectionPageService {
 
     sectionSQSConsumer(){
-        console.log("rankingHomeSQSConsumer")
+ 
         return new Promise(async (resolve, reject) => {
             try{
                 let queueName = process.env.REDIS_SECTION_QUEUE
