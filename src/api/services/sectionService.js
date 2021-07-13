@@ -96,7 +96,7 @@ const buildSectionView = (section) => {
       section.latest_stories =  latest_stories.articles.filter(art => !!art)
       articles = articles.concat(latest_stories.articleSlugs);
     }
-    return {data:section, articles:articles};
+    return resolve({data:section, articles:articles});
   })
   
 }
