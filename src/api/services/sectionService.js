@@ -256,7 +256,7 @@ module.exports = class sectionService {
   async getSectionContent(slug, callback,skipCache) {
     let data = {}
     try {
-      console.log("skipCache------>",skipCache)
+      console.log("skipCache------>",skipCache,slug)
       if(skipCache != true) {
           let cacheData = await RedisConnection.getValuesSync('section-page-'+slug);
           if(cacheData.noCacheData != true) {
