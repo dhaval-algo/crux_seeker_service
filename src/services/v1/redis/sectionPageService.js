@@ -40,8 +40,9 @@ module.exports = class sectionPageService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                        console.log("sectionSQSConsumer->",)
+                        
                         let sectionSlug = queueData.slug
+                        console.log("sectionSQSConsumer->",sectionSlug)
                         SectionService.getSectionContent(sectionSlug, (err, data) => {}, true); 
                          
                     },
