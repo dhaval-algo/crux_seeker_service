@@ -1316,5 +1316,21 @@ module.exports = {
         
         callback({success:true,data:suggestionList}) 
 
+    },
+
+    removeUserLastSearch: async (req, callback) => {
+
+        const {search} = req.body
+        const { user} = req;
+        let userId = user.userId
+
+        const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
+        suggestionList[search.type] = suggestionList[search.type].filter(function (e) {
+            return (e.title != search.title && e.slug != search.slug)
+        });
+        await models.user_meta.update({value:JSON.stringify(suggestionList)},{where:{userId:userId, key:'last_search'}})
+        callback({success:true,data:suggestionList}) 
     }
 }
