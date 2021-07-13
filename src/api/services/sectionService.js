@@ -147,7 +147,15 @@ module.exports = class sectionService {
       }
       const query = {
         "query": {
-          "match_all": {}
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "featured": true
+                }
+              }
+            ]
+          }
         },
         "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "short_description"]
       }
