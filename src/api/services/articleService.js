@@ -137,11 +137,15 @@ module.exports = class articleService {
                 //"filter": []
             }
         };
+
+
         if(req.articleIds)
         {
             query.bool.must.push({ 
                 "ids": {
                     "values": req.articleIds
+
+
 
                 }})
         }
@@ -222,7 +226,9 @@ module.exports = class articleService {
                             },
                             {
                                 "multi_match": {
+
                                     "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+
                                     "query": decodeURIComponent(req.query['q']).trim(),
                                     "fuzziness": "AUTO",
                                     "prefix_length": 0                              
@@ -479,9 +485,10 @@ module.exports = class articleService {
     }
 
 
-    async getArticleByIds(articleIds, isListing = true){
+    async getArticleByIds(articleIds, isListing = true, returnSlugs){
         let articles = [];
         let articleOrdered = [];
+        let articleSlugs = [];
         /* let ids = [];
         const idPrefix = "ARTCL_PUB_";
         if(articleIds){
@@ -515,11 +522,15 @@ module.exports = class articleService {
                         let article = articles.find(o => o.id === "ARTCL_PUB_"+id);
                         if(typeof article !='undefined')
                         {
+                            articleSlugs.push(article.slug);
                             articleOrdered.push(article);
                         }
                     }
                 }
             }            
+        }
+        if(returnSlugs) {
+            return {articles:articleOrdered, articleSlugs:articleSlugs}
         }
         return articleOrdered;
     }
