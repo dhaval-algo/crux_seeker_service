@@ -88,14 +88,20 @@ module.exports = class ArticleService {
         }
 
 
-        //section page list 
-        // let cacheData = await RedisConnection.getValuesSync('section-article-slug');
-        // if(cacheData.noCacheData != true) {
-        //     let articleSlug = queueData.slug;
-        //     if(cacheData.includes(articleSlug)){
-        //         // RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
-        //     } 
-        // }
+        // section page list 
+        let sectionKeys = await RedisConnection.getAllKeysByType('section-article')
+        for (var i = 0; i < sectionKeys.length; i++) {
+            let sectionKey = sectionKeys[i]
+            console.log("sectionKey",sectionKey)
+            let cacheData = await RedisConnection.getValuesSync(sectionKey);
+            if(cacheData.noCacheData != true) {
+                let articleSlug = queueData.slug;
+                if(cacheData.includes(articleSlug)){
+                    SectionService.getSectionContent(sectionSlug, (err, data) => {}, true); 
+                } 
+            }
+        }
+        
 
 
         
