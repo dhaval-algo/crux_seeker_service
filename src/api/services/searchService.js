@@ -29,14 +29,29 @@ const generateEntityQuery = (entity, keyword) => {
                 "fields": entityConfig.fields
               }
             }, */
-            {
-            "query_string" : {
-                "query" : `*${decodeURIComponent(keyword).replace("+","//+").trim()}*`,
-                "fields" : entityConfig.fields,
-                "analyze_wildcard" : true,
-                "allow_leading_wildcard": true
-            }
-        },
+           {
+                "bool": {
+                "should": [
+                  {
+                      "query_string" : {
+                          "query" : `*${decodeURIComponent(keyword).replace("+","//+").trim()}*`,
+                          "fields" : entityConfig.fields,
+                          "analyze_wildcard" : true,
+                          "allow_leading_wildcard": true
+                      }
+                  },
+                  {
+                      "multi_match": {
+                              "fields": entityConfig.fields,
+                              "query": decodeURIComponent(keyword).trim(),
+                              "fuzziness": "AUTO",
+                              "prefix_length": 0
+                          
+                      }
+                  }           
+                ]
+              }
+            },
             {
               "term": {
                 "_index": entity
@@ -47,7 +62,6 @@ const generateEntityQuery = (entity, keyword) => {
       };
       return entity_query;
 };
-
 
 module.exports = class searchService {
     async getSearchResult(req, callback){
@@ -67,6 +81,7 @@ module.exports = class searchService {
                 sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
                 const entityQuery = generateEntityQuery(key, keyword);
                 query.bool.should.push(entityQuery);
+
             }            
         }else{
             queryEntities.push(entity);
@@ -78,9 +93,7 @@ module.exports = class searchService {
         const uniqueFields = sourceFields.filter(function(item, pos, self) {
             return self.indexOf(item) == pos;
         });
-
-              
-
+       
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
         //console.log("Result Reponse <<>>>>>> <> ", JSON.stringify(result));
         let data = {
@@ -102,7 +115,7 @@ module.exports = class searchService {
                     data.viewAll = true;
                 }  
             }
-            data.result = matchSorter(data.result, keyword, {keys: ['title'], threshold: matchSorter.rankings.NO_MATCH});
+          //  data.result = matchSorter(data.result, keyword, {keys: ['title'], threshold: matchSorter.rankings.NO_MATCH});
 
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
         }else{
