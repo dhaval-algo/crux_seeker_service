@@ -36,7 +36,12 @@ module.exports = class REDIS {
                     }
                     else{
                         console.log('REDIS:: Cache available key = ',key);
-                        resolve(JSON.parse(data));
+                        let allKeys =[]
+                         for(let i=0; i<data.length; i++){
+                            let replaceTxt = data[i].replace('apiData-','')
+                            allKeys.push(replaceTxt)
+                         }
+                        resolve(allKeys);
                     }
                 }
             }); 
