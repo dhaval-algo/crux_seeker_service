@@ -99,11 +99,11 @@ const buildSectionView = (section) => {
         articles = articles.concat(latest_stories.articleSlugs);
       }
       console.log("featured_articles")
-      return {data:section, articles:articles};
+      return resolve({data:section, articles:articles});
     }
     catch (error) {
       console.log("ERROR:",error)
-      return {data:[], articles:[]};
+      return resolve({data:[], articles:[]});
     }
   })
   
