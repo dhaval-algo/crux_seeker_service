@@ -18,6 +18,29 @@ module.exports = class REDIS {
         redis.keys('apiData-*',callback);
     }
 
+    async getAllKeysByType(key){
+        let that = this;
+        return new Promise(function(resolve,reject){
+            that.connect();
+            key='apiData-'+key+'-*';
+            redis.keys(key,(err,data)=>{
+                if(err){
+                    resolve({noCacheKeys:true});
+                }
+                else{
+                    if(data == null){
+                        console.log('REDIS:: No key = ',key);
+                        resolve({noCacheKeys:true})
+                    }
+                    else{
+                        console.log('REDIS:: Cache available key = ',key);
+                        resolve(JSON.parse(data));
+                    }
+                }
+            }); 
+        })
+    }
+
     get(key,callback){
         this.connect(); 
         key='apiData-'+key;

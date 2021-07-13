@@ -249,7 +249,8 @@ module.exports = class sectionService {
     console.log("api/public/v1/section/learning-path")
     let data = {}
     try {
-
+      let keys = await RedisConnection.getAllKeysByType('section-page')
+      console.log("keys",keys)
       if(skipCache != true) {
           let cacheData = await RedisConnection.getValuesSync('section-page-'+slug);
           if(cacheData.noCacheData != true) {
