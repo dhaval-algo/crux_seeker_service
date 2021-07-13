@@ -22,12 +22,10 @@ module.exports = class ArticleService {
 
     articleSQSConsumer(){
         let that = this 
-        console.log("articleSQSConsumer")
         return new Promise(async (resolve, reject) => {
             try{
                 let queueName = process.env.REDIS_ARTICLE_QUEUE
                 let queueURL =  awsService.getUrl('sqs',process.env.AWS_REGION,process.env.AWS_OWNER,queueName)
-                console.log("queueURL",queueURL)
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
                 const app = Consumer.create({
                     queueUrl: queueURL,

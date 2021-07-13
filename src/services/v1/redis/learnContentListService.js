@@ -23,7 +23,7 @@ module.exports = class LearnContentListService {
             try{
                 let queueName = process.env.LEARNCONTENT_LIST_QUEUE
                 let queueURL =  awsService.getUrl('sqs',process.env.AWS_REGION,process.env.AWS_OWNER,queueName)
-                console.log("queueURL",queueURL)
+ 
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
                 const app = Consumer.create({
                     queueUrl: queueURL,
@@ -74,7 +74,6 @@ module.exports = class LearnContentListService {
 
     mergeArrayValues(arr1,arr2){
         let array3 = [...new Set([...arr1,...arr2])]
-        console.log("array3",array3)
         return array3;
     }
 
