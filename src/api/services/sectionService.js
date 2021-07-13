@@ -1,7 +1,10 @@
 const elasticService = require("./elasticService");
 const articleService = require('./articleService');
+const redisConnection = require('../../services/v1/redis');
 
 const ArticleService = new articleService()
+const RedisConnection = new redisConnection();
+
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
     let articles = [];
