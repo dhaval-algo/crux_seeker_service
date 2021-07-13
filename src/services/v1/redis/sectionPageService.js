@@ -9,23 +9,16 @@ let config = {
 let redis;
 const awsService = require("../AWS/index");
 
-const rankingService = require('../../../api/services/rankingService');
-const RankingService = new rankingService();
-
 const sectionService = require('../../../api/services/sectionService');
 const SectionService = new sectionService();
 
-const redisConnection = require('./index');
-const RedisConnection = new redisConnection();
+module.exports = class sectionPageService {
 
-module.exports = class ArticleService {
-
-    articleSQSConsumer(){
-        let that = this 
-        console.log("articleSQSConsumer")
+    sectionSQSConsumer(){
+        console.log("rankingHomeSQSConsumer")
         return new Promise(async (resolve, reject) => {
             try{
-                let queueName = process.env.REDIS_ARTICLE_QUEUE
+                let queueName = process.env.REDIS_SECTION_QUEUE
                 let queueURL =  awsService.getUrl('sqs',process.env.AWS_REGION,process.env.AWS_OWNER,queueName)
                 console.log("queueURL",queueURL)
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
@@ -36,7 +29,7 @@ module.exports = class ArticleService {
                         let message_body = JSON.parse(message.Body)
                         let subject = message_body.subject
                         let message_data = message_body.Message
-                        let queueData = message_data
+                        let queueData = JSON.parse(message_data)
 
                         // /*****delete from queue ****/
                         let approximateReceiveCount = message.Attributes.ApproximateReceiveCount
@@ -47,7 +40,9 @@ module.exports = class ArticleService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                       that.recacheArticlePages(JSON.parse(queueData))
+                        console.log("sectionSQSConsumer->",)
+                        let sectionSlug = queueData.slug
+                        SectionService.getSectionContent(sectionSlug, (err, data) => {}, true); 
                          
                     },
                     sqs: new AWS.SQS()
@@ -74,35 +69,6 @@ module.exports = class ArticleService {
             }
         
         })
-    }
-
-    async recacheArticlePages(queueData){
-       
-        //ranking page list 
-        let cacheData = await RedisConnection.getValuesSync('ranking-article-slug');
-        if(cacheData.noCacheData != true) {
-            let articleSlug = queueData.slug;
-            if(cacheData.includes(articleSlug)){
-                RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
-            } 
-        }
-
-
-        //section page list 
-        // let cacheData = await RedisConnection.getValuesSync('section-article-slug');
-        // if(cacheData.noCacheData != true) {
-        //     let articleSlug = queueData.slug;
-        //     if(cacheData.includes(articleSlug)){
-        //         // RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
-        //     } 
-        // }
-
-
-        
-        
-
-        return true;
-
     }
 
 }
