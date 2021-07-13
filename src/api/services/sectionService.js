@@ -109,44 +109,50 @@ const buildSectionView = (section) => {
 
 const getActiveArticles =  (articles,returnSlugs) => {
   return new Promise(async(resolve) => {
-    const query = {
-      "query": {
-        /* "ids": {
-            "values": ids
-        }, */
-        "bool": {
-          "must": [
-            {term: { "status.keyword": 'published' }},
-            {terms: { "id": articles }}
-          ]
-       }
+    try{
+      const query = {
+        "query": {
+          /* "ids": {
+              "values": ids
+          }, */
+          "bool": {
+            "must": [
+              {term: { "status.keyword": 'published' }},
+              {terms: { "id": articles }}
+            ]
+         }
+        }
+      
       }
     
-    }
-  
-    const resultT = await elasticService.plainSearch('article',query)
-    let dataArray = []
-    let articleSlugs = [];
-    if(resultT.hits.hits){
-      if(resultT.hits.hits && resultT.hits.hits.length > 0){
-          //console.log("result.hits.hits <> ", result.hits.hits);
-          let articles = resultT.hits.hits;
-          for (let index = 0; index < articles.length; index++) {
-            const element = articles[index];
-            let artcl = await ArticleService.generateSingleViewData(element._source)
-            if(typeof artcl !='undefined')
-            {
-                articleSlugs.push(artcl.slug);
-                dataArray.push(artcl);
+      const resultT = await elasticService.plainSearch('article',query)
+      let dataArray = []
+      let articleSlugs = [];
+      if(resultT.hits.hits){
+        if(resultT.hits.hits && resultT.hits.hits.length > 0){
+            //console.log("result.hits.hits <> ", result.hits.hits);
+            let articles = resultT.hits.hits;
+            for (let index = 0; index < articles.length; index++) {
+              const element = articles[index];
+              let artcl = await ArticleService.generateSingleViewData(element._source)
+              if(typeof artcl !='undefined')
+              {
+                  articleSlugs.push(artcl.slug);
+                  dataArray.push(artcl);
+              }
+               
             }
-             
-          }
+        }
       }
-    }
-    if(returnSlugs) {
-        return resolve({articles:dataArray, articleSlugs:articleSlugs})
-    }
-    return resolve(dataArray)
+      if(returnSlugs) {
+          return resolve({articles:dataArray, articleSlugs:articleSlugs})
+      }
+      return resolve(dataArray)
+     }
+    catch (error) {
+      console.log("ERROR:",error)
+      return resolve([])
+    } 
   })
 }
 module.exports = class sectionService {
