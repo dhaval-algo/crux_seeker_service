@@ -97,7 +97,7 @@ module.exports = class ArticleService {
             if(cacheData.noCacheData != true) {
                 let articleSlug = queueData.slug;
                 if(cacheData.includes(articleSlug)){
-                    SectionService.getSectionContent(sectionSlug, (err, data) => {}, true); 
+                    SectionService.getSectionContent(articleSlug, (err, data) => {}, true); 
                 } 
             }
         }
