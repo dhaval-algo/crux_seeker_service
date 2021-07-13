@@ -277,6 +277,7 @@ module.exports = class sectionService {
       if (result.hits && result.hits.length) {
         console.log("section-------------->",'section-page-'+slug)
         let response = await buildSectionView(result.hits[0]._source)
+        console.log("response.articles",response.articles)
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.set('section-page-'+slug, response.data);
 
