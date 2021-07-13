@@ -1305,7 +1305,27 @@ const bookmarkArticleData = async (req,res) => {
 }
 
 
+const fetchbookmarkIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['article_bookmark'] },
+    }
 
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let bookmarks = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            userId: user.userId,
+            articles:bookmarks
+        }
+    })
+}
 
 module.exports = {
     login,
@@ -1334,6 +1354,8 @@ module.exports = {
     bookmarkArticle,
     removeBookmarkArticle,
     bookmarkArticleData,
+    fetchbookmarkIds,
+
 
 
     saveUserLastSearch: async (req,callback) => {
@@ -1342,7 +1364,8 @@ module.exports = {
         const { user} = req;
         let userId = user.userId
 
-         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+        const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
 
         let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
         
