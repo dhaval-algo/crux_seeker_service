@@ -92,10 +92,11 @@ module.exports = class ArticleService {
         let sectionKeys = await RedisConnection.getAllKeysByType('section-article')
         for (var i = 0; i < sectionKeys.length; i++) {
             let sectionKey = sectionKeys[i]
-            console.log("sectionKey",sectionKey)
+            console.log("sectionKey>>>>>>>>>>>>>>>>>>>>>",sectionKey)
             let cacheData = await RedisConnection.getValuesSync(sectionKey);
             if(cacheData.noCacheData != true) {
                 let articleSlug = queueData.slug;
+                console.log("cacheData******************",cacheData)
                 if(cacheData.includes(articleSlug)){
                     SectionService.getSectionContent(articleSlug, (err, data) => {}, true); 
                 } 
