@@ -12,7 +12,7 @@ const buildSectionView = (section) => {
         if (!!section.featured_articles && !!section.featured_articles.length) {
           let featured_articles = await getActiveArticles(section.featured_articles, true)
           section.featured_articles =  featured_articles.articles.filter(art => !!art)
-          articles = [...new Set([[...articles,...featured_articles.articleSlugs])]
+          articles = [...new Set([...articles,...featured_articles.articleSlugs])]
            
         }
         if (!!section.trending_articles && !!section.trending_articles.length) {
