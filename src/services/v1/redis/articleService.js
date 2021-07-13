@@ -97,6 +97,7 @@ module.exports = class ArticleService {
             if(cacheData.noCacheData != true) {
                 let articleSlug = queueData.slug;
                 console.log("cacheData******************",cacheData)
+                console.log("articleSlug******************",articleSlug)
                 if(cacheData.includes(articleSlug)){
                     SectionService.getSectionContent(articleSlug, (err, data) => {}, true); 
                 } 
