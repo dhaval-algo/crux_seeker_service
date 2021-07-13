@@ -120,6 +120,7 @@ const getActiveArticles =  (articles,returnSlugs) => {
   
     const resultT = await elasticService.plainSearch('article',query)
     let dataArray = []
+    let articleSlugs = [];
     if(resultT.hits.hits){
       if(resultT.hits.hits && resultT.hits.hits.length > 0){
           //console.log("result.hits.hits <> ", result.hits.hits);
