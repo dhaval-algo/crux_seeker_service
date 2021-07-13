@@ -100,7 +100,8 @@ module.exports = class ArticleService {
                 console.log("articleSlug******************",articleSlug)
                 if(cacheData.includes(articleSlug)){
                     console.log("articleSlug*******xxxx***********",articleSlug)
-                    SectionService.getSectionContent(sectionKey, (err, data) => {}, true); 
+                    sectionslug = sectionKey.replace('section-article-','')
+                    SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
                 } 
             }
         }
