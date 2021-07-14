@@ -9,23 +9,18 @@ let config = {
 let redis;
 const awsService = require("../AWS/index");
 
-const rankingService = require('../../../api/services/rankingService');
-const RankingService = new rankingService();
-
 const sectionService = require('../../../api/services/sectionService');
 const SectionService = new sectionService();
 
-const redisConnection = require('./index');
-const RedisConnection = new redisConnection();
+module.exports = class BlogHomeService {
 
-module.exports = class ArticleService {
-
-    articleSQSConsumer(){
-        let that = this 
+    blogHomeSQSConsumer(){
+        console.log("blogHomeSQSConsumer")
         return new Promise(async (resolve, reject) => {
             try{
-                let queueName = process.env.REDIS_ARTICLE_QUEUE
+                let queueName = process.env.REDIS_BLOGHOMEPG_QUEUE
                 let queueURL =  awsService.getUrl('sqs',process.env.AWS_REGION,process.env.AWS_OWNER,queueName)
+                console.log("queueURL",queueURL)
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
                 const app = Consumer.create({
                     queueUrl: queueURL,
@@ -33,7 +28,7 @@ module.exports = class ArticleService {
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
                         let subject = message_body.subject
-                        let message_data = message_body.Message
+                        let message_data = message_body.message
                         let queueData = message_data
 
                         // /*****delete from queue ****/
@@ -45,7 +40,8 @@ module.exports = class ArticleService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                       that.recacheArticlePages(JSON.parse(queueData))
+                        console.log("blogHomeSQSConsumer->",)
+                        SectionService.getBlogHomePageContent({query:{}}, (err, data) => {}, true); 
                          
                     },
                     sqs: new AWS.SQS()
@@ -72,54 +68,6 @@ module.exports = class ArticleService {
             }
         
         })
-    }
-
-    async recacheArticlePages(queueData){
-       
-        //ranking page list 
-        let cacheData = await RedisConnection.getValuesSync('ranking-article-slug');
-        if(cacheData.noCacheData != true) {
-            let articleSlug = queueData.slug;
-            if(cacheData.includes(articleSlug)){
-                RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
-            } 
-        }
-
-        //blog home page list 
-        let cacheData = await RedisConnection.getValuesSync('blog-home-article-slug');
-        if(cacheData.noCacheData != true) {
-            let articleSlug = queueData.slug;
-            if(cacheData.includes(articleSlug)){
-                SectionService.getBlogHomePageContent({query:{}}, (err, data) => {}, true); 
-            } 
-        }
-
-
-        // section page list 
-        let sectionKeys = await RedisConnection.getAllKeysByType('section-article')
-        for (var i = 0; i < sectionKeys.length; i++) {
-            let sectionKey = sectionKeys[i]
-            console.log("sectionKey>>>>>>>>>>>>>>>>>>>>>",sectionKey)
-            let cacheData = await RedisConnection.getValuesSync(sectionKey);
-            if(cacheData.noCacheData != true) {
-                let articleSlug = queueData.slug;
-                console.log("cacheData******************",cacheData)
-                console.log("articleSlug******************",articleSlug)
-                if(cacheData.includes(articleSlug)){
-                    console.log("articleSlug*******xxxx***********",articleSlug)
-                    let sectionslug = sectionKey.replace('section-article-','')
-                    SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
-                } 
-            }
-        }
-        
-
-
-        
-        
-
-        return true;
-
     }
 
 }
