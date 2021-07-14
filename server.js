@@ -60,7 +60,7 @@ if(ENABLE_SITEMAP_CRON)
     const rankingHome = new rankingHomeService();
     rankingHome.rankingHomeSQSConsumer();
 
-    const blogHomeService = require('./src/services/v1/redis/rankingHomeService');
+    const blogHomeService = require('./src/services/v1/redis/blogHomeService');
     const blogHome = new blogHomeService();
     blogHome.blogHomeSQSConsumer();
 
