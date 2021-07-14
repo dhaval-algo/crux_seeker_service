@@ -280,22 +280,33 @@ module.exports = class sectionService {
     }
   }
 
-  async getBlogHomePageContent(req, callback) {
+  async getBlogHomePageContent(req, callback,skipCache) {
     let data = {}
     try {
+
+      if(skipCache != true) {
+          let cacheData = await RedisConnection.getValuesSync('blog-home-page');
+          if(cacheData.noCacheData != true) {
+              return callback(null, { success: true, data:cacheData });
+          }
+      }
+
       const query = {
         "match_all": {}
       };
       
       const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
       if (result.hits && result.hits.length) {
-        data = await buildSectionView(result.hits[0]._source)
-        return callback(null, { success: true, data })
+        let response = await buildSectionView(result.hits[0]._source)
+        RedisConnection.set('blog-home-article-slug', response.articles);
+        RedisConnection.set('blog-home-page', response.data);
+
+        return callback(null, { success: true,  data:response.data })
       }
-      return callback(null, { success: true, data:[] })
+      return callback(null, { success: true, data:data })
 
     } catch (error) {
-      return callback(null, { success: true, data: [] })
+      return callback(null, { success: true, data: data })
     }
   }
 }
