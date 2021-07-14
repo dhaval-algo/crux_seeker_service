@@ -75,7 +75,7 @@ module.exports = class ArticleService {
     }
 
     async recacheArticlePages(queueData){
-       
+       console.log("recacheArticlePages---")
         //ranking page list 
         let cacheData = await RedisConnection.getValuesSync('ranking-article-slug');
         if(cacheData.noCacheData != true) {
@@ -110,7 +110,7 @@ module.exports = class ArticleService {
             }
         }
         
-
+        console.log("recacheArticlePages---")
 
         
         
