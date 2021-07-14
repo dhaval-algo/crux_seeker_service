@@ -86,10 +86,10 @@ module.exports = class ArticleService {
         }
 
         //blog home page list 
-        let cacheData = await RedisConnection.getValuesSync('blog-home-article-slug');
-        if(cacheData.noCacheData != true) {
+        let blogHmcacheData = await RedisConnection.getValuesSync('blog-home-article-slug');
+        if(blogHmcacheData.noCacheData != true) {
             let articleSlug = queueData.slug;
-            if(cacheData.includes(articleSlug)){
+            if(blogHmcacheData.includes(articleSlug)){
                 SectionService.getBlogHomePageContent({query:{}}, (err, data) => {}, true); 
             } 
         }
@@ -99,14 +99,11 @@ module.exports = class ArticleService {
         let sectionKeys = await RedisConnection.getAllKeysByType('section-article')
         for (var i = 0; i < sectionKeys.length; i++) {
             let sectionKey = sectionKeys[i]
-            console.log("sectionKey>>>>>>>>>>>>>>>>>>>>>",sectionKey)
-            let cacheData = await RedisConnection.getValuesSync(sectionKey);
-            if(cacheData.noCacheData != true) {
+
+            let sectionCacheData = await RedisConnection.getValuesSync(sectionKey);
+            if(sectionCacheData.noCacheData != true) {
                 let articleSlug = queueData.slug;
-                console.log("cacheData******************",cacheData)
-                console.log("articleSlug******************",articleSlug)
-                if(cacheData.includes(articleSlug)){
-                    console.log("articleSlug*******xxxx***********",articleSlug)
+                if(sectionCacheData.includes(articleSlug)){
                     let sectionslug = sectionKey.replace('section-article-','')
                     SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
                 } 
