@@ -1253,13 +1253,23 @@ const fetchUserMetaObjByUserId = async (id) => {
 const bookmarkArticle = async (req,res) => {
     const { user} = req;
     const {articleId} = req.body
-    const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
-    return res.status(200).json({
-        success:true,
-        data: {
-            bookmarks:resMeta
-        }
-    })
+    if(articleId)
+    {
+        const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
+        return res.status(200).json({
+            success:true,
+            data: {
+                bookmarks:resMeta
+            }
+        })
+    }
+    else{
+        return res.status(500).json({
+            success:false,
+            data: {
+            }
+        })
+    }
 }
 
 const removeBookmarkArticle = async (req,res) => {
