@@ -17,8 +17,8 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
-const filterFields = ['title','section_name','categories','levels','tags', 'slug'];
-const allowZeroCountFields = ['section_name','categories','levels','tags'];
+const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug'];
+const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
     if(queryPayload.from !== null && queryPayload.size !== null){
@@ -45,6 +45,10 @@ const formatFilters = async (data, filterData, query) => {
     let emptyOptions = [];
     for(const filter of filterData){
 
+        if(filter.elastic_attribute_name == 'author_first_name')
+        {
+            filter.elastic_attribute_name = 'author_slug';
+        }
         let formatedFilters = {
             label: filter.label,
             field: filter.elastic_attribute_name,
@@ -72,6 +76,7 @@ const formatFilters = async (data, filterData, query) => {
             }
         }
 
+        
         filters.push(formatedFilters);
     }
 
@@ -90,6 +95,10 @@ const getFilterOption = (data, filter) => {
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
+        if(filter.elastic_attribute_name == 'author_slug')
+        {
+            entityData = `${entity['author_first_name']} ${entity['author_last_name']}`;
+        }
         if(entityData){
             if(Array.isArray(entityData)){
                 for(const entry of entityData){
@@ -110,12 +119,17 @@ const getFilterOption = (data, filter) => {
                 if(existing){
                     existing.count++;
                 }else{
-                    options.push({
+                    let option = {
                         label: entityData,
                         count: 1,
                         selected: false,
                         disabled: false
-                    });
+                    }
+                    if(filter.elastic_attribute_name == 'author_slug')
+                    {
+                        option.author_slug = entity['author_slug']
+                    }
+                    options.push(option);
                 }
             }
         }
@@ -129,6 +143,7 @@ module.exports = class articleService {
 
     async getArticleList(req, callback){
         const filterConfigs = await getFilterConfigs('Article');
+        
         const query = { 
             "bool": {
                 "must": [
@@ -285,8 +300,9 @@ module.exports = class articleService {
             filters[categorykey].options = categoryFiletrOption;
 
         }
-
+        
         const result = await elasticService.search('article', query, queryPayload, queryString);
+        
         if(result.total && result.total.value > 0){
 
             const list = await this.generateListViewData(result.hits);
