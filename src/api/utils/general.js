@@ -318,7 +318,12 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
             let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
             if(seleteddFilter && filter.options){
                 for(let option of filter.options){
-                    if(seleteddFilter.value.includes(option.label)){
+                    let checkField = option.label;
+                    if(filter.field == 'author_slug')
+                    {
+                        checkField = option.author_slug;
+                    }
+                    if(seleteddFilter.value.includes(checkField)){
                         option.selected = true;
                     }
                 }
