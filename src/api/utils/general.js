@@ -221,12 +221,17 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
                             const entity = esData._source; 
                             let entityData = entity[elasticAttribute.elastic_attribute_name];
                             if(entityData){
+                                let checkField = option.label;
+                                if(elasticAttribute.elastic_attribute_name == 'author_slug')
+                                {
+                                    checkField = option.author_slug;
+                                }
                                 if(Array.isArray(entityData)){
-                                    if(entityData.includes(option.label)){
+                                    if(entityData.includes(checkField)){
                                         option.count++;
                                     }
                                 }else{
-                                    if(entityData == option.label){
+                                    if(entityData == checkField){
                                         option.count++;
                                     }
                                 }
