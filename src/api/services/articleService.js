@@ -97,7 +97,12 @@ const getFilterOption = (data, filter) => {
         let entityData = entity[filter.elastic_attribute_name];
         if(filter.elastic_attribute_name == 'author_slug')
         {
-            entityData = `${entity['author_first_name']} ${entity['author_last_name']}`;
+            entityData = entity['author_first_name'];
+            if(entity['author_last_name'])
+            {
+                entityData += ` ${entity['author_last_name']}`;
+            }
+            
         }
         if(entityData){
             if(Array.isArray(entityData)){
