@@ -1288,6 +1288,8 @@ const bookmarkArticleData = async (req,res) => {
             attributes:['value'],
             where
         })
+       if(resForm && resForm.length> 0)
+       {
         let bookmarkIds = resForm.map((rec) => rec.value)
         req.articleIds = bookmarkIds
         req.searchField =  ['title'];
@@ -1297,7 +1299,11 @@ const bookmarkArticleData = async (req,res) => {
              } else {
                  res.status(200).send(err);
              }
-         });        
+         }); 
+        }
+        else{
+            res.status(200).send({status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
+        }      
     } catch (error) {
         console.log(error);
             return res.status(500).send({error,success:false})
