@@ -15,7 +15,7 @@ module.exports = {
 
     getSingleArticle: async (req, res) => {
         const slug = req.params.slug;
-        ArticleService.getArticle(slug, (err, data) => {
+        ArticleService.getArticle( slug, req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
