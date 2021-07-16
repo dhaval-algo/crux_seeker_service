@@ -417,7 +417,7 @@ module.exports = class articleService {
             let engineEvent = {  // define the event to fire when the conditions evaluate truthy
                 type: 'success',
                 params: {
-                  message: 'Player has fouled out!'
+                  message: 'success'
                 }
               }
             article_full_access =  await compareRule(rule.action_rule.self_rules,engineEvent,facts)
