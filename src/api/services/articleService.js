@@ -1,5 +1,6 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
+const models = require("../../../models");
 
 const { 
     getFilterConfigs, 
@@ -11,7 +12,8 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     sortFilterOptions,
-    generateMetaInfo
+    generateMetaInfo,
+    compareRule
 } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -310,7 +312,7 @@ module.exports = class articleService {
         
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits);
+            const list = await this.generateListViewData(result.hits, req);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -366,7 +368,7 @@ module.exports = class articleService {
         }        
     }
 
-    async getArticle(slug, callback){
+    async getArticle( slug, req, callback){
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
@@ -375,7 +377,7 @@ module.exports = class articleService {
         }};
         const result = await elasticService.search('article', query);
         if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source);
+            const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
@@ -383,10 +385,10 @@ module.exports = class articleService {
     }
 
 
-    async generateListViewData(rows){
+    async generateListViewData( rows, req){
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true);
+            const data = await this.generateSingleViewData(row._source, true, req);
             datas.push(data);
         }
         return datas;
@@ -394,8 +396,27 @@ module.exports = class articleService {
 
 
 
-    async generateSingleViewData(result, isList = false){
+    async generateSingleViewData(result, isList = false, req){
         try{
+
+        /*Rule check for artcle access*/
+        let article_full_access = false;
+        if (!isList && req)
+        {
+            let rule = await models.rule.findOne({ where: { action_type: 'article_access' } })
+            let facts = {
+                is_loggedin: (req.user)? true: false,
+                "article.premium": (result.premium)? result.premium:false
+            }            
+            let engineEvent = {  // define the event to fire when the conditions evaluate truthy
+                type: 'success',
+                params: {
+                  message: 'Player has fouled out!'
+                }
+              }
+            article_full_access =  await compareRule(rule.action_rule.self_rules,engineEvent,facts)
+        }
+
         let coverImageSize = 'large';
         //if(isList){
             //coverImageSize = 'thumbnail';
@@ -458,11 +479,12 @@ module.exports = class articleService {
 
         let data = {
             title: result.title,
+            premium: (result.premium)? result.premium:false,
+            full_access: article_full_access,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
             cover_image: cover_image,
-            short_description: result.short_description,
-            content: (!isList) ? result.content : null,
+            short_description: result.short_description,           
             author: author,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
@@ -488,7 +510,15 @@ module.exports = class articleService {
                 data.meta_information  = meta_information;
             }
         }
-        
+
+        if(!isList){
+            data.content =  (article_full_access) ? result.content : null
+        }
+        else
+        {
+            data.content = null;
+        }
+
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }

@@ -3,6 +3,7 @@ const _ = require('underscore');
 const elasticService = require("../services/elasticService");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
+const { Engine } = require('json-rules-engine')
 
 const MAX_RESULT = 10000;
 const ENTRY_PER_PAGE = 25;
@@ -813,6 +814,39 @@ const generateMetaInfo = async (page, result, list) => {
     return meta_information;
 }
 
+const compareRule = async (rule,engineEvent,facts) =>{
+
+    return new Promise(async (resolve, reject) => {
+        try{
+            let engine = new Engine()
+
+            engine.addRule({
+              conditions: rule,
+              event: engineEvent
+            })
+            // Run the engine to evaluate
+            engine.run(facts).then(results => {
+                if(results.events.length > 0){                        
+
+                    results.events.map(event => {
+                        if(event.type == "success")
+                            return resolve(true)
+                        else
+                            return resolve(false)    
+                    })
+                }
+                else{
+                    return resolve(false)
+                }
+            })
+        }
+        catch(err){
+            console.log("err",err)
+            return reject(err)
+        }
+    })
+}
+
 
   module.exports = {
     getUserCurrency,
@@ -831,7 +865,8 @@ const generateMetaInfo = async (page, result, list) => {
     sortFilterOptions,
     getUserFromHeaders,
     calculateFilterCount,
-    generateMetaInfo
+    generateMetaInfo,
+    compareRule
 }
 
 
