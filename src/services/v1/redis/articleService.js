@@ -80,9 +80,16 @@ module.exports = class ArticleService {
         let cacheData = await RedisConnection.getValuesSync('ranking-article-slug');
         if(cacheData.noCacheData != true) {
             let articleSlug = queueData.slug;
-            if(cacheData.includes(articleSlug)){
+            if(queueData.status =='unpublished')
+            {
+                if(cacheData.includes(articleSlug)){
+                    RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
+                }
+            }
+            else
+            {
                 RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
-            } 
+            }
         }
 
         //blog home page list 
