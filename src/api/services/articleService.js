@@ -543,7 +543,7 @@ module.exports = class articleService {
                 {
                     let content = result.content.replace(/<(.|\n)*?>/g, '');
                     content = content.replace(/&nbsp;/g, ' ');
-                    data.content = content.split(' ').slice(0, 50).join(' ');
+                    data.content = content.split(' ').slice(0, 70).join(' ');
                 }
             }           
         }
