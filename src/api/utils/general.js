@@ -169,6 +169,10 @@ const getPaginationQuery = (query) => {
     };
 };
 
+const getPaginationDefaultSize = () => {
+    return ENTRY_PER_PAGE;
+};
+
 const getMediaurl = (mediaUrl) => {
     if(mediaUrl !== null && mediaUrl !== undefined){
         const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
@@ -856,6 +860,7 @@ const compareRule = async (rule,engineEvent,facts) =>{
     parseQueryFilters,
     round,
     getPaginationQuery,
+    getPaginationDefaultSize,
     getMediaurl,
     updateFilterCount,
     getFilterAttributeName,
