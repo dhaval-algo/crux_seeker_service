@@ -1,87 +1,112 @@
 const elasticService = require("./elasticService");
 const articleService = require('./articleService');
+const redisConnection = require('../../services/v1/redis');
 
 const ArticleService = new articleService()
+const RedisConnection = new redisConnection();
+
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
-    if (!!section.featured_articles && !!section.featured_articles.length) {
-      section.featured_articles = await getActiveArticles(section.featured_articles)
-      section.featured_articles =  section.featured_articles.filter(art => !!art)
-    }
-    if (!!section.trending_articles && !!section.trending_articles.length) {
-      section.trending_articles = await ArticleService.getArticleByIds(section.trending_articles)
-      section.trending_articles =  section.trending_articles.filter(art => !!art)
-    }
+    try{
+        let articles = [];
+        if (!!section.featured_articles && !!section.featured_articles.length) {
+          let featured_articles = await getActiveArticles(section.featured_articles, true)
+          section.featured_articles =  featured_articles.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...featured_articles.articleSlugs])]
+           
+        }
+        if (!!section.trending_articles && !!section.trending_articles.length) {
+          let trending_articles = await ArticleService.getArticleByIds(section.trending_articles, true, true)
+          section.trending_articles =  trending_articles.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...trending_articles.articleSlugs])]
+        }
 
-    if (!!section.recent_articles && !!section.recent_articles.length) {
-      section.recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false)
-      section.recent_articles =  section.recent_articles.filter(art => !!art)
+        if (!!section.recent_articles && !!section.recent_articles.length) {
+          let recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false, true)
+          section.recent_articles =  recent_articles.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...recent_articles.articleSlugs])]
 
-    }
-    if (!!section.recommended_articles && !!section.recommended_articles.length) {
-      section.recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles)
-      section.recommended_articles =  section.recommended_articles.filter(art => !!art)
-    }
-    if (!!section.location_display_labels && !!section.location_display_labels.length) {
-      section.location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels)
-      section.location_display_labels =  section.location_display_labels.filter(art => !!art)
-    }
-  
-    if (!!section.career_guidance && !!section.career_guidance.length) {
-      section.career_guidance = await ArticleService.getArticleByIds(section.career_guidance)
-      section.career_guidance =  section.career_guidance.filter(art => !!art)
-    }
-    if (!!section.expert_interview_advice && !!section.expert_interview_advice.length) {
-      section.expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice)
-      section.expert_interview_advice =  section.expert_interview_advice.filter(art => !!art)
-    }
-    if (!!section.improve_your_resume && !!section.improve_your_resume.length) {
-      section.improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume)
-      section.improve_your_resume =  section.improve_your_resume.filter(art => !!art)
-    }
-  
-    if (!!section.all_about_linkedin && !!section.all_about_linkedin.length) {
-      section.all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin)
-      section.all_about_linkedin =  section.all_about_linkedin.filter(art => !!art)
-    }
-    if (!!section.best_ways_to_learn && !!section.best_ways_to_learn.length) {
-      section.best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn)
-      section.best_ways_to_learn =  section.best_ways_to_learn.filter(art => !!art)
-    }
-    if (!!section.top_skills_of_the_future && !!section.top_skills_of_the_future.length) {
-      section.top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future)
-      section.top_skills_of_the_future =  section.top_skills_of_the_future.filter(art => !!art)
-    }
-    if (!!section.important_skills_of_the_future && !!section.important_skills_of_the_future.length) {
-      section.important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future)
-      section.important_skills_of_the_future =  section.important_skills_of_the_future.filter(art => !!art)
-    }
-  
-    if (!!section.tips_for_learners && !!section.tips_for_learners.length) {
-      section.tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners)
-      section.tips_for_learners =  section.tips_for_learners.filter(art => !!art)
-    }
+        }
+        if (!!section.recommended_articles && !!section.recommended_articles.length) {
+          let recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles, true, true)
+          section.recommended_articles =  recommended_articles.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...recommended_articles.articleSlugs])]
+        }
+        if (!!section.location_display_labels && !!section.location_display_labels.length) {
+          let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
+          section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...location_display_labels.articleSlugs])]
+        }
+      
+        if (!!section.career_guidance && !!section.career_guidance.length) {
+          let career_guidance = await ArticleService.getArticleByIds(section.career_guidance, true, true)
+          section.career_guidance =  career_guidance.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...career_guidance.articleSlugs])]
+        }
+        if (!!section.expert_interview_advice && !!section.expert_interview_advice.length) {
+          let expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice, true, true)
+          section.expert_interview_advice =  expert_interview_advice.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...expert_interview_advice.articleSlugs])]
+        }
+        if (!!section.improve_your_resume && !!section.improve_your_resume.length) {
+          let improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume, true, true)
+          section.improve_your_resume =  improve_your_resume.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...improve_your_resume.articleSlugs])]
+        }
+      
+        if (!!section.all_about_linkedin && !!section.all_about_linkedin.length) {
+          let all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin, true, true)
+          section.all_about_linkedin =  all_about_linkedin.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...all_about_linkedin.articleSlugs])]
+        }
+        if (!!section.best_ways_to_learn && !!section.best_ways_to_learn.length) {
+          let best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn, true, true)
+          section.best_ways_to_learn =  best_ways_to_learn.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...best_ways_to_learn.articleSlugs])]
+        }
+        if (!!section.top_skills_of_the_future && !!section.top_skills_of_the_future.length) {
+          let top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future, true, true)
+          section.top_skills_of_the_future =  top_skills_of_the_future.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...top_skills_of_the_future.articleSlugs])]
+        }
+        if (!!section.important_skills_of_the_future && !!section.important_skills_of_the_future.length) {
+          let important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future, true, true)
+          section.important_skills_of_the_future =  important_skills_of_the_future.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...important_skills_of_the_future.articleSlugs])]
+        }
+      
+        if (!!section.tips_for_learners && !!section.tips_for_learners.length) {
+          let tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners, true, true)
+          section.tips_for_learners =  tips_for_learners.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...tips_for_learners.articleSlugs])]
+        }
 
-    if (!!section.best_certifications && !!section.best_certifications.length) {
-      section.best_certifications = await ArticleService.getArticleByIds(section.best_certifications)
-      section.best_certifications =  section.best_certifications.filter(art => !!art)
-    }
+        if (!!section.best_certifications && !!section.best_certifications.length) {
+          let best_certifications = await ArticleService.getArticleByIds(section.best_certifications, true, true)
+          section.best_certifications =  best_certifications.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...best_certifications.articleSlugs])]
+        }
 
-    if (!!section.top_stories && !!section.top_stories.length) {
-      section.top_stories = await ArticleService.getArticleByIds(section.top_stories)
-      section.top_stories =  section.top_stories.filter(art => !!art)
-    }
+        if (!!section.top_stories && !!section.top_stories.length) {
+          let top_stories = await ArticleService.getArticleByIds(section.top_stories, true, true)
+          section.top_stories =  top_stories.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...top_stories.articleSlugs])]
+        }
 
-    if (!!section.latest_stories && !!section.latest_stories.length) {
-      section.latest_stories = await ArticleService.getArticleByIds(section.latest_stories)
-      section.latest_stories =  section.latest_stories.filter(art => !!art)
+        if (!!section.latest_stories && !!section.latest_stories.length) {
+          let latest_stories = await ArticleService.getArticleByIds(section.latest_stories, true, true)
+          section.latest_stories =  latest_stories.articles.filter(art => !!art)
+          articles = [...new Set([...articles,...latest_stories.articleSlugs])]
+        }
+        return resolve({data:section, articles:articles});
+    } catch (error) {
+      return resolve({data:[], articles:[]});
     }
-    return resolve(section)
   })
   
 }
 
-const getActiveArticles =  (articles) => {
+const getActiveArticles =  (articles,returnSlugs) => {
   return new Promise(async(resolve) => {
     const query = {
       "query": {
@@ -100,6 +125,7 @@ const getActiveArticles =  (articles) => {
   
     const resultT = await elasticService.plainSearch('article',query)
     let dataArray = []
+    let articleSlugs = [];
     if(resultT.hits.hits){
       if(resultT.hits.hits && resultT.hits.hits.length > 0){
           //console.log("result.hits.hits <> ", result.hits.hits);
@@ -107,11 +133,18 @@ const getActiveArticles =  (articles) => {
           for (let index = 0; index < articles.length; index++) {
             const element = articles[index];
             let artcl = await ArticleService.generateSingleViewData(element._source)
-             dataArray.push(artcl)
+            if(typeof artcl !='undefined')
+            {
+                articleSlugs.push(artcl.slug);
+                dataArray.push(artcl);
+            }
+             
           }
       }
     }
-
+    if(returnSlugs) {
+        return resolve({articles:dataArray, articleSlugs:articleSlugs})
+    }
     return resolve(dataArray)
   })
 }
@@ -213,9 +246,17 @@ module.exports = class sectionService {
     }
   }
 
-  async getSectionContent(slug, callback) {
+  async getSectionContent(slug, callback,skipCache) {
     let data = {}
     try {
+      
+      if(skipCache != true) {
+          let cacheData = await RedisConnection.getValuesSync('section-page-'+slug);
+          if(cacheData.noCacheData != true) {
+              return callback(null, { success: true, data:cacheData });
+          }
+      }
+
       const query = {
         "bool": {
           "must": [
@@ -226,32 +267,46 @@ module.exports = class sectionService {
       
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
-        data = await buildSectionView(result.hits[0]._source)
-        return callback(null, { success: true, data })
+        let response = await buildSectionView(result.hits[0]._source)
+        RedisConnection.set('section-article-'+slug, response.articles);
+        RedisConnection.set('section-page-'+slug, response.data);
+
+        return callback(null, { success: true, data:response.data })
       }
-      return callback(null, { success: true, data:[] })
+      return callback(null, { success: true, data:data })
 
     } catch (error) {
-      return callback(null, { success: true, data: [] })
+      return callback(null, { success: true, data:data })
     }
   }
 
-  async getBlogHomePageContent(req, callback) {
+  async getBlogHomePageContent(req, callback,skipCache) {
     let data = {}
     try {
+
+      if(skipCache != true) {
+          let cacheData = await RedisConnection.getValuesSync('blog-home-page');
+          if(cacheData.noCacheData != true) {
+              return callback(null, { success: true, data:cacheData });
+          }
+      }
+
       const query = {
         "match_all": {}
       };
       
       const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
       if (result.hits && result.hits.length) {
-        data = await buildSectionView(result.hits[0]._source)
-        return callback(null, { success: true, data })
+        let response = await buildSectionView(result.hits[0]._source)
+        RedisConnection.set('blog-home-article-slug', response.articles);
+        RedisConnection.set('blog-home-page', response.data);
+
+        return callback(null, { success: true,  data:response.data })
       }
-      return callback(null, { success: true, data:[] })
+      return callback(null, { success: true, data:data })
 
     } catch (error) {
-      return callback(null, { success: true, data: [] })
+      return callback(null, { success: true, data: data })
     }
   }
 }
