@@ -156,7 +156,8 @@ const CheckArticleRewards = async (user, premium) => {
         message: 'success'
         }
     }
-    let rules = await models.rule.findAll({ where: { action_type: 'article_access' } })
+    let rules = await models.rule.findAll({ where: { action_type: 'article_access', status:true } })
+
     for (let rule of rules){        
         let compareResult =  await compareRule(rule.action_rule.self_rules,engineEvent,facts) 
         if(compareResult)
