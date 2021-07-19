@@ -532,10 +532,19 @@ module.exports = class articleService {
         data.content = null;
         if(!isList){
             data.full_access = false;
-            if(rewards && rewards.length > 0 && rewards[0].access_type == 'full_access')
+            if(rewards && rewards.length > 0)
             {
-                data.full_access= true;
-                data.content = result.content;
+                if(rewards[0].access_type == 'full_access')
+                {
+                    data.full_access= true;
+                    data.content = result.content;
+                }
+                else if(rewards[0].access_type == 'partial_access')
+                {
+                    let content = result.content.replace(/<(.|\n)*?>/g, '');
+                    content = content.replace(/&nbsp;/g, ' ');
+                    data.content = content.split(' ').slice(0,10).join(' ');
+                }
             }           
         }
 
