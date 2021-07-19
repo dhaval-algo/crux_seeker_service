@@ -144,6 +144,28 @@ const getFilterOption = (data, filter) => {
     return options;
 };
 
+const CheckArticleRewards = async (user, premium) => {  
+    let rewards = [];
+    let facts = {
+        is_loggedin: (user)? true: false,
+        "article.premium": premium
+    }            
+    let engineEvent = {  // define the event to fire when the conditions evaluate truthy
+        type: 'success',
+        params: {
+        message: 'success'
+        }
+    }
+    let rules = await models.rule.findAll({ where: { action_type: 'article_access' } })
+    for (let rule of rules){        
+        let compareResult =  await compareRule(rule.action_rule.self_rules,engineEvent,facts) 
+        if(compareResult)
+        {
+            rewards.push(rule.action_reward)
+        }
+    }
+    return rewards;
+};
 
 module.exports = class articleService {
 
@@ -404,22 +426,13 @@ module.exports = class articleService {
     async generateSingleViewData(result, isList = false, req){
         try{
 
-        /*Rule check for artcle access*/
+        /*Rule check for article access*/
         let article_full_access = false;
+        let rewards = [];
         if (!isList && req)
         {
-            let rule = await models.rule.findOne({ where: { action_type: 'article_access' } })
-            let facts = {
-                is_loggedin: (req.user)? true: false,
-                "article.premium": (result.premium)? result.premium:false
-            }            
-            let engineEvent = {  // define the event to fire when the conditions evaluate truthy
-                type: 'success',
-                params: {
-                  message: 'success'
-                }
-              }
-            article_full_access =  await compareRule(rule.action_rule.self_rules,engineEvent,facts)
+            let premium = (result.premium)? result.premium:false
+            rewards = await CheckArticleRewards(req.user, premium);
         }
 
         let coverImageSize = 'large';
@@ -485,7 +498,6 @@ module.exports = class articleService {
         let data = {
             title: result.title,
             premium: (result.premium)? result.premium:false,
-            full_access: article_full_access,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
             cover_image: cover_image,
@@ -516,12 +528,14 @@ module.exports = class articleService {
             }
         }
 
+        data.content = null;
         if(!isList){
-            data.content =  (article_full_access) ? result.content : null
-        }
-        else
-        {
-            data.content = null;
+            data.full_access = false;
+            if(rewards && rewards.length > 0 && rewards[0].access_type == 'full_access')
+            {
+                data.full_access= true;
+                data.content = result.content;
+            }           
         }
 
         if(result.custom_ads_keywords) {
