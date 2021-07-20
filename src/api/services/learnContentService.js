@@ -724,12 +724,12 @@ module.exports = class learnContentService {
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-search_"+apiCurrency;
             }
-            if(skipCache != true) {
-                let cacheData = await RedisConnection.getValuesSync(cacheName);
-                if(cacheData.noCacheData != true) {
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
-                }
-            }
+            // if(skipCache != true) {
+            //     let cacheData = await RedisConnection.getValuesSync(cacheName);
+            //     if(cacheData.noCacheData != true) {
+            //         return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+            //     }
+            // }
         }
 
         currencies = await getCurrencies();
