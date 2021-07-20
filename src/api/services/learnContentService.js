@@ -1004,18 +1004,18 @@ module.exports = class learnContentService {
                 data.meta_information  = meta_information;
             } 
             
-            if(useCache) {
-                list.forEach((course) => {
-                    let courseSlugs = {
-                        course_slug: course.slug,
-                        categories: course.categories_list.map(cat => cat.slug),
-                        sub_categories: course.sub_categories_list.map(subcat => subcat.slug),
-                        topics: course.topics_list.map(topc => topc.slug)
-                    }
-                    RedisConnection.set("listing-course-"+course.slug, courseSlugs);
-                });
-                RedisConnection.set(cacheName, data);
-            }
+            // if(useCache) {
+            //     list.forEach((course) => {
+            //         let courseSlugs = {
+            //             course_slug: course.slug,
+            //             categories: course.categories_list.map(cat => cat.slug),
+            //             sub_categories: course.sub_categories_list.map(subcat => subcat.slug),
+            //             topics: course.topics_list.map(topc => topc.slug)
+            //         }
+            //         RedisConnection.set("listing-course-"+course.slug, courseSlugs);
+            //     });
+            //     RedisConnection.set(cacheName, data);
+            // }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             //update selected flags
