@@ -56,25 +56,25 @@ if(ENABLE_SITEMAP_CRON)
     });
 
 
-    // const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
-    // const rankingHome = new rankingHomeService();
-    // rankingHome.rankingHomeSQSConsumer();
+    const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
+    const rankingHome = new rankingHomeService();
+    rankingHome.rankingHomeSQSConsumer();
 
-    // const blogHomeService = require('./src/services/v1/redis/blogHomeService');
-    // const blogHome = new blogHomeService();
-    // blogHome.blogHomeSQSConsumer();
+    const blogHomeService = require('./src/services/v1/redis/blogHomeService');
+    const blogHome = new blogHomeService();
+    blogHome.blogHomeSQSConsumer();
 
-    // const sectionPageService = require('./src/services/v1/redis/sectionPageService');
-    // const sectionPage = new sectionPageService();
-    // sectionPage.sectionSQSConsumer();
+    const sectionPageService = require('./src/services/v1/redis/sectionPageService');
+    const sectionPage = new sectionPageService();
+    sectionPage.sectionSQSConsumer();
 
-    // const learnContentListService = require('./src/services/v1/redis/learnContentListService');
-    // const learnContentList = new learnContentListService();
-    // learnContentList.learnContentListSQSConsumer(); 
+    const learnContentListService = require('./src/services/v1/redis/learnContentListService');
+    const learnContentList = new learnContentListService();
+    learnContentList.learnContentListSQSConsumer(); 
     
-    // const articleService = require('./src/services/v1/redis/articleService');
-    // const article = new articleService();
-    // article.articleSQSConsumer(); 
+    const articleService = require('./src/services/v1/redis/articleService');
+    const article = new articleService();
+    article.articleSQSConsumer(); 
 }
 
 //Redis SQS consumers
