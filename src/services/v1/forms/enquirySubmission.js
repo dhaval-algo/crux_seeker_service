@@ -106,16 +106,52 @@ const handleGeneralEnquiry = (resBody, req) => {
         let userObj = {...user};
         if(!targetEntityType || !targetEntityId) {
            return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
-        }
-        if (formType == "enquiry") {
-           let validationResopnse = await validateEnquiryForm(formData);
-           if(validationResopnse.error)
-           {
-                return resolve({success:false, code:DEFAULT_CODES.VALIDATION_FAILED.code,message:validationResopnse.errormsg})
-           }
-        }
+        }       
         try {
 
+            if (formType == "enquiry" && !updateProfile) {
+                let validationResopnse = await validateEnquiryForm(formData);
+                if(validationResopnse.error)
+                {
+                     return resolve({success:false, code:DEFAULT_CODES.VALIDATION_FAILED.code,message:validationResopnse.errormsg})
+                }
+            }
+            else if( formType == "enquiry" && updateProfile) {
+                if (!formSubmissionId)
+                {
+                    return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
+                }
+                formSubRec = await  models.form_submission.findOne({where: {id: formSubmissionId}})
+                formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: formSubmissionId}})
+                if(formSubValRec != null) {
+                    let metaObj = {} 
+                    formSubValRec.map((rec) => {
+                        if(metaObj[rec.objectType]) {
+                            metaObj[rec.objectType].push(rec.objectId)
+                        } else {
+                            metaObj[rec.objectType] = [];
+                            metaObj[rec.objectType].push(rec.objectId)
+                        }
+                    })
+                    let metaObjVal = await getObjectData(metaObj)
+                    let temp = [];
+                    for (key in metaObjVal) {
+                        if (metaObjVal.hasOwnProperty(key)) temp.push(metaObjVal[key]);
+                    }
+                    temp = temp.filter( t => {return t.key !="email"})
+                    
+                    updateProfileMeta(temp, userObj)
+
+                    return resolve({
+                        success: true,
+                        code: DEFAULT_CODES.ENQUIRY_PROFILE_SUCCESS.code,
+                        message: DEFAULT_CODES.ENQUIRY_PROFILE_SUCCESS.message,
+                        data: {
+                            formSubmissionId
+                        }
+                    })
+                }
+            }
             //user meta {key:"", value:"", metaType:""}
             // prepare entries in for user_meta and make entries
             formData.map((f) => {
@@ -127,8 +163,7 @@ const handleGeneralEnquiry = (resBody, req) => {
             })
 
             const resMeta = await models.user_meta.bulkCreate(formData)
-            if (formType != "signup") {
-                
+            if (formType != "signup") {                
                 if (!formSubmissionId) {
                     // entries in form_submission
                     const form_submission = {
@@ -155,10 +190,10 @@ const handleGeneralEnquiry = (resBody, req) => {
                 form_submission_values = resMeta.map((meta) => { return { objectId: meta.id, objectType: 'user_meta', userId: userObj.userId, formSubmissionId: formSubmissionId } })
                 //entries in form_submission_values
                 const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
-                if(updateProfile) {
-                    let temp = formData.filter( t => {return t.key !="email"})
-                    updateProfileMeta(temp, userObj)
-                }
+                // if(updateProfile) {
+                //     let temp = formData.filter( t => {return t.key !="email"})
+                //     updateProfileMeta(temp, userObj)
+                // }
                 if(insertInCRM) {
                     eventEmitter.emit('enquiry_placed',formSubmissionId)
                 }
@@ -322,132 +357,159 @@ const validateEnquiryForm = async (formData) => {
      let errormsg = {};
      let error = false;
 
-        if(formObj.dob == "")
+    if(formObj.dob == "")
+    {
+        errormsg.dob = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.DOB_REQUIRED
+        error = true
+    }
+    if(!error && !moment(formObj.dob, "DD/MM/YYYY", true).isValid())
+    {
+        errormsg.dob = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.DOB_FORMAT
+        error = true
+    }
+    if(!error)
+    {
+        let age  = moment().diff(moment(formObj.dob,"DD/MM/YYYY"), 'years');
+        if(age < 18)
         {
-            errormsg.dob = "This is a required field";
+            errormsg.dob = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.DOB_AGE
             error = true
         }
-        if(!error && !moment(formObj.dob, "DD/MM/YYYY", true).isValid())
-        {
-            errormsg.dob = "Please enter the right format";
-            error = true
-        }
-        if(!error)
-        {
-            let age  = moment().diff(moment(formObj.dob,"DD/MM/YYYY"), 'years');
-            if(age < 18)
-            {
-                errormsg.dob = "Candidates have to be minimum 18 years of age to send enquiry";
-                error = true
-            }
-        }
+    }
 
-        if(formObj.grade !="")
+    if(formObj.grade !="")
+    {
+        if(formObj.gradeType =='grade')
         {
-            if(formObj.gradeType =='grade')
-            {
-                const regex = /^[a-zA-Z+-]+$/g;
-                let  res = regex.exec(formObj.grade)
-                res =!!res
-                if(!res)
-                {
-                    errormsg.grade = "Please enter the grade in correct format";
-                    error = true
-                }            
-            }
-
-            if(formObj.gradeType =='percentage')
-            {
-                const regex = /^[0-9.%]+$/g;
-                let  res = regex.exec(formObj.grade)
-                res =!!res
-                if(!res)
-                {
-                    errormsg.grade = "Please enter the grade in correct format";
-                    error = true
-                }            
-            }
-
-            if(formObj.gradeType =='CGPA')
-            {
-                const regex = /^[0-9.]+$/g;
-                let  res = regex.exec(formObj.grade)
-                res =!!res
-                if(!res || formObj.grade.length >3 || parseInt(formObj.grade) > 10 )
-                {
-                    errormsg.grade = "Please enter the grade in correct format";
-                    error = true
-                }            
-            }
-        }
-        if(formObj.graduationYear !="")
-        {
-            if(!moment(formObj.graduationYear, "YYYY", true).isValid())
-            {
-                errormsg.graduationYear = "Please enter the right format";
-                error = true
-            }
-        }        
-        if(formObj.degree =="")
-        {
-            errormsg.degree = "This is a required field";
-            error = true
-            
-        }
-        if(formObj.specialization =="")
-        {
-            errormsg.specialization = "This is a required field";
-            error = true
-            
-        }
-        if(formObj.instituteName =="")
-        {
-            errormsg.specialization = "This is a required field";
-            error = true
-            
-        }
-        if(formObj.hasExperience)
-        {
-            if(formObj.jobTitle =="")
-            {
-                errormsg.jobTitle = "This is a required field";
-                error = true
-                
-            }
-            
-            if(formObj.company =="")
-            {
-                errormsg.company = "This is a required field";
-                error = true
-                
-            }
-            
-            if(formObj.industry =="")
-            {
-                errormsg.industry = "This is a required field";
-                error = true
-                
-            }
-            const regex = /^[0-9]+$/g;
-            let  res = regex.exec(formObj.experience)
+            const regex = /^[a-zA-Z+-]+$/g;
+            let  res = regex.exec(formObj.grade)
             res =!!res
-            if(formObj.experience =="")
+            if(!res)
             {
-                errormsg.experience = "This is a required field";
-                error = true                
-            }
-            else if(!res)
-            {
-                errormsg.experience = "Enter numeric values only";
-                error = true  
-            }
-            
-        }       
+                errormsg.grade = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.GRADE
+                error = true
+            }            
+        }
 
-        let finalData = {error,errormsg}
+        if(formObj.gradeType =='percentage')
+        {
+            const regex = /^[0-9.%]+$/g;
+            let  res = regex.exec(formObj.grade)
+            res =!!res
+            if(!res)
+            {
+                errormsg.grade = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.GRADE
+                error = true
+            }
+        }
+
+        if(formObj.gradeType =='CGPA')
+        {
+            const regex = /^[0-9.]+$/g;
+            let  res = regex.exec(formObj.grade)
+            res =!!res
+            if(!res || formObj.grade.length >3 || parseInt(formObj.grade) > 10 )
+            {
+                errormsg.grade = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.GRADE
+                error = true
+            }            
+        }
+    }
+    if(formObj.graduationYear !="")
+    {
+        if(!moment(formObj.graduationYear, "YYYY", true).isValid())
+        {
+            errormsg.graduationYear = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.GRADUATION
+            error = true
+        }
+    }        
+    if(formObj.degree =="")
+    {
+        errormsg.degree = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.DEGREE
+        error = true
+    }
+    if(formObj.specialization =="")
+    {
+        errormsg.specialization = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.SPECIALIZATION
+        error = true
+    }
+    if(formObj.instituteName =="")
+    {
+        errormsg.instituteName = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.INSTITUTE
+        error = true
+    }
+    if(formObj.hasExperience)
+    {
+        if(formObj.jobTitle =="")
+        {
+            errormsg.jobTitle = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.JOBTITLE
+            error = true
+        }
         
-        return finalData;
+        if(formObj.company =="")
+        {
+            errormsg.company = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.COMPANY
+            error = true  
+        }
         
+        if(formObj.industry =="")
+        {
+            errormsg.industry = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.INDUSTRY
+            error = true     
+        }
+        const regex = /^[0-9]+$/g;
+        let  res = regex.exec(formObj.experience)
+        res =!!res
+        if(formObj.experience =="")
+        {
+            errormsg.experience = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.EXP_REQUIRED
+            error = true         
+        }
+        else if(!res)
+        {
+            errormsg.experience = DEFAULT_CODES.ENQUIRY_VALIDATION_MESSAGES.EXP_NUMERIC
+            error = true
+        }
+    }
+
+    let finalData = {error,errormsg}
+    
+    return finalData;
+        
+}
+
+const getObjectData = (metaObj) => {
+    let data = {}
+    return new Promise(async (resolve) => {
+
+        for(let objectType in metaObj) {
+            switch (objectType) {
+                case 'user_meta':
+                    const userMeta = await fetchUserMeta(metaObj[objectType])
+                    data = {...data,...userMeta}
+                break;
+            
+                default:
+                    break;
+            }
+        }
+        return resolve(data)
+    }) 
+}
+
+const fetchUserMeta = (ids) => {
+    return new Promise(async (resolve, reject) => {
+
+
+        let where = {
+            id: { [Op.in]: ids },
+        }
+        let fieldsRes = await models.user_meta.findAll({
+            where
+        })
+        const formValues = fieldsRes.map((t) => { return { key:t.key, value:t.value } })
+        resolve(formValues)
+    })
 }
 
 module.exports = {

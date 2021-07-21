@@ -87,6 +87,25 @@ const DEFAULT_CODES =
     VALIDATION_FAILED: {
         code:"VALIDATION_FAILED"
     },
+    ENQUIRY_PROFILE_SUCCESS: {
+        code:"ENQUIRY_PROFILE_SUCCESS",
+        message:"Successfully updated profile"
+    },
+    ENQUIRY_VALIDATION_MESSAGES: {
+        DOB_REQUIRED: "This is a required field",
+        DOB_FORMAT: "Please enter the right format",
+        DOB_AGE: "Candidates have to be minimum 18 years of age to send enquiry",
+        GRADE: "Please enter the grade in correct format",
+        GRADUATION: "Please enter the right format",
+        DEGREE: "This is a required field",
+        SPECIALIZATION : "This is a required field",
+        INSTITUTE: "This is a required field",
+        JOBTITLE: "This is a required field",
+        COMPANY: "This is a required field",
+        INDUSTRY: "This is a required field",
+        EXP_REQUIRED: "This is a required field",
+        EXP_NUMERIC: "Enter numeric values only"
+    }
 }
 const LOGIN_TYPES = {
     LOCAL:'local',
