@@ -83,7 +83,10 @@ const DEFAULT_CODES =
     VERIFICATION_FAILED: {
         code:"VERIFICATION_FAILED",
         message:"Verification link expired, Please Login to resend the verification link"
-    }
+    },
+    VALIDATION_FAILED: {
+        code:"VALIDATION_FAILED"
+    },
 }
 const LOGIN_TYPES = {
     LOCAL:'local',

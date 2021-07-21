@@ -4,6 +4,7 @@ const { getLoginToken, calculateProfileCompletion } = require('../../../utils/he
 const Sequelize = require('sequelize');
 const eventEmitter = require("../../../utils/subscriber");
 const Op = Sequelize.Op;
+const moment = require("moment");
 const handleEnquirySubmission = async (resBody, req) => {
     const { formTypeSource } = resBody;
 
@@ -63,7 +64,7 @@ const handleCallBackEnquiry = (resBody, req) => {
             }
 
             const formSub = await models.form_submission.create(form_submission)
-
+            
             let form_submission_values = []
             form_submission_values = resMeta.map((meta) => { return { objectId: meta.id, objectType: 'user_meta', userId: userObj.userId, formSubmissionId: formSub.id } })
             //entries in form_submission_values
@@ -106,7 +107,13 @@ const handleGeneralEnquiry = (resBody, req) => {
         if(!targetEntityType || !targetEntityId) {
            return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
         }
-
+        if (formType == "enquiry") {
+           let validationResopnse = await validateEnquiryForm(formData);
+           if(validationResopnse.error)
+           {
+                return resolve({success:false, code:DEFAULT_CODES.VALIDATION_FAILED.code,message:validationResopnse.errormsg})
+           }
+        }
         try {
 
             //user meta {key:"", value:"", metaType:""}
@@ -118,6 +125,7 @@ const handleGeneralEnquiry = (resBody, req) => {
                 }
                 return
             })
+
             const resMeta = await models.user_meta.bulkCreate(formData)
             if (formType != "signup") {
                 
@@ -142,7 +150,7 @@ const handleGeneralEnquiry = (resBody, req) => {
                         }
                     })
                 }
-
+                
                 let form_submission_values = []
                 form_submission_values = resMeta.map((meta) => { return { objectId: meta.id, objectType: 'user_meta', userId: userObj.userId, formSubmissionId: formSubmissionId } })
                 //entries in form_submission_values
@@ -305,6 +313,143 @@ const getDefaultValues = async (key, searchString) => {
         where
     })
 }
+
+const validateEnquiryForm = async (formData) => {
+    let formObj = formData.map((t) => { return { [t.key]: t.value } }).reduce(function (acc, x) {
+            for (var key in x) acc[key] = x[key];
+            return acc;
+        }, {});
+     let errormsg = {};
+     let error = false;
+
+        if(formObj.dob == "")
+        {
+            errormsg.dob = "This is a required field";
+            error = true
+        }
+        if(!error && !moment(formObj.dob, "DD/MM/YYYY", true).isValid())
+        {
+            errormsg.dob = "Please enter the right format";
+            error = true
+        }
+        if(!error)
+        {
+            let age  = moment().diff(moment(formObj.dob,"DD/MM/YYYY"), 'years');
+            if(age < 18)
+            {
+                errormsg.dob = "Candidates have to be minimum 18 years of age to send enquiry";
+                error = true
+            }
+        }
+
+        if(formObj.grade !="")
+        {
+            if(formObj.gradeType =='grade')
+            {
+                const regex = /^[a-zA-Z+-]+$/g;
+                let  res = regex.exec(formObj.grade)
+                res =!!res
+                if(!res)
+                {
+                    errormsg.grade = "Please enter the grade in correct format";
+                    error = true
+                }            
+            }
+
+            if(formObj.gradeType =='percentage')
+            {
+                const regex = /^[0-9.%]+$/g;
+                let  res = regex.exec(formObj.grade)
+                res =!!res
+                if(!res)
+                {
+                    errormsg.grade = "Please enter the grade in correct format";
+                    error = true
+                }            
+            }
+
+            if(formObj.gradeType =='CGPA')
+            {
+                const regex = /^[0-9.]+$/g;
+                let  res = regex.exec(formObj.grade)
+                res =!!res
+                if(!res || formObj.grade.length >3 || parseInt(formObj.grade) > 10 )
+                {
+                    errormsg.grade = "Please enter the grade in correct format";
+                    error = true
+                }            
+            }
+        }
+        if(formObj.graduationYear !="")
+        {
+            if(!moment(formObj.graduationYear, "YYYY", true).isValid())
+            {
+                errormsg.graduationYear = "Please enter the right format";
+                error = true
+            }
+        }        
+        if(formObj.degree =="")
+        {
+            errormsg.degree = "This is a required field";
+            error = true
+            
+        }
+        if(formObj.specialization =="")
+        {
+            errormsg.specialization = "This is a required field";
+            error = true
+            
+        }
+        if(formObj.instituteName =="")
+        {
+            errormsg.specialization = "This is a required field";
+            error = true
+            
+        }
+        if(formObj.hasExperience)
+        {
+            if(formObj.jobTitle =="")
+            {
+                errormsg.jobTitle = "This is a required field";
+                error = true
+                
+            }
+            
+            if(formObj.company =="")
+            {
+                errormsg.company = "This is a required field";
+                error = true
+                
+            }
+            
+            if(formObj.industry =="")
+            {
+                errormsg.industry = "This is a required field";
+                error = true
+                
+            }
+            const regex = /^[0-9]+$/g;
+            let  res = regex.exec(formObj.experience)
+            res =!!res
+            if(formObj.experience =="")
+            {
+                errormsg.experience = "This is a required field";
+                error = true                
+            }
+            else if(!res)
+            {
+                errormsg.experience = "Enter numeric values only";
+                error = true  
+            }
+            
+        }       
+
+        let finalData = {error,errormsg}
+        
+        return finalData;
+        
+}
+
 module.exports = {
     handleEnquirySubmission,
     fetchFormValues,
