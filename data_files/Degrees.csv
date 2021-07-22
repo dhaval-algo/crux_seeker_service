@@ -1,0 +1,98 @@
+label,value,slug ,optionType
+Bachelor of Arts (B.A),bachelor of arts (b.a),bachelor-of-arts-(b.a),degree
+Bachelor of Commerce (B.Com),bachelor of commerce (b.com),bachelor-of-commerce-(b.com),degree
+Bachelor of Computer Applications (B.C.A),bachelor of computer applications (b.c.a),bachelor-of-computer-applications-(b.c.a),degree
+Bachelor of Science (B.Sc.),bachelor of science (b.sc.),bachelor-of-science-(b.sc.),degree
+Bachelor of Science in Nursing (B.Sc. Nursing),bachelor of science in nursing (b.sc. nursing),bachelor-of-science-in-nursing-(b.sc.-nursing),degree
+Master of Arts (M.A.),master of arts (m.a.),master-of-arts-(m.a.),degree
+Master of Science (M. Sc.),master of science (m. sc.),master-of-science-(m.-sc.),degree
+Bachelor of Pharmacy (B.Pharm.),bachelor of pharmacy (b.pharm.),bachelor-of-pharmacy-(b.pharm.),degree
+Bachelor of Engineering (B.E.),bachelor of engineering (b.e.),bachelor-of-engineering-(b.e.),degree
+Bachelor of Medicine and Bachelor of Surgery (M.B.B.S.),bachelor of medicine and bachelor of surgery (m.b.b.s.),bachelor-of-medicine-and-bachelor-of-surgery-(m.b.b.s.),degree
+Bachelor of Technology (B.Tech.),bachelor of technology (b.tech.),bachelor-of-technology-(b.tech.),degree
+Bachelor of Dental Surgery (B.D.S.),bachelor of dental surgery (b.d.s.),bachelor-of-dental-surgery-(b.d.s.),degree
+Bachelor of Business Management (B.B.M.),bachelor of business management (b.b.m.),bachelor-of-business-management-(b.b.m.),degree
+Master of Business Administration (M.B.A.),master of business administration (m.b.a.),master-of-business-administration-(m.b.a.),degree
+Bachelor of Business Administration (B.B.A.),bachelor of business administration (b.b.a.),bachelor-of-business-administration-(b.b.a.),degree
+Doctor of Philosophy (Ph.D.),doctor of philosophy (ph.d.),doctor-of-philosophy-(ph.d.),degree
+Diploma,diploma,diploma,degree
+Bachelor of Education (B.Ed.),bachelor of education (b.ed.),bachelor-of-education-(b.ed.),degree
+Bachelor of Physiotherapy (B.P.T.),bachelor of physiotherapy (b.p.t.),bachelor-of-physiotherapy-(b.p.t.),degree
+Master of Technology (M.Tech.),master of technology (m.tech.),master-of-technology-(m.tech.),degree
+"Bachelor of Arts, Bachelor of Law or Laws (B.A.L.L.B.)","bachelor of arts, bachelor of law or laws (b.a.l.l.b.)","bachelor-of-arts,-bachelor-of-law-or-laws-(b.a.l.l.b.)",degree
+Master of Commerce (M.Com.),master of commerce (m.com.),master-of-commerce-(m.com.),degree
+Bachelor of Law or Laws (L.L.B.),bachelor of law or laws (l.l.b.),bachelor-of-law-or-laws-(l.l.b.),degree
+Doctor of Medicine (M.D.),doctor of medicine (m.d.),doctor-of-medicine-(m.d.),degree
+Bachelor of Architecture (B.Arch.),bachelor of architecture (b.arch.),bachelor-of-architecture-(b.arch.),degree
+Master of Computer Applications (M. C. A.),master of computer applications (m. c. a.),master-of-computer-applications-(m.-c.-a.),degree
+Master of Law (L.L.M.),master of law (l.l.m.),master-of-law-(l.l.m.),degree
+Post Graduate Diploma (PG Diploma),post graduate diploma (pg diploma),post-graduate-diploma-(pg-diploma),degree
+"Dual Degree (B.Tech, M.Tech)","dual degree (b.tech, m.tech)","dual-degree-(b.tech,-m.tech)",degree
+Bachelor of Social Work (B.S.W.),bachelor of social work (b.s.w.),bachelor-of-social-work-(b.s.w.),degree
+Bachelor of Hotel Management (B.H.M.),bachelor of hotel management (b.h.m.),bachelor-of-hotel-management-(b.h.m.),degree
+Master of Surgery (M.S.),master of surgery (m.s.),master-of-surgery-(m.s.),degree
+Integrated Doctor of Philosophy (Integrated Ph.D),integrated doctor of philosophy (integrated ph.d),integrated-doctor-of-philosophy-(integrated-ph.d),degree
+Master of Science (M.S.),master of science (m.s.),master-of-science-(m.s.),degree
+Master of Science in Nursing (M.Sc. Nursing),master of science in nursing (m.sc. nursing),master-of-science-in-nursing-(m.sc.-nursing),degree
+Master of Pharmacy (M.Pharm.),master of pharmacy (m.pharm.),master-of-pharmacy-(m.pharm.),degree
+Bachelor of Fine Arts (B.F.A.),bachelor of fine arts (b.f.a.),bachelor-of-fine-arts-(b.f.a.),degree
+Master of Engineering (M.E.),master of engineering (m.e.),master-of-engineering-(m.e.),degree
+Bachelor of Design (B.Des.),bachelor of design (b.des.),bachelor-of-design-(b.des.),degree
+Bachelor of Ayurved in Pharmacy (B.Pharm. Ayu.),bachelor of ayurved in pharmacy (b.pharm. ayu.),bachelor-of-ayurved-in-pharmacy-(b.pharm.-ayu.),degree
+Master of Education (M.Ed.),master of education (m.ed.),master-of-education-(m.ed.),degree
+Bachelor of Multi Media (B.M.M.),bachelor of multi media (b.m.m.),bachelor-of-multi-media-(b.m.m.),degree
+Master of Physiotherapy (M.P.T.),master of physiotherapy (m.p.t.),master-of-physiotherapy-(m.p.t.),degree
+Bachelor of Audiology and Speech Language Pathology (B.A.S.L.P.),bachelor of audiology and speech language pathology (b.a.s.l.p.),bachelor-of-audiology-and-speech-language-pathology-(b.a.s.l.p.),degree
+Master of Philosophy (M.Phil.),master of philosophy (m.phil.),master-of-philosophy-(m.phil.),degree
+Bachelor of Agriculture (B.Agri.),bachelor of agriculture (b.agri.),bachelor-of-agriculture-(b.agri.),degree
+Bachelor of Clinical Optometry (B.Optom.),bachelor of clinical optometry (b.optom.),bachelor-of-clinical-optometry-(b.optom.),degree
+Master of Business Administration in Technology (M.B.A. Tech.),master of business administration in technology (m.b.a. tech.),master-of-business-administration-in-technology-(m.b.a.-tech.),degree
+Bachelor of Music (B.Mus.),bachelor of music (b.mus.),bachelor-of-music-(b.mus.),degree
+Master of Public Health (M.P.H.),master of public health (m.p.h.),master-of-public-health-(m.p.h.),degree
+Master of Fine Arts (M.F.A.),master of fine arts (m.f.a.),master-of-fine-arts-(m.f.a.),degree
+Doctor of Science (D.Sc.),doctor of science (d.sc.),doctor-of-science-(d.sc.),degree
+Bachelor of Physical Education (B.P.Ed.),bachelor of physical education (b.p.ed.),bachelor-of-physical-education-(b.p.ed.),degree
+Master of Physical Education (M.P.Ed.),master of physical education (m.p.ed.),master-of-physical-education-(m.p.ed.),degree
+Master of Social Work (M.S.W.),master of social work (m.s.w.),master-of-social-work-(m.s.w.),degree
+Master of Music (M. Music),master of music (m. music),master-of-music-(m.-music),degree
+Bachelor of Journalism and Mass Communication (B.J.M.C.),bachelor of journalism and mass communication (b.j.m.c.),bachelor-of-journalism-and-mass-communication-(b.j.m.c.),degree
+Master of International Business (M.I.B.),master of international business (m.i.b.),master-of-international-business-(m.i.b.),degree
+Bachelor of Occupational Therapy (B.O.T.),bachelor of occupational therapy (b.o.t.),bachelor-of-occupational-therapy-(b.o.t.),degree
+Bachelor of Veterinary Science (B.V.Sc.),bachelor of veterinary science (b.v.sc.),bachelor-of-veterinary-science-(b.v.sc.),degree
+Master of Science in Technology (M.Sc. Tech.),master of science in technology (m.sc. tech.),master-of-science-in-technology-(m.sc.-tech.),degree
+Master of Business Administration in Pharmaceutical Technology (M.B.A. Pharma. Tech.),master of business administration in pharmaceutical technology (m.b.a. pharma. tech.),master-of-business-administration-in-pharmaceutical-technology-(m.b.a.-pharma.-tech.),degree
+Master of Veterinary Sciences (M.V.Sc.),master of veterinary sciences (m.v.sc.),master-of-veterinary-sciences-(m.v.sc.),degree
+General Nursing & Midwifery (G.N.M.),general nursing & midwifery (g.n.m.),general-nursing-&-midwifery-(g.n.m.),degree
+Master of Human Resource Development (M.H.R.D.),master of human resource development (m.h.r.d.),master-of-human-resource-development-(m.h.r.d.),degree
+Bachelor of Ayurved Medicine & Surgery (B.A.M.S.),bachelor of ayurved medicine & surgery (b.a.m.s.),bachelor-of-ayurved-medicine-&-surgery-(b.a.m.s.),degree
+Master of Laws (M.L.),master of laws (m.l.),master-of-laws-(m.l.),degree
+Master of Journalism and Mass Communication (M.J.M.C.),master of journalism and mass communication (m.j.m.c.),master-of-journalism-and-mass-communication-(m.j.m.c.),degree
+Master of Architecture (M.Arch.),master of architecture (m.arch.),master-of-architecture-(m.arch.),degree
+Bachelor of Journalism (B.J.),bachelor of journalism (b.j.),bachelor-of-journalism-(b.j.),degree
+Bachelor of Business Studies (B.B.S.),bachelor of business studies (b.b.s.),bachelor-of-business-studies-(b.b.s.),degree
+Bachelor of Dance (B.Dance),bachelor of dance (b.dance),bachelor-of-dance-(b.dance),degree
+Master of Design (M.Des.),master of design (m.des.),master-of-design-(m.des.),degree
+Bachelor of Fisheries Science (B.F. Sc.),bachelor of fisheries science (b.f. sc.),bachelor-of-fisheries-science-(b.f.-sc.),degree
+Master of Science in Medical Microbiology (M.Sc. Medical Microbiology),master of science in medical microbiology (m.sc. medical microbiology),master-of-science-in-medical-microbiology-(m.sc.-medical-microbiology),degree
+Bachelor of Hotel Management and Catering Technology (B.H.M.C.T.),bachelor of hotel management and catering technology (b.h.m.c.t.),bachelor-of-hotel-management-and-catering-technology-(b.h.m.c.t.),degree
+Master of Hospital Administration (M.H.A.),master of hospital administration (m.h.a.),master-of-hospital-administration-(m.h.a.),degree
+Bachelor of Science (B.S.Course Physician Assistant),bachelor of science (b.s.course physician assistant),bachelor-of-science-(b.s.course-physician-assistant),degree
+Master of Journalism (M.J.),master of journalism (m.j.),master-of-journalism-(m.j.),degree
+Bachelor of Civil Law (B.C.L.),bachelor of civil law (b.c.l.),bachelor-of-civil-law-(b.c.l.),degree
+Master of Performing Arts (M.P.A.),master of performing arts (m.p.a.),master-of-performing-arts-(m.p.a.),degree
+Master of Science in Medical Bio-Chemistry (M.Sc.Medical Bio-Chemistry),master of science in medical bio-chemistry (m.sc.medical bio-chemistry),master-of-science-in-medical-bio-chemistry-(m.sc.medical-bio-chemistry),degree
+Doctor of Philosophy (D.Phil.),doctor of philosophy (d.phil.),doctor-of-philosophy-(d.phil.),degree
+Bachelor of Veterinary Science & Animal Husbandry (B.V.Sc. & A.H.),bachelor of veterinary science & animal husbandry (b.v.sc. & a.h.),bachelor-of-veterinary-science-&-animal-husbandry-(b.v.sc.-&-a.h.),degree
+Master of Financial Management (M.F.M.),master of financial management (m.f.m.),master-of-financial-management-(m.f.m.),degree
+Master in Mass Communication (M.M.C.),master in mass communication (m.m.c.),master-in-mass-communication-(m.m.c.),degree
+Master of Dental Surgery (M.D.S.),master of dental surgery (m.d.s.),master-of-dental-surgery-(m.d.s.),degree
+"Bachelor of Science, Bachelor of Law (B.Sc. L.L.B.)","bachelor of science, bachelor of law (b.sc. l.l.b.)","bachelor-of-science,-bachelor-of-law-(b.sc.-l.l.b.)",degree
+Master of Science in Medical Physiology (M.Sc. Medical Physiology),master of science in medical physiology (m.sc. medical physiology),master-of-science-in-medical-physiology-(m.sc.-medical-physiology),degree
+Bachelor of General Law (B.G.L.),bachelor of general law (b.g.l.),bachelor-of-general-law-(b.g.l.),degree
+Master of Management (M. Mgt.),master of management (m. mgt.),master-of-management-(m.-mgt.),degree
+Master of Library Science (M. Lib. Sc.),master of library science (m. lib. sc.),master-of-library-science-(m.-lib.-sc.),degree
+Bachelor of Naturopathy and Yogic Sciences (B.Nat. Yogic Sciences),bachelor of naturopathy and yogic sciences (b.nat. yogic sciences),bachelor-of-naturopathy-and-yogic-sciences-(b.nat.-yogic-sciences),degree
+Bachelor of Hotel and Tourism Management (B.H.T.M.),bachelor of hotel and tourism management (b.h.t.m.),bachelor-of-hotel-and-tourism-management-(b.h.t.m.),degree
+"Bachelor of Hotel Management, Travel and Tourism (B.H.M.T.T.)","bachelor of hotel management, travel and tourism (b.h.m.t.t.)","bachelor-of-hotel-management,-travel-and-tourism-(b.h.m.t.t.)",degree
+Master of Science in Medical Anatomy (M.Sc.Medical Anatomy),master of science in medical anatomy (m.sc.medical anatomy),master-of-science-in-medical-anatomy-(m.sc.medical-anatomy),degree
+Masters of Managment Studies (M.M.S.),masters of managment studies (m.m.s.),masters-of-managment-studies-(m.m.s.),degree

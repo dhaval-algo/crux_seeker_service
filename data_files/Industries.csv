@@ -1,0 +1,149 @@
+label,value,slug,optionType
+Accounting,accounting,accounting,industry
+Airlines/Aviation,airlines/aviation,airlines/aviation,industry
+Alternative Dispute Resolution,alternative dispute resolution,alternative-dispute-resolution,industry
+Alternative Medicine,alternative medicine,alternative-medicine,industry
+Animation,animation,animation,industry
+Apparel & Fashion,apparel & fashion,apparel-&-fashion,industry
+Architecture & Planning,architecture & planning,architecture-&-planning,industry
+Arts and Crafts,arts and crafts,arts-and-crafts,industry
+Automotive,automotive,automotive,industry
+Aviation & Aerospace,aviation & aerospace,aviation-&-aerospace,industry
+Banking,banking,banking,industry
+Biotechnology,biotechnology,biotechnology,industry
+Broadcast Media,broadcast media,broadcast-media,industry
+Building Materials,building materials,building-materials,industry
+Business Supplies and Equipment,business supplies and equipment,business-supplies-and-equipment,industry
+Capital Markets,capital markets,capital-markets,industry
+Chemicals,chemicals,chemicals,industry
+Civic & Social Organization,civic & social organization,civic-&-social-organization,industry
+Civil Engineering,civil engineering,civil-engineering,industry
+Commercial Real Estate,commercial real estate,commercial-real-estate,industry
+Computer & Network Security,computer & network security,computer-&-network-security,industry
+Computer Games,computer games,computer-games,industry
+Computer Hardware,computer hardware,computer-hardware,industry
+Computer Networking,computer networking,computer-networking,industry
+Computer Software,computer software,computer-software,industry
+Construction,construction,construction,industry
+Consumer Electronics,consumer electronics,consumer-electronics,industry
+Consumer Goods,consumer goods,consumer-goods,industry
+Consumer Services,consumer services,consumer-services,industry
+Cosmetics,cosmetics,cosmetics,industry
+Dairy,dairy,dairy,industry
+Defense & Space,defense & space,defense-&-space,industry
+Design,design,design,industry
+E-Learning,e-learning,e-learning,industry
+Education Management,education management,education-management,industry
+Electrical/Electronic Manufacturing,electrical/electronic manufacturing,electrical/electronic-manufacturing,industry
+Entertainment,entertainment,entertainment,industry
+Environmental Services,environmental services,environmental-services,industry
+Events Services,events services,events-services,industry
+Executive Office,executive office,executive-office,industry
+Facilities Services,facilities services,facilities-services,industry
+Farming,farming,farming,industry
+Financial Services,financial services,financial-services,industry
+Fine Art,fine art,fine-art,industry
+Fishery,fishery,fishery,industry
+Food & Beverages,food & beverages,food-&-beverages,industry
+Food Production,food production,food-production,industry
+Fund-Raising,fund-raising,fund-raising,industry
+Furniture,furniture,furniture,industry
+Gambling & Casinos,gambling & casinos,gambling-&-casinos,industry
+"Glass, Ceramics & Concrete","glass, ceramics & concrete","glass,-ceramics-&-concrete",industry
+Government Administration,government administration,government-administration,industry
+Government Relations,government relations,government-relations,industry
+Graphic Design,graphic design,graphic-design,industry
+"Health, Wellness and Fitness","health, wellness and fitness","health,-wellness-and-fitness",industry
+Higher Education,higher education,higher-education,industry
+Hospital & Health Care,hospital & health care,hospital-&-health-care,industry
+Hospitality,hospitality,hospitality,industry
+Human Resources,human resources,human-resources,industry
+Import and Export,import and export,import-and-export,industry
+Individual & Family Services,individual & family services,individual-&-family-services,industry
+Industrial Automation,industrial automation,industrial-automation,industry
+Information Services,information services,information-services,industry
+Information Technology and Services,information technology and services,information-technology-and-services,industry
+Insurance,insurance,insurance,industry
+International Affairs,international affairs,international-affairs,industry
+International Trade and Development,international trade and development,international-trade-and-development,industry
+Internet,internet,internet,industry
+Investment Banking,investment banking,investment-banking,industry
+Investment Management,investment management,investment-management,industry
+Judiciary,judiciary,judiciary,industry
+Law Enforcement,law enforcement,law-enforcement,industry
+Law Practice,law practice,law-practice,industry
+Legal Services,legal services,legal-services,industry
+Legislative Office,legislative office,legislative-office,industry
+"Leisure, Travel & Tourism","leisure, travel & tourism","leisure,-travel-&-tourism",industry
+Libraries,libraries,libraries,industry
+Logistics and Supply Chain,logistics and supply chain,logistics-and-supply-chain,industry
+Luxury Goods & Jewelry,luxury goods & jewelry,luxury-goods-&-jewelry,industry
+Machinery,machinery,machinery,industry
+Management Consulting,management consulting,management-consulting,industry
+Maritime,maritime,maritime,industry
+Market Research,market research,market-research,industry
+Marketing and Advertising,marketing and advertising,marketing-and-advertising,industry
+Mechanical or Industrial Engineering,mechanical or industrial engineering,mechanical-or-industrial-engineering,industry
+Media Production,media production,media-production,industry
+Medical Devices,medical devices,medical-devices,industry
+Medical Practice,medical practice,medical-practice,industry
+Mental Health Care,mental health care,mental-health-care,industry
+Military,military,military,industry
+Mining & Metals,mining & metals,mining-&-metals,industry
+Mobile Games,mobile games,mobile-games,industry
+Motion Pictures and Film,motion pictures and film,motion-pictures-and-film,industry
+Museums and Institutions,museums and institutions,museums-and-institutions,industry
+Music,music,music,industry
+Nanotechnology,nanotechnology,nanotechnology,industry
+Newspapers,newspapers,newspapers,industry
+Non-Profit Organization Management,non-profit organization management,non-profit-organization-management,industry
+Oil & Energy,oil & energy,oil-&-energy,industry
+Online Media,online media,online-media,industry
+Outsourcing/Offshoring,outsourcing/offshoring,outsourcing/offshoring,industry
+Package/Freight Delivery,package/freight delivery,package/freight-delivery,industry
+Packaging and Containers,packaging and containers,packaging-and-containers,industry
+Paper & Forest Products,paper & forest products,paper-&-forest-products,industry
+Performing Arts,performing arts,performing-arts,industry
+Pharmaceuticals,pharmaceuticals,pharmaceuticals,industry
+Philanthropy,philanthropy,philanthropy,industry
+Photography,photography,photography,industry
+Plastics,plastics,plastics,industry
+Political Organization,political organization,political-organization,industry
+Primary/Secondary Education,primary/secondary education,primary/secondary-education,industry
+Printing,printing,printing,industry
+Professional Training & Coaching,professional training & coaching,professional-training-&-coaching,industry
+Program Development,program development,program-development,industry
+Public Policy,public policy,public-policy,industry
+Public Relations and Communications,public relations and communications,public-relations-and-communications,industry
+Public Safety,public safety,public-safety,industry
+Publishing,publishing,publishing,industry
+Railroad Manufacture,railroad manufacture,railroad-manufacture,industry
+Ranching,ranching,ranching,industry
+Real Estate,real estate,real-estate,industry
+Recreational Facilities and Services,recreational facilities and services,recreational-facilities-and-services,industry
+Religious Institutions,religious institutions,religious-institutions,industry
+Renewables & Environment,renewables & environment,renewables-&-environment,industry
+Research,research,research,industry
+Restaurants,restaurants,restaurants,industry
+Retail,retail,retail,industry
+Security and Investigations,security and investigations,security-and-investigations,industry
+Semiconductors,semiconductors,semiconductors,industry
+Shipbuilding,shipbuilding,shipbuilding,industry
+Sporting Goods,sporting goods,sporting-goods,industry
+Sports,sports,sports,industry
+Staffing and Recruiting,staffing and recruiting,staffing-and-recruiting,industry
+Supermarkets,supermarkets,supermarkets,industry
+Telecommunications,telecommunications,telecommunications,industry
+Textiles,textiles,textiles,industry
+Think Tanks,think tanks,think-tanks,industry
+Tobacco,tobacco,tobacco,industry
+Translation and Localization,translation and localization,translation-and-localization,industry
+Transportation/Trucking/Railroad,transportation/trucking/railroad,transportation/trucking/railroad,industry
+Utilities,utilities,utilities,industry
+Venture Capital & Private Equity,venture capital & private equity,venture-capital-&-private-equity,industry
+Veterinary,veterinary,veterinary,industry
+Warehousing,warehousing,warehousing,industry
+Wholesale,wholesale,wholesale,industry
+Wine and Spirits,wine and spirits,wine-and-spirits,industry
+Wireless,wireless,wireless,industry
+Writing and Editing,writing and editing,writing-and-editing,industry
