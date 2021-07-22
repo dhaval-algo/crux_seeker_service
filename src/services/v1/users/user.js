@@ -1057,7 +1057,6 @@ const getEnquiryList = async (req,res) => {
     
     let courseIds = [];
     let totalEnquiryRecs = await models.form_submission.findAll(Config)
-    console.log("totalEnquiryRecs=========================", totalEnquiryRecs)
     for (let key = 0; key < totalEnquiryRecs.length ; key++) {
         courseIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
     }
@@ -1075,7 +1074,6 @@ const getEnquiryList = async (req,res) => {
         }  
       }
     const totalResult = await elasticService.search('learn-content', query);
-    console.log("totalResult=========================", totalResult)
     let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
@@ -1112,7 +1110,7 @@ const getEnquiryList = async (req,res) => {
     formSubConfig.offset = offset
     }
     let enquiryRecs = await models.form_submission.findAll(formSubConfig)
-    console.log("enquiryRecs=========================", enquiryRecs)
+      
         // no enquiries return
     if(!enquiryRecs.length) {
         return res.status(200).send({
@@ -1123,8 +1121,6 @@ const getEnquiryList = async (req,res) => {
             }
         })
     }
-
-    
     let enquiriesDone = []
 
     for (let key = 0; key < enquiryRecs.length ; key++) {
