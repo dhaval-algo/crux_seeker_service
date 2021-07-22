@@ -1048,15 +1048,13 @@ const getEnquiryList = async (req,res) => {
     //   });
 
     //Find out total enquiries
-    let Config = { 
+    let config = { 
     attributes: ['targetEntityId'],
     where: { userId:user.userId || user.id,status:'submitted'},
-    limit,
-    raw: true,
-    order: sequelize.literal('"createdAt" DESC')      }
+    raw: true}
     
     let courseIds = [];
-    let totalEnquiryRecs = await models.form_submission.findAll(Config)
+    let totalEnquiryRecs = await models.form_submission.findAll(config)
 
     for (let key = 0; key < totalEnquiryRecs.length ; key++) {
         courseIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
