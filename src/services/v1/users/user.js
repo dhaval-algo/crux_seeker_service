@@ -1055,6 +1055,7 @@ const getEnquiryList = async (req,res) => {
     
     let courseIds = [];
     let totalEnquiryRecs = await models.form_submission.findAll(Config)
+
     for (let key = 0; key < totalEnquiryRecs.length ; key++) {
         courseIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
     }
@@ -1075,11 +1076,10 @@ const getEnquiryList = async (req,res) => {
     let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
-        if(totalResult.hits.hits && totalResult.hits.hits.length > 0){
-             for(const hit of totalResult.hits.hits){                
+        if(totalResult.hits && totalResult.hits.length > 0){
+             for(const hit of totalResult.hits){                
                 existingIds.push(hit._id)                
-            }
-            totalCount = totalResult.hits.hits.length
+            }           
         }
         else
         {
@@ -1092,13 +1092,13 @@ const getEnquiryList = async (req,res) => {
             })
         }
     }
-
-
-
+    courseIds = courseIds.map(id =>`LRN_CNT_PUB_${id}`)
+    courseIds = courseIds.filter((id => existingIds.includes(id)))
+    totalCount = courseIds.length
     //fetch enquiries
     let formSubConfig = { 
     attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
-    where: { userId:user.userId || user.id,status:'submitted',targetEntityId : existingIds},
+    where: { userId:user.userId || user.id,status:'submitted',targetEntityId : courseIds},
     limit,
     raw: true,
     order: sequelize.literal('"createdAt" DESC')
