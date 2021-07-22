@@ -1112,7 +1112,7 @@ const getEnquiryList = async (req,res) => {
     formSubConfig.offset = offset
     }
     let enquiryRecs = await models.form_submission.findAll(formSubConfig)
-      
+    console.log("enquiryRecs=========================", enquiryRecs)
         // no enquiries return
     if(!enquiryRecs.length) {
         return res.status(200).send({
@@ -1123,6 +1123,8 @@ const getEnquiryList = async (req,res) => {
             }
         })
     }
+
+    
     let enquiriesDone = []
 
     for (let key = 0; key < enquiryRecs.length ; key++) {
