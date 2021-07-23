@@ -1029,34 +1029,83 @@ const getEnquiryList = async (req,res) => {
         offset =  (page-1)* limit
     }
     
-    const count = await models.form_submission.findAll({
+    // const count = await models.form_submission.findAll({
 	
-        attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
-        where:{
-            userId:user.userId || user.id,
-            targetEntityType:"course",
-            status:'submitted'
-        },
-        group : ['userId'],
+    //     attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
+    //     where:{
+    //         userId:user.userId || user.id,
+    //         targetEntityType:"course",
+    //         status:'submitted'
+    //     },
+    //     group : ['userId'],
         
-        raw: true,
+    //     raw: true,
         
-        order: sequelize.literal('count DESC')
+    //     order: sequelize.literal('count DESC')
         
-      });
-      //fetch enquiries
-      let formSubConfig = { 
-        attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
-        where: { userId:user.userId || user.id,status:'submitted'},
-        limit,
-        raw: true,
-        order: sequelize.literal('"createdAt" DESC')
+    //   });
+
+    //Find out total enquiries
+    let config = { 
+    attributes: ['targetEntityId'],
+    where: { userId:user.userId || user.id,status:'submitted'},
+    raw: true}
+    
+    let courseIds = [];
+    let totalEnquiryRecs = await models.form_submission.findAll(config)
+
+    for (let key = 0; key < totalEnquiryRecs.length ; key++) {
+        courseIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
+    }
+
+    let query = {
+        "bool": {
+          "must": [           
+            {
+              "terms": {
+                "id": courseIds
+              }
+            },
+            {"term": { "status.keyword": 'published' }}
+          ]
+        }  
       }
-     
-      if(page>1) {
-        formSubConfig.offset = offset
-      }
-      let enquiryRecs = await models.form_submission.findAll(formSubConfig)
+    const totalResult = await elasticService.search('learn-content', query, {size: 1000});
+    let totalCount = 0
+    let existingIds = [];
+    if(totalResult.hits){
+        if(totalResult.hits && totalResult.hits.length > 0){
+             for(const hit of totalResult.hits){                
+                existingIds.push(hit._id)                
+            }           
+        }
+        else
+        {
+            return res.status(200).send({
+                success:true,
+                data:{
+                    enquires:[],
+                    count:0
+                }
+            })
+        }
+    }
+    courseIds = courseIds.map(id =>`LRN_CNT_PUB_${id}`)
+    courseIds = courseIds.filter((id => existingIds.includes(id)))
+    totalCount = courseIds.length
+    //fetch enquiries
+    let formSubConfig = { 
+    attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
+    where: { userId:user.userId || user.id,status:'submitted',targetEntityId : courseIds},
+    limit,
+    raw: true,
+    order: sequelize.literal('"createdAt" DESC')
+    }
+    
+    if(page>1) {
+    formSubConfig.offset = offset
+    }
+    let enquiryRecs = await models.form_submission.findAll(formSubConfig)
       
         // no enquiries return
     if(!enquiryRecs.length) {
@@ -1123,7 +1172,7 @@ const getEnquiryList = async (req,res) => {
         success:true,
         data:{
             enquiries:enquiriesDone,
-            count:count[0].count
+            count:totalCount
         }
     })
     //build res
