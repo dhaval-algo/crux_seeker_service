@@ -506,6 +506,7 @@ module.exports = class articleService {
             cover_image: cover_image,
             short_description: result.short_description,           
             author: author,
+            co_authors: (result.co_authors)? result.co_authors : null,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
