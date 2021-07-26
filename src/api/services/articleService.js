@@ -436,6 +436,7 @@ module.exports = class articleService {
             short_description: result.short_description,
             content: (!isList) ? result.content : null,
             author: author,
+            co_authors: (result.co_authors)? result.co_authors : null,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
