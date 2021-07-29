@@ -404,29 +404,97 @@ module.exports = class articleService {
         // }else{
         //     console.log("Author found..."); 
         // }
+        let co_authors =  [];
 
-        if(auth){
-            author = {
-                id: auth.author_id,
-                username: auth.username,
-                firstname: auth.firstname,
-                lastname: auth.lastname ? auth.lastname:"",
-                designation: auth.designation,
-                bio: auth.bio,
-                slug: auth.slug,
-                image:auth.image
-            };
-        }else{
-            author = {
-                id: result.author_id,
-                username: result.author_username,
-                firstname: result.author_first_name,
-                lastname: result.last_name ? result.author_last_name:"",
-                designation: result.author_designation,
-                bio: result.author_bio,
-                slug: result.author_slug
-            };
+        if(result.partners)
+        {
+            author = []
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    let image = null;
+                    if(co_author.image != null){
+                        if(!isList)
+                        {
+                            image = (typeof co_author.image.formats.large != 'undefined') ? co_author.image.formats.large.url : co_author.image.formats.thumbnail.url
+                        }
+                        else
+                        {
+                            image =  co_author.image.formats.thumbnail.url
+                        }                        
+                    }                
+                   
+                    author.push({
+                        id: co_author.id,
+                        username: co_author.username,
+                        firstname:co_author.first_name,
+                        lastname: co_author.last_name ? co_author.last_name:"",
+                        designation: co_author.designation,
+                        bio: co_author.bio,
+                        slug: co_author.slug,
+                        image: image
+                    });
+                }
+             }
         }
+        else
+        {
+            if(auth){
+                author = [{
+                    id: auth.author_id,
+                    username: auth.username,
+                    firstname: auth.firstname,
+                    lastname: auth.lastname ? auth.lastname:"",
+                    designation: auth.designation,
+                    bio: auth.bio,
+                    slug: auth.slug,
+                    image:auth.image
+                }];
+            }else{
+                author = [{
+                    id: result.author_id,
+                    username: result.author_username,
+                    firstname: result.author_first_name,
+                    lastname: result.last_name ? result.author_last_name:"",
+                    designation: result.author_designation,
+                    bio: result.author_bio,
+                    slug: result.author_slug
+                }];
+            }
+
+            
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    let image = null;
+                    if(co_author.image != null){
+                        if(!isList)
+                        {
+                            image = (typeof co_author.image.formats.large != 'undefined') ? co_author.image.formats.large.url : co_author.image.formats.thumbnail.url
+                        }
+                        else
+                        {
+                            image =  co_author.image.formats.thumbnail.url
+                        }                        
+                    } 
+                   
+                    if(co_author.image && co_author.image.formats )
+                    co_authors.push({
+                        id: co_author.id,
+                        username: result.username,
+                        firstname:co_author.first_name,
+                        lastname: co_author.last_name ? co_author.last_name:"",
+                        designation: co_author.designation,
+                        bio: co_author.bio,
+                        slug: co_author.slug,
+                        image:image
+                    });
+                }
+             }
+        }
+        
 
         let data = {
             title: result.title,
@@ -436,7 +504,7 @@ module.exports = class articleService {
             short_description: result.short_description,
             content: (!isList) ? result.content : null,
             author: author,
-            co_authors: (result.co_authors)? result.co_authors : null,
+            co_authors: (co_authors)? co_authors : null,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
