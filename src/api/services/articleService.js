@@ -483,18 +483,6 @@ module.exports = class articleService {
             {
                 for( let co_author of result.co_authors)
                 {
-                    let image = null;
-                    if(co_author.image != null){
-                        if(!isList)
-                        {
-                            image = (typeof co_author.image.formats.large != 'undefined') ? co_author.image.formats.large.url : co_author.image.formats.thumbnail.url
-                        }
-                        else
-                        {
-                            image =  co_author.image.formats.thumbnail.url
-                        }                        
-                    }                
-                   
                     author.push({
                         id: co_author.id,
                         username: co_author.username,
@@ -503,7 +491,7 @@ module.exports = class articleService {
                         designation: co_author.designation,
                         bio: co_author.bio,
                         slug: co_author.slug,
-                        image: image
+                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
                     });
                 }
              }
@@ -537,19 +525,7 @@ module.exports = class articleService {
             if(result.co_authors && result.co_authors.length > 0)
             {
                 for( let co_author of result.co_authors)
-                {
-                    let image = null;
-                    if(co_author.image != null){
-                        if(!isList)
-                        {
-                            image = (typeof co_author.image.formats.large != 'undefined') ? co_author.image.formats.large.url : co_author.image.formats.thumbnail.url
-                        }
-                        else
-                        {
-                            image =  co_author.image.formats.thumbnail.url
-                        }                        
-                    } 
-                   
+                {                   
                     if(co_author.image && co_author.image.formats )
                     co_authors.push({
                         id: co_author.id,
@@ -559,7 +535,7 @@ module.exports = class articleService {
                         designation: co_author.designation,
                         bio: co_author.bio,
                         slug: co_author.slug,
-                        image:image
+                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
                     });
                 }
              }
