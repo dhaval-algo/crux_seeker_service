@@ -2,6 +2,9 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
+const articleService = require("./articleService");
+let ArticleService = new articleService();
+
 const {generateMetaInfo} = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -261,9 +264,16 @@ module.exports = class partnerService {
             list: [],
             total: 0
         };
+
+        let articles = {
+            list: [],
+            total: 0
+        };
  
         if(!isList){
-            courses = await this.getPartnerCourses(result.name, currency);
+            courses = await this.getPartnerCourses(result.name, currency);   
+            articles = await this.getPartnerArticles(result.id);
+                        
         }
 
         let data = {
@@ -295,6 +305,7 @@ module.exports = class partnerService {
             facebook_url: result.facebook_url,
             twitter_url: result.twitter_url,
             courses: courses,
+            articles:articles,
             user_first_name: result.user_first_name,
             user_last_name: result.user_last_name,
             user_email: result.user_email,
@@ -371,6 +382,31 @@ module.exports = class partnerService {
             courses.total = result.total.value;
         }
         return courses;        
+    }
+
+    async getPartnerArticles(partners ){
+        let articles = {
+            list: [],
+            total: 0
+        };
+        const query = {
+            "bool": {
+                "must": [
+                    {term: { "partners": partners}}
+                ]
+             }
+        };
+
+        let queryPayload = {};
+        queryPayload.from = 0;
+        queryPayload.size = 4;
+        queryPayload.sort = "published_date:desc";
+        const result = await elasticService.search('article', query, queryPayload);
+        if(result.hits && result.hits.length > 0){
+            articles.list = await ArticleService.generateListViewData(result.hits);
+            articles.total = result.total.value;
+        }
+        return articles;        
     }
     
 
