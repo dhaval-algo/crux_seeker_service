@@ -392,6 +392,7 @@ module.exports = class partnerService {
         const query = {
             "bool": {
                 "must": [
+                    {term: { "status.keyword": 'published' }},
                     {term: { "partners": partners}}
                 ]
              }
