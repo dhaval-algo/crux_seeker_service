@@ -455,8 +455,7 @@ module.exports = class articleService {
             if(result.co_authors && result.co_authors.length > 0)
             {
                 for( let co_author of result.co_authors)
-                {                   
-                    if(co_author.image && co_author.image.formats )
+                {
                     co_authors.push({
                         id: co_author.id,
                         username: result.username,
