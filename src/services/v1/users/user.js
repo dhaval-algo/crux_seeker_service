@@ -33,6 +33,7 @@ let LearnContentService = new learnContentService();
 const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
+const validator = require("email-validator");
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -51,6 +52,14 @@ const login = async (req, res, next) => {
             return res.status(200).json({
                 'success': false,
                 'message': 'Username is required',
+                'data': {}
+            });
+        }
+
+        if (!validator.validate(username.trim())) {
+            return res.status(200).json({
+                'success': false,
+                'message': 'Enter email in correct format',
                 'data': {}
             });
         }
@@ -405,20 +414,43 @@ const userExist = (username, provider) => {
             }
 
             //check in db
-            let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
+            let where = {
+                [Op.and]: [
+                    {
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col(dbCol)),Sequelize.fn('lower', username))                        
+                    },
+                    {
+                        provider: {
+                            [Op.eq]: provider
+                        }
+                    }
+                ]
+            }
+            let userLogin = await models.user_login.findOne({ where: where})
+            
             
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
+
+                console.log("verified", user.verified)
              //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
                 if (!user.verified) {
-
-                    await models.user.update({
-                        verified: true,
-                    }, {
-                        where: {
-                            id: userLogin.userId
+                   
+                    return resolve({
+                        code: DEFAULT_CODES.UNVERIFIED_USER.code,
+                        message: DEFAULT_CODES.UNVERIFIED_USER.message,
+                        success: false,
+                        data: {
+                            user: {}
                         }
-                    });
+                    })
+                    // await models.user.update({
+                    //     verified: true,
+                    // }, {
+                    //     where: {
+                    //         id: userLogin.userId
+                    //     }
+                    // });
                 }
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
