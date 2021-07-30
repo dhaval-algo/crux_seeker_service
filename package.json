@@ -17,6 +17,7 @@
     "cryptr": "^6.0.2",
     "csvtojson": "^2.0.10",
     "dotenv": "^8.2.0",
+    "email-validator": "^2.0.4",
     "events": "^3.2.0",
     "express": "^4.17.1",
     "express-useragent": "^1.0.15",
