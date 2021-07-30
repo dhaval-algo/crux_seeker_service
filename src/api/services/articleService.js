@@ -428,6 +428,14 @@ module.exports = class articleService {
 
     async generateSingleViewData(result, isList = false, req){
         try{
+        /*Rule check for article access*/
+        let article_full_access = false;
+        let rewards = [];
+        if (!isList && req)
+        {
+            let premium = (result.premium)? result.premium:false
+            rewards = await CheckArticleRewards(req.user, premium);
+        }
         //let coverImageSize = 'large';
         //if(isList){
             //coverImageSize = 'thumbnail';
