@@ -428,32 +428,22 @@ module.exports = class articleService {
 
     async generateSingleViewData(result, isList = false, req){
         try{
-
-        /*Rule check for article access*/
-        let article_full_access = false;
-        let rewards = [];
-        if (!isList && req)
-        {
-            let premium = (result.premium)? result.premium:false
-            rewards = await CheckArticleRewards(req.user, premium);
-        }
-
-        let coverImageSize = 'large';
+        //let coverImageSize = 'large';
         //if(isList){
             //coverImageSize = 'thumbnail';
        // }
         
-        let cover_image = null;
-        if(result.cover_image){
-            if(result.cover_image[coverImageSize]){
-                cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            }else{
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-        if(!cover_image){
-            cover_image = getMediaurl(result.cover_image['url']);
-        }
+        // let cover_image = null;
+        // if(result.cover_image){
+        //     if(result.cover_image[coverImageSize]){
+        //         cover_image = getMediaurl(result.cover_image[coverImageSize]);
+        //     }else{
+        //         cover_image = getMediaurl(result.cover_image['thumbnail']);
+        //     }
+        // }
+        // if(!cover_image){
+        //     cover_image = getMediaurl(result.cover_image['url']);
+        // }
         
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
          
@@ -544,9 +534,9 @@ module.exports = class articleService {
             title: result.title,
             premium: (result.premium)? result.premium:false,
             slug: result.slug,
-            id: `ARTCL_PUB_${result.id}`,
-            cover_image: cover_image,
-            short_description: result.short_description,           
+            id: `ARTCL_PUB_${result.id}`,          
+            cover_image: (result.cover_image)? result.cover_image : null,
+            short_description: result.short_description,
             author: author,
             co_authors: (co_authors)? co_authors : null,
             comments: (result.comments && !isList) ? result.comments : [],
