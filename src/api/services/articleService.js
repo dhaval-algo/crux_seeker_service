@@ -520,6 +520,8 @@ module.exports = class articleService {
                     slug: result.author_slug
                 }];
             }
+console.log("result.co_authors.length=====================", result.co_authors.length)
+console.log("result.co_authors====================", result.co_authors)
 
             
             if(result.co_authors && result.co_authors.length > 0)
