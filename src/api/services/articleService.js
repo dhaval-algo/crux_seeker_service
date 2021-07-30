@@ -368,22 +368,22 @@ module.exports = class articleService {
 
     async generateSingleViewData(result, isList = false){
         try{
-        let coverImageSize = 'large';
+        //let coverImageSize = 'large';
         //if(isList){
             //coverImageSize = 'thumbnail';
        // }
         
-        let cover_image = null;
-        if(result.cover_image){
-            if(result.cover_image[coverImageSize]){
-                cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            }else{
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-        if(!cover_image){
-            cover_image = getMediaurl(result.cover_image['url']);
-        }
+        // let cover_image = null;
+        // if(result.cover_image){
+        //     if(result.cover_image[coverImageSize]){
+        //         cover_image = getMediaurl(result.cover_image[coverImageSize]);
+        //     }else{
+        //         cover_image = getMediaurl(result.cover_image['thumbnail']);
+        //     }
+        // }
+        // if(!cover_image){
+        //     cover_image = getMediaurl(result.cover_image['url']);
+        // }
         
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
          
@@ -475,7 +475,7 @@ module.exports = class articleService {
             title: result.title,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
-            cover_image: cover_image,
+            cover_image: (result.cover_image)? result.cover_image : null,
             short_description: result.short_description,
             content: (!isList) ? result.content : null,
             author: author,
