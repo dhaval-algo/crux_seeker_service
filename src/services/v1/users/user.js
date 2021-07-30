@@ -432,7 +432,6 @@ const userExist = (username, provider) => {
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
 
-                console.log("verified", user.verified)
              //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
                 if (!user.verified) {
                    
