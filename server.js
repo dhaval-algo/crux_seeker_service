@@ -68,9 +68,9 @@ if(ENABLE_SITEMAP_CRON)
     const sectionPage = new sectionPageService();
     sectionPage.sectionSQSConsumer();
 
-    // const learnContentListService = require('./src/services/v1/redis/learnContentListService');
-    // const learnContentList = new learnContentListService();
-    // learnContentList.learnContentListSQSConsumer(); 
+    const learnContentListService = require('./src/services/v1/redis/learnContentListService');
+    const learnContentList = new learnContentListService();
+    learnContentList.learnContentListSQSConsumer(); 
     
     const articleService = require('./src/services/v1/redis/articleService');
     const article = new articleService();
