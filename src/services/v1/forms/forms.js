@@ -20,6 +20,10 @@ const submitForm = async (req, res) => {
                 {
                     return res.status(200).json(enquiryResponse)
                 }
+                else if(enquiryResponse.code=='INVALID_TOKEN')
+                {
+                    return res.status(200).json(enquiryResponse)
+                }
                 else
                 {
                     return res.status(200).json(sendSystemError)
