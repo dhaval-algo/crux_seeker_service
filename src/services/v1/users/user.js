@@ -57,7 +57,7 @@ const login = async (req, res, next) => {
         if (!validator.validate(username.trim())) {
             return res.status(200).json({
                 'success': false,
-                'message': 'Enter email in correct format',
+                'message': 'Please enter the email in the right format',
                 'data': {}
             });
         }
