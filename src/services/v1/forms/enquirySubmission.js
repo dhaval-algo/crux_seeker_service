@@ -109,7 +109,9 @@ const handleGeneralEnquiry = (resBody, req) => {
            return resolve({success:false, code:DEFAULT_CODES.FAILED_ENQUIRY.code,message:DEFAULT_CODES.FAILED_ENQUIRY.message})
         }       
         try {
-
+            if (formType == "enquiry" && typeof userObj.userId == 'undefined'){
+                return resolve({success:false, code:DEFAULT_CODES.INVALID_TOKEN.code,message: DEFAULT_CODES.INVALID_TOKEN.message})
+            }
             if (formType == "enquiry" && !updateProfile) {
                 let validationResopnse = await validateEnquiryForm(formData);
                 if(validationResopnse.error)
