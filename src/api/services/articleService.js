@@ -737,7 +737,6 @@ module.exports = class articleService {
              }
             }
         };
-        console.log("queryBody============", JSON.stringify(queryBody))
 
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){
