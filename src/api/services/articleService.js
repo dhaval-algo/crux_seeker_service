@@ -720,16 +720,24 @@ module.exports = class articleService {
 
     async getArticleByAuthor(author_id, isListing = true){
         let articles = [];
-            const queryBody = {
-                "query": {
-                  "bool": {
-                    "must": [
-                      {term: { "status.keyword": 'published' }},
-                      {term: { "author_id": author_id }}
-                    ]
-                 }
+        const queryBody = {
+            "query": {
+              "bool": {
+                "must": [
+                  {term: { "status.keyword": 'published' }},
+                  {
+                      "bool": {
+                        "should": [
+                            {term: { "author_id": author_id }},
+                            {term: {"co_authors.user_id": author_id}}
+                        ]
+                    }
                 }
-            };
+                ]
+             }
+            }
+        };
+        console.log("queryBody============", JSON.stringify(queryBody))
 
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){
