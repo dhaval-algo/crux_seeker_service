@@ -24,6 +24,7 @@
     "fs": "0.0.1-security",
     "google-auth-library": "^6.0.6",
     "handlebars": "^4.7.6",
+    "json-rules-engine": "^6.1.2",
     "jsonwebtoken": "^8.5.1",
     "match-sorter": "^6.1.0",
     "moment": "^2.29.1",

@@ -3,6 +3,7 @@ const _ = require('underscore');
 const elasticService = require("../services/elasticService");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
+const { Engine } = require('json-rules-engine')
 
 const MAX_RESULT = 10000;
 const ENTRY_PER_PAGE = 25;
@@ -221,12 +222,17 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
                             const entity = esData._source; 
                             let entityData = entity[elasticAttribute.elastic_attribute_name];
                             if(entityData){
+                                let checkField = option.label;
+                                if(elasticAttribute.elastic_attribute_name == 'author_slug')
+                                {
+                                    checkField = option.author_slug;
+                                }
                                 if(Array.isArray(entityData)){
-                                    if(entityData.includes(option.label)){
+                                    if(entityData.includes(checkField)){
                                         option.count++;
                                     }
                                 }else{
-                                    if(entityData == option.label){
+                                    if(entityData == checkField){
                                         option.count++;
                                     }
                                 }
@@ -317,7 +323,12 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
             let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
             if(seleteddFilter && filter.options){
                 for(let option of filter.options){
-                    if(seleteddFilter.value.includes(option.label)){
+                    let checkField = option.label;
+                    if(filter.field == 'author_slug')
+                    {
+                        checkField = option.author_slug;
+                    }
+                    if(seleteddFilter.value.includes(checkField)){
                         option.selected = true;
                     }
                 }
@@ -807,6 +818,39 @@ const generateMetaInfo = async (page, result, list) => {
     return meta_information;
 }
 
+const compareRule = async (rule,engineEvent,facts) =>{
+
+    return new Promise(async (resolve, reject) => {
+        try{
+            let engine = new Engine()
+
+            engine.addRule({
+              conditions: rule,
+              event: engineEvent
+            })
+            // Run the engine to evaluate
+            engine.run(facts).then(results => {
+                if(results.events.length > 0){                        
+
+                    results.events.map(event => {
+                        if(event.type == "success")
+                            return resolve(true)
+                        else
+                            return resolve(false)    
+                    })
+                }
+                else{
+                    return resolve(false)
+                }
+            })
+        }
+        catch(err){
+            console.log("err",err)
+            return reject(err)
+        }
+    })
+}
+
 
   module.exports = {
     getUserCurrency,
@@ -826,7 +870,8 @@ const generateMetaInfo = async (page, result, list) => {
     sortFilterOptions,
     getUserFromHeaders,
     calculateFilterCount,
-    generateMetaInfo
+    generateMetaInfo,
+    compareRule
 }
 
 

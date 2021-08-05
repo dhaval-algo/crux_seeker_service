@@ -30,6 +30,8 @@ const { default: Axios } = require("axios");
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
 let LearnContentService = new learnContentService();
+const articleService = require("../../../api/services/articleService");
+let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
 
@@ -1328,9 +1330,97 @@ const fetchUserMetaObjByUserId = async (id) => {
     return userData;
 }
 
+const bookmarkArticle = async (req,res) => {
+    const { user} = req;
+    const {articleId} = req.body
+    if(articleId)
+    {
+        const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
+        return res.status(200).json({
+            success:true,
+            data: {
+                bookmarks:resMeta
+            }
+        })
+    }
+    else{
+        return res.status(500).json({
+            success:false,
+            data: {
+            }
+        })
+    }
+}
+
+const removeBookmarkArticle = async (req,res) => {
+    const { user} = req;
+    const {articleId} = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            bookmarks:resMeta
+        }
+    })
+}
 
 
+const bookmarkArticleData = async (req,res) => {
+    try {
 
+        const { user } = req
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['article_bookmark'] },
+        }
+
+        let resForm = await models.user_meta.findAll({
+            attributes:['value'],
+            where
+        })
+       if(resForm && resForm.length> 0)
+       {
+        let bookmarkIds = resForm.map((rec) => rec.value)
+        req.articleIds = bookmarkIds
+        req.searchField =  ['title'];
+        await ArticleService.getArticleList(req, (err, data) => {
+             if (data) {
+                 res.status(200).send(data);
+             } else {
+                 res.status(200).send(err);
+             }
+         }); 
+        }
+        else{
+            res.status(200).send({status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
+        }      
+    } catch (error) {
+        console.log(error);
+            return res.status(500).send({error,success:false})
+    }
+}
+
+const fetchbookmarkIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['article_bookmark'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let bookmarks = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            userId: user.userId,
+            articles:bookmarks
+        }
+    })
+}
 
 module.exports = {
     login,
@@ -1356,6 +1446,10 @@ module.exports = {
     removeProfilePic,
     uploadSkills,
     fetchUserMetaObjByUserId,
+    bookmarkArticle,
+    removeBookmarkArticle,
+    bookmarkArticleData,
+    fetchbookmarkIds,
 
     saveUserLastSearch: async (req,callback) => {
                 
