@@ -1373,6 +1373,14 @@ module.exports = class learnContentService {
                     }
                 }
             }
+
+            if(result.syllabus)
+            {
+                data.syllabus = {
+                    name:result.syllabus.name,
+                    url:result.syllabus.url
+                }
+            }
         }
 
         
