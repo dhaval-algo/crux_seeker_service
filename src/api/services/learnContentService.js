@@ -721,7 +721,9 @@ module.exports = class learnContentService {
             if(req.query['currency'] != undefined){
                 apiCurrency = req.query['currency'];
             }
-
+            console.log("pageType=========================", req.query['pageType']);
+            console.log("q=========================", req.query['q']);
+            console.log("currency=========================", req.query['currency']);
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == "")) {
