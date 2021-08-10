@@ -702,7 +702,8 @@ module.exports = class learnContentService {
             && req.query['f'] == undefined
             && req.query['rf'] == undefined
             && (
-                req.query['page'] == undefined
+                req.query['pageType'] == undefined 
+                || req.query['pageType'] == "search" 
                 || req.query['page'] == "1"
             )
             && (
