@@ -701,7 +701,7 @@ module.exports = class learnContentService {
         console.log("q=========", req.query['q'])
         console.log("page=========", req.query['page'])
         console.log("skipCache=========", skipCache)
-        console.log("currency=========", currency)
+        console.log("currency=========", req.query['currency'])
         console.log("condition=========", (req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['page'] == "1"))
 
         if(
