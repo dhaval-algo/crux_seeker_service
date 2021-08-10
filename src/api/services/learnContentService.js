@@ -708,7 +708,7 @@ module.exports = class learnContentService {
             && req.query['f'] == undefined
             && req.query['q'] == undefined
             && req.query['rf'] == undefined
-            && (req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['page'] == "1")
+            && (req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['pageType'] == "category" || req.query['pageType'] == "topic" || req.query['page'] == "1")
             && (
                 req.query['size'] == undefined
                 || req.query['size'] == defaultSize
@@ -724,6 +724,10 @@ module.exports = class learnContentService {
                 apiCurrency = req.query['currency'];
             }
             console.log("=================IN caching blog====================")
+            console.log("pageType=========", req.query['pageType'])
+            console.log("q=========", req.query['q'])
+            console.log("page=========", req.query['page'])
+            console.log("skipCache=========", skipCache)
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
