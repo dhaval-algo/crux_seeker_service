@@ -700,8 +700,9 @@ module.exports = class learnContentService {
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
+            && (req.query['q'] == undefined || req.query['q'] == '')
             && req.query['rf'] == undefined
-            && (req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['page'] == "1")
+            && (req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['pageType'] == "category" || req.query['pageType'] == "topic" || req.query['page'] == "1")
             && (
                 req.query['size'] == undefined
                 || req.query['size'] == defaultSize
