@@ -702,11 +702,7 @@ module.exports = class learnContentService {
             && req.query['f'] == undefined
             && req.query['q'] == undefined
             && req.query['rf'] == undefined
-            && (
-                req.query['pageType'] == undefined 
-                || req.query['pageType'] == "search" 
-                || req.query['page'] == "1"
-            )
+            && (req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['page'] == "1")
             && (
                 req.query['size'] == undefined
                 || req.query['size'] == defaultSize
