@@ -1,6 +1,6 @@
 const models = require("../../../../models");
 const { FORM_TYPE_SOURCE, DEFAULT_CODES, USER_STATUS, USER_TYPE } = require('../../../utils/defaultCode')
-const { getLoginToken, calculateProfileCompletion } = require('../../../utils/helper')
+const { getLoginToken, calculateProfileCompletion, sendDataForStrapi } = require('../../../utils/helper')
 const Sequelize = require('sequelize');
 const eventEmitter = require("../../../utils/subscriber");
 const Op = Sequelize.Op;
@@ -196,7 +196,7 @@ const handleUserProfileSubmission = (resBody, req) => {
 
         try {         
             await updateProfileMeta(formData, userObj)
-
+            sendDataForStrapi(formData, "update-user-profile")
             const progress = await calculateProfileCompletion(userObj)
             return resolve({
                 success: true,

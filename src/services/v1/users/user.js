@@ -14,7 +14,8 @@ const {
     createSocialEntryIfNotExists,
     getImgBuffer,
     getFileBuffer,
-    generateSingleViewData
+    generateSingleViewData,
+    sendDataForStrapi
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -901,6 +902,9 @@ const addCourseToWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
+    sendDataForStrapi(data, "profile-add-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -913,6 +917,9 @@ const removeCourseFromWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
+    sendDataForStrapi(data, "profile-remove-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -1207,6 +1214,9 @@ const uploadProfilePic =async (req,res) => {
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
     const profileRes = await calculateProfileCompletion(user)
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, image:s3Path}
+    sendDataForStrapi(data, "update-profile-picture");
     return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
@@ -1217,8 +1227,11 @@ const removeProfilePic = async (req,res) => {
 
     if(existImg) {
       //  await deleteObject(existImg.value);
-        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})        
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value}
+    sendDataForStrapi(data, "remove-profile-picture");
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
@@ -1256,6 +1269,9 @@ const uploadResumeFile = async (req,res) =>{
         // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, resume:s3Path}
+    sendDataForStrapi(data, "upload-resume");
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
@@ -1268,6 +1284,9 @@ const deleteResumeFile = async (req,res) => {
       //  await deleteObject(existImg.value);
         await models.user_meta.destroy({where:{key:'resumeFile',metaType:'primary',userId:user.userId}})
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value}
+    sendDataForStrapi(data, "remove-resume");
     return res.status(200).json({success:true, resumeFile:{}})
 }
 
@@ -1276,11 +1295,14 @@ const uploadSkills = async (req,res) => {
     const { user} = req;
     const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'skills'}})
     if(!existSkills) {
-        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})
+        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})        
     } else {
         // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'skills'}})
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let learn_profile = {email:userinfo.value, data:data}
+    sendDataForStrapi(learn_profile, "update-learn-profile");
     return res.status(200).json({success:true,data:data})
 }
 
@@ -1305,6 +1327,9 @@ const bookmarkArticle = async (req,res) => {
     if(articleId)
     {
         const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
+        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+        let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
+        sendDataForStrapi(data, "profile-bookmark-article");
         return res.status(200).json({
             success:true,
             data: {
@@ -1325,6 +1350,9 @@ const removeBookmarkArticle = async (req,res) => {
     const { user} = req;
     const {articleId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
+    sendDataForStrapi(data, "profile-remove-bookmark-article");
     return res.status(200).json({
         success:true,
         data: {
