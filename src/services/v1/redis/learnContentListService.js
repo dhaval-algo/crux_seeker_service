@@ -116,7 +116,7 @@ module.exports = class LearnContentListService {
         }
      
         //update search
-
+        console.log("recacheCouseList=================recacheCouseList===================recacheCouseList=====================recacheCouseList>")
         for (var i = 0; i < queueData.currencies.length; i++) {
             let currency = queueData.currencies[i]
             console.log("currency=================>", currency)
