@@ -119,7 +119,7 @@ module.exports = class LearnContentListService {
 
         for (var i = 0; i < queueData.currencies.length; i++) {
             let currency = queueData.currencies[i]
-            
+            console.log("currency=================>", currency)
             //search
             let querysearchPayload = {query:{ pageType: 'search', q: '', currency: currency }}
             await learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)
