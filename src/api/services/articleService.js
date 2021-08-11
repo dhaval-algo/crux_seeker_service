@@ -437,17 +437,17 @@ module.exports = class articleService {
             //coverImageSize = 'thumbnail';
        // }
         
-        let cover_image = null;
-        if(result.cover_image){
-            if(result.cover_image[coverImageSize]){
-                cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            }else{
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-        if(!cover_image){
-            cover_image = getMediaurl(result.cover_image['url']);
-        }
+        // let cover_image = null;
+        // if(result.cover_image){
+        //     if(result.cover_image[coverImageSize]){
+        //         cover_image = getMediaurl(result.cover_image[coverImageSize]);
+        //     }else{
+        //         cover_image = getMediaurl(result.cover_image['thumbnail']);
+        //     }
+        // }
+        // if(!cover_image){
+        //     cover_image = getMediaurl(result.cover_image['url']);
+        // }
         
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
          
@@ -468,38 +468,82 @@ module.exports = class articleService {
         // }else{
         //     console.log("Author found..."); 
         // }
+        let co_authors =  [];
 
-        if(auth){
-            author = {
-                id: auth.author_id,
-                username: auth.username,
-                firstname: auth.firstname,
-                lastname: auth.lastname ? auth.lastname:"",
-                designation: auth.designation,
-                bio: auth.bio,
-                slug: auth.slug,
-                image:auth.image
-            };
-        }else{
-            author = {
-                id: result.author_id,
-                username: result.author_username,
-                firstname: result.author_first_name,
-                lastname: result.last_name ? result.author_last_name:"",
-                designation: result.author_designation,
-                bio: result.author_bio,
-                slug: result.author_slug
-            };
+        if(result.partners)
+        {
+            author = []
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    author.push({
+                        id: co_author.id,
+                        username: co_author.username,
+                        firstname:co_author.first_name,
+                        lastname: co_author.last_name ? co_author.last_name:"",
+                        designation: co_author.designation,
+                        bio: co_author.bio,
+                        slug: co_author.slug,
+                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                    });
+                }
+             }
         }
+        else
+        {
+            if(auth){
+                author = [{
+                    id: auth.author_id,
+                    username: auth.username,
+                    firstname: auth.firstname,
+                    lastname: auth.lastname ? auth.lastname:"",
+                    designation: auth.designation,
+                    bio: auth.bio,
+                    slug: auth.slug,
+                    image:auth.image
+                }];
+            }else{
+                author = [{
+                    id: result.author_id,
+                    username: result.author_username,
+                    firstname: result.author_first_name,
+                    lastname: result.last_name ? result.author_last_name:"",
+                    designation: result.author_designation,
+                    bio: result.author_bio,
+                    slug: result.author_slug
+                }];
+            }
+
+            
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    co_authors.push({
+                        id: co_author.id,
+                        username: result.username,
+                        firstname:co_author.first_name,
+                        lastname: co_author.last_name ? co_author.last_name:"",
+                        designation: co_author.designation,
+                        bio: co_author.bio,
+                        slug: co_author.slug,
+                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                    });
+                }
+             }
+        }
+        
 
         let data = {
             title: result.title,
             premium: (result.premium)? result.premium:false,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
-            cover_image: cover_image,
-            short_description: result.short_description,           
+            cover_image: (result.cover_image)? result.cover_image : null,
+            short_description: result.short_description,
             author: author,
+            co_authors: (co_authors)? co_authors : null,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
@@ -673,16 +717,23 @@ module.exports = class articleService {
 
     async getArticleByAuthor(author_id, isListing = true){
         let articles = [];
-            const queryBody = {
-                "query": {
-                  "bool": {
-                    "must": [
-                      {term: { "status.keyword": 'published' }},
-                      {term: { "author_id": author_id }}
-                    ]
-                 }
+        const queryBody = {
+            "query": {
+              "bool": {
+                "must": [
+                  {term: { "status.keyword": 'published' }},
+                  {
+                      "bool": {
+                        "should": [
+                            {term: { "author_id": author_id }},
+                            {term: {"co_authors.user_id": author_id}}
+                        ]
+                    }
                 }
-            };
+                ]
+             }
+            }
+        };
 
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){

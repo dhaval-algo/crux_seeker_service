@@ -1176,7 +1176,7 @@ module.exports = class learnContentService {
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
         }
-        let coverImageSize = 'large';
+        //let coverImageSize = 'large';
         //if(isList){
            // coverImageSize = 'thumbnail';
         //}
@@ -1187,14 +1187,14 @@ module.exports = class learnContentService {
             }
         }
 
-        let cover_image = null;
-        if(result.images){
-            if(result.images[coverImageSize]){
-                cover_image = getMediaurl(result.images[coverImageSize]);
-            }else{
-                cover_image = getMediaurl(result.images['thumbnail']);
-            }
-        }
+        // let cover_image = null;
+        // if(result.images){
+        //     if(result.images[coverImageSize]){
+        //         cover_image = getMediaurl(result.images[coverImageSize]);
+        //     }else{
+        //         cover_image = getMediaurl(result.images['thumbnail']);
+        //     }
+        // }
 
         let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
@@ -1225,7 +1225,7 @@ module.exports = class learnContentService {
             currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: cover_image,
+            cover_image: (result.images)? result.images :null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
