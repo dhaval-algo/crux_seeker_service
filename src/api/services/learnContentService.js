@@ -700,12 +700,9 @@ module.exports = class learnContentService {
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
-            && req.query['q'] == undefined
+            && (req.query['q'] == undefined || req.query['q'] == '')
             && req.query['rf'] == undefined
-            && (
-                req.query['page'] == undefined
-                || req.query['page'] == "1"
-            )
+            && ((req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['pageType'] == "category" || req.query['pageType'] == "topic") && (req.query['page'] == "1" || req.query['page'] == undefined))
             && (
                 req.query['size'] == undefined
                 || req.query['size'] == defaultSize
@@ -722,7 +719,7 @@ module.exports = class learnContentService {
             }
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
-            } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == "")) {
+            } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
                 cacheName = "listing-search_"+apiCurrency;
             }
             if(skipCache != true) {
