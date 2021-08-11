@@ -10,7 +10,11 @@ const DEFAULT_CODES =
     },
     INVALID_USER: {
         code:"INVALID_USER",
-        message: "The email address that you've entered does not match any account. Sign Up for an account."
+        message: "The email id entered does not exist. Create a new account."
+    },
+    UNVERIFIED_USER: {
+        code:"UNVERIFIED_USER",
+        message: "Please verify your email address to proceed."
     },
     SUSPENDED_USER: {
         code:"SUSPENDED_USER",
