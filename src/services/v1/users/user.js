@@ -15,7 +15,9 @@ const {
     getImgBuffer,
     getFileBuffer,
     generateSingleViewData,
-    sendDataForStrapi
+    sendDataForStrapi,
+    sendSuspendedEmail,
+    sendActivatedEmail
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -409,7 +411,8 @@ const userExist = (username, provider) => {
             let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
             
             if (userLogin != null) {
-                const user = await models.user.findOne({ where: { id: userLogin.userId } });
+                const user = await models.user.findOne({ where: { id: userLogin.userId, } });
+
              //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
                 if (!user.verified) {
 
@@ -421,6 +424,17 @@ const userExist = (username, provider) => {
                         }
                     });
                 }
+                if (user.status == "suspended") {
+                   
+                    return resolve({
+                        code: DEFAULT_CODES.SUSPENDED_USER.code,
+                        message: DEFAULT_CODES.SUSPENDED_USER.message,
+                        success: false,
+                        data: {
+                            user: {}
+                        }
+                    })
+                }                 
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
                 response.code = DEFAULT_CODES.VALID_USER;
@@ -1419,6 +1433,75 @@ const fetchbookmarkIds = async (req,res) => {
     })
 }
 
+const suspendAccount = async (req, res) => {
+    const { email } = req.body;
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        let userLogin = await models.user_login.findOne({ where: where})
+        let user = null
+        if (userLogin != null) {
+            user = await models.user.findOne({ where: { id: userLogin.userId} });
+        }
+        let userres = await models.user.update({
+            status: "suspended"
+        }, {
+            where: {
+                id: user.id
+            }
+        });
+               
+        await sendSuspendedEmail(userLogin)
+        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send({status: 'success', message: 'successfully supended!'})
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send({error,success:false})
+    }
+}
+
+const reactivateAccount = async (req, res) => {
+    const { email } = req.body;
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        
+        let userLogin = await models.user_login.findOne({ where: where})
+        
+        let user = null
+        if (userLogin != null) {
+            user = await models.user.findOne({ where: { id: userLogin.userId} });
+        }
+        
+        let userres = await models.user.update({
+            status: "active"
+        }, {
+            where: {
+                id: user.id
+            }
+        });
+               
+        await sendActivatedEmail(userLogin)
+        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send({status: 'success', message: 'successfully activated!'})
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send({error,success:false})
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -1447,6 +1530,9 @@ module.exports = {
     removeBookmarkArticle,
     bookmarkArticleData,
     fetchbookmarkIds,
+    suspendAccount,
+    reactivateAccount,
+
 
     saveUserLastSearch: async (req,callback) => {
                 

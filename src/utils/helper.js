@@ -353,16 +353,16 @@ const handleLocalSignUP = async (userObj) => {
                 for (var key in x) acc[key] = x[key];
                 return acc;
             }, {});
-            await sendVerifcationLink({
-                username: userObj.username,
-                userId,
-                email: userObj.username,
-                phone: userObj.phone,
-                userType: USER_TYPE.REGISTERED,
-                provider: LOGIN_TYPES.LOCAL,
-                ...reducedObj,
-                ...userObj
-            })
+            // await sendVerifcationLink({
+            //     username: userObj.username,
+            //     userId,
+            //     email: userObj.username,
+            //     phone: userObj.phone,
+            //     userType: USER_TYPE.REGISTERED,
+            //     provider: LOGIN_TYPES.LOCAL,
+            //     ...reducedObj,
+            //     ...userObj
+            // })
 
             return resolve({
                 success: true,
@@ -721,6 +721,42 @@ const sendWelcomeEmail  = (userObj) => {
                 fromemail: process.env.FROM_EMAIL_WELCOME_EMAIL,
                 toemail: userObj.email,
                 email_type: "welcome_mail",
+            }
+            await communication.sendEmail(emailPayload)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+            resolve(true)
+        }
+    })
+}
+
+const sendSuspendedEmail  = (userObj) => {
+    return new Promise(async(resolve,reject) => {
+        try {
+            
+            let emailPayload = {
+                fromemail: process.env.FROM_EMAIL_SUSPENDED_EMAIL,
+                toemail: userObj.email,
+                email_type: "suspended_mail",
+            }
+            await communication.sendEmail(emailPayload)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+            resolve(true)
+        }
+    })
+}
+
+const sendActivatedEmail  = (userObj) => {
+    return new Promise(async(resolve,reject) => {
+        try {
+            
+            let emailPayload = {
+                fromemail: process.env.FROM_EMAIL_ACTIVATED_EMAIL,
+                toemail: userObj.email,
+                email_type: "reactivated_mail",
             }
             await communication.sendEmail(emailPayload)
             resolve(true)
@@ -1348,5 +1384,7 @@ module.exports = {
     generateSingleViewData,
     generateReferenceId,
     roundOff,
-    sendDataForStrapi
+    sendDataForStrapi,
+    sendSuspendedEmail,
+    sendActivatedEmail
 }

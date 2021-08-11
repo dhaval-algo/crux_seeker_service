@@ -12,6 +12,10 @@ const DEFAULT_CODES =
         code:"INVALID_USER",
         message: "The email address that you've entered does not match any account. Sign Up for an account."
     },
+    SUSPENDED_USER: {
+        code:"SUSPENDED_USER",
+        message: "Your account is suspended."
+    },
     SYSTEM_ERROR: {
         code: "SYSTEM_ERROR",
         message: 'Something unexpected happend, we are looking into it.'
