@@ -15,7 +15,7 @@ const fetchSuggestions = async (req,res) => {
                     optionType:searchType
                 }
             })
-            if(searchType!="institute" && searchType !="company" && searchType !="degree" && searchType !="specialization" && searchType !="job_title" && searchType !="industry") {
+            if(searchType!="institute" && searchType !="company" && searchType !="degree" && searchType !="specialization" && searchType !="job_title" && searchType !="industry"){
                 dataRecs.push({value:"Other",label:"Other"})
             }
             return res.status(200).send({success:true,options:dataRecs})
