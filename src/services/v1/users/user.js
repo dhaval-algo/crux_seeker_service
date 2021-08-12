@@ -433,16 +433,16 @@ const userExist = (username, provider) => {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
 
              //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
-                if (!user.verified) {
+                // if (!user.verified) {
                    
-                    return resolve({
-                        code: DEFAULT_CODES.UNVERIFIED_USER.code,
-                        message: DEFAULT_CODES.UNVERIFIED_USER.message,
-                        success: false,
-                        data: {
-                            user: {}
-                        }
-                    })
+                //     return resolve({
+                //         code: DEFAULT_CODES.UNVERIFIED_USER.code,
+                //         message: DEFAULT_CODES.UNVERIFIED_USER.message,
+                //         success: false,
+                //         data: {
+                //             user: {}
+                //         }
+                //     })
                     // await models.user.update({
                     //     verified: true,
                     // }, {
@@ -450,7 +450,7 @@ const userExist = (username, provider) => {
                     //         id: userLogin.userId
                     //     }
                     // });
-                }
+                // }
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
                 response.code = DEFAULT_CODES.VALID_USER;
