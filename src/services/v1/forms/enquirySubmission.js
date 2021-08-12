@@ -243,7 +243,11 @@ const handleUserProfileSubmission = (resBody, req) => {
 
         try {         
             await updateProfileMeta(formData, userObj)
+            console.log("user=====",user)
             const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+            console.log("userinfo=====",userinfo)
+            console.log("userinfo.value=====",useriuserinfo.valuenfo)
+
             formData.email = userinfo.value
             sendDataForStrapi(formData, "update-user-profile")
             const progress = await calculateProfileCompletion(userObj)
