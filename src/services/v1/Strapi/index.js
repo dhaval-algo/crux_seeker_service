@@ -274,6 +274,7 @@ const prepareStrapiData = (enquiry_id) => {
                       },
                     }
                 };
+
                 const result = await elasticService.plainSearch('learn-content', queryBody);
                 if(result.hits){
                     if(result.hits.hits && result.hits.hits.length > 0){
