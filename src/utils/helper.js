@@ -1293,9 +1293,16 @@ const sendDataForStrapi = (userMeta, action) => {
                 for (var key in x) acc[key] = x[key];
                 return acc;
             }, {});
-            let city = JSON.parse(userData.city)
-            userData.city = city.label
-            userData.date_of_birth = moment(userData.dob.split("/").reverse().join("-"))
+            let city = null;
+            if(userData.city)
+            {
+                city = JSON.parse(userData.city)
+                userData.city = city.label
+            }            
+            if(userData.dob)
+            {
+                userData.date_of_birth = moment(userData.dob.split("/").reverse().join("-"))
+            }            
             userData.experience = []
             if(userData.workExp)
             {
