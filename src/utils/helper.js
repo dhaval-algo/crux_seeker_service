@@ -1313,7 +1313,7 @@ const sendDataForStrapi = (userMeta, action) => {
                         "industry": workExp.industry.label,
                         "company_name": workExp.company.label,
                         "experience": workExp.experience,                    
-                        "currentCompany": workExp.currentCompany                    
+                        "currentCompany": (workExp.currentCompany=="")? false : workExp.currentCompany               
                     })
                 }
             }
