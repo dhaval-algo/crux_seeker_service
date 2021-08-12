@@ -99,6 +99,7 @@ const handleCallBackEnquiry = (resBody, req) => {
 const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
         let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
+        lastStep = true
         let { formSubmissionId } = resBody;
         otherInfo = {...otherInfo,...req.useragent, userIp:req.ip}
         insertInCRM = !!lastStep
