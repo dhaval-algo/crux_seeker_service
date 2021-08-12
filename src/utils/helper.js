@@ -1303,7 +1303,8 @@ const sendDataForStrapi = (userMeta, action) => {
                     "job_title": workExp.jobTitle.label,
                     "industry": workExp.industry.label,
                     "company_name": workExp.company.label,
-                    "experience": workExp.experience                    
+                    "experience": workExp.experience,                    
+                    "currentCompany": workExp.currentCompany,                    
                 })
             }
             userData.educations = []
