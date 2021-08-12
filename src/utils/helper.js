@@ -1296,27 +1296,33 @@ const sendDataForStrapi = (userMeta, action) => {
             let city = JSON.parse(userData.city)
             userData.city = city.label
             userData.date_of_birth = moment(userData.dob.split("/").reverse().join("-"))
-            userData.experience = []            
-            for (let workExp of JSON.parse(userData.workExp))
+            userData.experience = []
+            if(userData.workExp)
             {
-                userData.experience.push({
-                    "job_title": workExp.jobTitle.label,
-                    "industry": workExp.industry.label,
-                    "company_name": workExp.company.label,
-                    "experience": workExp.experience,                    
-                    "currentCompany": workExp.currentCompany,                    
-                })
+                for (let workExp of JSON.parse(userData.workExp))
+                {
+                    userData.experience.push({
+                        "job_title": workExp.jobTitle.label,
+                        "industry": workExp.industry.label,
+                        "company_name": workExp.company.label,
+                        "experience": workExp.experience,                    
+                        "currentCompany": workExp.currentCompany                    
+                    })
+                }
             }
             userData.educations = []
-            for (let education of JSON.parse(userData.education))
+            if(userData.education)
             {
-                userData.educations.push({                    
-                    "institute": education.instituteName.label,
-                    "degree": education.degree.label,
-                    "specialization": education.specialization.label,
-                    "year_of_graduation": education.graduationYear,
-                    "grade": education.grade                    
-                })
+                for (let education of JSON.parse(userData.education))
+                {
+                    userData.educations.push({                    
+                        "institute": education.instituteName.label,
+                        "degree": education.degree.label,
+                        "specialization": education.specialization.label,
+                        "year_of_graduation": education.graduationYear,
+                        "grade": education.grade                    
+                    })
+                }
             }
             delete userData.instituteName
             delete userData.education
