@@ -71,6 +71,33 @@ module.exports = {
          
     },
 
+    suspendedEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/suspended-mail.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Your Account is suspended',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
+    reactivatedEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/reactivated-mail.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Your Account is reactivated',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
+
     
 
 }

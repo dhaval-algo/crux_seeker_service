@@ -79,6 +79,10 @@ module.exports = {
                 return emailTemplate.contactEmail(templateData)
             case 'feedback_email':
                 return emailTemplate.feedbackEmail(templateData)
+            case 'suspended_mail':
+                    return emailTemplate.suspendedEmail(templateData)
+            case 'reactivated_mail':
+                        return emailTemplate.reactivatedEmail(templateData)
             default:
                 return false
                 break;
