@@ -453,7 +453,7 @@ const userExist = (username, provider) => {
                     //         id: userLogin.userId
                     //     }
                     // });
-               // }
+                //}
                 if (user.status == "suspended") {
                    
                     return resolve({
@@ -464,7 +464,7 @@ const userExist = (username, provider) => {
                             user: {}
                         }
                     })
-                }                 
+                }
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
                 response.code = DEFAULT_CODES.VALID_USER;
