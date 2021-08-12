@@ -30,7 +30,10 @@ const { default: Axios } = require("axios");
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
 let LearnContentService = new learnContentService();
+const articleService = require("../../../api/services/articleService");
+let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
+const validator = require("email-validator");
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -49,6 +52,14 @@ const login = async (req, res, next) => {
             return res.status(200).json({
                 'success': false,
                 'message': 'Username is required',
+                'data': {}
+            });
+        }
+
+        if (!validator.validate(username.trim())) {
+            return res.status(200).json({
+                'success': false,
+                'message': 'Please enter the email in the right format',
                 'data': {}
             });
         }
@@ -403,21 +414,43 @@ const userExist = (username, provider) => {
             }
 
             //check in db
-            let userLogin = await models.user_login.findOne({ where: { [dbCol]: username, provider: provider } })
+            let where = {
+                [Op.and]: [
+                    {
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col(dbCol)),Sequelize.fn('lower', username))                        
+                    },
+                    {
+                        provider: {
+                            [Op.eq]: provider
+                        }
+                    }
+                ]
+            }
+            let userLogin = await models.user_login.findOne({ where: where})
+            
             
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
-             //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
-                if (!user.verified) {
 
-                    await models.user.update({
-                        verified: true,
-                    }, {
-                        where: {
-                            id: userLogin.userId
-                        }
-                    });
-                }
+             //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
+                // if (!user.verified) {
+                   
+                //     return resolve({
+                //         code: DEFAULT_CODES.UNVERIFIED_USER.code,
+                //         message: DEFAULT_CODES.UNVERIFIED_USER.message,
+                //         success: false,
+                //         data: {
+                //             user: {}
+                //         }
+                //     })
+                    // await models.user.update({
+                    //     verified: true,
+                    // }, {
+                    //     where: {
+                    //         id: userLogin.userId
+                    //     }
+                    // });
+                // }
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
                 response.code = DEFAULT_CODES.VALID_USER;
@@ -1029,34 +1062,83 @@ const getEnquiryList = async (req,res) => {
         offset =  (page-1)* limit
     }
     
-    const count = await models.form_submission.findAll({
+    // const count = await models.form_submission.findAll({
 	
-        attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
-        where:{
-            userId:user.userId || user.id,
-            targetEntityType:"course",
-            status:'submitted'
-        },
-        group : ['userId'],
+    //     attributes: ['userId', [sequelize.fn('count', sequelize.col('userId')), 'count']],
+    //     where:{
+    //         userId:user.userId || user.id,
+    //         targetEntityType:"course",
+    //         status:'submitted'
+    //     },
+    //     group : ['userId'],
         
-        raw: true,
+    //     raw: true,
         
-        order: sequelize.literal('count DESC')
+    //     order: sequelize.literal('count DESC')
         
-      });
-      //fetch enquiries
-      let formSubConfig = { 
-        attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
-        where: { userId:user.userId || user.id,status:'submitted'},
-        limit,
-        raw: true,
-        order: sequelize.literal('"createdAt" DESC')
+    //   });
+
+    //Find out total enquiries
+    let config = { 
+    attributes: ['targetEntityId'],
+    where: { userId:user.userId || user.id,status:'submitted'},
+    raw: true}
+    
+    let courseIds = [];
+    let totalEnquiryRecs = await models.form_submission.findAll(config)
+
+    for (let key = 0; key < totalEnquiryRecs.length ; key++) {
+        courseIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
+    }
+
+    let query = {
+        "bool": {
+          "must": [           
+            {
+              "terms": {
+                "id": courseIds
+              }
+            },
+            {"term": { "status.keyword": 'published' }}
+          ]
+        }  
       }
-     
-      if(page>1) {
-        formSubConfig.offset = offset
-      }
-      let enquiryRecs = await models.form_submission.findAll(formSubConfig)
+    const totalResult = await elasticService.search('learn-content', query, {size: 1000});
+    let totalCount = 0
+    let existingIds = [];
+    if(totalResult.hits){
+        if(totalResult.hits && totalResult.hits.length > 0){
+             for(const hit of totalResult.hits){                
+                existingIds.push(hit._id)                
+            }           
+        }
+        else
+        {
+            return res.status(200).send({
+                success:true,
+                data:{
+                    enquires:[],
+                    count:0
+                }
+            })
+        }
+    }
+    courseIds = courseIds.map(id =>`LRN_CNT_PUB_${id}`)
+    courseIds = courseIds.filter((id => existingIds.includes(id)))
+    totalCount = courseIds.length
+    //fetch enquiries
+    let formSubConfig = { 
+    attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
+    where: { userId:user.userId || user.id,status:'submitted',targetEntityId : courseIds},
+    limit,
+    raw: true,
+    order: sequelize.literal('"createdAt" DESC')
+    }
+    
+    if(page>1) {
+    formSubConfig.offset = offset
+    }
+    let enquiryRecs = await models.form_submission.findAll(formSubConfig)
       
         // no enquiries return
     if(!enquiryRecs.length) {
@@ -1123,7 +1205,7 @@ const getEnquiryList = async (req,res) => {
         success:true,
         data:{
             enquiries:enquiriesDone,
-            count:count[0].count
+            count:totalCount
         }
     })
     //build res
@@ -1248,9 +1330,97 @@ const fetchUserMetaObjByUserId = async (id) => {
     return userData;
 }
 
+const bookmarkArticle = async (req,res) => {
+    const { user} = req;
+    const {articleId} = req.body
+    if(articleId)
+    {
+        const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
+        return res.status(200).json({
+            success:true,
+            data: {
+                bookmarks:resMeta
+            }
+        })
+    }
+    else{
+        return res.status(500).json({
+            success:false,
+            data: {
+            }
+        })
+    }
+}
+
+const removeBookmarkArticle = async (req,res) => {
+    const { user} = req;
+    const {articleId} = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            bookmarks:resMeta
+        }
+    })
+}
 
 
+const bookmarkArticleData = async (req,res) => {
+    try {
 
+        const { user } = req
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['article_bookmark'] },
+        }
+
+        let resForm = await models.user_meta.findAll({
+            attributes:['value'],
+            where
+        })
+       if(resForm && resForm.length> 0)
+       {
+        let bookmarkIds = resForm.map((rec) => rec.value)
+        req.articleIds = bookmarkIds
+        req.searchField =  ['title'];
+        await ArticleService.getArticleList(req, (err, data) => {
+             if (data) {
+                 res.status(200).send(data);
+             } else {
+                 res.status(200).send(err);
+             }
+         }); 
+        }
+        else{
+            res.status(200).send({status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
+        }      
+    } catch (error) {
+        console.log(error);
+            return res.status(500).send({error,success:false})
+    }
+}
+
+const fetchbookmarkIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['article_bookmark'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let bookmarks = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            userId: user.userId,
+            articles:bookmarks
+        }
+    })
+}
 
 module.exports = {
     login,
@@ -1276,6 +1446,10 @@ module.exports = {
     removeProfilePic,
     uploadSkills,
     fetchUserMetaObjByUserId,
+    bookmarkArticle,
+    removeBookmarkArticle,
+    bookmarkArticleData,
+    fetchbookmarkIds,
 
     saveUserLastSearch: async (req,callback) => {
                 

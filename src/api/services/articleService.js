@@ -1,5 +1,6 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
+const models = require("../../../models");
 
 const { 
     getFilterConfigs, 
@@ -11,14 +12,15 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     sortFilterOptions,
-    generateMetaInfo
+    generateMetaInfo,
+    compareRule
 } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
-const filterFields = ['title','section_name','categories','levels','tags', 'slug'];
-const allowZeroCountFields = ['section_name','categories','levels','tags'];
+const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug'];
+const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
     if(queryPayload.from !== null && queryPayload.size !== null){
@@ -45,6 +47,10 @@ const formatFilters = async (data, filterData, query) => {
     let emptyOptions = [];
     for(const filter of filterData){
 
+        if(filter.elastic_attribute_name == 'author_first_name')
+        {
+            filter.elastic_attribute_name = 'author_slug';
+        }
         let formatedFilters = {
             label: filter.label,
             field: filter.elastic_attribute_name,
@@ -72,6 +78,7 @@ const formatFilters = async (data, filterData, query) => {
             }
         }
 
+        
         filters.push(formatedFilters);
     }
 
@@ -90,6 +97,14 @@ const getFilterOption = (data, filter) => {
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
+        if(filter.elastic_attribute_name == 'author_slug')
+        {
+            entityData = entity['author_first_name'];
+            if(entity['author_last_name']!= 'null')
+            {
+                entityData += ` ${entity['author_last_name']}`;
+            }            
+        }
         if(entityData){
             if(Array.isArray(entityData)){
                 for(const entry of entityData){
@@ -110,12 +125,17 @@ const getFilterOption = (data, filter) => {
                 if(existing){
                     existing.count++;
                 }else{
-                    options.push({
+                    let option = {
                         label: entityData,
                         count: 1,
                         selected: false,
                         disabled: false
-                    });
+                    }
+                    if(filter.elastic_attribute_name == 'author_slug')
+                    {
+                        option.author_slug = entity['author_slug']
+                    }
+                    options.push(option);
                 }
             }
         }
@@ -124,11 +144,35 @@ const getFilterOption = (data, filter) => {
     return options;
 };
 
+const CheckArticleRewards = async (user, premium) => {  
+    let rewards = [];
+    let facts = {
+        is_loggedin: (user)? true: false,
+        "article.premium": premium
+    }            
+    let engineEvent = {  // define the event to fire when the conditions evaluate truthy
+        type: 'success',
+        params: {
+        message: 'success'
+        }
+    }
+    let rules = await models.rule.findAll({ where: { action_type: 'article_access', status:true } })
+
+    for (let rule of rules){        
+        let compareResult =  await compareRule(rule.action_rule.self_rules,engineEvent,facts) 
+        if(compareResult)
+        {
+            rewards.push(rule.action_reward)
+        }
+    }
+    return rewards;
+};
 
 module.exports = class articleService {
 
     async getArticleList(req, callback){
         const filterConfigs = await getFilterConfigs('Article');
+        
         const query = { 
             "bool": {
                 "must": [
@@ -137,7 +181,14 @@ module.exports = class articleService {
                 //"filter": []
             }
         };
+        if(req.articleIds)
+        {
+            query.bool.must.push({ 
+                "ids": {
+                    "values": req.articleIds
 
+                }})
+        }
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
@@ -208,14 +259,14 @@ module.exports = class articleService {
                             {
                                 "query_string" : {
                                     "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                                    "fields" : ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                    "fields" : (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
                                     "analyze_wildcard" : true,
                                     "allow_leading_wildcard": true
                                 }
                             },
                             {
                                 "multi_match": {
-                                    "fields":  ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                    "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
                                     "query": decodeURIComponent(req.query['q']).trim(),
                                     "fuzziness": "AUTO",
                                     "prefix_length": 0                              
@@ -278,11 +329,12 @@ module.exports = class articleService {
             filters[categorykey].options = categoryFiletrOption;
 
         }
-
+        
         const result = await elasticService.search('article', query, queryPayload, queryString);
+        
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits);
+            const list = await this.generateListViewData(result.hits, req);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -334,11 +386,13 @@ module.exports = class articleService {
              //   filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
+            let meta_information = await generateMetaInfo  ('article-list', result.hits);
+            
+            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters, meta_information:meta_information}});
         }        
     }
 
-    async getArticle(slug, callback){
+    async getArticle( slug, req, callback){
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
@@ -347,7 +401,7 @@ module.exports = class articleService {
         }};
         const result = await elasticService.search('article', query);
         if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source);
+            const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
@@ -355,10 +409,10 @@ module.exports = class articleService {
     }
 
 
-    async generateListViewData(rows){
+    async generateListViewData( rows, req){
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true);
+            const data = await this.generateSingleViewData(row._source, true, req);
             datas.push(data);
         }
         return datas;
@@ -366,24 +420,34 @@ module.exports = class articleService {
 
 
 
-    async generateSingleViewData(result, isList = false){
+    async generateSingleViewData(result, isList = false, req){
         try{
+
+        /*Rule check for article access*/
+        let article_full_access = false;
+        let rewards = [];
+        if (!isList && req)
+        {
+            let premium = (result.premium)? result.premium:false
+            rewards = await CheckArticleRewards(req.user, premium);
+        }
+
         let coverImageSize = 'large';
         //if(isList){
             //coverImageSize = 'thumbnail';
        // }
         
-        let cover_image = null;
-        if(result.cover_image){
-            if(result.cover_image[coverImageSize]){
-                cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            }else{
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-        if(!cover_image){
-            cover_image = getMediaurl(result.cover_image['url']);
-        }
+        // let cover_image = null;
+        // if(result.cover_image){
+        //     if(result.cover_image[coverImageSize]){
+        //         cover_image = getMediaurl(result.cover_image[coverImageSize]);
+        //     }else{
+        //         cover_image = getMediaurl(result.cover_image['thumbnail']);
+        //     }
+        // }
+        // if(!cover_image){
+        //     cover_image = getMediaurl(result.cover_image['url']);
+        // }
         
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
          
@@ -404,38 +468,82 @@ module.exports = class articleService {
         // }else{
         //     console.log("Author found..."); 
         // }
+        let co_authors =  [];
 
-        if(auth){
-            author = {
-                id: auth.author_id,
-                username: auth.username,
-                firstname: auth.firstname,
-                lastname: auth.lastname ? auth.lastname:"",
-                designation: auth.designation,
-                bio: auth.bio,
-                slug: auth.slug,
-                image:auth.image
-            };
-        }else{
-            author = {
-                id: result.author_id,
-                username: result.author_username,
-                firstname: result.author_first_name,
-                lastname: result.last_name ? result.author_last_name:"",
-                designation: result.author_designation,
-                bio: result.author_bio,
-                slug: result.author_slug
-            };
+        if(result.partners)
+        {
+            author = []
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    author.push({
+                        id: co_author.id,
+                        username: co_author.username,
+                        firstname:co_author.first_name,
+                        lastname: co_author.last_name ? co_author.last_name:"",
+                        designation: co_author.designation,
+                        bio: co_author.bio,
+                        slug: co_author.slug,
+                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                    });
+                }
+             }
         }
+        else
+        {
+            if(auth){
+                author = [{
+                    id: auth.author_id,
+                    username: auth.username,
+                    firstname: auth.firstname,
+                    lastname: auth.lastname ? auth.lastname:"",
+                    designation: auth.designation,
+                    bio: auth.bio,
+                    slug: auth.slug,
+                    image:auth.image
+                }];
+            }else{
+                author = [{
+                    id: result.author_id,
+                    username: result.author_username,
+                    firstname: result.author_first_name,
+                    lastname: result.last_name ? result.author_last_name:"",
+                    designation: result.author_designation,
+                    bio: result.author_bio,
+                    slug: result.author_slug
+                }];
+            }
+
+            
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    co_authors.push({
+                        id: co_author.id,
+                        username: result.username,
+                        firstname:co_author.first_name,
+                        lastname: co_author.last_name ? co_author.last_name:"",
+                        designation: co_author.designation,
+                        bio: co_author.bio,
+                        slug: co_author.slug,
+                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                    });
+                }
+             }
+        }
+        
 
         let data = {
             title: result.title,
+            premium: (result.premium)? result.premium:false,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,
-            cover_image: cover_image,
+            cover_image: (result.cover_image)? result.cover_image : null,
             short_description: result.short_description,
-            content: (!isList) ? result.content : null,
             author: author,
+            co_authors: (co_authors)? co_authors : null,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
@@ -460,7 +568,26 @@ module.exports = class articleService {
                 data.meta_information  = meta_information;
             }
         }
-        
+
+        data.content = null;
+        if(!isList){
+            data.full_access = false;
+            if(rewards && rewards.length > 0)
+            {
+                if(rewards[0].access_type == 'full_access')
+                {
+                    data.full_access= true;
+                    data.content = result.content;
+                }
+                else if(rewards[0].access_type == 'partial_access')
+                {
+                    let content = result.content.replace(/<(.|\n)*?>/g, '');
+                    content = content.replace(/&nbsp;/g, ' ');
+                    data.content = content.split(' ').slice(0, 70).join(' ');
+                }
+            }           
+        }
+
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
@@ -590,16 +717,23 @@ module.exports = class articleService {
 
     async getArticleByAuthor(author_id, isListing = true){
         let articles = [];
-            const queryBody = {
-                "query": {
-                  "bool": {
-                    "must": [
-                      {term: { "status.keyword": 'published' }},
-                      {term: { "author_id": author_id }}
-                    ]
-                 }
+        const queryBody = {
+            "query": {
+              "bool": {
+                "must": [
+                  {term: { "status.keyword": 'published' }},
+                  {
+                      "bool": {
+                        "should": [
+                            {term: { "author_id": author_id }},
+                            {term: {"co_authors.user_id": author_id}}
+                        ]
+                    }
                 }
-            };
+                ]
+             }
+            }
+        };
 
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){

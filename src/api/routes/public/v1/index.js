@@ -46,7 +46,7 @@ router.get('/search/:keyword', searchController.getSearchResult);
 router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
-router.get('/articles/:slug', ArticleController.getSingleArticle);
+router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 
 router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)

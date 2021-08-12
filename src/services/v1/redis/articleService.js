@@ -75,23 +75,32 @@ module.exports = class ArticleService {
     }
 
     async recacheArticlePages(queueData){
-       
         //ranking page list 
         let cacheData = await RedisConnection.getValuesSync('ranking-article-slug');
         if(cacheData.noCacheData != true) {
             let articleSlug = queueData.slug;
-            if(cacheData.includes(articleSlug)){
+            if(queueData.status =='unpublished'){
+                if(cacheData.includes(articleSlug)){
+                    RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
+                }
+            }
+            else{
                 RankingService.getHomePageContent({query:{}}, (err, data) => {}, true); 
-            } 
+            }
         }
 
         //blog home page list 
         let blogHmcacheData = await RedisConnection.getValuesSync('blog-home-article-slug');
         if(blogHmcacheData.noCacheData != true) {
             let articleSlug = queueData.slug;
-            if(blogHmcacheData.includes(articleSlug)){
+            if(queueData.status =='unpublished'){
+                if(blogHmcacheData.includes(articleSlug)){
+                    SectionService.getBlogHomePageContent({query:{}}, (err, data) => {}, true); 
+                } 
+            }
+            else{
                 SectionService.getBlogHomePageContent({query:{}}, (err, data) => {}, true); 
-            } 
+            }
         }
 
 
@@ -99,20 +108,22 @@ module.exports = class ArticleService {
         let sectionKeys = await RedisConnection.getAllKeysByType('section-article')
         for (var i = 0; i < sectionKeys.length; i++) {
             let sectionKey = sectionKeys[i]
+
             let sectionCacheData = await RedisConnection.getValuesSync(sectionKey);
             if(sectionCacheData.noCacheData != true) {
                 let articleSlug = queueData.slug;
-                if(sectionCacheData.includes(articleSlug)){
+                if(queueData.status =='unpublished'){
+                    if(sectionCacheData.includes(articleSlug)){
+                        let sectionslug = sectionKey.replace('section-article-','')
+                        SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
+                    } 
+                }
+                else{
                     let sectionslug = sectionKey.replace('section-article-','')
                     SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
-                } 
+                }
             }
-        }
-        
-
-
-        
-        
+        }  
 
         return true;
 

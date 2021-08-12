@@ -15,7 +15,9 @@ const fetchSuggestions = async (req,res) => {
                     optionType:searchType
                 }
             })
+
             if(searchType!="institute" && searchType !="company" && searchType !="degree" && searchType !="specialization" && searchType !="job_title" && searchType !="industry") {
+
                 dataRecs.push({value:"Other",label:"Other"})
             }
             return res.status(200).send({success:true,options:dataRecs})
@@ -29,15 +31,28 @@ const fetchSuggestions = async (req,res) => {
 
 }
 
-const insertDegree = async (req, res) => {
-
-    const jsonArray=await csv().fromFile(`${global.appRoot}/data_files/default_select_options.csv`);
+const insertDefaultOption = async (req, res) => {
+    let filename = 'default_select_options.csv';
+    if(req.params.slug)
+    {
+        const entity = req.params.slug;
+        filename = `${entity}.csv`;
+    }   
+    const jsonArray=await csv().fromFile(`${global.appRoot}/data_files/${filename}`);
     res.status(200).json(jsonArray)
     for(let i=0; i<jsonArray.length;i++){
-        await models.default_select_options.create(jsonArray[i])
+        let config = {
+            where: jsonArray[i],
+            raw: true
+        }
+         let option = await models.default_select_options.findAll(config)
+         if(!option || option.length == 0)
+         {
+            await models.default_select_options.create(jsonArray[i])
+            console.log("imported record number "+i);
+         }         
     }
 }
-//
 
 const placesAutoComplete = async (req, res) => {
     let resResult = []
@@ -74,4 +89,4 @@ const placesAutoComplete = async (req, res) => {
       })
 }
 
-module.exports = { fetchSuggestions, insertDegree, placesAutoComplete}                  
+module.exports = { fetchSuggestions, insertDefaultOption, placesAutoComplete}                  
