@@ -353,16 +353,16 @@ const handleLocalSignUP = async (userObj) => {
                 for (var key in x) acc[key] = x[key];
                 return acc;
             }, {});
-            // await sendVerifcationLink({
-            //     username: userObj.username,
-            //     userId,
-            //     email: userObj.username,
-            //     phone: userObj.phone,
-            //     userType: USER_TYPE.REGISTERED,
-            //     provider: LOGIN_TYPES.LOCAL,
-            //     ...reducedObj,
-            //     ...userObj
-            // })
+            await sendVerifcationLink({
+                username: userObj.username,
+                userId,
+                email: userObj.username,
+                phone: userObj.phone,
+                userType: USER_TYPE.REGISTERED,
+                provider: LOGIN_TYPES.LOCAL,
+                ...reducedObj,
+                ...userObj
+            })
 
             return resolve({
                 success: true,
