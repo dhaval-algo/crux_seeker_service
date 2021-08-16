@@ -1289,11 +1289,12 @@ const sendDataForStrapi = (userMeta, action) => {
             break;
         
         case "update-user-profile":
-            console.log("userData===========", userData)
+            console.log("userMeta===========", userMeta)
             userData = userMeta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
                 for (var key in x) acc[key] = x[key];
                 return acc;
             }, {});
+            console.log("userData111===========", userData)
             let city = null;
             if(userData.city)
             {
@@ -1377,7 +1378,7 @@ const sendDataForStrapi = (userMeta, action) => {
             break;
     }
 
-    console.log("userData===========", userData)
+    console.log("userData222222===========", userData)
    publishToSNS(process.env.USER_PROFILE_TOPIC_ARN, userData, action)
 }
    
