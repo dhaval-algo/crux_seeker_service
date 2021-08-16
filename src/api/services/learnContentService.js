@@ -849,21 +849,20 @@ module.exports = class learnContentService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    let subQuery = { 
-                        "bool": {
-                            "should": []
-                        }
-                    };
-                    for(const fieldValue of filter.value){
-                        subQuery.bool.should.push({
-                            "term": {[attribute_name]: fieldValue}
-                        })
-                        // query.bool.must.push({
-                        //     "term": {[attribute_name]: fieldValue}
-                        // });
-                    }
-                    query.bool.must.push(subQuery);
-                  
+
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
+
+              
+
                 }
             }
         }
