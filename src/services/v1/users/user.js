@@ -213,7 +213,7 @@ const signUp = async (req, res) => {
     username = username || providerRes.data.email;
 
     const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
-    if (verificationRes.success) {
+    if (verificationRes.success || (verificationRes.code ==DEFAULT_CODES.SUSPENDED_USER.code)) {
         verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
         verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
