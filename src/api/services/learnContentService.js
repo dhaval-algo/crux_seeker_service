@@ -847,11 +847,15 @@ module.exports = class learnContentService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    for(const fieldValue of filter.value){
-                        query.bool.must.push({
-                            "term": {[attribute_name]: fieldValue}
-                        });
-                    }
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
                 }
             }
         }
