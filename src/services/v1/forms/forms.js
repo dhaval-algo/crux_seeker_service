@@ -16,7 +16,18 @@ const submitForm = async (req, res) => {
         case FORM_TYPES.ENQUIRIES:
             let enquiryResponse = await handleEnquirySubmission(req.body, req)
             if (!enquiryResponse.success) {
-                return res.status(200).json(sendSystemError)
+                if(enquiryResponse.code=='VALIDATION_FAILED')
+                {
+                    return res.status(200).json(enquiryResponse)
+                }
+                else if(enquiryResponse.code=='INVALID_TOKEN')
+                {
+                    return res.status(200).json(enquiryResponse)
+                }
+                else
+                {
+                    return res.status(200).json(sendSystemError)
+                }                
             }
             return res.status(200).json(enquiryResponse)
             break;

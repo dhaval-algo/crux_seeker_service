@@ -4,7 +4,7 @@ const moment = require("moment");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const elasticService = require("../../../api/services/elasticService");
-
+const {sendDataForStrapi} =  require('../../../utils/helper')
 const models = require("../../../../models");
 const eventEmitter2 = require('../../../utils/subscriber');
 
@@ -274,6 +274,7 @@ const prepareStrapiData = (enquiry_id) => {
                       },
                     }
                 };
+
                 const result = await elasticService.plainSearch('learn-content', queryBody);
                 if(result.hits){
                     if(result.hits.hits && result.hits.hits.length > 0){
@@ -305,11 +306,12 @@ const createRecordInStrapi = async (enquiryId) => {
         data.enquiry_owner = userRes
     }
 
-    axios.post(request_url, data).then((response) => {
+    sendDataForStrapi(data, "update-profile-enquiries");
+    axios.post(request_url, data).then((response) => {        
         console.log(response.data);
         return
     }).catch(e => {
-        console.log(e.response.data);
+        console.log(e);
         return
     })
 }

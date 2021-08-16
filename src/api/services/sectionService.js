@@ -257,7 +257,7 @@ module.exports = class sectionService {
   async getSectionContent(slug, callback,skipCache) {
     let data = {}
     try {
-      
+      console.log("skipCache------>",skipCache,slug)
       if(skipCache != true) {
           let cacheData = await RedisConnection.getValuesSync('section-page-'+slug);
           if(cacheData.noCacheData != true) {
@@ -275,7 +275,9 @@ module.exports = class sectionService {
       
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
+        console.log("section-------------->",'section-page-'+slug)
         let response = await buildSectionView(result.hits[0]._source)
+        console.log("response.articles",response.articles)
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.set('section-page-'+slug, response.data);
 
@@ -284,6 +286,7 @@ module.exports = class sectionService {
       return callback(null, { success: true, data:data })
 
     } catch (error) {
+      console.log("ERROR:",error)
       return callback(null, { success: true, data:data })
     }
   }

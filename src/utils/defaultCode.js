@@ -16,6 +16,10 @@ const DEFAULT_CODES =
         code:"UNVERIFIED_USER",
         message: "Please verify your email address to proceed."
     },
+    SUSPENDED_USER: {
+        code:"SUSPENDED_USER",
+        message: "Your account is suspended."
+    },
     SYSTEM_ERROR: {
         code: "SYSTEM_ERROR",
         message: 'Something unexpected happend, we are looking into it.'
@@ -87,6 +91,28 @@ const DEFAULT_CODES =
     VERIFICATION_FAILED: {
         code:"VERIFICATION_FAILED",
         message:"Verification link expired, Please Login to resend the verification link"
+    },
+    VALIDATION_FAILED: {
+        code:"VALIDATION_FAILED"
+    },
+    ENQUIRY_PROFILE_SUCCESS: {
+        code:"ENQUIRY_PROFILE_SUCCESS",
+        message:"Successfully updated profile"
+    },
+    ENQUIRY_VALIDATION_MESSAGES: {
+        DOB_REQUIRED: "This is a required field",
+        DOB_FORMAT: "Please enter the right format",
+        DOB_AGE: "Candidates have to be minimum 18 years of age to send enquiry",
+        GRADE: "Please enter the grade in correct format",
+        GRADUATION: "Please enter the right format",
+        DEGREE: "This is a required field",
+        SPECIALIZATION : "This is a required field",
+        INSTITUTE: "This is a required field",
+        JOBTITLE: "This is a required field",
+        COMPANY: "This is a required field",
+        INDUSTRY: "This is a required field",
+        EXP_REQUIRED: "This is a required field",
+        EXP_NUMERIC: "Enter numeric values only"
     }
 }
 const LOGIN_TYPES = {

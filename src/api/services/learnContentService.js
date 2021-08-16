@@ -364,7 +364,7 @@ const getRangeOptions = (data, attribute) => {
 const getDurationRangeOptions = (data, attribute) => {
     let options = [
         {
-            label: 'Less than 2 Hours',
+            label: 'Less Than 2 Hours',
             count: 0,
             selected: false,
             start: 'MIN',
@@ -372,7 +372,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: 'Less than a week',
+            label: 'Less Than a Week',
             count: 0,
             selected: false,
             start: 'MIN',
@@ -380,7 +380,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 - 4 weeks',
+            label: '1 – 4 Weeks',
             count: 0,
             selected: false,
             start: 168,
@@ -388,7 +388,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 - 3 months',
+            label: '1 - 3 Months',
             count: 0,
             selected: false,
             start: 672,
@@ -396,7 +396,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '3+ months',
+            label: '3+ Months',
             count: 0,
             selected: false,
             start: 2016,
@@ -697,6 +697,7 @@ module.exports = class learnContentService {
         let defaultSort = "published_date:desc";
         let useCache = false;
         let cacheName = "";
+       
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
@@ -717,10 +718,11 @@ module.exports = class learnContentService {
             if(req.query['currency'] != undefined){
                 apiCurrency = req.query['currency'];
             }
+           
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
-                cacheName = "listing-search_"+apiCurrency;
+                cacheName = "listing-search_"+apiCurrency;                
             }
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -847,6 +849,7 @@ module.exports = class learnContentService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
+
                     // for(const fieldValue of filter.value){
                     //     query.bool.must.push({
                     //         "term": {[attribute_name]: fieldValue}
@@ -856,6 +859,10 @@ module.exports = class learnContentService {
                     query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     });
+
+
+              
+
                 }
             }
         }
@@ -906,7 +913,9 @@ module.exports = class learnContentService {
                     }
                 }
             }
-            filters[categorykey].options = categoryFiletrOption;
+            if(filters[categorykey]) {
+                filters[categorykey].options = categoryFiletrOption;
+            }
 
         }
         
@@ -952,7 +961,7 @@ module.exports = class learnContentService {
                 }
             }
         }
-        
+
         const result = await elasticService.search('learn-content', query, queryPayload);
 
         if(result.total && result.total.value > 0){
@@ -1361,6 +1370,14 @@ module.exports = class learnContentService {
                         }
                         data.accreditations.push(accr);
                     }
+                }
+            }
+
+            if(result.syllabus)
+            {
+                data.syllabus = {
+                    name:result.syllabus.name,
+                    url:result.syllabus.url
                 }
             }
         }
