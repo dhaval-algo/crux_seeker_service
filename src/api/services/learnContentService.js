@@ -694,7 +694,7 @@ module.exports = class learnContentService {
     async getLearnContentList(req, callback, skipCache){
         try{
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = "published_date:desc";
+        let defaultSort = "ratings:desc";
         let useCache = false;
         let cacheName = "";
         if(
@@ -722,6 +722,11 @@ module.exports = class learnContentService {
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
                 cacheName = "listing-search_"+apiCurrency;
             }
+
+            //required to update the cache once for bare queries after changing default sort to highest rated.
+            //else it would keep using the old cache with sort order newest.
+            cacheName += `_${defaultSort}`;
+
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
