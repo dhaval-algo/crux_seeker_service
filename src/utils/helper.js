@@ -358,7 +358,8 @@ const handleLocalSignUP = async (userObj) => {
                 userId,
                 email: userObj.username,
                 phone: userObj.phone,
-                userType: USER_TYPE.REGISTERED,
+                userType: USER_TYPE.REGISTERED,                
+                audience: process.env.FRONTEND_URL,
                 provider: LOGIN_TYPES.LOCAL,
                 ...reducedObj,
                 ...userObj
@@ -535,8 +536,9 @@ const createToken = async (userObj, tokenType) => {
                 tokenExpiry = 86400
                 break;
         }
+        
         const signOptions = {
-            audience: userObj.audience,
+            audience: (typeof userObj.audience == "undefined")?process.env.FRONTEND_URL : userObj.audience,
             issuer: process.env.HOST,
             expiresIn: tokenExpiry
         }
