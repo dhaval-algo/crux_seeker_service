@@ -2,6 +2,7 @@ const emailTemplate = require("./template.js");
 // const emailConfig = require("../../../config/email");
 const emailProviders = require("./emailProviders");
 // const SEND_USER_EMAIL = (process.env.SEND_USER_EMAIL == 'true');
+var request = require("request");
 
 module.exports = {
 
@@ -89,6 +90,55 @@ module.exports = {
         }
 
 
+    },
+
+    sendSMS:function(phone, message){
+
+        let thatObj = this
+        return new Promise(async (resolve, reject) => { 
+            try{
+                if(process.env.SENDSMS == "true"){            
+                    switch ( process.env.SMS_PROVIDER) {
+                        case "smsgupshup":
+                            var options = { method: 'POST',
+                            url: process.env.SMS_GUPSHUP_URL,
+                            form: 
+                            {
+                                method: 'sendMessage',
+                                send_to: phone,
+                                msg: message,
+                                msg_type: 'TEXT',
+                                userid: process.env.SMS_GUPSHUP_USERID,
+                                auth_scheme: 'PLAIN',
+                                password: process.env.SMS_GUPSHUP_PASSOWRD,
+                                format: 'JSON',
+                                v:1.1
+                            } 
+                            };
+                                request(options, function (error, response, body) {
+                                if (error) throw new Error(error);
+                                console.log(body);
+                            });
+
+
+                            
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                }
+                return resolve(true);
+            }
+            catch(err){
+                console.log("sendSMS:",err)
+                return resolve(err);
+            }
+            
+
+        })
+          
+        
     },
 
  

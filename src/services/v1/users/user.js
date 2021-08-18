@@ -37,6 +37,7 @@ const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
+const{sendSMS} =  require('../../../communication/v1/communication');
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -102,7 +103,7 @@ const sendOtp = async (req, res, next) => {
     try {
         const body = req.body;
         const audience = req.headers.origin;
-        const { username = "" } = body;
+        const { username = "" , otpType = ""} = body;
         // validate input
         
         if (!username.trim()) {
@@ -117,7 +118,12 @@ const sendOtp = async (req, res, next) => {
         /* 
         * Check if user exists or resgistered user
         */
-        const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL });
+        const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL, otpType});
+        const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+        const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
+        let phone = userPhone.value.substring(2, 12);
+        await sendSMSOTP (phone, response.data.otp);
+        //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
@@ -147,7 +153,7 @@ const verifyOtp = async (req, res, next) => {
     try {
         const body = req.body;
         const audience = req.headers.origin;
-        const { otp = "", username = "" } = body;
+        const { otp = "", username = "" ,otpType} = body;
         // validate input
         if (!otp.trim()) {
             return res.status(200).json({
@@ -158,7 +164,15 @@ const verifyOtp = async (req, res, next) => {
 
         }
 
-        const response = await startVerifyOtp({ username, otp, audience, provider: LOGIN_TYPES.LOCAL });
+        const response = await startVerifyOtp({ username, otp, audience, provider: LOGIN_TYPES.LOCAL, otpType });
+        if(otpType == OTP_TYPES.PHONEVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
+        {
+            const response = await verifyPhone( username);
+            const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+            const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
+            let phone = userPhone.value.substring(2, 12);
+            await sendSMSWelcome(phone)
+        }
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
@@ -225,6 +239,7 @@ const signUp = async (req, res) => {
     req.body.provider = req.body.provider || LOGIN_TYPES.LOCAL
     
     let userres = await createUser({...req.body,...verificationRes.data, ...providerRes.data})
+ 
     if (!userres.success) {
         return res.status(500).send(userres)
     }
@@ -234,6 +249,18 @@ const signUp = async (req, res) => {
     userres.data.user.userId
     delete userres.data.user.id
     tokenRes.data['user'] = userres.data.user
+
+    if(userres.data.user.country =="India" && userres.data.user.phone.substring(0, 2) =='91')
+    {
+        const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+        const username = userres.data.user.username
+        userId = userres.data.user.userId
+        const response = await generateOtp({ username, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+        const userMeta = await models.user_meta.findOne({where:{userId:userId, metaType:'primary', key:'phone'}})
+        let phone = userMeta.value.substring(2, 12);
+        await sendSMSOTP (phone, response.data.otp);
+        tokenRes.data.verifyPhone = true
+    }
     res.status(200).send(tokenRes)
 }
 /* 
@@ -527,7 +554,7 @@ const checkPassword = (userObj, resPwd) => {
     }
 */
 const generateOtp = async (resData) => {
-    let { username } = resData;
+    let { username, userId, otpType } = resData;
     return new Promise(async (resolve, reject) => {
         try {
 
@@ -590,7 +617,8 @@ const generateOtp = async (resData) => {
                         await models.otp.create({
                             username,
                             otp: hash,
-                            otpType: OTP_TYPES.SIGNIN
+                            otpType: otpType,
+                            userId:userId
                         });
                         return resolve({
                             success: true,
@@ -625,12 +653,16 @@ const generateOtp = async (resData) => {
 const startVerifyOtp = async (resData) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let { username = "", otp = "" } = resData
-            let otpRes = await validateOtp(username, otp, OTP_TYPES.SIGNIN);
+            let { username = "", otp = "" ,otpType} = resData
+            let otpRes = await validateOtp(username, otp, otpType);
             if (!otpRes.success) {
                 return resolve(otpRes);
             }
 
+            if(otpType == OTP_TYPES.PHONEVERIFICATION)
+            {
+                return resolve(otpRes);
+            }
             //Verify 
             const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
             if (!verificationRes.success) {
@@ -640,6 +672,7 @@ const startVerifyOtp = async (resData) => {
              * Generate Token for login session
              input => audience- origin(client), provider-> (google facebook or linked in or local)
              */
+
             const tokenRes = await getLoginToken({ ...verificationRes.data.user, audience: resData.audience, provider: resData.provider });
             
             return resolve(tokenRes);
@@ -1537,6 +1570,91 @@ const reactivateAccount = async (req, res) => {
         return res.status(500).send({error,success:false})
     }
 }
+const verifyPhone = async (username) =>{
+    return new Promise(async (resolve, reject) => {
+        try{ 
+            const user = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+            await models.user.update({
+                    phoneVerified: true,
+                }, {
+                    where: {
+                        id: user.userId
+                    }
+                });
+            return resolve(true)
+        } catch (error) {
+            console.log(error);
+            response.code = DEFAULT_CODES.SYSTEM_ERROR.code;
+            response.message = DEFAULT_CODES.SYSTEM_ERROR.message;
+            response.success = false;
+            return resolve(response);
+        }
+    })
+}
+
+
+const sendSMSOTP = async (phone, otp) =>{
+    return new Promise(async (resolve, reject) => {
+        try{ 
+            await sendSMS( phone, `${otp} is the OTP to verify your Careervira account. It will expire in ${defaults.getValue('otpExpiry')} minutes.`)
+            return resolve(true)
+        } catch (error) {
+            console.log(error);
+            response.code = DEFAULT_CODES.SYSTEM_ERROR.code;
+            response.message = DEFAULT_CODES.SYSTEM_ERROR.message;
+            response.success = false;
+            return resolve(response);
+        }
+    })
+}
+
+const sendSMSWelcome = async (phone) =>{
+    return new Promise(async (resolve, reject) => {
+        try{ 
+            await sendSMS( phone, `Hi, welcome to Careervira. Track and manage all your learning from a single place.`)
+            return resolve(true)
+        } catch (error) {
+            console.log(error);
+            response.code = DEFAULT_CODES.SYSTEM_ERROR.code;
+            response.message = DEFAULT_CODES.SYSTEM_ERROR.message;
+            response.success = false;
+            return resolve(response);
+        }
+    })
+}
+const updatePhone = async (req,res) => {
+    try {
+        const { user } = req    
+        const { phone } = req.body  
+   
+        let where = {
+            userId: user.userId,
+            metaType:'primary',
+            key:'phone',
+        }
+        console.log("user=========", user)
+        console.log("phone=========", phone)
+        await models.user_meta.update({
+            value: phone,
+        }, {
+            where: where
+        });
+        
+        return res.status(200).json({
+            'success': true,
+            'message': 'Phone is updated',
+            'data': {}
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(200).json({
+            'success': false,
+            'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+            'data': {}
+        })
+    }
+   
+}
 
 module.exports = {
     login,
@@ -1568,9 +1686,7 @@ module.exports = {
     fetchbookmarkIds,
     suspendAccount,
     reactivateAccount,
-
-
-
+    updatePhone,
 
     saveUserLastSearch: async (req,callback) => {
                 

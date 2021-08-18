@@ -363,6 +363,21 @@ const handleLocalSignUP = async (userObj) => {
                 ...reducedObj,
                 ...userObj
             })
+            
+            //check if mobile number entered is indian
+            let phone = null;
+            let country = null;
+            for(let usermeta of userObj.userMeta)
+            {
+                if(usermeta.key=="phone")
+                {
+                    phone = usermeta.value
+                }
+                if(usermeta.key=="country")
+                {
+                    country = usermeta.value
+                }
+            }           
 
             return resolve({
                 success: true,
@@ -377,7 +392,9 @@ const handleLocalSignUP = async (userObj) => {
                         phone: userObj.phone,
                         userType: USER_TYPE.REGISTERED,
                         provider: LOGIN_TYPES.LOCAL,
-                        verified:userObj.verified || false
+                        verified:userObj.verified || false,
+                        phone:phone || false,
+                        country:country || false,
                     }
                 }
             })
@@ -608,7 +625,7 @@ const createSocialEntryIfNotExists = (userObject,provider) => {
                     provider,
                     providerId: userObject.providerId || null,
                     userId: userObject.userId || userObject.id,
-                    email: userObject.email || userObject.username,
+                    email: userObject.email.toLowerCase() || userObject.username.toLowerCase(),
                     providerData: userObject.providerData || {}
                 }
                 await createUserLogin([providerObj])
