@@ -15,22 +15,9 @@ module.exports = async (req, res, next) => {
     if (authHeader) {
         const token = authHeader.split(' ')[1];
         const verifiedToken = await require("../auth/auth").verifyToken(token, options);
-        
         if(verifiedToken) {
-            let userinfo = await models.user.findOne({
-                where: {
-                    id: verifiedToken.user.userId
-                }
-            });
-            if(userinfo.status=="suspended")
-            {
-                next();
-            }
-            else
-            {
-                req.user = verifiedToken.user
-                next();
-            }            
+            req.user = verifiedToken.user
+            next();
         } else {
             next();
         }
