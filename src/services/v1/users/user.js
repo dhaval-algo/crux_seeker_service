@@ -779,12 +779,12 @@ const verifyAccount = async (req, res) => {
         const verifiedToken = await require("../auth/auth").verifyToken(verification_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
-            let userres = await models.user.findOne({
+            let userinfo = await models.user.findOne({
                 where: {
                     id: user.userId
                 }
             });
-            if(userres.status=="suspended")
+            if(userinfo.status=="suspended")
             {
                 return res.status(200).send({
                     code: DEFAULT_CODES.VERIFICATION_FAILED.code,
