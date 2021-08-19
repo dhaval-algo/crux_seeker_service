@@ -12,6 +12,20 @@ module.exports  = async (req, res, next) => {
     if (authHeader) {
         const token = authHeader.split(' ')[1];
         const verifiedToken = await require("../auth/auth").verifyToken(token, options);
+        let userinfo = await models.user.findOne({
+            where: {
+                id: verifiedToken.user.userId
+            }
+        });
+        if(userinfo.status=="suspended")
+        {
+            return res.status(200).send({
+                code:DEFAULT_CODES.INVALID_TOKEN.code,
+                success:false,
+                message: DEFAULT_CODES.INVALID_TOKEN.message,
+                data: {}
+            })   
+        }
         if(verifiedToken) {
             req.user = verifiedToken.user
             next();
