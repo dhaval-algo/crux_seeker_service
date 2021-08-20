@@ -1464,7 +1464,20 @@ module.exports = class learnContentService {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
 
-        return data;
+        let listData = {
+            title: data.title,
+            slug: data.slug,
+            id: data.id,
+            provider: data.provider,
+            cover_image: data.cover_image,
+            currency: data.currency,
+            description: data.description,
+            course_details: data.course_details,
+            provider_course_url: data.provider_course_url,
+            ratings: data.ratings,
+        }
+
+        return isList ? listData : data;
     }
 
 
