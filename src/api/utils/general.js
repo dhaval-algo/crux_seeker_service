@@ -7,6 +7,7 @@ const { Engine } = require('json-rules-engine')
 
 const MAX_RESULT = 10000;
 const ENTRY_PER_PAGE = 25;
+const FILTER_VALUES_SEPERATOR = "<>";
 
 const entity_filter_mapping = {
     'learn-content': 'Learn_Content',
@@ -136,7 +137,7 @@ const parseQueryFilters = (filter) => {
         const qfilters = qf.split(":");
         query_filters.push({
             key: qfilters[0],
-            value: qfilters[1].split(",")
+            value: qfilters[1].split(FILTER_VALUES_SEPERATOR)
         });
     }
     return query_filters;
