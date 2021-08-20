@@ -198,8 +198,9 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         //queryPayload.from = 0;
         //queryPayload.size = count;
 
-        //console.log("queryPayload <> ", queryPayload);        
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        //console.log("queryPayload <> ", queryPayload); 
+        let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT},fields);
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             // console.log("result",result)
@@ -830,7 +831,6 @@ module.exports = class learnContentService {
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
-        
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);

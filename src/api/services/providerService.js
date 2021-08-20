@@ -37,7 +37,10 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
     }
     //query['bool']['should'] = filters;
     //query['bool']['minimum_should_match'] = 1;
-    const result = await elasticService.search('provider', query, {from: 0, size: MAX_RESULT});
+
+    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+
+    const result = await elasticService.search('provider', query, {from: 0, size: MAX_RESULT},fields);
     if(result.total && result.total.value > 0){
         //return formatFilters(result.hits, filterConfigs, query);
         return {
@@ -256,11 +259,16 @@ module.exports = class providerService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    for(const fieldValue of filter.value){
-                        query.bool.must.push({
-                            "term": {[attribute_name]: fieldValue}
-                        });
-                    }
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
                 }
             }
         }
