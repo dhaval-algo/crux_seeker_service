@@ -27,7 +27,12 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
         delete queryPayload['from'];
         delete queryPayload['size'];
     }
-    const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT});
+
+    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+    fields.push('author_slug');
+    fields.push('author_last_name');
+
+    const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT},fields);
     if(result.total && result.total.value > 0){
         return {
             filters: await formatFilters(result.hits, filterConfigs, query),
@@ -245,11 +250,16 @@ module.exports = class articleService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    for(const fieldValue of filter.value){
-                        query.bool.must.push({
-                            "term": {[attribute_name]: fieldValue}
-                        });
-                    }
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
                 }
             }
         }
