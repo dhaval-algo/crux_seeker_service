@@ -1610,7 +1610,7 @@ const verifyPhone = async (username) =>{
 const sendSMSOTP = async (phone, otp) =>{
     return new Promise(async (resolve, reject) => {
         try{ 
-            await sendSMS( phone, `${otp} is the OTP to verify your Careervira account. It will expire in ${defaults.getValue('otpExpiry')} minutes.`)
+            await sendSMS( phone, `${otp} is the OTP to verify your Careervira account. It will expire in ${defaults.getValue('otpExpiry')} minutes.`,process.env.MOBILE_VERIFICATION_OTP_DLT_TEMPLATE_ID)
             return resolve(true)
         } catch (error) {
             console.log(error);
@@ -1625,7 +1625,7 @@ const sendSMSOTP = async (phone, otp) =>{
 const sendSMSWelcome = async (phone) =>{
     return new Promise(async (resolve, reject) => {
         try{ 
-            await sendSMS( phone, `Hi, welcome to Careervira. Track and manage all your learning from a single place.`)
+            await sendSMS( phone, `Hi, welcome to Careervira. Track and manage all your learning from a single place.`, process.env.WELCOME_DLT_TEMPLATE_ID)
             return resolve(true)
         } catch (error) {
             console.log(error);

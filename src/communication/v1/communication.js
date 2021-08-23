@@ -92,7 +92,7 @@ module.exports = {
 
     },
 
-    sendSMS:function(phone, message){
+    sendSMS:function(phone, message, dltTemplateId){
 
         let thatObj = this
         return new Promise(async (resolve, reject) => { 
@@ -112,7 +112,9 @@ module.exports = {
                                 auth_scheme: 'PLAIN',
                                 password: process.env.SMS_GUPSHUP_PASSOWRD,
                                 format: 'JSON',
-                                v:1.1
+                                v:1.1,
+                                principalEntityId:process.env.SMS_GUPSHUP_PE_ID,
+                                dltTemplateId: dltTemplateId
                             } 
                             };
                                 request(options, function (error, response, body) {
