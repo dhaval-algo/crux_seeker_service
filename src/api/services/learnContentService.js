@@ -698,7 +698,6 @@ module.exports = class learnContentService {
         let defaultSort = "published_date:desc";
         let useCache = false;
         let cacheName = "";
-       
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
@@ -966,7 +965,7 @@ module.exports = class learnContentService {
 
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits, req.query['currency']);
+            const list = await this.generateListViewData(result.hits, req.query['currency'],useCache);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -1178,7 +1177,7 @@ module.exports = class learnContentService {
     }
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
@@ -1477,18 +1476,24 @@ module.exports = class learnContentService {
             ratings: data.ratings,
         }
 
+        if(isCaching){
+            listData.categories_list = data.categories_list;
+            listData.sub_categories_list = data.sub_categories_list;
+            listData.topics_list = data.topics_list;
+        }
+
         return isList ? listData : data;
     }
 
 
 
-    async generateListViewData(rows, currency){
+    async generateListViewData(rows, currency, isCaching = false){
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true, currency);
+            const data = await this.generateSingleViewData(row._source, true, currency, isCaching);
             datas.push(data);
         }
         return datas;
