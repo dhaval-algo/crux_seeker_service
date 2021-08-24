@@ -1290,7 +1290,6 @@ module.exports = class learnContentService {
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
                     finance_option: result.finance_option,
-                    finance_details: result.finance_details,
                     partnerPrice: partnerPrice,
                     partnerPriceInUserCurrency: partnerPriceInUserCurrency,
                     partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
