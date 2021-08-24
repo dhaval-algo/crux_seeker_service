@@ -1360,15 +1360,15 @@ module.exports = class learnContentService {
                 }
             }
 
-            if(data.pricing.display_price && data.pricing.course_financing_options && data.pricing.finance_option =='EMI')
+            if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options && data.course_details.pricing.finance_option =='EMI')
             {
-                data.pricing.indian_students_program_fee = result.indian_students_program_fee
-                data.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
-                data.pricing.indian_students_GST = result.indian_students_GST
-                data.pricing.indian_student_installments = result.indian_student_installments
-                data.pricing.international_students_program_fee = result.international_students_program_fee
-                data.pricing.international_students_payment_deadline = result.international_students_payment_deadline
-                data.pricing.international_student_installments = result.international_student_installments
+                data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
+                data.course_details.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
+                data.course_details.pricing.indian_students_GST = result.indian_students_GST
+                data.course_details.pricing.indian_student_installments = result.indian_student_installments
+                data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
+                data.course_details.pricing.international_students_payment_deadline = result.international_students_payment_deadline
+                data.course_details.pricing.international_student_installments = result.international_student_installments
             }
         }
 
