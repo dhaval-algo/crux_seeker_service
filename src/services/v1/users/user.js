@@ -247,7 +247,7 @@ const signUp = async (req, res) => {
     delete userres.data.user.id
     tokenRes.data['user'] = userres.data.user
 
-    if(userres.data.user.country =="India" && userres.data.user.phone.substring(0, 2) =='91')
+    if(process.env.PHONEVERIFICATION =='true'&& userres.data.user.country =="India" && userres.data.user.phone.substring(0, 2) =='91' )
     {
         const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
         const username = userres.data.user.username
