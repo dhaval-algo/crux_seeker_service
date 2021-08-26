@@ -1060,6 +1060,83 @@ module.exports = class learnContentService {
         }        
     }
 
+
+    async getRelatedCourses(req, callback) {
+        const { courseId } = req.params;
+        const { currency } = req.query;
+        const MAX_RESULTS = 6;
+
+        try {
+
+            //fields to fetch 
+            let fields = [
+                "sub_categories",
+                "skills",
+                "topics",
+                'title', 'id', 'status', 'regular_price'
+            ];
+
+            //priority 1 category list
+            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
+            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
+
+            const relationData = {
+                index: "learn-content",
+                id: courseId
+            }
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ],
+                    must_not: {
+                        term: {
+                            "_id": courseId
+                        }
+                    }
+                }
+            }
+
+            function buildQueryTerms(key, i) {
+                let termQuery = { "terms": {} };
+                termQuery.terms[key] = { ...relationData, "path": key };
+                termQuery.terms.boost = 5 - (i * 0.1);
+                return termQuery;
+            }
+
+            esQuery.bool.should = [{
+                bool: {
+                    boost: 1000,
+                    should: priorityList1.map(buildQueryTerms)
+                }
+            }];
+
+            esQuery.bool.should.push({
+                bool: {
+                    boost: 10,
+                    should: priorityList2.map(buildQueryTerms)
+                }
+            })
+
+            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: MAX_RESULTS });
+            
+            let courses = [];
+            if (result && result.hits.length > 0) {
+                for (let hit of result.hits) {
+                    let course = await this.generateSingleViewData(hit._source, true, currency);
+                    courses.push(course);
+                }
+            }
+
+            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+            callback(null, response);
+        } catch (error) {
+            console.log("Error while processing data for related courses", error);
+            callback(error, null);
+        }
+    }
+
     async fetchCourseBySlug(slug) {
         const query = { "bool": {
             "must": [
