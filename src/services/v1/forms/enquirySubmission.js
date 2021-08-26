@@ -297,6 +297,9 @@ const updateProfileMeta = (formData, userObj) => {
                     const item = await models.user_meta.update(formData[key], { where });
 
                 }
+                const userinfo = await models.user_meta.findOne({where:{userId:userObj.userId, metaType:'primary', key:'email'}})
+                formData.push({key:"email",value: userinfo.value})
+                sendDataForStrapi(formData, "update-user-profile")
             }
             resolve(true)
         } catch (error) {
