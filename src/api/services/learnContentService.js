@@ -1566,12 +1566,10 @@ module.exports = class learnContentService {
             course_details: data.course_details,
             provider_course_url: data.provider_course_url,
             ratings: data.ratings,
-        }
+            categories_list: data.categories_list,
+            sub_categories_list : data.sub_categories_list,
+            topics_list : data.topics_list
 
-        if(isCaching){
-            listData.categories_list = data.categories_list;
-            listData.sub_categories_list = data.sub_categories_list;
-            listData.topics_list = data.topics_list;
         }
 
         return isList ? listData : data;
