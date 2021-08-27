@@ -1359,6 +1359,9 @@ module.exports = class learnContentService {
                     }
                 }
             }
+            if(result.faq){
+                data.faq = result.faq
+            }
         }
 
         
