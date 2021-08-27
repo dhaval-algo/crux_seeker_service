@@ -1471,6 +1471,10 @@ module.exports = class learnContentService {
                 data.course_details.pricing.international_students_payment_deadline = result.international_students_payment_deadline
                 data.course_details.pricing.international_student_installments = result.international_student_installments
             }
+            
+            if(result.faq){
+                data.faq = result.faq
+            }
         }
 
         
