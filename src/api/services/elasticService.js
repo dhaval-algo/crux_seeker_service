@@ -28,7 +28,7 @@ const elasticClient = () => {
 
 module.exports = {
 
-  search: async (index, query, payload={}, q) => {
+  search: async (index, query, payload={}, fields = null) => {
     const client = elasticClient();
     let finalQuery = {
       index: index,
@@ -36,6 +36,11 @@ module.exports = {
         query: query
       }
     };
+
+    if(fields) {
+      finalQuery.body._source = fields;
+    }
+
     //if(q){
       //finalQuery.q = q;
     //}

@@ -16,6 +16,10 @@ const DEFAULT_CODES =
         code:"UNVERIFIED_USER",
         message: "Please verify your email address to proceed."
     },
+    SUSPENDED_USER: {
+        code:"SUSPENDED_USER",
+        message: "Your account is suspended."
+    },
     SYSTEM_ERROR: {
         code: "SYSTEM_ERROR",
         message: 'Something unexpected happend, we are looking into it.'
@@ -125,7 +129,10 @@ const TOKEN_TYPES = {
 
 const OTP_TYPES = {
     SIGNIN:'signin',
-    RESETPASSWORD:'reset_password'
+    RESETPASSWORD:'reset_password',
+    SIGNUP:'signup',
+    PHONEVERIFICATION: 'phoneverification'
+
 }
 
 const FORM_TYPES = {
