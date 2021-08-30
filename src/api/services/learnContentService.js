@@ -348,7 +348,7 @@ const getRangeOptions = (data, attribute) => {
         }
 
         let option = {
-            label: `${predefinedOptions[i].toString()} & up`,
+            label: `${predefinedOptions[i].toString()} & Above`,
             count: count,
             selected: false,
             start: predefinedOptions[i],
@@ -364,7 +364,7 @@ const getRangeOptions = (data, attribute) => {
 const getDurationRangeOptions = (data, attribute) => {
     let options = [
         {
-            label: 'Less than 2 Hours',
+            label: 'Less Than 2 Hours',
             count: 0,
             selected: false,
             start: 'MIN',
@@ -372,7 +372,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: 'Less than a week',
+            label: 'Less Than a Week',
             count: 0,
             selected: false,
             start: 'MIN',
@@ -380,7 +380,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 - 4 weeks',
+            label: '1 - 4 Weeks',
             count: 0,
             selected: false,
             start: 168,
@@ -388,7 +388,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 - 3 months',
+            label: '1 - 3 Months',
             count: 0,
             selected: false,
             start: 672,
@@ -396,7 +396,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '3+ months',
+            label: '3+ Months',
             count: 0,
             selected: false,
             start: 2016,
