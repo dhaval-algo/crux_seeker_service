@@ -349,7 +349,7 @@ const getRangeOptions = (data, attribute) => {
         }
 
         let option = {
-            label: `${predefinedOptions[i].toString()} & up`,
+            label: `${predefinedOptions[i].toString()} & Above`,
             count: count,
             selected: false,
             start: predefinedOptions[i],
@@ -381,7 +381,8 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 – 4 Weeks',
+
+            label: '1 - 4 Weeks',
             count: 0,
             selected: false,
             start: 168,
