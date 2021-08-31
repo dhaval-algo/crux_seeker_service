@@ -1362,6 +1362,9 @@ module.exports = class learnContentService {
             if(result.faq){
                 data.faq = result.faq
             }
+            if(result.content_module){
+                data.content_module = result.content_module
+            }
         }
 
         
