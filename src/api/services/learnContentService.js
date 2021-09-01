@@ -1368,7 +1368,6 @@ module.exports = class learnContentService {
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
-                    finance_option: result.finance_option,
                     partnerPrice: partnerPrice,
                     partnerPriceInUserCurrency: partnerPriceInUserCurrency,
                     partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
