@@ -1358,7 +1358,7 @@ module.exports = class learnContentService {
                 }
             }
 
-            if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options && data.course_details.pricing.finance_option =='EMI')
+            if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
                 data.course_details.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
