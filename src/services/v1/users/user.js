@@ -196,7 +196,7 @@ const verifyUserToken = (req, res) => {
 
 const signUp = async (req, res) => {
     const audience = req.headers.origin;
-    let { username = "", password = "",  provider = LOGIN_TYPES.LOCAL, email} = req.body;
+    let { username = "", password = "", provider = LOGIN_TYPES.LOCAL, email} = req.body;
     if (username.trim() == '' && provider == LOGIN_TYPES.LOCAL) {
         return res.status(200).json({
             'success': false,
@@ -212,6 +212,22 @@ const signUp = async (req, res) => {
             'data': {}
         });
     }
+
+    if (provider == LOGIN_TYPES.LOCAL) {
+
+        for(let userMeta of req.body.userMeta)
+        {
+            if((userMeta.key=="firstName" || userMeta.key=="lastName" || userMeta.key=="phone") && userMeta.value.trim()== '')
+            {
+                return res.status(200).json({
+                    'success': false,
+                    'message': 'Mandatory fields are missing',
+                    'data': {}
+                });
+            }
+        }
+    }
+    
     let providerRes= {}
     //if orivude is socila login veriffy token
     if(provider !=LOGIN_TYPES.LOCAL){
