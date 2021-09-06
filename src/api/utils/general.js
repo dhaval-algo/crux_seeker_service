@@ -7,6 +7,7 @@ const { Engine } = require('json-rules-engine')
 
 const MAX_RESULT = 10000;
 const ENTRY_PER_PAGE = 25;
+const FILTER_VALUES_SEPERATOR = "<>";
 
 const entity_filter_mapping = {
     'learn-content': 'Learn_Content',
@@ -136,7 +137,7 @@ const parseQueryFilters = (filter) => {
         const qfilters = qf.split(":");
         query_filters.push({
             key: qfilters[0],
-            value: qfilters[1].split(",")
+            value: qfilters[1].split(FILTER_VALUES_SEPERATOR)
         });
     }
     return query_filters;
@@ -183,8 +184,8 @@ const getMediaurl = (mediaUrl) => {
     return mediaUrl;
 };
 
-const getAllResult = async(entity, query) => {
-    const result = await elasticService.search(entity, query, {from: 0, size: MAX_RESULT});
+const getAllResult = async(entity, query, fields = null) => {
+    const result = await elasticService.search(entity, query, {from: 0, size: MAX_RESULT},fields);
         if(result.total && result.total.value > 0){
             return result.hits;
         }else{
@@ -196,16 +197,19 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
     if(parsedFilters.length <= 0 && parsedRangeFilters.length <= 0){
         return filters;
     }
+
+    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+
+    let data = [];
+    if(totalCount > ENTRY_PER_PAGE){
+        data = await getAllResult(entity, query, fields); //elastic
+    }else{
+        data = result;
+    }
+
     for(let filter of filters){
         if(filter.filter_type !== 'Checkboxes'){
             continue;
-        }
-
-        let data = [];
-        if(totalCount > ENTRY_PER_PAGE){
-            data = await getAllResult(entity, query);
-        }else{
-            data = result;
         }
 
         //if(!parsedFilter){
@@ -243,7 +247,7 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
                         option.count = 0;
                     }                
                 if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
-                    option.disabled = true;
+                    option.disabled = false; //true
                 }
             }
         //}
@@ -296,7 +300,7 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
                         option.count = 0;
                     }                
                 if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
-                    option.disabled = true;
+                    option.disabled = false;
                 }
             }
         //}

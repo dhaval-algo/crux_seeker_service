@@ -9,16 +9,15 @@ let config = {
 let redis;
 const awsService = require("../AWS/index");
 
-const sectionService = require('../../../api/services/sectionService');
-const SectionService = new sectionService();
+const footerService = require('../../../api/services/footerService');
+const FooterContentService = new footerService();
 
-module.exports = class sectionPageService {
+module.exports = class FooterService {
 
-    sectionSQSConsumer(){
- 
+    footerSQSConsumer(){
         return new Promise(async (resolve, reject) => {
             try{
-                let queueName = process.env.REDIS_SECTION_QUEUE
+                let queueName =  process.env.REDIS_FOOTER_QUEUE
                 let queueURL =  awsService.getUrl('sqs',process.env.AWS_REGION,process.env.AWS_OWNER,queueName)
                 console.log("queueURL",queueURL)
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
@@ -28,8 +27,8 @@ module.exports = class sectionPageService {
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
                         let subject = message_body.subject
-                        let message_data = message_body.Message
-                        let queueData = JSON.parse(message_data)
+                        let message_data = message_body.message
+                        let queueData = message_data
 
                         // /*****delete from queue ****/
                         let approximateReceiveCount = message.Attributes.ApproximateReceiveCount
@@ -40,10 +39,8 @@ module.exports = class sectionPageService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                        
-                        let sectionSlug = queueData.slug
-                        console.log("sectionSQSConsumer->",sectionSlug)
-                        SectionService.getSectionContent(sectionSlug, (err, data) => {}, true); 
+                        console.log("footerSQSConsumer->",subject);
+                        FooterContentService.getFooter({query:{}}, (err, data) => {}, false); 
                          
                     },
                     sqs: new AWS.SQS()

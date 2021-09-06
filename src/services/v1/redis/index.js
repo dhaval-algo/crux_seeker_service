@@ -23,7 +23,9 @@ module.exports = class REDIS {
         return new Promise(function(resolve,reject){
             that.connect();
             key='apiData-'+key+'-*';
+            console.log("key",key)
             redis.keys(key,(err,data)=>{
+                console.log("data",data,err)
                 if(err){
                     resolve({noCacheKeys:true});
                 }

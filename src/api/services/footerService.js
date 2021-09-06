@@ -1,12 +1,29 @@
 const communication = require('../../communication/v1/communication');
 const elasticService = require("./elasticService");
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
 
 module.exports = class FooterService {
-    async getFooter(slug, callback){
+    async getFooter(slug, callback,useCache = true){
 
         const query = {
             "match_all": {}
         };
+
+        const cacheKey = "page-footer";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page footer: "+cacheKey,error);
+            }
+        }
 
         let result = null;
         try{
@@ -22,6 +39,9 @@ module.exports = class FooterService {
                     break;
                 }
             }
+
+            RedisConnection.set(cacheKey, footerData);
+
             callback(null, {status: 'success', message: 'Fetched successfully!', data:footerData});
         } else {
             callback(null, {status: 'failed', message: 'No data available!', data: []});
