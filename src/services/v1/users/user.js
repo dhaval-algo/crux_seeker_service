@@ -14,7 +14,10 @@ const {
     createSocialEntryIfNotExists,
     getImgBuffer,
     getFileBuffer,
-    generateSingleViewData
+    generateSingleViewData,
+    sendDataForStrapi,
+    sendSuspendedEmail,
+    sendActivatedEmail
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -210,7 +213,7 @@ const signUp = async (req, res) => {
     username = username || providerRes.data.email;
 
     const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
-    if (verificationRes.success) {
+    if (verificationRes.success || (verificationRes.code ==DEFAULT_CODES.SUSPENDED_USER.code)) {
         verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
         verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
@@ -450,7 +453,18 @@ const userExist = (username, provider) => {
                     //         id: userLogin.userId
                     //     }
                     // });
-                // }
+                //}
+                if (user.status == "suspended") {
+                   
+                    return resolve({
+                        code: DEFAULT_CODES.SUSPENDED_USER.code,
+                        message: DEFAULT_CODES.SUSPENDED_USER.message,
+                        success: false,
+                        data: {
+                            user: {}
+                        }
+                    })
+                }
                 const { userId, email = "", password = "", phone = "" } = userLogin;
                 response.success = true;
                 response.code = DEFAULT_CODES.VALID_USER;
@@ -765,6 +779,20 @@ const verifyAccount = async (req, res) => {
         const verifiedToken = await require("../auth/auth").verifyToken(verification_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
+            let userinfo = await models.user.findOne({
+                where: {
+                    id: user.userId
+                }
+            });
+            if(userinfo.status=="suspended")
+            {
+                return res.status(200).send({
+                    code: DEFAULT_CODES.VERIFICATION_FAILED.code,
+                    success: false,
+                    message: DEFAULT_CODES.VERIFICATION_FAILED.message,
+                    data: {}
+                })
+            }
             let userres = await models.user.update({
                 verified: true
             }, {
@@ -932,6 +960,9 @@ const addCourseToWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
+    sendDataForStrapi(data, "profile-add-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -944,6 +975,9 @@ const removeCourseFromWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
+    sendDataForStrapi(data, "profile-remove-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -1238,6 +1272,9 @@ const uploadProfilePic =async (req,res) => {
         await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
     }
     const profileRes = await calculateProfileCompletion(user)
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, image:s3Path}
+    sendDataForStrapi(data, "update-profile-picture");
     return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
@@ -1248,8 +1285,11 @@ const removeProfilePic = async (req,res) => {
 
     if(existImg) {
       //  await deleteObject(existImg.value);
-        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})
+        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})        
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value}
+    sendDataForStrapi(data, "remove-profile-picture");
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
@@ -1287,6 +1327,9 @@ const uploadResumeFile = async (req,res) =>{
         // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, resume:s3Path}
+    sendDataForStrapi(data, "upload-resume");
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
@@ -1299,6 +1342,9 @@ const deleteResumeFile = async (req,res) => {
       //  await deleteObject(existImg.value);
         await models.user_meta.destroy({where:{key:'resumeFile',metaType:'primary',userId:user.userId}})
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value}
+    sendDataForStrapi(data, "remove-resume");
     return res.status(200).json({success:true, resumeFile:{}})
 }
 
@@ -1307,11 +1353,14 @@ const uploadSkills = async (req,res) => {
     const { user} = req;
     const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'skills'}})
     if(!existSkills) {
-        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})
+        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})        
     } else {
         // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'skills'}})
     }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let learn_profile = {email:userinfo.value, data:data}
+    sendDataForStrapi(learn_profile, "update-learn-profile");
     return res.status(200).json({success:true,data:data})
 }
 
@@ -1336,6 +1385,9 @@ const bookmarkArticle = async (req,res) => {
     if(articleId)
     {
         const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
+        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+        let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
+        sendDataForStrapi(data, "profile-bookmark-article");
         return res.status(200).json({
             success:true,
             data: {
@@ -1356,6 +1408,9 @@ const removeBookmarkArticle = async (req,res) => {
     const { user} = req;
     const {articleId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
+    sendDataForStrapi(data, "profile-remove-bookmark-article");
     return res.status(200).json({
         success:true,
         data: {
@@ -1422,6 +1477,75 @@ const fetchbookmarkIds = async (req,res) => {
     })
 }
 
+const suspendAccount = async (req, res) => {
+    const { email } = req.body;
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        let userLogin = await models.user_login.findOne({ where: where})
+        let user = null
+        if (userLogin != null) {
+            user = await models.user.findOne({ where: { id: userLogin.userId} });
+        }
+        let userres = await models.user.update({
+            status: "suspended"
+        }, {
+            where: {
+                id: user.id
+            }
+        });
+               
+        await sendSuspendedEmail(userLogin)
+        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send({status: 'success', message: 'successfully supended!'})
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send({error,success:false})
+    }
+}
+
+const reactivateAccount = async (req, res) => {
+    const { email } = req.body;
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        
+        let userLogin = await models.user_login.findOne({ where: where})
+        
+        let user = null
+        if (userLogin != null) {
+            user = await models.user.findOne({ where: { id: userLogin.userId} });
+        }
+        
+        let userres = await models.user.update({
+            status: "active"
+        }, {
+            where: {
+                id: user.id
+            }
+        });
+               
+        await sendActivatedEmail(userLogin)
+        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send({status: 'success', message: 'successfully activated!'})
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send({error,success:false})
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -1450,6 +1574,9 @@ module.exports = {
     removeBookmarkArticle,
     bookmarkArticleData,
     fetchbookmarkIds,
+    suspendAccount,
+    reactivateAccount,
+
 
     saveUserLastSearch: async (req,callback) => {
                 

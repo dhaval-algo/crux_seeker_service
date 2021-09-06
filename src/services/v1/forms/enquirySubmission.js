@@ -1,6 +1,6 @@
 const models = require("../../../../models");
 const { FORM_TYPE_SOURCE, DEFAULT_CODES, USER_STATUS, USER_TYPE } = require('../../../utils/defaultCode')
-const { getLoginToken, calculateProfileCompletion } = require('../../../utils/helper')
+const { getLoginToken, calculateProfileCompletion, sendDataForStrapi } = require('../../../utils/helper')
 const Sequelize = require('sequelize');
 const eventEmitter = require("../../../utils/subscriber");
 const Op = Sequelize.Op;
@@ -243,7 +243,9 @@ const handleUserProfileSubmission = (resBody, req) => {
 
         try {         
             await updateProfileMeta(formData, userObj)
-
+            const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+            formData.push({key:"email",value: userinfo.value})
+            sendDataForStrapi(formData, "update-user-profile")
             const progress = await calculateProfileCompletion(userObj)
             return resolve({
                 success: true,
@@ -295,6 +297,9 @@ const updateProfileMeta = (formData, userObj) => {
                     const item = await models.user_meta.update(formData[key], { where });
 
                 }
+                const userinfo = await models.user_meta.findOne({where:{userId:userObj.userId, metaType:'primary', key:'email'}})
+                formData.push({key:"email",value: userinfo.value})
+                sendDataForStrapi(formData, "update-user-profile")
             }
             resolve(true)
         } catch (error) {
