@@ -1423,11 +1423,15 @@ const removeBookmarkArticle = async (req,res) => {
 const bookmarkArticleData = async (req,res) => {
     try {
 
+
+
         const { user } = req
         let where = {
             userId: user.userId,
             key: { [Op.in]: ['article_bookmark'] },
         }
+
+
 
         let resForm = await models.user_meta.findAll({
             attributes:['value'],
@@ -1454,6 +1458,8 @@ const bookmarkArticleData = async (req,res) => {
             return res.status(500).send({error,success:false})
     }
 }
+
+
 
 const fetchbookmarkIds = async (req,res) => {
     const { user } = req
@@ -1578,6 +1584,8 @@ module.exports = {
     reactivateAccount,
 
 
+
+
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
@@ -1585,6 +1593,7 @@ module.exports = {
         let userId = user.userId
 
          const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
 
         let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
         
@@ -1621,6 +1630,8 @@ module.exports = {
 
     removeUserLastSearch: async (req, callback) => {
 
+
+
         const {search} = req.body
         const { user} = req;
         let userId = user.userId
@@ -1633,5 +1644,7 @@ module.exports = {
         });
         await models.user_meta.update({value:JSON.stringify(suggestionList)},{where:{userId:userId, key:'last_search'}})
         callback({success:true,data:suggestionList}) 
+
     }
+
 }

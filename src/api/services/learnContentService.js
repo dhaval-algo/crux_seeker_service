@@ -697,6 +697,7 @@ module.exports = class learnContentService {
         let defaultSort = "published_date:desc";
         let useCache = false;
         let cacheName = "";
+       
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
@@ -717,10 +718,11 @@ module.exports = class learnContentService {
             if(req.query['currency'] != undefined){
                 apiCurrency = req.query['currency'];
             }
+           
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
-                cacheName = "listing-search_"+apiCurrency;
+                cacheName = "listing-search_"+apiCurrency;                
             }
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -847,21 +849,20 @@ module.exports = class learnContentService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    let subQuery = { 
-                        "bool": {
-                            "should": []
-                        }
-                    };
-                    for(const fieldValue of filter.value){
-                        subQuery.bool.should.push({
-                            "term": {[attribute_name]: fieldValue}
-                        })
-                        // query.bool.must.push({
-                        //     "term": {[attribute_name]: fieldValue}
-                        // });
-                    }
-                    query.bool.must.push(subQuery);
-                  
+
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
+
+              
+
                 }
             }
         }
@@ -912,7 +913,9 @@ module.exports = class learnContentService {
                     }
                 }
             }
-            filters[categorykey].options = categoryFiletrOption;
+            if(filters[categorykey]) {
+                filters[categorykey].options = categoryFiletrOption;
+            }
 
         }
         

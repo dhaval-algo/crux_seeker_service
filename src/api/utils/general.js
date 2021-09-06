@@ -197,16 +197,17 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
     if(parsedFilters.length <= 0 && parsedRangeFilters.length <= 0){
         return filters;
     }
+
+    let data = [];
+    if(totalCount > ENTRY_PER_PAGE){
+        data = await getAllResult(entity, query); //elastic
+    }else{
+        data = result;
+    }
+
     for(let filter of filters){
         if(filter.filter_type !== 'Checkboxes'){
             continue;
-        }
-
-        let data = [];
-        if(totalCount > ENTRY_PER_PAGE){
-            data = await getAllResult(entity, query);
-        }else{
-            data = result;
         }
 
         //if(!parsedFilter){
@@ -244,7 +245,7 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
                         option.count = 0;
                     }                
                 if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
-                    option.disabled = true;
+                    option.disabled = false; //true
                 }
             }
         //}
@@ -297,7 +298,7 @@ const updateFilterCount = (filters, parsedFilters, filterConfigs, data, allowZer
                         option.count = 0;
                     }                
                 if(option.count == 0 && !(allowZeroCountFields.includes(filter.field))){
-                    option.disabled = true;
+                    option.disabled = false;
                 }
             }
         //}
