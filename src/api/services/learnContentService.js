@@ -198,8 +198,9 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         //queryPayload.from = 0;
         //queryPayload.size = count;
 
-        //console.log("queryPayload <> ", queryPayload);        
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        //console.log("queryPayload <> ", queryPayload); 
+        let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT},fields);
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             // console.log("result",result)
@@ -697,7 +698,6 @@ module.exports = class learnContentService {
         let defaultSort = "ratings:desc";
         let useCache = false;
         let cacheName = "";
-       
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
@@ -835,7 +835,6 @@ module.exports = class learnContentService {
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
-        
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
@@ -971,7 +970,7 @@ module.exports = class learnContentService {
 
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits, req.query['currency']);
+            const list = await this.generateListViewData(result.hits, req.query['currency'],useCache);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -1261,7 +1260,7 @@ module.exports = class learnContentService {
     }
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
@@ -1547,18 +1546,35 @@ module.exports = class learnContentService {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
 
-        return data;
+        let listData = {
+            title: data.title,
+            slug: data.slug,
+            id: data.id,
+            provider: data.provider,
+            cover_image: data.cover_image,
+            currency: data.currency,
+            description: data.description,
+            course_details: data.course_details,
+            provider_course_url: data.provider_course_url,
+            ratings: data.ratings,
+            categories_list: data.categories_list,
+            sub_categories_list : data.sub_categories_list,
+            topics_list : data.topics_list
+
+        }
+
+        return isList ? listData : data;
     }
 
 
 
-    async generateListViewData(rows, currency){
+    async generateListViewData(rows, currency, isCaching = false){
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true, currency);
+            const data = await this.generateSingleViewData(row._source, true, currency, isCaching);
             datas.push(data);
         }
         return datas;

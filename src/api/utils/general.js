@@ -184,8 +184,8 @@ const getMediaurl = (mediaUrl) => {
     return mediaUrl;
 };
 
-const getAllResult = async(entity, query) => {
-    const result = await elasticService.search(entity, query, {from: 0, size: MAX_RESULT});
+const getAllResult = async(entity, query, fields = null) => {
+    const result = await elasticService.search(entity, query, {from: 0, size: MAX_RESULT},fields);
         if(result.total && result.total.value > 0){
             return result.hits;
         }else{
@@ -198,9 +198,11 @@ const calculateFilterCount = async(filters, parsedFilters, filterConfigs, entity
         return filters;
     }
 
+    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+
     let data = [];
     if(totalCount > ENTRY_PER_PAGE){
-        data = await getAllResult(entity, query); //elastic
+        data = await getAllResult(entity, query, fields); //elastic
     }else{
         data = result;
     }
