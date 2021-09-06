@@ -14,6 +14,7 @@ const moment = require("moment");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { Buffer } = require('buffer');
+const { publishToSNS } = require('../services/v1/sns');
 const encryptStr = (str) => {
     return crypt.encrypt(str);
 };
@@ -332,6 +333,7 @@ const handleLocalSignUP = async (userObj) => {
                 return f
             })
             await createUserMeta(userMeta)
+            sendDataForStrapi(userMeta, "new-user")
             const encryptedPWD = encryptStr(userObj.password);
             await createUserLogin([{
                 userId,
@@ -442,11 +444,13 @@ const handleSocialSignUp = (userObj) => {
                 })
                 userId = newUser.id
             }
-            await createUserMeta([
+            let userMeta = [
                 {value:userObj.firstName, key:"firstName", metaType:"primary", userId},
                 {key:"lastName", value:userObj.lastName || null, metaType:"primary", userId},
                 {key:"email",value:userObj.email, metaType:"primary", userId}
-            ])
+            ]
+            await createUserMeta(userMeta)
+            sendDataForStrapi(userMeta, "new-user")
             await createUserLogin([{
                 userId,
                 email: userObj.username || userObj.username || "",
@@ -496,7 +500,7 @@ const handleSocialSignUp = (userObj) => {
 }
 
 const createUserMeta = (userMeta) => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve, reject) => {   
         models.user_meta.bulkCreate(userMeta)
             .then((res) => {
                 resolve(res)
@@ -736,6 +740,42 @@ const sendWelcomeEmail  = (userObj) => {
                 fromemail: process.env.FROM_EMAIL_WELCOME_EMAIL,
                 toemail: userObj.email,
                 email_type: "welcome_mail",
+            }
+            await communication.sendEmail(emailPayload)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+            resolve(true)
+        }
+    })
+}
+
+const sendSuspendedEmail  = (userObj) => {
+    return new Promise(async(resolve,reject) => {
+        try {
+            
+            let emailPayload = {
+                fromemail: process.env.FROM_EMAIL_SUSPENDED_EMAIL,
+                toemail: userObj.email,
+                email_type: "suspended_mail",
+            }
+            await communication.sendEmail(emailPayload)
+            resolve(true)
+        } catch (error) {
+            console.log(error);
+            resolve(true)
+        }
+    })
+}
+
+const sendActivatedEmail  = (userObj) => {
+    return new Promise(async(resolve,reject) => {
+        try {
+            
+            let emailPayload = {
+                fromemail: process.env.FROM_EMAIL_ACTIVATED_EMAIL,
+                toemail: userObj.email,
+                email_type: "reactivated_mail",
             }
             await communication.sendEmail(emailPayload)
             resolve(true)
@@ -1258,6 +1298,105 @@ const roundOff = (number, precision) => {
     return Math.round((number + Number.EPSILON) * Math.pow(10, precision)) / Math.pow(10, precision);
 }
 
+const sendDataForStrapi = (userMeta, action) => {
+    switch (action) {
+        case "new-user":
+            userData = userMeta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                for (var key in x) acc[key] = x[key];
+                return acc;
+            }, {});
+            break;
+        
+        case "update-user-profile":
+            userData = userMeta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
+                for (var key in x) acc[key] = x[key];
+                return acc;
+            }, {});
+            let city = null;
+            if(userData.city)
+            {
+                city = JSON.parse(userData.city)
+                userData.city = city.label
+            }            
+            if(userData.dob)
+            {
+                userData.date_of_birth = moment(userData.dob.split("/").reverse().join("-"))
+            }            
+            userData.experience = []
+            if(userData.workExp)
+            {
+                for (let workExp of JSON.parse(userData.workExp))
+                {
+                    userData.experience.push({
+                        "job_title": workExp.jobTitle.label,
+                        "industry": workExp.industry.label,
+                        "company_name": workExp.company.label,
+                        "experience": workExp.experience,                    
+                        "currentCompany": (workExp.currentCompany=="")? false : workExp.currentCompany               
+                    })
+                }
+            }
+            userData.educations = []
+            if(userData.education)
+            {
+                for (let education of JSON.parse(userData.education))
+                {
+                    userData.educations.push({                    
+                        "institute": education.instituteName.label,
+                        "degree": education.degree.label,
+                        "specialization": education.specialization.label,
+                        "year_of_graduation": education.graduationYear,
+                        "grade": education.grade                    
+                    })
+                }
+            }
+            delete userData.instituteName
+            delete userData.education
+            delete userData.industry
+            delete userData.company
+            delete userData.workExp
+            delete userData.grade
+            delete userData.graduationYear
+            delete userData.degree
+            delete userData.specialization
+            delete userData.jobTitle
+            break;    
+        case "update-profile-enquiries":
+            userData = userMeta
+            break;
+        case "profile-add-wishlist":
+            userData = userMeta
+            break;
+        case "profile-remove-wishlist":
+            userData = userMeta
+            break;
+        case "profile-bookmark-article":
+                userData = userMeta
+                break;
+        case "profile-remove-bookmark-article":
+            userData = userMeta
+            break;
+        case "update-learn-profile":
+            userData = userMeta
+            break;
+        case "update-profile-picture":
+            userData = userMeta
+            break;
+        case "remove-profile-picture":
+            userData = userMeta
+            break;
+        case "upload-resume":
+            userData = userMeta
+            break;
+        case "remove-resume":
+            userData = userMeta
+            break;                        
+        default:
+            break;
+    }
+   publishToSNS(process.env.USER_PROFILE_TOPIC_ARN, userData, action)
+}
+   
 module.exports = {
     encryptStr,
     decryptStr,
@@ -1277,5 +1416,8 @@ module.exports = {
     getFileBuffer,
     generateSingleViewData,
     generateReferenceId,
-    roundOff
+    roundOff,
+    sendDataForStrapi,
+    sendSuspendedEmail,
+    sendActivatedEmail
 }

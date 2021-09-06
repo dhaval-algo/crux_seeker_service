@@ -1,5 +1,6 @@
 const express = require('express');
 const authenticateJWT = require('../../../services/v1/middleware/authenticate');
+const authenticateAdminJWT = require('../../../services/v1/middleware/authenticateAdmin');
 const injectTokenPayload = require('../../../services/v1/middleware/injectTokenPayload');
 const { createSiteMap } = require('../../../services/v1/sitemap');
 const userService = require('../../../services/v1/users/user');
@@ -16,6 +17,8 @@ router.post('/forgot-password', userService.forgotPassword);
 router.post('/reset-password', userService.resetPassword);
 router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
 router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList);
+router.post('/add-course-to-recently-viewed',authenticateJWT, userService.addCourseToRecentlyViewed);
+router.post('/fetch-recently-viewed-courses',authenticateJWT, userService.getRecentlyViewedCourses);
 router.post('/remove-from-wishlist',authenticateJWT, userService.removeCourseFromWishList);
 router.post('/fetch-wishlist',authenticateJWT, userService.fetchWishListIds);
 router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData);
@@ -30,6 +33,8 @@ router.post('/remove-bookmark-article',authenticateJWT, userService.removeBookma
 router.get('/fetch-bookmark-article',authenticateJWT, userService.bookmarkArticleData);
 router.post('/fetch-bookmark',authenticateJWT, userService.fetchbookmarkIds);
 router.post('/update-phone',authenticateJWT, userService.updatePhone);
+router.post('/suspend-account',authenticateAdminJWT, userService.suspendAccount);
+router.post('/reactivate-account', authenticateAdminJWT, userService.reactivateAccount);
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
     res.setHeader('Content-Type', 'text/json')

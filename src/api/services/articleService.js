@@ -27,7 +27,12 @@ const getAllFilters = async (query, queryPayload, filterConfigs) => {
         delete queryPayload['from'];
         delete queryPayload['size'];
     }
-    const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT});
+
+    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+    fields.push('author_slug');
+    fields.push('author_last_name');
+
+    const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT},fields);
     if(result.total && result.total.value > 0){
         return {
             filters: await formatFilters(result.hits, filterConfigs, query),
@@ -181,11 +186,15 @@ module.exports = class articleService {
                 //"filter": []
             }
         };
+
+
         if(req.articleIds)
         {
             query.bool.must.push({ 
                 "ids": {
                     "values": req.articleIds
+
+
 
                 }})
         }
@@ -241,11 +250,16 @@ module.exports = class articleService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    for(const fieldValue of filter.value){
-                        query.bool.must.push({
-                            "term": {[attribute_name]: fieldValue}
-                        });
-                    }
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
                 }
             }
         }
@@ -266,7 +280,9 @@ module.exports = class articleService {
                             },
                             {
                                 "multi_match": {
+
                                     "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+
                                     "query": decodeURIComponent(req.query['q']).trim(),
                                     "fuzziness": "AUTO",
                                     "prefix_length": 0                              
@@ -422,7 +438,6 @@ module.exports = class articleService {
 
     async generateSingleViewData(result, isList = false, req){
         try{
-
         /*Rule check for article access*/
         let article_full_access = false;
         let rewards = [];
@@ -431,8 +446,7 @@ module.exports = class articleService {
             let premium = (result.premium)? result.premium:false
             rewards = await CheckArticleRewards(req.user, premium);
         }
-
-        let coverImageSize = 'large';
+        //let coverImageSize = 'large';
         //if(isList){
             //coverImageSize = 'thumbnail';
        // }
@@ -514,7 +528,6 @@ module.exports = class articleService {
                     slug: result.author_slug
                 }];
             }
-
             
             if(result.co_authors && result.co_authors.length > 0)
             {
@@ -539,7 +552,7 @@ module.exports = class articleService {
             title: result.title,
             premium: (result.premium)? result.premium:false,
             slug: result.slug,
-            id: `ARTCL_PUB_${result.id}`,
+            id: `ARTCL_PUB_${result.id}`,          
             cover_image: (result.cover_image)? result.cover_image : null,
             short_description: result.short_description,
             author: author,
