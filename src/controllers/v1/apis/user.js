@@ -32,6 +32,7 @@ router.post('/bookmark-article',authenticateJWT, userService.bookmarkArticle);
 router.post('/remove-bookmark-article',authenticateJWT, userService.removeBookmarkArticle);
 router.get('/fetch-bookmark-article',authenticateJWT, userService.bookmarkArticleData);
 router.post('/fetch-bookmark',authenticateJWT, userService.fetchbookmarkIds);
+router.post('/update-phone',authenticateJWT, userService.updatePhone);
 router.post('/suspend-account',authenticateAdminJWT, userService.suspendAccount);
 router.post('/reactivate-account', authenticateAdminJWT, userService.reactivateAccount);
 router.get('/create-sitemap', async (req,res) => {

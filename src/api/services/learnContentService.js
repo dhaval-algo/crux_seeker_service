@@ -1367,8 +1367,6 @@ module.exports = class learnContentService {
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
-                    finance_option: result.finance_option,
-                    finance_details: result.finance_details,
                     partnerPrice: partnerPrice,
                     partnerPriceInUserCurrency: partnerPriceInUserCurrency,
                     partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
@@ -1455,12 +1453,24 @@ module.exports = class learnContentService {
                 }
             }
 
+
+            if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
+            {
+                data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
+                data.course_details.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
+                data.course_details.pricing.indian_students_GST = result.indian_students_GST
+                data.course_details.pricing.indian_student_installments = result.indian_student_installments
+                data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
+                data.course_details.pricing.international_students_payment_deadline = result.international_students_payment_deadline
+                data.course_details.pricing.international_student_installments = result.international_student_installments
+            }
             if(result.syllabus)
             {
                 data.syllabus = {
                     name:result.syllabus.name,
                     url:result.syllabus.url
                 }
+
             }
         }
 

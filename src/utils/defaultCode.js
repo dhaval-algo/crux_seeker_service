@@ -129,7 +129,10 @@ const TOKEN_TYPES = {
 
 const OTP_TYPES = {
     SIGNIN:'signin',
-    RESETPASSWORD:'reset_password'
+    RESETPASSWORD:'reset_password',
+    SIGNUP:'signup',
+    PHONEVERIFICATION: 'phoneverification'
+
 }
 
 const FORM_TYPES = {
