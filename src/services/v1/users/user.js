@@ -971,6 +971,126 @@ const addCourseToWishList = async (req,res) => {
     })
 }
 
+const addCourseToRecentlyViewed = async (req,res) => {
+
+    let success = true;
+    let message = "";
+    try {
+
+        const { user} = req;
+        const {courseId} = req.body
+        let unque_data = {userId: user.userId, courseId: courseId};
+
+        //check if course exists
+        const exists = await models.recently_viewed_course.findOne({ where: unque_data });
+        if(exists){
+            //if exists change updated at
+            const update = await models.recently_viewed_course.update({courseId: unque_data.courseId }, { where: unque_data});
+        } else {
+    
+            const {count, rows} = await models.recently_viewed_course.findAndCountAll(
+                {
+                    limit: 1,
+                    where: {userId: user.userId},   
+                    order: [['createdAt', 'ASC']],
+                    attributes: { include: ['id']
+                }
+            });
+                
+            if(count > 19){
+                //remove first entry
+                await models.recently_viewed_course.destroy(
+                    {where: {id: rows[0].id}}
+                );
+            }
+    
+            const newRecord = await models.recently_viewed_course.create(unque_data);
+        }
+
+        success = true;
+        message = "Course added to recently viewed";
+
+    } catch(error){
+        console.error("Add course to recently viewed error",error);
+        success = false;
+        message = "Unable to add course to recently viewed";
+    }
+
+    return res.status(200).json({
+        success:success,
+        data: {
+            message: message
+        }
+    })
+}
+
+
+const getRecentlyViewedCourses = async (req,res) => {
+    const { user } = req;
+    let { limit = 20, page = 1, order="DESC", currency } = req.query
+    
+    order = order.toUpperCase();
+    const query = {
+        limit: limit,
+        offset: (page -1) * limit,
+        where: {userId: user.userId},   
+        order: [['updatedAt', order == "DESC" ? order : "ASC"]],
+        attributes: { include: ['id'] }
+    }
+
+    let courses = [];
+    let success = true;
+    let courseIds = [];
+    let statusCode = 200;
+    let message = "";
+    try {
+        let unsortedCourses = [];
+        courseIds = await models.recently_viewed_course.findAll(query);
+        courseIds = courseIds.map((course)=> course.courseId);
+
+        let esQuery = {
+            "ids": {
+                "values": courseIds
+            }
+        };
+
+        let esFields = null; //["id","title"];
+
+        const result = await elasticService.search('learn-content', esQuery, {form: 0, size: 20}, esFields);
+
+        if(result.hits){
+            for(const hit of result.hits){
+                let data = await LearnContentService.generateSingleViewData(hit._source,true,currency)
+                unsortedCourses.push(data);
+            }
+        }
+
+        for (var i=0; i < courseIds.length; i++) {
+            for(course of unsortedCourses){
+                if (course.id === courseIds[i]) {
+                    courses[i] = course;
+                }
+            }
+        }
+
+        message = "Everyting went well!"
+    } catch(error){
+        //statusCode = 200; //should send a valid status code here
+        console.error("Failed to fetch recently viewed courses",error);
+        message = "Unable to fetch recently viewed courses";
+        success = false;
+    }
+    
+    return res.status(statusCode).json({
+        success:success,
+        data: {
+            courseIds: courseIds,
+            courses: courses
+        },
+        message: message
+    });
+}
+
 const removeCourseFromWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
@@ -1566,6 +1686,8 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
+    addCourseToRecentlyViewed,
+    getRecentlyViewedCourses,
     removeCourseFromWishList,
     fetchWishListIds,
     wishListCourseData,
