@@ -39,6 +39,15 @@ const verifyToken = async (token, options) => {
             return false;
         }
 
+        let userinfo = await models.user.findOne({
+            where: {
+                id: authToken.userId
+            }
+        });
+        if(userinfo.status=="suspended")
+        {
+            return false;
+        }
         /** Verify if the token is valid */
         if(authToken.get("inValid")) {
             return false;

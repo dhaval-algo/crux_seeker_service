@@ -74,7 +74,15 @@ if(ENABLE_SITEMAP_CRON)
     
     const articleService = require('./src/services/v1/redis/articleService');
     const article = new articleService();
-    article.articleSQSConsumer(); 
+    article.articleSQSConsumer();
+    
+    const FooterService = require('./src/services/v1/redis/footerService');
+    const footerService = new FooterService();
+    footerService.footerSQSConsumer();
+
+    const CustomPageService = require('./src/services/v1/redis/customPageService');
+    const customPageService = new CustomPageService();
+    customPageService.customPageSQSConsumer();
 }
 
 //Redis SQS consumers

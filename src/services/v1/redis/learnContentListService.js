@@ -95,6 +95,7 @@ module.exports = class LearnContentListService {
 
         let courseRedisSlug = 'listing-course-'+queueData.course_slug
         let cacheData = await RedisConnection.getValuesSync(courseRedisSlug);
+        console.log("cacheData",cacheData)
         let mergeCollection = {}
         if(cacheData.noCacheData != true) {
  
@@ -115,10 +116,9 @@ module.exports = class LearnContentListService {
         }
      
         //update search
-
         for (var i = 0; i < queueData.currencies.length; i++) {
             let currency = queueData.currencies[i]
-            
+
             //search
             let querysearchPayload = {query:{ pageType: 'search', q: '', currency: currency }}
             await learnContent.getLearnContentList(querysearchPayload , (err, data) => {},true)

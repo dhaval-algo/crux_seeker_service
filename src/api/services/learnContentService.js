@@ -198,8 +198,9 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
         //queryPayload.from = 0;
         //queryPayload.size = count;
 
-        //console.log("queryPayload <> ", queryPayload);        
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
+        //console.log("queryPayload <> ", queryPayload); 
+        let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT},fields);
         if(result.total && result.total.value > 0){
             //return formatFilters(result.hits, filterConfigs, query, userCurrency);
             // console.log("result",result)
@@ -364,7 +365,7 @@ const getRangeOptions = (data, attribute) => {
 const getDurationRangeOptions = (data, attribute) => {
     let options = [
         {
-            label: 'Less than 2 Hours',
+            label: 'Less Than 2 Hours',
             count: 0,
             selected: false,
             start: 'MIN',
@@ -372,7 +373,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: 'Less than a week',
+            label: 'Less Than a Week',
             count: 0,
             selected: false,
             start: 'MIN',
@@ -380,7 +381,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 - 4 weeks',
+            label: '1 – 4 Weeks',
             count: 0,
             selected: false,
             start: 168,
@@ -388,7 +389,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '1 - 3 months',
+            label: '1 - 3 Months',
             count: 0,
             selected: false,
             start: 672,
@@ -396,7 +397,7 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-            label: '3+ months',
+            label: '3+ Months',
             count: 0,
             selected: false,
             start: 2016,
@@ -694,7 +695,7 @@ module.exports = class learnContentService {
     async getLearnContentList(req, callback, skipCache){
         try{
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = "published_date:desc";
+        let defaultSort = "ratings:desc";
         let useCache = false;
         let cacheName = "";
         if(
@@ -717,11 +718,17 @@ module.exports = class learnContentService {
             if(req.query['currency'] != undefined){
                 apiCurrency = req.query['currency'];
             }
+           
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
                 cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
-                cacheName = "listing-search_"+apiCurrency;
+                cacheName = "listing-search_"+apiCurrency;                
             }
+
+            //required to update the cache once for bare queries after changing default sort to highest rated.
+            //else it would keep using the old cache with sort order newest.
+            cacheName += `_${defaultSort}`;
+
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
@@ -828,7 +835,6 @@ module.exports = class learnContentService {
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
 
-        
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
@@ -847,11 +853,20 @@ module.exports = class learnContentService {
                     /* query.bool.must.push({
                         "terms": {[attribute_name]: filter.value}
                     }); */
-                    for(const fieldValue of filter.value){
-                        query.bool.must.push({
-                            "term": {[attribute_name]: fieldValue}
-                        });
-                    }
+
+                    // for(const fieldValue of filter.value){
+                    //     query.bool.must.push({
+                    //         "term": {[attribute_name]: fieldValue}
+                    //     });
+                    // }
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
+
+              
+
                 }
             }
         }
@@ -902,7 +917,9 @@ module.exports = class learnContentService {
                     }
                 }
             }
-            filters[categorykey].options = categoryFiletrOption;
+            if(filters[categorykey]) {
+                filters[categorykey].options = categoryFiletrOption;
+            }
 
         }
         
@@ -948,12 +965,12 @@ module.exports = class learnContentService {
                 }
             }
         }
-        
+
         const result = await elasticService.search('learn-content', query, queryPayload);
 
         if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits, req.query['currency']);
+            const list = await this.generateListViewData(result.hits, req.query['currency'],useCache);
 
             let pagination = {
                 page: paginationQuery.page,
@@ -1041,6 +1058,84 @@ module.exports = class learnContentService {
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
         }        
+    }
+
+
+    async getRelatedCourses(req, callback) {
+        const { courseId } = req.params;
+        const { currency } = req.query;
+        const MAX_RESULTS = 6;
+
+        try {
+
+            //fields to fetch 
+            let fields = [
+                "sub_categories",
+                "skills",
+                "topics",
+                'title', 'id', 'status', 'regular_price'
+            ];
+
+            //priority 1 category list
+            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
+            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
+
+            const relationData = {
+                index: "learn-content",
+                id: courseId
+            }
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ],
+                    must_not: {
+                        term: {
+                            "_id": courseId
+                        }
+                    }
+                }
+            }
+
+            function buildQueryTerms(key, i) {
+                let termQuery = { "terms": {} };
+                termQuery.terms[key] = { ...relationData, "path": key };
+                termQuery.terms.boost = 5 - (i * 0.1);
+                return termQuery;
+            }
+
+            esQuery.bool.should = [{
+                bool: {
+                    boost: 1000,
+                    should: priorityList1.map(buildQueryTerms)
+                }
+            }];
+
+            esQuery.bool.should.push({
+                bool: {
+                    boost: 10,
+                    should: priorityList2.map(buildQueryTerms)
+                }
+            })
+
+            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: MAX_RESULTS });
+            
+            let courses = [];
+            if (result && result.hits.length > 0) {
+                for (let hit of result.hits) {
+                    let course = await this.generateSingleViewData(hit._source, false, currency);
+                    const {accreditations,ads_keywords,subtitle,description,prerequisites,target_students,content,meta_information,...optimisedCourse} = course;
+                    courses.push(optimisedCourse);
+                }
+            }
+
+            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+            callback(null, response);
+        } catch (error) {
+            console.log("Error while processing data for related courses", error);
+            callback(error, null);
+        }
     }
 
     async fetchCourseBySlug(slug) {
@@ -1165,7 +1260,7 @@ module.exports = class learnContentService {
     }
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
@@ -1272,8 +1367,6 @@ module.exports = class learnContentService {
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
                     course_financing_options: result.course_financing_options,
-                    finance_option: result.finance_option,
-                    finance_details: result.finance_details,
                     partnerPrice: partnerPrice,
                     partnerPriceInUserCurrency: partnerPriceInUserCurrency,
                     partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
@@ -1364,6 +1457,25 @@ module.exports = class learnContentService {
             }
             if(result.content_module){
                 data.content_module = result.content_module
+
+            }
+            if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
+            {
+                data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
+                data.course_details.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
+                data.course_details.pricing.indian_students_GST = result.indian_students_GST
+                data.course_details.pricing.indian_student_installments = result.indian_student_installments
+                data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
+                data.course_details.pricing.international_students_payment_deadline = result.international_students_payment_deadline
+                data.course_details.pricing.international_student_installments = result.international_student_installments
+            }
+            if(result.syllabus)
+            {
+                data.syllabus = {
+                    name:result.syllabus.name,
+                    url:result.syllabus.url
+                }
+
             }
         }
 
@@ -1449,18 +1561,35 @@ module.exports = class learnContentService {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
 
-        return data;
+        let listData = {
+            title: data.title,
+            slug: data.slug,
+            id: data.id,
+            provider: data.provider,
+            cover_image: data.cover_image,
+            currency: data.currency,
+            description: data.description,
+            course_details: data.course_details,
+            provider_course_url: data.provider_course_url,
+            ratings: data.ratings,
+            categories_list: data.categories_list,
+            sub_categories_list : data.sub_categories_list,
+            topics_list : data.topics_list
+
+        }
+
+        return isList ? listData : data;
     }
 
 
 
-    async generateListViewData(rows, currency){
+    async generateListViewData(rows, currency, isCaching = false){
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
         let datas = [];
         for(let row of rows){
-            const data = await this.generateSingleViewData(row._source, true, currency);
+            const data = await this.generateSingleViewData(row._source, true, currency, isCaching);
             datas.push(data);
         }
         return datas;

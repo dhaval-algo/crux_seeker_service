@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
   const user = sequelize.define('user', {
     userType:DataTypes.STRING,
     verified:DataTypes.BOOLEAN,
+    phoneVerified:DataTypes.BOOLEAN,
     status: DataTypes.STRING,
     lastLogin: DataTypes.DATE
   }, {});
@@ -12,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
     user.hasMany(models.user_login, { foreignKey: 'userId' });
     user.hasMany(models.user_role, { foreignKey: 'userId' });
     user.hasMany(models.user_permission, { foreignKey: 'userId' });
+    user.hasMany(models.otp, { foreignKey: 'userId' });
   };
   return user;
 };
