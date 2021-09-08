@@ -22,6 +22,7 @@ module.exports = class CategoryTreeService {
                 AWS.config.update({region: process.env.AWS_REGION, accessKeyId: process.env.AWS_ACCESS_KEY_ID, secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY});
                 const app = Consumer.create({
                     queueUrl: queueURL,
+                    attributeNames:['All', 'ApproximateFirstReceiveTimestamp', 'ApproximateReceiveCount'],
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
                         let subject = message_body.subject
