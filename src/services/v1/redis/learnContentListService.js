@@ -176,7 +176,18 @@ module.exports = class LearnContentListService {
     }
 
     async recachesingleCouse(queueData){
-        await learnContent.fetchCourseBySlug(queueData.course_slug ,true)
+        for (var i = 0; i < queueData.currencies.length; i++) {
+            let currency = queueData.currencies[i];
+            let payload = {
+                params:{
+                    slug:queueData.course_slug
+                },
+                query:{
+                    currency:currency
+                }
+            }
+            await learnContent.getLearnContent({} ,(err, data) => {},true)
+        }
     }
 
 }
