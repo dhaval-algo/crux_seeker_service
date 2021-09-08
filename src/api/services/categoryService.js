@@ -83,7 +83,7 @@ module.exports = class categoryService {
 
     async getTree(req, callback, skipCache){
         try{
-            let cacheName = `category-tee`
+            let cacheName = `category-tree`
             let useCache = false
             if(skipCache !=true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
