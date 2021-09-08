@@ -1,4 +1,7 @@
 const fetch = require("node-fetch");
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -78,11 +81,25 @@ const parseCategoryTree = (categoryTree) => {
 
 module.exports = class categoryService {
 
-    async getTree(req, callback){
+    async getTree(req, callback, skipCache){
         try{
-            let data = await getCategoryTree();
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            let cacheName = `category-tee`
+            let useCache = false
+            if(skipCache !=true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    useCache = true
+                }            
+            }
+            if(useCache !=true)
+            {
+                let data = await getCategoryTree();
+                RedisConnection.set(cacheName, data);
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            }
         }catch(err){
+            console.log("err", err)
             callback(null, {status: 'success', message: 'No records found!', data: []});
         }        
     }   
