@@ -186,7 +186,7 @@ module.exports = class LearnContentListService {
                     currency:currency
                 }
             }
-            await learnContent.getLearnContent({} ,(err, data) => {},true)
+            await learnContent.getLearnContent(payload ,(err, data) => {},true)
         }
     }
 
