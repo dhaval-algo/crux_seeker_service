@@ -43,7 +43,9 @@ module.exports = class LearnContentListService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                        that.recacheCouseList(JSON.parse(queueData))
+                        let parsedqueueData = JSON.parse(queueData)
+                        that.recacheCouseList(parsedqueueData)
+                        that.recachesingleCouse(parsedqueueData)
                          
                     },
                     sqs: new AWS.SQS()
@@ -171,6 +173,10 @@ module.exports = class LearnContentListService {
 
         return true;
 
+    }
+
+    async recachesingleCouse(queueData){
+        await learnContent.fetchCourseBySlug(queueData.course_slug ,true)
     }
 
 }
