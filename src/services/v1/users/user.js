@@ -1652,74 +1652,6 @@ const fetchbookmarkIds = async (req,res) => {
     })
 }
 
-const suspendAccount = async (req, res) => {
-    const { email } = req.body;
-    try {
-        let where = {
-            [Op.and]: [
-                {
-                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
-                }
-            ]
-        }
-        let userLogin = await models.user_login.findOne({ where: where})
-        let user = null
-        if (userLogin != null) {
-            user = await models.user.findOne({ where: { id: userLogin.userId} });
-        }
-        let userres = await models.user.update({
-            status: "suspended"
-        }, {
-            where: {
-                id: user.id
-            }
-        });
-               
-        await sendSuspendedEmail(userLogin)
-        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send({status: 'success', message: 'successfully supended!'})
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).send({error,success:false})
-    }
-}
-
-const reactivateAccount = async (req, res) => {
-    const { email } = req.body;
-    try {
-        let where = {
-            [Op.and]: [
-                {
-                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
-                }
-            ]
-        }
-        
-        let userLogin = await models.user_login.findOne({ where: where})
-        
-        let user = null
-        if (userLogin != null) {
-            user = await models.user.findOne({ where: { id: userLogin.userId} });
-        }
-        
-        let userres = await models.user.update({
-            status: "active"
-        }, {
-            where: {
-                id: user.id
-            }
-        });
-               
-        await sendActivatedEmail(userLogin)
-        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send({status: 'success', message: 'successfully activated!'})
-
-    } catch (error) {
-        console.log(error);
-        return res.status(500).send({error,success:false})
-    }
-}
 const verifyPhone = async (username) =>{
     return new Promise(async (resolve, reject) => {
         try{ 
@@ -1803,7 +1735,74 @@ const updatePhone = async (req,res) => {
             'data': {}
         })
     }
-   
+}
+const suspendAccount = async (req, res) => {
+    const { email } = req.body;
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        let userLogin = await models.user_login.findOne({ where: where})
+        let user = null
+        if (userLogin != null) {
+            user = await models.user.findOne({ where: { id: userLogin.userId} });
+        }
+        let userres = await models.user.update({
+            status: "suspended"
+        }, {
+            where: {
+                id: user.id
+            }
+        });
+               
+        await sendSuspendedEmail(userLogin)
+        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send({status: 'success', message: 'successfully supended!'})
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send({error,success:false})
+    }
+}
+
+const reactivateAccount = async (req, res) => {
+    const { email } = req.body;
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        
+        let userLogin = await models.user_login.findOne({ where: where})
+        
+        let user = null
+        if (userLogin != null) {
+            user = await models.user.findOne({ where: { id: userLogin.userId} });
+        }
+        
+        let userres = await models.user.update({
+            status: "active"
+        }, {
+            where: {
+                id: user.id
+            }
+        });
+               
+        await sendActivatedEmail(userLogin)
+        //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
+        return res.status(200).send({status: 'success', message: 'successfully activated!'})
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).send({error,success:false})
+    }
 }
 
 module.exports = {
@@ -1839,7 +1838,6 @@ module.exports = {
     suspendAccount,
     reactivateAccount,
     updatePhone,
-
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body

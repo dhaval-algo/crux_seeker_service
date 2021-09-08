@@ -1139,15 +1139,24 @@ module.exports = class learnContentService {
         }
     }
 
-    async fetchCourseBySlug(slug) {
+    async fetchCourseBySlug(slug, skipCache) {
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
               {term: { "status.keyword": 'published' }}
             ]
         }};
+        let cacheName = `single-course-${slug}`
+        if(!skipCache) {
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                return cacheData;
+            }
+        }
+
         let result = await elasticService.search('learn-content', query);
         if(result.hits && result.hits.length > 0) {
+            RedisConnection.set(cacheName, result.hits[0]._source);
             return result.hits[0]._source;
         } else {
             return null;
@@ -1462,6 +1471,7 @@ module.exports = class learnContentService {
                 }
             }
             
+
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
