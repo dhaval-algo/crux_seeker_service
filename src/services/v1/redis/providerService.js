@@ -29,10 +29,9 @@ module.exports = class ProviderService {
                     queueUrl: queueURL,
                     attributeNames:['All', 'ApproximateFirstReceiveTimestamp', 'ApproximateReceiveCount'],
                     handleMessage: async (message) => {
-                        console.log("==========message=======>",message)
                         let message_body = JSON.parse(message.Body)
-                        console.log("==========message_body=======>",message_body)
-                        let subject = message_body.subject
+                        
+                        let subject = message_body.Subject
                         let message_data = message_body.Message
                         let queueData = message_data
 
