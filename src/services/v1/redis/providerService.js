@@ -53,8 +53,7 @@ module.exports = class ProviderService {
                         
                         if(subject=='delete')
                         {
-                            let cacheName = `single-provider-${parsedqueueData.slug}`
-                            RedisConnection.delete(cacheName);
+                            that.deleteSingleProviderCache(parsedqueueData)                            
                         }
                          
                     },
@@ -107,6 +106,15 @@ module.exports = class ProviderService {
                 }
             }
             await provider.getProvider(payload ,(err, data) => {},true)
+        }      
+    }
+
+    async deleteSingleProviderCache(queueData){
+
+        for (var i = 0; i < queueData.currencies.length; i++) {
+            let currency = queueData.currencies[i];
+            let cacheName = `single-provider-${parsedqueueData.slug}_${currency}`
+            RedisConnection.delete(cacheName);            
         }      
     }
 
