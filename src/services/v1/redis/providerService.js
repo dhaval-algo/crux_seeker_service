@@ -54,7 +54,7 @@ module.exports = class ProviderService {
                         if(subject=='delete')
                         {
                             let cacheName = `single-provider-${parsedqueueData.slug}`
-                            RedisConnection.delete(cacheName, data);
+                            RedisConnection.delete(cacheName);
                         }
                          
                     },
