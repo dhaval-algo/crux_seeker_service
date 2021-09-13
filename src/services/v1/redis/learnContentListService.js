@@ -30,7 +30,7 @@ module.exports = class LearnContentListService {
                     attributeNames:['All', 'ApproximateFirstReceiveTimestamp', 'ApproximateReceiveCount'],
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
-                        let subject = message_body.subject
+                        let subject = message_body.Subject
                         let message_data = message_body.Message
                         let queueData = message_data
 
