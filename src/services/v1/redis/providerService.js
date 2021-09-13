@@ -85,7 +85,7 @@ module.exports = class ProviderService {
 
     async recacheProviderList(queueData){   
         
-        await learnContent.getProviderList({} , (err, data) => {}, true)
+        await provider.getProviderList({} , (err, data) => {}, true)
         return true;
 
     }
@@ -96,7 +96,7 @@ module.exports = class ProviderService {
                 slug:queueData.slug
             }
         }       
-        await learnContent.getProvider(payload ,(err, data) => {},true)        
+        await provider.getProvider(payload ,(err, data) => {},true)        
     }
 
 }
