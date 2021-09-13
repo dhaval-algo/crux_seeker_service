@@ -46,8 +46,6 @@ module.exports = class ProviderService {
                         // console.log("SQSConsumer->",subject)
                         let parsedqueueData = JSON.parse(queueData)
                         that.recacheProviderList(parsedqueueData)
-                        console.log("==========subject=======>",subject)
-                        console.log("==========parsedqueueData=======>",parsedqueueData)
                         if(subject=='update')
                         {
                             that.recacheSingleProvider(parsedqueueData)
@@ -97,12 +95,19 @@ module.exports = class ProviderService {
     }
 
     async recacheSingleProvider(queueData){
-        let payload = {
-            params:{
-                slug:queueData.slug
+
+        for (var i = 0; i < queueData.currencies.length; i++) {
+            let currency = queueData.currencies[i];
+            let payload = {
+                params:{
+                    slug:queueData.slug
+                },
+                query:{
+                    currency:currency
+                }
             }
-        }       
-        await provider.getProvider(payload ,(err, data) => {},true)        
+            await provider.getProvider(payload ,(err, data) => {},true)
+        }      
     }
 
 }

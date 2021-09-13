@@ -386,7 +386,7 @@ module.exports = class providerService {
 
     async getProvider(req, callback, skipCache){
         const slug = req.params.slug;
-        let cacheName = `single-provider-${slug}`
+        let cacheName = `single-provider-${slug}_${req.query.currency}`
         let useCache = false
         if(skipCache !=true) {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
