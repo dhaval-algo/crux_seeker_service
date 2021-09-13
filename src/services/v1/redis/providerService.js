@@ -113,7 +113,7 @@ module.exports = class ProviderService {
 
         for (var i = 0; i < queueData.currencies.length; i++) {
             let currency = queueData.currencies[i];
-            let cacheName = `single-provider-${parsedqueueData.slug}_${currency}`
+            let cacheName = `single-provider-${queueData.slug}_${currency}`
             RedisConnection.delete(cacheName);            
         }      
     }
