@@ -45,7 +45,15 @@ module.exports = class LearnContentListService {
                         // console.log("SQSConsumer->",subject)
                         let parsedqueueData = JSON.parse(queueData)
                         that.recacheCouseList(parsedqueueData)
-                        that.recachesingleCouse(parsedqueueData)
+                        if(subject=='update')
+                        {
+                            that.recachesingleCouse(parsedqueueData)
+                        }
+                        
+                        if(subject=='delete')
+                        {
+                            that.deletesingleCouseCache(parsedqueueData)                            
+                        }
                          
                     },
                     sqs: new AWS.SQS()
@@ -188,6 +196,15 @@ module.exports = class LearnContentListService {
             }
             await learnContent.getLearnContent(payload ,(err, data) => {},true)
         }
+    }
+
+    async deletesingleCouseCache(queueData){
+
+        for (var i = 0; i < queueData.currencies.length; i++) {
+            let currency = queueData.currencies[i];
+            let cacheName = `single-course-${queueData.slug}_${currency}`
+            RedisConnection.delete(cacheName);            
+        }      
     }
 
 }
