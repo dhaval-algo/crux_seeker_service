@@ -84,8 +84,11 @@ module.exports = class ProviderService {
     }
 
     async recacheProviderList(queueData){   
-        
-        await provider.getProviderList({} , (err, data) => {}, true)
+        let payload = {
+            query:{
+            }
+        }  
+        await provider.getProviderList(payload , (err, data) => {}, true)
         return true;
 
     }
