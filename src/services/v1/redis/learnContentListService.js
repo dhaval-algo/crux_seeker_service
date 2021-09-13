@@ -202,7 +202,7 @@ module.exports = class LearnContentListService {
 
         for (var i = 0; i < queueData.currencies.length; i++) {
             let currency = queueData.currencies[i];
-            let cacheName = `single-course-${queueData.slug}_${currency}`
+            let cacheName = `single-course-${queueData.course_slug}_${currency}`
             RedisConnection.delete(cacheName);            
         }      
     }
