@@ -45,6 +45,8 @@ module.exports = class ProviderService {
                         // console.log("SQSConsumer->",subject)
                         let parsedqueueData = JSON.parse(queueData)
                         that.recacheProviderList(parsedqueueData)
+                        console.log("==========subject=======>",subject)
+                        console.log("==========parsedqueueData=======>",parsedqueueData)
                         if(subject=='update')
                         {
                             that.recacheSingleProvider(parsedqueueData)
