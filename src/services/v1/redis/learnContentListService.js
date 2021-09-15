@@ -15,6 +15,9 @@ const learnContent = new learnContentService();
 const redisConnection = require('./index');
 const RedisConnection = new redisConnection();
 
+const providerCacheService = require('./providerService');
+const providerCache = new ProviderService();
+
 module.exports = class LearnContentListService {
 
     learnContentListSQSConsumer(){
@@ -195,8 +198,19 @@ module.exports = class LearnContentListService {
                 }
             }
             await learnContent.getLearnContent(payload ,(err, data) => {},true)
+
+            //Also invalidate the provider cache to which course belogs
+            let providerPayload = {
+                'currency' : queueData.currencies,
+                'slug' : queueData.provider_slug
+                
+            }
+            await learnContent.recacheSingleProvider(payload ,(err, data) => {},true)
+            
         }
     }
+
+    
 
     async deletesingleCouseCache(queueData){
 
