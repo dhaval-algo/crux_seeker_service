@@ -197,17 +197,16 @@ module.exports = class LearnContentListService {
                     currency:currency
                 }
             }
-            await learnContent.getLearnContent(payload ,(err, data) => {},true)
+            await learnContent.getLearnContent(payload ,(err, data) => {},true)            
+        }
 
-            //Also invalidate the provider cache to which course belogs
-            let providerPayload = {
-                'currency' : queueData.currencies,
-                'slug' : queueData.provider_slug
-                
-            }
-            await providerCache.recacheSingleProvider(payload ,(err, data) => {},true)
+        //invalidate the provider cache to which course belogs
+        let providerPayload = {
+            'currency' : queueData.currencies,
+            'slug' : queueData.provider_slug
             
         }
+        await providerCache.recacheSingleProvider(providerPayload)
     }
 
     
