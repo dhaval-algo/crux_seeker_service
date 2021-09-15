@@ -202,7 +202,7 @@ module.exports = class LearnContentListService {
 
         //invalidate the provider cache to which course belogs
         let providerPayload = {
-            'currency' : queueData.currencies,
+            'currencies' : queueData.currencies,
             'slug' : queueData.provider_slug
             
         }
