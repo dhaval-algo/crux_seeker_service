@@ -15,7 +15,7 @@ const learnContent = new learnContentService();
 const redisConnection = require('./index');
 const RedisConnection = new redisConnection();
 
-const providerCacheService = require('./providerService');
+const ProviderService = require('./providerService');
 const providerCache = new ProviderService();
 
 module.exports = class LearnContentListService {
@@ -205,7 +205,7 @@ module.exports = class LearnContentListService {
                 'slug' : queueData.provider_slug
                 
             }
-            await learnContent.recacheSingleProvider(payload ,(err, data) => {},true)
+            await providerCache.recacheSingleProvider(payload ,(err, data) => {},true)
             
         }
     }
