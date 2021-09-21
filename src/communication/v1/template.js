@@ -13,7 +13,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({ full_name: messagData.full_name,account_email: messagData.account_email,verification_link: messagData.verification_link, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Verify your Careervira account',message:emailTemplate};
+        let templateData = {subject:'Verify Your Careervira Account',message:emailTemplate};
  
         return templateData 
          
@@ -39,7 +39,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({reset_link:messagData.reset_link, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Careervira- reset password',message:emailTemplate};
+        let templateData = {subject:'Careervira- Reset Password',message:emailTemplate};
  
         return templateData 
          
@@ -78,7 +78,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Your Account is suspended',message:emailTemplate};
+        let templateData = {subject:'Your Account is Suspended',message:emailTemplate};
  
         return templateData 
          
@@ -91,7 +91,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Your Account is reactivated',message:emailTemplate};
+        let templateData = {subject:'Your Account is Reactivated',message:emailTemplate};
  
         return templateData 
          
