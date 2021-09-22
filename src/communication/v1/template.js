@@ -26,7 +26,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Welcome To Careervira',message:emailTemplate};
+        let templateData = {subject:'Welcome to Careervira',message:emailTemplate};
  
         return templateData 
          
