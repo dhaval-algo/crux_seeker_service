@@ -1390,7 +1390,19 @@ module.exports = class learnContentService {
                     partnerSalePrice: helperService.roundOff(result.sale_price, 2),
                     conversionRate: conversionRate,
                     tax: tax
-                }                
+                },
+                course_start_date: result.course_start_date || null,
+                course_end_date: result.course_end_date || null,
+                course_enrollment_start_date: result.course_enrollment_start_date || null,
+                course_enrollment_end_date: result.course_enrollment_end_date || null,
+                course_batch: {
+                    start_time: result.course_batch_start_time || null,
+                    end_time: result.course_batch_end_time || null,
+                    type: result.course_batch_type || null,
+                    size: result.course_batch_size || null,
+                    time_zone: result.course_batch_time_zone || null,
+                    time_zone_name: result.course_batch_time_zone_name || null
+                }
             },
             provider_course_url: result.provider_course_url,
             reviews: [],
