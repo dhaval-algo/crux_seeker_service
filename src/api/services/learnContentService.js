@@ -1470,7 +1470,37 @@ module.exports = class learnContentService {
                     name:result.syllabus.name,
                     url:result.syllabus.url
                 }
-
+            }
+            
+            if(result.additional_batches)
+            {
+                data.additional_batches = []
+                for (let batch of result.additional_batches)
+                {
+                    let additional_batch = {}
+                    additional_batch.id = batch.id
+                    additional_batch.batch = batch.batch
+                    additional_batch.batch_size = batch.batch_size
+                    additional_batch.batch_start_date = batch.batch_start_date
+                    additional_batch.batch_end_date = batch.batch_end_date
+                    additional_batch.batch_enrollment_start_date = batch.batch_enrollment_start_date
+                    additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
+                    additional_batch.total_duration = batch.total_duration
+                    additional_batch.total_duration_unit = batch.total_duration_unit
+                    additional_batch.batch_type = batch.batch_type.value
+                    additional_batch.batch_timings = {
+                        'time_zone_offset':batch.batch_timings.time_zone.time_zone_offset,
+                        'time_zone_name':batch.batch_timings.time_zone.time_zone_name,
+                        'start_time':batch.batch_timings.start_time,
+                        'end_time':batch.batch_timings.end_time,
+                    }
+                    if(data.course_details.pricing.display_price){
+                        additional_batch.pricing_type = batch.pricing_type
+                        additional_batch.regular_price = batch.regular_price
+                        additional_batch.sale_price = batch.sale_price
+                    }
+                    data.additional_batches.push(additional_batch);
+                }
             }
         }
 
