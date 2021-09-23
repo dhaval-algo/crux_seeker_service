@@ -30,6 +30,15 @@ app.use(upload.array());
 app.use(express.json());
 app.use(cors({ origin: true }));
 
+//dirty middleware patch for token verification error when request coming from domain with and alias eg: www.xyz.com.
+const renameHeaderOrigin = (req, res, next)=>{
+    let origin = req.headers.origin;
+    if(origin) req.headers.origin = origin.replace("www.","");
+    next();
+}
+
+app.use(renameHeaderOrigin);
+
 app.use("/api", require("./src/api/routes"));
 
 // Set up routes
