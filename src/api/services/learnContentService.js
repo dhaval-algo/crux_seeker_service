@@ -1489,10 +1489,10 @@ module.exports = class learnContentService {
                     additional_batch.total_duration_unit = batch.total_duration_unit
                     additional_batch.batch_type = batch.batch_type.value
                     additional_batch.batch_timings = {
-                        'time_zone_offset':batch.batch_timings.time_zone.time_zone_offset,
-                        'time_zone_name':batch.batch_timings.time_zone.time_zone_name,
-                        'start_time':batch.batch_timings.start_time,
-                        'end_time':batch.batch_timings.end_time,
+                        'time_zone_offset':batch.batch_time_zone.time_zone_offset,
+                        'time_zone_name':batch.batch_time_zone.time_zone_name,
+                        'start_time':batch.batch_start_time,
+                        'end_time':batch.batch_end_time,
                     }
                     if(data.course_details.pricing.display_price){
                         additional_batch.pricing_type = batch.pricing_type
