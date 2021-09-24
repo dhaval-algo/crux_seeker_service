@@ -467,7 +467,7 @@ const handleSocialSignUp = (userObj) => {
                 email: userObj.email || userObj.username,
                 providerData: userObj.providerData || {}
             }])
-            
+            await sendWelcomeEmail({email: userObj.email || userObj.username})
             return resolve({
                 success: true,
                 code: DEFAULT_CODES.USER_CREATED.code,
