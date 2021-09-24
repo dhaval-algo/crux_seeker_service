@@ -1388,9 +1388,6 @@ module.exports = class learnContentService {
             personalized_teaching: result.personalized_teaching,
             post_course_interaction: result.post_course_interaction,
             international_faculty: result.international_faculty,
-            batches: (result.batches) ? result.batches : [],
-            enrollment_start_date: result.enrollment_start_date,
-            enrollment_end_date: result.enrollment_end_date,
             hands_on_training: {
                 learning_mediums: result.learning_mediums,
                 virtual_labs: result.virtual_labs,
