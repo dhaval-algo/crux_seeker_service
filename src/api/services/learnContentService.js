@@ -1485,11 +1485,13 @@ module.exports = class learnContentService {
                     additional_batch.total_duration = batch.total_duration
                     additional_batch.total_duration_unit = batch.total_duration_unit
                     additional_batch.batch_type = batch.batch_type.value
-                    additional_batch.batch_timings = {
-                        'time_zone_offset':batch.batch_time_zone.time_zone_offset,
-                        'time_zone_name':batch.batch_time_zone.time_zone_name,
-                        'start_time':batch.batch_start_time,
-                        'end_time':batch.batch_end_time,
+                    if(batch.batch_start_time){
+                        additional_batch.batch_timings = {
+                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
+                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                            'start_time':batch.batch_start_time,
+                            'end_time':batch.batch_end_time,
+                        }
                     }
                     if(data.course_details.pricing.display_price){
                         additional_batch.pricing_type = batch.pricing_type
@@ -1498,6 +1500,10 @@ module.exports = class learnContentService {
                     }
                     data.additional_batches.push(additional_batch);
                 }
+            }
+            if(result.cv_take)
+            {
+                data.cv_take = result.cv_take
             }
         }
 
