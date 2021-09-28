@@ -1049,7 +1049,6 @@ module.exports = class learnContentService {
 
     async getLearnContent(req, callback, skipCache){
         const slug = req.params.slug;
-        //const currency = await getUserCurrency(req);
         currencies = await getCurrencies();
         let cacheName = `single-course-${slug}_${req.query.currency}`
         let useCache = false
@@ -1066,8 +1065,10 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
-                RedisConnection.set(cacheName, data);
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                this.getReviews({params:{courseId: "n2YaLHwBzmMwNKlWLf1k"}, query: {}}, (err,review_data)=>{
+                    if(review_data && review_data.data) data.reviews_extended = review_data.data;
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                })
             }else{
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
@@ -1076,6 +1077,121 @@ module.exports = class learnContentService {
              
     }
 
+    async getReviews(req, callback) {
+      const sortingkeys = ["newest", "highest_rated", "lowest_rated"];
+      const {
+        page = 1,
+        limit = 5,
+        sort = "highest_rated",
+        filters = {
+          keyword: null,
+        },
+      } = req.query;
+
+      const { courseId = "n2YaLHwBz" } = req.params;
+  
+      let nestedQuery = {
+          match_all: {}
+      }
+
+      let innerHits = {
+        highlight: {
+          fields: {
+            "reviews.review": {},
+          },
+        },
+        from: (page - 1) * limit,
+        size: limit,
+      };
+
+      switch (sort) {
+        case "highest_rated": case "lowest_rated":
+          innerHits.sort = { "reviews.rating": { order: sort == "highest_rated" ? "desc" : "asc" } };
+          break;
+        default:
+          innerHits.sort = { "reviews.review_date": { order: "desc" } };
+          break;
+      }
+
+      if(filters && filters.keyword){
+          nestedQuery = {
+            match: {
+              "reviews.review": filters.keyword,
+            }
+          }
+      }
+
+      let query = {
+        bool: {
+            filter: [
+                { term: { _id: {value: courseId} } }
+            ],
+          should: [
+            {
+              nested: {
+                path: "reviews",
+                query: nestedQuery,
+                inner_hits: innerHits,
+              },
+            },
+          ],
+        },
+      };
+
+      let queryPayload = {
+        from: 0,
+        size: 1,
+        aggs: {
+          reviews: {
+            nested: {
+              path: "reviews",
+            },
+            aggs: {
+              keywords: {
+                terms: {
+                  field: "reviews.review",
+                  min_doc_count: 1,
+                  exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across"],
+                },
+              },
+            },
+          },
+        },
+        _source: ["title"]
+      };
+
+      let response = {
+          list: [],
+          filters: filters,
+          keywords: [],
+          sortKeys: sortingkeys,
+      };
+
+      try{
+      const result = await elasticService.searchWithAggregate('leanr-content-v2', query, queryPayload);
+
+      if(result.hits.total.value > 0){
+        let innerReviewHits = result.hits.hits[0].inner_hits.reviews.hits;
+        if(innerReviewHits && innerReviewHits.total.value > 0){
+            let reviews = innerReviewHits.hits;
+            if(reviews.length > 0){
+                for(let hitObject of reviews){
+                    response.list.push({...hitObject._source,highlight: hitObject.highlight ? hitObject.highlight['reviews.review'] : []});
+                }
+            }
+        }
+        response.keywords = result.aggregations.reviews.keywords.buckets;
+      } else {
+        callback({status: "fail", message:"No course found for courseId: "+courseId}, null);
+      }
+
+      callback(null,{status: "success", message:"all good", data: response});
+      }catch(error){
+          console.log("getReviewsError");
+          console.dir(error,{depth: null})
+          callback({status: "fail", message:"someting went wrong"},null);
+      }
+    }
 
     async getRelatedCourses(req, callback) {
         const { courseId } = req.params;
