@@ -1501,7 +1501,8 @@ module.exports = class learnContentService {
                     data.additional_batches.push(additional_batch);
                 }
             }
-            if(result.cv_take)
+
+            if(result.cv_take && result.cv_take.display_cv_take)
             {
                 data.cv_take = result.cv_take
             }
