@@ -1147,6 +1147,7 @@ module.exports = class learnContentService {
 
       let response = {
           list: [],
+          totalCount: 0,
           filters: filters,
           keywords: [],
           sortKeys: sortingkeys,
@@ -1158,6 +1159,7 @@ module.exports = class learnContentService {
       if(result.hits.total.value > 0){
         let innerReviewHits = result.hits.hits[0].inner_hits.reviews.hits;
         if(innerReviewHits && innerReviewHits.total.value > 0){
+            response.totalCount = innerReviewHits.total.value;
             let reviews = innerReviewHits.hits;
             if(reviews.length > 0){
                 for(let hitObject of reviews){
