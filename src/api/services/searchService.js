@@ -204,7 +204,8 @@ module.exports = class searchService {
 
     async getCardData(data_source, entityData){
         let data = {};
-        if(data_source == 'learn-content' || data_source.includes('learn-content-v')){
+        console.log("data_source===========", data_source)
+        if(data_source == 'learn-content' || data_source.indexOf('learn-content-v') !=-1){
             data = {
                 index: data_source,
                 title: entityData.title,
