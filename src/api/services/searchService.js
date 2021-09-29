@@ -93,9 +93,12 @@ module.exports = class searchService {
         const uniqueFields = sourceFields.filter(function(item, pos, self) {
             return self.indexOf(item) == pos;
         });
-       
+        console.log("QUERY<<>>>>>> <> ");
+        console.dir(query,{depth:null});
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
-        //console.log("Result Reponse <<>>>>>> <> ", JSON.stringify(result));
+        console.log("Result Reponse <<>>>>>> <> ");
+        console.dir(query,{depth:null});
+        
         let data = {
             result: [],
             totalCount: 0,
