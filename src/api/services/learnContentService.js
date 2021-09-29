@@ -1495,8 +1495,8 @@ module.exports = class learnContentService {
                     }
                     if(data.course_details.pricing.display_price){
                         additional_batch.pricing_type = batch.pricing_type
-                        additional_batch.regular_price = batch.regular_price
-                        additional_batch.sale_price = batch.sale_price
+                        additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
+                        additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
                     }
                     data.additional_batches.push(additional_batch);
                 }
