@@ -205,7 +205,7 @@ module.exports = class searchService {
     async getCardData(data_source, entityData){
         let data = {};
         console.log("data_source===========", data_source)
-        if(data_source == 'learn-content' || data_source.indexOf('learn-content-v') !=-1){
+        if(data_source == 'learn-content' || data_source.indexOf('learn-content-v') !==-1){
             data = {
                 index: data_source,
                 title: entityData.title,
@@ -231,6 +231,7 @@ module.exports = class searchService {
                 description: "Advice"
             };
         }
+        
         return data;
     }
     
