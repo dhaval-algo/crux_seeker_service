@@ -93,11 +93,9 @@ module.exports = class searchService {
         const uniqueFields = sourceFields.filter(function(item, pos, self) {
             return self.indexOf(item) == pos;
         });
-        console.log("QUERY<<>>>>>> <> ");
-        console.dir(query,{depth:null});
+       
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
-        console.log("Result Reponse <<>>>>>> <> ");
-        console.dir(result,{depth:null});
+        
         
         let data = {
             result: [],
@@ -206,7 +204,7 @@ module.exports = class searchService {
 
     async getCardData(data_source, entityData){
         let data = {};
-        if(data_source == 'learn-content'){
+        if(data_source == 'learn-content' || data_source.includes('learn-content-v')){
             data = {
                 index: data_source,
                 title: entityData.title,
