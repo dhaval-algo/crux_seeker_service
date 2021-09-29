@@ -1055,7 +1055,6 @@ module.exports = class learnContentService {
             const data = await this.generateSingleViewData(course, false, req.query.currency);
             this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                 if(review_data && review_data.data) data.reviews_extended = review_data.data;
-                console.log(err);
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
             })
         }else{
