@@ -1065,7 +1065,7 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
-                this.getReviews({params:{courseId: "n2YaLHwBzmMwNKlWLf1k"}, query: {}}, (err,review_data)=>{
+                this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
                 })
@@ -1088,7 +1088,7 @@ module.exports = class learnContentService {
         },
       } = req.query;
 
-      const { courseId = "n2YaLHwBz" } = req.params;
+      const { courseId } = req.params;
   
       let nestedQuery = {
           match_all: {}
@@ -1151,7 +1151,7 @@ module.exports = class learnContentService {
                 terms: {
                   field: "reviews.review",
                   min_doc_count: 1,
-                  exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across"],
+                  exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for"],
                 },
               },
             },
@@ -1168,7 +1168,7 @@ module.exports = class learnContentService {
       };
 
       try{
-      const result = await elasticService.searchWithAggregate('leanr-content-v2', query, queryPayload);
+      const result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
 
       if(result.hits.total.value > 0){
         let innerReviewHits = result.hits.hits[0].inner_hits.reviews.hits;
@@ -1181,14 +1181,14 @@ module.exports = class learnContentService {
             }
         }
         response.keywords = result.aggregations.reviews.keywords.buckets;
+        callback(null,{status: "success", message:"all good", data: response});
       } else {
         callback({status: "fail", message:"No course found for courseId: "+courseId}, null);
       }
 
-      callback(null,{status: "success", message:"all good", data: response});
       }catch(error){
-          console.log("getReviewsError");
-          console.dir(error,{depth: null})
+          //console.log("getReviewsError");
+          //console.dir(error,{depth: null})
           callback({status: "fail", message:"someting went wrong"},null);
       }
     }
