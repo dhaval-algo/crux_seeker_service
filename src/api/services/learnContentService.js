@@ -1637,15 +1637,13 @@ module.exports = class learnContentService {
                     additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
                     additional_batch.total_duration = batch.total_duration
                     additional_batch.total_duration_unit = batch.total_duration_unit
-                    additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"
-                    if(batch.batch_start_time){
-                        additional_batch.batch_timings = {
-                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
-                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
-                            'start_time':batch.batch_start_time,
-                            'end_time':batch.batch_end_time,
-                        }
-                    }
+                    additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
+                    additional_batch.batch_timings = {
+                        'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
+                        'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                        'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
+                        'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
+                    }                    
                     if(data.course_details.pricing.display_price){
                         additional_batch.pricing_type = batch.pricing_type
                         additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
