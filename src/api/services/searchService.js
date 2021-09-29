@@ -97,7 +97,7 @@ module.exports = class searchService {
         console.dir(query,{depth:null});
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
         console.log("Result Reponse <<>>>>>> <> ");
-        console.dir(query,{depth:null});
+        console.dir(result,{depth:null});
         
         let data = {
             result: [],
