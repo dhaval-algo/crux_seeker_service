@@ -1135,7 +1135,7 @@ module.exports = class learnContentService {
               keywords: {
                 terms: {
                   field: "reviews.review",
-                  min_doc_count: 1,
+                  min_doc_count: 5,
                   exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for"],
                 },
               },
