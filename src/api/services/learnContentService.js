@@ -1138,6 +1138,12 @@ module.exports = class learnContentService {
         },
       };
 
+      let keywordTerms = {
+          field: "reviews.review",
+          min_doc_count: 5,
+          exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for", "you", "all"],
+      };
+
       let queryPayload = {
         from: 0,
         size: 1,
@@ -1147,18 +1153,14 @@ module.exports = class learnContentService {
               path: "reviews",
             },
             aggs: {
-              keywords: {
-                terms: {
-                  field: "reviews.review",
-                  min_doc_count: 5,
-                  exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for"],
-                },
-              },
+              keywords: {},
             },
           },
         },
         _source: ["title"]
       };
+
+      queryPayload.aggs.reviews.aggs.keywords[process.env.REVIEW_AGG_TYPE || "terms"] = keywordTerms;
 
       let response = {
           list: [],
