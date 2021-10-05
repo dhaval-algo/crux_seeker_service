@@ -1046,18 +1046,33 @@ module.exports = class learnContentService {
     }      
     }
 
-    async getLearnContent(req, callback){
+    async getLearnContent(req, callback, skipCache){
         const slug = req.params.slug;
         //const currency = await getUserCurrency(req);
         currencies = await getCurrencies();
-
-        const course = await this.fetchCourseBySlug(slug);
-        if(course){
-            const data = await this.generateSingleViewData(course, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+        let cacheName = `single-course-${slug}_${req.query.currency}`
+        let useCache = false
+        if(skipCache !=true) {
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                useCache = true
+            }            
+        }
+              
+        if(useCache !=true)
+        {
+            const course = await this.fetchCourseBySlug(slug);
+            if(course){
+                const data = await this.generateSingleViewData(course, false, req.query.currency);
+                RedisConnection.set(cacheName, data);
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            }else{
+                callback({status: 'failed', message: 'Not found!'}, null);
+            } 
+        }  
+        
+             
     }
 
 
@@ -1144,9 +1159,10 @@ module.exports = class learnContentService {
               {term: { "slug.keyword": slug }},
               {term: { "status.keyword": 'published' }}
             ]
-        }};
+        }};       
+
         let result = await elasticService.search('learn-content', query);
-        if(result.hits && result.hits.length > 0) {
+        if(result.hits && result.hits.length > 0) {            
             return result.hits[0]._source;
         } else {
             return null;

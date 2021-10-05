@@ -83,6 +83,14 @@ if(ENABLE_SITEMAP_CRON)
     const CustomPageService = require('./src/services/v1/redis/customPageService');
     const customPageService = new CustomPageService();
     customPageService.customPageSQSConsumer();
+
+    const CategoryTreeService = require('./src/services/v1/redis/categoryTreeService');
+    const categoryTreeService = new CategoryTreeService();
+    categoryTreeService.categoryTreeSQSConsumer();
+
+    const ProviderService = require('./src/services/v1/redis/providerService');
+    const providerService = new ProviderService();
+    providerService.providerSQSConsumer();
 }
 
 //Redis SQS consumers
