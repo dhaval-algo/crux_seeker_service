@@ -1452,8 +1452,13 @@ module.exports = class learnContentService {
                     }
                 }
             }
+            if(result.faq){
+                data.faq = result.faq
+            }
+            if(result.content_module){
+                data.content_module = result.content_module
 
-
+            }
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
