@@ -1065,8 +1065,13 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
-                RedisConnection.set(cacheName, data);
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+
+                this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
+                    if(review_data && review_data.data) data.reviews_extended = review_data.data;
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                    RedisConnection.set(cacheName, data);
+                }) 
+                
             }else{
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
