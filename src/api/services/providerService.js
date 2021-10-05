@@ -20,6 +20,10 @@ const {
     generateMetaInfo
 } = require('../utils/general');
 
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
+
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
 const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
@@ -150,7 +154,34 @@ const getFilterOption = (data, filter) => {
 
 module.exports = class providerService {
 
-    async getProviderList(req, callback){
+    async getProviderList(req, callback, skipCache){
+        let useCache = false;
+        let defaultSort = "name:asc";
+        let cacheName = "";
+        if(
+            req.query['instituteIds'] == undefined
+            && req.query['f'] == undefined
+            && (req.query['q'] == undefined || req.query['q'] == '')
+            && req.query['rank'] == undefined
+            && (
+                req.query['size'] == undefined
+                || req.query['size'] == defaultSize
+            )
+            && (
+                req.query['sort'] == undefined
+                || req.query['sort'] == defaultSort
+            )
+        ) 
+        {
+            useCache = true;
+            cacheName = `listing-providers_${defaultSort}`;
+            if(skipCache != true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }
+        }
         const filterConfigs = await getFilterConfigs('Provider');
         //console.log("filterConfigs <> ", filterConfigs);
         const query = { 
@@ -180,7 +211,7 @@ module.exports = class providerService {
             if(req.query['rank']){
                 req.query['sort'] = "rank:asc";
             }else{
-                req.query['sort'] = "name:asc";
+                req.query['sort'] = defaultSort;
             }            
         }
 
@@ -338,7 +369,9 @@ module.exports = class providerService {
                 data.meta_information  = meta_information;
             }
 
-            
+            if(useCache) {
+               RedisConnection.set(cacheName, data);
+            }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
@@ -351,21 +384,34 @@ module.exports = class providerService {
         }        
     }
 
-    async getProvider(req, callback){
+    async getProvider(req, callback, skipCache){
         const slug = req.params.slug;
-        const query = { "bool": {
-            "must": [
-              {term: { "slug.keyword": slug }},
-              {term: { "status.keyword": 'approved' }}
-            ]
-        }};
-        const result = await elasticService.search('provider', query);
-        if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+        let cacheName = `single-provider-${slug}_${req.query.currency}`
+        let useCache = false
+        if(skipCache !=true) {
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                useCache = true
+            }            
+        }
+        if(useCache !=true)
+        {
+            const query = { "bool": {
+                "must": [
+                {term: { "slug.keyword": slug }},
+                {term: { "status.keyword": 'approved' }}
+                ]
+            }};
+            const result = await elasticService.search('provider', query);
+            if(result.hits && result.hits.length > 0){
+                const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
+                RedisConnection.set(cacheName, data);
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            }else{
+                callback({status: 'failed', message: 'Not found!'}, null);
+            }
+        }       
     }
 
 

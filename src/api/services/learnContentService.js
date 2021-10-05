@@ -1046,18 +1046,33 @@ module.exports = class learnContentService {
     }      
     }
 
-    async getLearnContent(req, callback){
+    async getLearnContent(req, callback, skipCache){
         const slug = req.params.slug;
         //const currency = await getUserCurrency(req);
         currencies = await getCurrencies();
-
-        const course = await this.fetchCourseBySlug(slug);
-        if(course){
-            const data = await this.generateSingleViewData(course, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+        let cacheName = `single-course-${slug}_${req.query.currency}`
+        let useCache = false
+        if(skipCache !=true) {
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                useCache = true
+            }            
+        }
+              
+        if(useCache !=true)
+        {
+            const course = await this.fetchCourseBySlug(slug);
+            if(course){
+                const data = await this.generateSingleViewData(course, false, req.query.currency);
+                RedisConnection.set(cacheName, data);
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            }else{
+                callback({status: 'failed', message: 'Not found!'}, null);
+            } 
+        }  
+        
+             
     }
 
 
@@ -1144,9 +1159,10 @@ module.exports = class learnContentService {
               {term: { "slug.keyword": slug }},
               {term: { "status.keyword": 'published' }}
             ]
-        }};
+        }};       
+
         let result = await elasticService.search('learn-content', query);
-        if(result.hits && result.hits.length > 0) {
+        if(result.hits && result.hits.length > 0) {            
             return result.hits[0]._source;
         } else {
             return null;
@@ -1388,9 +1404,6 @@ module.exports = class learnContentService {
             personalized_teaching: result.personalized_teaching,
             post_course_interaction: result.post_course_interaction,
             international_faculty: result.international_faculty,
-            batches: (result.batches) ? result.batches : [],
-            enrollment_start_date: result.enrollment_start_date,
-            enrollment_end_date: result.enrollment_end_date,
             hands_on_training: {
                 learning_mediums: result.learning_mediums,
                 virtual_labs: result.virtual_labs,
@@ -1475,7 +1488,42 @@ module.exports = class learnContentService {
                     name:result.syllabus.name,
                     url:result.syllabus.url
                 }
+            }
+            
+            if(result.additional_batches)
+            {
+                data.additional_batches = []
+                for (let batch of result.additional_batches)
+                {
+                    let additional_batch = {}
+                    additional_batch.id = batch.id
+                    additional_batch.batch = batch.batch
+                    additional_batch.batch_size = batch.batch_size
+                    additional_batch.batch_start_date = batch.batch_start_date
+                    additional_batch.batch_end_date = batch.batch_end_date
+                    additional_batch.batch_enrollment_start_date = batch.batch_enrollment_start_date
+                    additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
+                    additional_batch.total_duration = batch.total_duration
+                    additional_batch.total_duration_unit = batch.total_duration_unit
+                    additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
+                    additional_batch.batch_timings = {
+                        'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
+                        'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                        'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
+                        'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
+                    }                    
+                    if(data.course_details.pricing.display_price){
+                        additional_batch.pricing_type = batch.pricing_type
+                        additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
+                        additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
+                    }
+                    data.additional_batches.push(additional_batch);
+                }
+            }
 
+            if(result.cv_take && result.cv_take.display_cv_take)
+            {
+                data.cv_take = result.cv_take
             }
         }
 
