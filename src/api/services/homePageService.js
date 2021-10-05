@@ -9,6 +9,9 @@ let LearnContentService = new learnContentService();
 const ArticleService = new articleService();
 const SectionService = new sectionService();
 
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
+
 const USER_RECOMMENDED_SECTIONS = ['jobTitle', 'wishlist', 'enquiries'];
 const MAX_ENTRY_PER_RECOMMENDED_SECTION = 3;
 
@@ -368,6 +371,7 @@ const formatHomepageData = async(data, user = null, currency) => {
 module.exports = class homePageService {  
 
   async getHomePageContent(req, callback) {
+   
     let data = {};
     try {
       const query = {
@@ -376,7 +380,17 @@ module.exports = class homePageService {
       const payload = {
         "size":100
       };
-      const result = await elasticService.search('home-page', query,payload);
+           
+      let cacheData = await RedisConnection.getValuesSync('home-page'); 
+      let  result = cacheData;             
+
+      if(cacheData.noCacheData) 
+      {
+        result = await elasticService.search('home-page', query,payload);
+        await RedisConnection.set('home-page', result);
+        RedisConnection.expire('home-page', 120);
+      }
+     
       if (result.hits && result.hits.length) {
         data = await formatHomepageData(result.hits[0]._source, req.user, req.query['currency'])
         return callback(null, { success: true, data })

@@ -30,6 +30,15 @@ app.use(upload.array());
 app.use(express.json());
 app.use(cors({ origin: true }));
 
+//dirty middleware patch for token verification error when request coming from domain with and alias eg: www.xyz.com.
+const renameHeaderOrigin = (req, res, next)=>{
+    let origin = req.headers.origin;
+    if(origin) req.headers.origin = origin.replace("www.","");
+    next();
+}
+
+app.use(renameHeaderOrigin);
+
 app.use("/api", require("./src/api/routes"));
 
 // Set up routes
@@ -83,6 +92,14 @@ if(ENABLE_SITEMAP_CRON)
     const CustomPageService = require('./src/services/v1/redis/customPageService');
     const customPageService = new CustomPageService();
     customPageService.customPageSQSConsumer();
+
+    const CategoryTreeService = require('./src/services/v1/redis/categoryTreeService');
+    const categoryTreeService = new CategoryTreeService();
+    categoryTreeService.categoryTreeSQSConsumer();
+
+    const ProviderService = require('./src/services/v1/redis/providerService');
+    const providerService = new ProviderService();
+    providerService.providerSQSConsumer();
 }
 
 //Redis SQS consumers
