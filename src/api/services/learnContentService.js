@@ -258,7 +258,7 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
             false_facet_value: filter.false_facet_value,
             implicit_filter_skip: filter.implicit_filter_skip,
             implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
+            options: (filter.filter_type == "Checkboxes") ? await getFilterOption(data, filter)  : [],
         };
 
         //Force level options to predefined order
@@ -381,7 +381,6 @@ const getDurationRangeOptions = (data, attribute) => {
             disabled: true
         },
         {
-
             label: '1 - 4 Weeks',
             count: 0,
             selected: false,
@@ -436,9 +435,45 @@ const getDurationRangeOptions = (data, attribute) => {
 };
 
 
-const getFilterOption = (data, filter) => {
+const getFilterOption = async (data, filter) => {
     let options = [];
     let others = null;
+    if(filter.elastic_attribute_name =="learn_type")
+    { 
+        var learn_types_images = {};
+        let cacheName = `learn_type_images`
+        let useCache = false        
+        let cacheData = await RedisConnection.getValuesSync(cacheName);
+        if(cacheData.noCacheData != true) {
+            learn_types_images =  cacheData   
+            let useCache = true				 
+        }
+              
+        if(useCache !=true)
+        {
+            let response = await fetch(`${apiBackendUrl}/learn-types`);
+            if (response.ok) {
+                let json = await response.json();
+                if(json){
+                    for(let learn_type of json)
+                    {
+                        
+                        if( learn_type.image &&  learn_type.image.formats){
+                            learn_types_images[learn_type.default_display_label] = {
+                            "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
+                            "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
+                            "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
+                            "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
+                            }
+                        }                    
+                    }
+                }
+            }           
+            RedisConnection.set(cacheName, data);
+            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
+        }       
+              
+    }
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
@@ -485,7 +520,7 @@ const getFilterOption = (data, filter) => {
                 if(entityData == 'Free_With_Condition'){
                     continue;
                 }
-
+                
                 if(entityData == 'Others'){
                     if(others != null){
                         others.count++;
@@ -504,12 +539,25 @@ const getFilterOption = (data, filter) => {
                 if(existing){
                     existing.count++;
                 }else{
-                    options.push({
-                        label: entityData,
-                        count: 1,
-                        selected: false,
-                        disabled: false
-                    });
+                    if(filter.elastic_attribute_name =="learn_type")
+                    {
+                        options.push({
+                            label: entityData,
+                            count: 1,
+                            selected: false,
+                            disabled: false,
+                            image:learn_types_images[entityData]
+                        });
+                    }
+                    else
+                    {
+                        options.push({
+                            label: entityData,
+                            count: 1,
+                            selected: false,
+                            disabled: false
+                        });
+                    }                   
                 }
             }
         }
@@ -1065,16 +1113,17 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
+
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-                })
+                    RedisConnection.set(cacheName, data);                    
+                }) 
+                
             }else{
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
-        }  
-        
-             
+        }
     }
 
     async getReviews(req, callback) {
@@ -1607,7 +1656,6 @@ module.exports = class learnContentService {
                 }
             }
             
-
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
