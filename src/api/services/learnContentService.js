@@ -1360,7 +1360,7 @@ module.exports = class learnContentService {
             if(category){
                 esQuery.bool.filter.push(
                     {"term": {
-                            "categories.keyword": category
+                            "categories.keyword": decodeURIComponent(category)
                         }
                     }
                 );
@@ -1368,7 +1368,7 @@ module.exports = class learnContentService {
             if(sub_category){
                 esQuery.bool.filter.push(
                     {"term": {
-                            "sub_categories.keyword": sub_category
+                            "sub_categories.keyword":  decodeURIComponent(sub_category)
                         }
                     }
                 );
@@ -1376,7 +1376,7 @@ module.exports = class learnContentService {
             if(topic){
                 esQuery.bool.filter.push(
                     {"term": {
-                            "topics.keyword": topic
+                            "topics.keyword":  decodeURIComponent(topic)
                         }
                     }
                 );
