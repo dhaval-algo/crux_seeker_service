@@ -1387,14 +1387,10 @@ module.exports = class learnContentService {
 
     async getPopularCourses(req, callback) {
         let { type } = req.params; // Populer, Trending,Free
-        let { category, sub_category, topic, currency, page = 1} = req.query;
-        const MAX_RESULTS = 20;
-        const LIMIT = 3;
-        let offset= (page -1) * LIMIT
-        if(offset + LIMIT > MAX_RESULTS)
-        {
-            offset = 0
-        }
+        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        
+        let offset= (page -1) * limit
+        
         let unsortedCourses = [];
         try {
 
@@ -1450,7 +1446,7 @@ module.exports = class learnContentService {
                 );
             }           
            
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: LIMIT });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
             
     
             if(result.hits){
@@ -1471,7 +1467,7 @@ module.exports = class learnContentService {
             let response = { success: true, message: "list fetched successfully", data:{ list: unsortedCourses } };
             callback(null, response);
         } catch (error) {
-            console.log("Error while processing data for populert courses", error);
+            console.log("Error while processing data for popular courses", error);
             callback(error, null);
         }
     }
