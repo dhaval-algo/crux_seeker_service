@@ -469,7 +469,7 @@ const getFilterOption = async (data, filter) => {
                     }
                 }
             }           
-            RedisConnection.set(cacheName, data);
+            RedisConnection.set(cacheName, learn_types_images);
             RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
         }       
               
