@@ -56,20 +56,76 @@ const getBaseCurrency = (result) => {
     return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
 };
 
-const getEntityLabelBySlug = async (entity, slug) => {
-    let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
-
-    if (response.ok) {
-    let json = await response.json();
-    
-    if(json && json.length){
-        return json[0].default_display_label;
-    }else{
-        return null;
-    }    
-    } else {
-        return null;
+const getEntityLabelBySlugFromCache= async (entity, slug) =>
+{
+    let cacheName = `enity_slug_${entity}`;
+    let entities = {}
+    let useCache = false        
+    let cacheData = await RedisConnection.getValuesSync(cacheName);
+    if(cacheData.noCacheData != true) {
+        entities =  cacheData   
+        useCache = true				 
+    }          
+    if(useCache !=true)
+    {
+        let response = await fetch(`${apiBackendUrl}/${entity}?_limit=-1`);
+        if (response.ok) {
+            let json = await response.json();
+            if(json){
+                for(let entity of json)
+                {                    
+                    if( entity.slug){
+                        entities[entity.slug] = {
+                        "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
+                        "description"  :(entity.description)?entity.description :null,
+                        }
+                    }                    
+                }
+            }
+        }
+        RedisConnection.set(cacheName, entities);
+        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
     }
+
+    return entities[slug]
+}
+
+const getEntityLabelBySlug = async (entity, slug) => {
+
+    let response = await getEntityLabelBySlugFromCache(entity, slug)
+    if(response)
+    {
+        return response;
+    }
+    else
+    {
+        let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
+        
+        if (response.ok) {
+        let json = await response.json();
+        
+        if(json && json.length){
+            let cacheName = `enity_slug_${entity}`;
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+
+                cacheData[slug] = {
+                "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
+                "description"  :(json[0].description)?json[0].description :null,
+                }
+                RedisConnection.set(cacheName, cacheData);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
+            }
+
+            return json[0];
+        }else{
+            return null;
+        }    
+        } else {
+            return null;
+        }
+    }
+   
 };
 
 const round = (value, step) => {
@@ -840,7 +896,9 @@ module.exports = class learnContentService {
             
             for(let i=0; i<slugs.length; i++){
                 let query_slug = slugs[i].replace("&", "%26");
-                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                let slugLabel = slug_data.default_display_label;
+                var slug_decription = slug_data.description;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -1058,8 +1116,13 @@ module.exports = class learnContentService {
                 list: list,
                 filters: filters,
                 pagination: pagination,
-                sort: req.query['sort']
+                sort: req.query['sort'],
             };
+            
+            if(req.query['pageType'] !== null)
+            { 
+                data.description =  slug_decription
+            }
             let meta_information = await generateMetaInfo  ('learn-content-list', result);
             if(meta_information)
             {
