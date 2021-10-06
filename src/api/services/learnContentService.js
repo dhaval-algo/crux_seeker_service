@@ -446,7 +446,7 @@ const getFilterOption = async (data, filter) => {
         let cacheData = await RedisConnection.getValuesSync(cacheName);
         if(cacheData.noCacheData != true) {
             learn_types_images =  cacheData   
-            let useCache = true				 
+            useCache = true				 
         }
               
         if(useCache !=true)
