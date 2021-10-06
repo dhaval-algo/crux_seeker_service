@@ -897,7 +897,7 @@ module.exports = class learnContentService {
             for(let i=0; i<slugs.length; i++){
                 let query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
-                let slugLabel = slug_data.default_display_label;
+                var slugLabel = slug_data.default_display_label;
                 var slug_decription = slug_data.description;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
@@ -1121,7 +1121,12 @@ module.exports = class learnContentService {
             
             if(req.query['pageType'] !== null)
             { 
-                data.description =  slug_decription
+                data.page_details =  {
+                    pageType: req.query['pageType'],                     
+                    slug:req.query['slug'],
+                    label:slugLabel,
+                    decription: slug_decription,
+                 }
             }
             let meta_information = await generateMetaInfo  ('learn-content-list', result);
             if(meta_information)
