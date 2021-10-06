@@ -676,10 +676,10 @@ const getSlugMapping = (req) => {
     slugMapping = [];
     if(req.query['pageType'] !== null){
         if(req.query['pageType'] == "category"){
-            slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            slugMapping = [{elastic_key: "categories" , entity_key: "categories", pageType:"category" }, {elastic_key: "sub_categories" , entity_key: "sub-categories",pageType:"sub_category" }];
         }
         if(req.query['pageType'] == "topic"){
-            slugMapping = [{elastic_key: "topics" , entity_key: "topics"}];
+            slugMapping = [{elastic_key: "topics" , entity_key: "topics", pageType:"topic"}];
         }            
     }
     return slugMapping;
@@ -898,6 +898,7 @@ module.exports = class learnContentService {
                 let query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 var slugLabel = slug_data.default_display_label;
+                var slug_pageType = slugMapping[i].pageType;
                 var slug_decription = slug_data.description;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
@@ -1119,15 +1120,14 @@ module.exports = class learnContentService {
                 sort: req.query['sort'],
             };
             
-            if(req.query['pageType'] !== null)
-            { 
-                data.page_details =  {
-                    pageType: req.query['pageType'],                     
-                    slug:req.query['slug'],
-                    label:slugLabel,
-                    decription: slug_decription,
-                 }
+            
+            data.page_details =  {
+                pageType: slug_pageType|| "default",                   
+                slug:req.query['slug'] || null,
+                label:slugLabel || null,
+                decription: slug_decription || null,
             }
+            
             let meta_information = await generateMetaInfo  ('learn-content-list', result);
             if(meta_information)
             {
