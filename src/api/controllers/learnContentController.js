@@ -71,6 +71,15 @@ module.exports = {
             }
         })
     },
+    getPopularCourses: async (req, res)=>{
+        LearnContentService.getPopularCourses(req,(err, data)=>{
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        })
+    },
 
     getReviews: async (req, res) => {
         LearnContentService.getReviews(req, (err, data) => {

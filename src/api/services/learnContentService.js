@@ -1322,6 +1322,99 @@ module.exports = class learnContentService {
         }
     }
 
+    async getPopularCourses(req, callback) {
+        let { type } = req.params; // Populer, Trending,Free
+        let { category, sub_category, topic, currency, page = 1} = req.query;
+        const MAX_RESULTS = 20;
+        const LIMIT = 3;
+        let offset= (page -1) * LIMIT
+        if(offset + LIMIT > MAX_RESULTS)
+        {
+            offset = 0
+        }
+        let unsortedCourses = [];
+        try {
+
+            //fields to fetch 
+            let fields = [
+                "sub_categories",
+                "skills",
+                "topics",
+                'title', 'id', 'status', 'regular_price'
+            ];
+
+            //priority 1 category list
+            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
+            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
+
+           
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ]
+                }
+            }
+            if(category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "categories.keyword": category
+                        }
+                    }
+                );
+            }
+            if(sub_category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "sub_categories.keyword": sub_category
+                        }
+                    }
+                );
+            }
+            if(topic){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "topics.keyword": topic
+                        }
+                    }
+                );
+            } 
+            
+            if(type && type =="Free"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Free" } }
+                );
+            }           
+           
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: LIMIT });
+            
+    
+            if(result.hits){
+                for(const hit of result.hits){
+                    var data = await this.generateSingleViewData(hit._source,true,currency)
+                    unsortedCourses.push(data);
+                }
+            }
+    
+            // for (var i=0; i < courseIds.length; i++) {
+            //     for(course of unsortedCourses){
+            //         if (course.id === courseIds[i]) {
+            //             courses[i] = course;
+            //         }
+            //     }
+            // }
+
+            let response = { success: true, message: "list fetched successfully", data:{ list: unsortedCourses } };
+            callback(null, response);
+        } catch (error) {
+            console.log("Error while processing data for populert courses", error);
+            callback(error, null);
+        }
+    }
+
+    
+
     async fetchCourseBySlug(slug) {
         const query = { "bool": {
             "must": [
