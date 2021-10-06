@@ -24,6 +24,7 @@ router.get('/learn-content/:slug', learnContentController.getSingleLearnContent)
 router.get('/learn-content-reviews/:courseId',learnContentController.getReviews);
 
 router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
+router.get('/popular-courses/:type', learnContentController.getPopularCourses);
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 
 router.get('/news', newsController.getNewsContent);
