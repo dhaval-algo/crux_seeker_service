@@ -676,10 +676,10 @@ const getSlugMapping = (req) => {
     slugMapping = [];
     if(req.query['pageType'] !== null){
         if(req.query['pageType'] == "category"){
-            slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            slugMapping = [{elastic_key: "categories" , entity_key: "categories", pageType:"category" }, {elastic_key: "sub_categories" , entity_key: "sub-categories",pageType:"sub_category" }];
         }
         if(req.query['pageType'] == "topic"){
-            slugMapping = [{elastic_key: "topics" , entity_key: "topics"}];
+            slugMapping = [{elastic_key: "topics" , entity_key: "topics", pageType:"topic"}];
         }            
     }
     return slugMapping;
@@ -897,7 +897,8 @@ module.exports = class learnContentService {
             for(let i=0; i<slugs.length; i++){
                 let query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
-                let slugLabel = slug_data.default_display_label;
+                var slugLabel = slug_data.default_display_label;
+                var slug_pageType = slugMapping[i].pageType;
                 var slug_decription = slug_data.description;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
@@ -1119,10 +1120,14 @@ module.exports = class learnContentService {
                 sort: req.query['sort'],
             };
             
-            if(req.query['pageType'] !== null)
-            { 
-                data.description =  slug_decription
+            
+            data.page_details =  {
+                pageType: slug_pageType|| "default",                   
+                slug:req.query['slug'] || null,
+                label:slugLabel || null,
+                decription: slug_decription || null,
             }
+            
             let meta_information = await generateMetaInfo  ('learn-content-list', result);
             if(meta_information)
             {
@@ -1388,14 +1393,10 @@ module.exports = class learnContentService {
 
     async getPopularCourses(req, callback) {
         let { type } = req.params; // Populer, Trending,Free
-        let { category, sub_category, topic, currency, page = 1} = req.query;
-        const MAX_RESULTS = 20;
-        const LIMIT = 3;
-        let offset= (page -1) * LIMIT
-        if(offset + LIMIT > MAX_RESULTS)
-        {
-            offset = 0
-        }
+        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        
+        let offset= (page -1) * limit
+        
         let unsortedCourses = [];
         try {
 
@@ -1451,7 +1452,7 @@ module.exports = class learnContentService {
                 );
             }           
            
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: LIMIT });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
             
     
             if(result.hits){
@@ -1472,7 +1473,7 @@ module.exports = class learnContentService {
             let response = { success: true, message: "list fetched successfully", data:{ list: unsortedCourses } };
             callback(null, response);
         } catch (error) {
-            console.log("Error while processing data for populert courses", error);
+            console.log("Error while processing data for popular courses", error);
             callback(error, null);
         }
     }
