@@ -15,6 +15,9 @@ const learnContent = new learnContentService();
 const redisConnection = require('./index');
 const RedisConnection = new redisConnection();
 
+const ProviderService = require('./providerService');
+const providerCache = new ProviderService();
+
 module.exports = class LearnContentListService {
 
     learnContentListSQSConsumer(){
@@ -30,7 +33,7 @@ module.exports = class LearnContentListService {
                     attributeNames:['All', 'ApproximateFirstReceiveTimestamp', 'ApproximateReceiveCount'],
                     handleMessage: async (message) => {
                         let message_body = JSON.parse(message.Body)
-                        let subject = message_body.subject
+                        let subject = message_body.Subject
                         let message_data = message_body.Message
                         let queueData = message_data
 
@@ -43,7 +46,17 @@ module.exports = class LearnContentListService {
                         await awsService.deleteFailedQueue(subject,queueURL,message_data,approximateReceiveCount,delete_params)  
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
-                        that.recacheCouseList(JSON.parse(queueData))
+                        let parsedqueueData = JSON.parse(queueData)
+                        that.recacheCouseList(parsedqueueData)
+                        if(subject=='update')
+                        {
+                            that.recachesingleCouse(parsedqueueData)
+                        }
+                        
+                        if(subject=='delete')
+                        {
+                            that.deletesingleCouseCache(parsedqueueData)                            
+                        }
                          
                     },
                     sqs: new AWS.SQS()
@@ -171,6 +184,40 @@ module.exports = class LearnContentListService {
 
         return true;
 
+    }
+
+    async recachesingleCouse(queueData){
+        for (var i = 0; i < queueData.currencies.length; i++) {
+            let currency = queueData.currencies[i];
+            let payload = {
+                params:{
+                    slug:queueData.course_slug
+                },
+                query:{
+                    currency:currency
+                }
+            }
+            await learnContent.getLearnContent(payload ,(err, data) => {},true)            
+        }
+
+        //invalidate the provider cache to which course belogs
+        let providerPayload = {
+            'currencies' : queueData.currencies,
+            'slug' : queueData.provider_slug
+            
+        }
+        await providerCache.recacheSingleProvider(providerPayload)
+    }
+
+    
+
+    async deletesingleCouseCache(queueData){
+
+        for (var i = 0; i < queueData.currencies.length; i++) {
+            let currency = queueData.currencies[i];
+            let cacheName = `single-course-${queueData.course_slug}_${currency}`
+            RedisConnection.delete(cacheName);            
+        }      
     }
 
 }
