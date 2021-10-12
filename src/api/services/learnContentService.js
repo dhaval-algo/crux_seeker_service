@@ -1872,12 +1872,12 @@ module.exports = class learnContentService {
             for(let review of result.reviews){
                 totalRating += review.rating;
                 
-                if(!isList){
-                    if(review.photo){
-                        review.photo = getMediaurl(review.photo.thumbnail);                    
-                    }
-                    data.reviews.push(review);
-                }
+                // if(!isList){
+                //     if(review.photo){
+                //         review.photo = getMediaurl(review.photo.thumbnail);                    
+                //     }
+                //     data.reviews.push(review);
+                // }
 
                 let rating_round = Math.floor(review.rating);
                 if(ratings[rating_round]){
