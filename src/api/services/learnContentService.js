@@ -1438,15 +1438,15 @@ module.exports = class learnContentService {
             }
             let sort = null
             switch (type) {                
-                case "Trending":                   
-                    sort = [ { "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" } ]
-                    break; 
-                default:                  
+                case "Trending":
                     sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
+                    break; 
+                default:
+                    sort = [{ "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
-           
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sort:sort});
+
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort});
             
     
             if(result.hits){

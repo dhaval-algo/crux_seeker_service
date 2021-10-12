@@ -60,6 +60,9 @@ module.exports = {
     if(payload.sort !== null){
       finalQuery.sort = payload.sort;
     } 
+    if(payload.sortObject !== null){
+      finalQuery.body.sort = payload.sortObject;
+    } 
 
     if(payload._source !== null){
       finalQuery._source = payload._source;
