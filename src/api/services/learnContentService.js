@@ -2030,4 +2030,18 @@ module.exports = class learnContentService {
 
         return orderData;
     }
+
+    async addActivity(req, callback){
+       try {
+           
+            const {user} = req;
+            const {courseId} = req.body	
+            const activity_log =  await helperService.logActvity("COURSE_VIEW",(user)? user.userId : null, courseId);
+            callback(null, {status: 'success', message: 'Added successfully!', data: null});
+       } catch (error) {
+           console.log("Course activity error",  error)
+            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+       }
+        
+    }
 }
