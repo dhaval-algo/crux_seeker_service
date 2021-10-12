@@ -39,16 +39,16 @@ const storeActivity = async () => {
 
         switch (activity_types[activity.activityId]) {
             case "COURSE_VIEW": 
-                activity_count[activity.resource].all_time.course_views= activity.count               
+                activity_count[activity.resource].all_time.course_views= Number(activity.count)              
                 break;
             case "COURSE_WISHLIST":
-                activity_count[activity.resource].all_time.course_wishlists= activity.count                
+                activity_count[activity.resource].all_time.course_wishlists= Number(activity.count)              
                 break;
             case "COURSE_ENQUIRED":
-                activity_count[activity.resource].all_time.course_enquiries= activity.count       
+                activity_count[activity.resource].all_time.course_enquiries= Number(activity.count)
                 break;                
             case "COURSE_PURCHASED":
-                activity_count[activity.resource].all_time.course_purchase= activity.count   
+                activity_count[activity.resource].all_time.course_purchase= Number(activity.count)
                 break;
             default:
                 break;
@@ -78,16 +78,16 @@ const storeActivity = async () => {
 
         switch (activity_types[activity.activityId]) {
             case "COURSE_VIEW": 
-                activity_count[activity.resource].all_time.course_views += activity.count               
+                activity_count[activity.resource].all_time.course_views += Number(activity.count)             
                 break;
             case "COURSE_WISHLIST":
-                activity_count[activity.resource].all_time.course_wishlists += activity.count                
+                activity_count[activity.resource].all_time.course_wishlists += Number(activity.count)
                 break;
             case "COURSE_ENQUIRED":
-                activity_count[activity.resource].all_time.course_enquiries += activity.count       
+                activity_count[activity.resource].all_time.course_enquiries += Number(activity.count)
                 break;                
             case "COURSE_PURCHASED":
-                activity_count[activity.resource].all_time.course_purchase += activity.count   
+                activity_count[activity.resource].all_time.course_purchase += Number(activity.count)
                 break;
             default:
                 break;
@@ -121,16 +121,16 @@ const storeActivity = async () => {
 
         switch (activity_types[activity.activityId]) {
             case "COURSE_VIEW": 
-                activity_count[activity.resource].last_x_days.course_views= activity.count               
+                activity_count[activity.resource].last_x_days.course_views= Number(activity.count)
                 break;
             case "COURSE_WISHLIST":
-                activity_count[activity.resource].last_x_days.course_wishlists= activity.count                
+                activity_count[activity.resource].last_x_days.course_wishlists= Number(activity.count)
                 break;
             case "COURSE_ENQUIRED":
-                activity_count[activity.resource].last_x_days.course_enquiries= activity.count       
+                activity_count[activity.resource].last_x_days.course_enquiries= Number(activity.count)
                 break;                
             case "COURSE_PURCHASED":
-                activity_count[activity.resource].last_x_days.course_purchase= activity.count   
+                activity_count[activity.resource].last_x_days.course_purchase= Number(activity.count)
                 break;
             default:
                 break;
@@ -164,23 +164,23 @@ const storeActivity = async () => {
 
         switch (activity_types[activity.activityId]) {
             case "COURSE_VIEW": 
-                activity_count[activity.resource].last_x_days.course_views += activity.count               
+                activity_count[activity.resource].last_x_days.course_views += Number(activity.count)
                 break;
             case "COURSE_WISHLIST":
-                activity_count[activity.resource].last_x_days.course_wishlists += activity.count                
+                activity_count[activity.resource].last_x_days.course_wishlists += Number(activity.count)
                 break;
             case "COURSE_ENQUIRED":
-                activity_count[activity.resource].last_x_days.course_enquiries += activity.count       
+                activity_count[activity.resource].last_x_days.course_enquiries += Number(activity.count)
                 break;                
             case "COURSE_PURCHASED":
-                activity_count[activity.resource].last_x_days.course_purchase += activity.count   
+                activity_count[activity.resource].last_x_days.course_purchase += Number(activity.count)
                 break;
             default:
                 break;
         }
         
     }
-
+    console.log("activity_count", activity_count);
     for ( const [key, value] of Object.entries(activity_count))
     {
         let payload = {
