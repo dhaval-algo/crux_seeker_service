@@ -180,7 +180,7 @@ const storeActivity = async () => {
         }
         
     }
-    console.log("activity_count", activity_count);
+
     for ( const [key, value] of Object.entries(activity_count))
     {
         let payload = {
