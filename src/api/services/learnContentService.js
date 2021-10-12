@@ -1396,7 +1396,7 @@ module.exports = class learnContentService {
         
         let offset= (page -1) * limit
         
-        let unsortedCourses = [];
+        let courses = [];
         try {
 
             //fields to fetch 
@@ -1408,11 +1408,9 @@ module.exports = class learnContentService {
             ];
 
             //priority 1 category list
-            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
-            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
-
+            // let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
+            // let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
            
-
             let esQuery = {
                 "bool": {
                     "filter": [
@@ -1449,7 +1447,23 @@ module.exports = class learnContentService {
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
-            }           
+            }
+            
+            switch (type) {                
+                case "Trending":
+                    esQuery.sort = [
+                            { "activity_count.all_time.course_views" : "desc" }, 
+                            { "rating" : "desc" },
+                            
+                        ]
+                    break; 
+                default:
+                    esQuery.sort = [
+                            { "activity_count.last_x_days.course_views" : "desc" },
+                            { "rating" : "desc" }
+                        ]
+                    break;
+            }
            
             let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
             
@@ -1457,19 +1471,11 @@ module.exports = class learnContentService {
             if(result.hits){
                 for(const hit of result.hits){
                     var data = await this.generateSingleViewData(hit._source,true,currency)
-                    unsortedCourses.push(data);
+                    courses.push(data);
                 }
             }
-    
-            // for (var i=0; i < courseIds.length; i++) {
-            //     for(course of unsortedCourses){
-            //         if (course.id === courseIds[i]) {
-            //             courses[i] = course;
-            //         }
-            //     }
-            // }
-
-            let response = { success: true, message: "list fetched successfully", data:{ list: unsortedCourses } };
+            
+            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
             callback(null, response);
         } catch (error) {
             console.log("Error while processing data for popular courses", error);
