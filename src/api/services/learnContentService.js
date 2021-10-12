@@ -1448,24 +1448,24 @@ module.exports = class learnContentService {
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
             }
-            
+            let sort = null
             switch (type) {                
                 case "Trending":
-                    esQuery.sort = [
+                    sort = [
                             { "activity_count.all_time.course_views" : "desc" }, 
                             { "rating" : "desc" },
                             
                         ]
                     break; 
                 default:
-                    esQuery.sort = [
+                    sort = [
                             { "activity_count.last_x_days.course_views" : "desc" },
                             { "rating" : "desc" }
                         ]
                     break;
             }
            
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sort:sort });
             
     
             if(result.hits){
