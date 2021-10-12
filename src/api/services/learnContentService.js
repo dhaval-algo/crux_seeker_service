@@ -1454,14 +1454,14 @@ module.exports = class learnContentService {
                 case "Trending":
                     sort = [
                             { "activity_count.all_time.course_views" : "desc" }, 
-                            { "rating" : "desc" },
+                            { "ratings" : "desc" },
                             
                         ]
                     break; 
                 default:
                     sort = [
                             { "activity_count.last_x_days.course_views" : "desc" },
-                            { "rating" : "desc" }
+                            { "ratings" : "desc" }
                         ]
                     break;
             }
