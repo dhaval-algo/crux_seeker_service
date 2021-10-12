@@ -3,7 +3,7 @@ let LearnContentService = new learnContentService();
 const paymentService = new (require("../services/PaymentService"));
 const userService = require("../../services/v1/users/user");
 const axios = require("axios");
-const helperService = require("../../utils/helper");
+const { helperService, logActvity} = require("../../utils/helper");
 
 module.exports = {
 
@@ -154,7 +154,7 @@ module.exports = {
 
                 /** Add the data to Strapi */
                 await axios.post(process.env.API_BACKEND_URL + "/orders", orderData);
-
+                const activity_log =  await logActvity("COURSE_PURCHASED", req.user.userId, "LRN_CNT_PUB_"+course.id);
                 return res.status(200).send({
                     code: "success",
                     success: true,
@@ -179,5 +179,14 @@ module.exports = {
                 message: "Error"
             });
         }
-    }
+    },
+    addActivity: async (req, res) => {
+        LearnContentService.addActivity(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
 };

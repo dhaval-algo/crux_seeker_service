@@ -1,6 +1,6 @@
 const models = require("../../../../models");
 const { FORM_TYPE_SOURCE, DEFAULT_CODES, USER_STATUS, USER_TYPE } = require('../../../utils/defaultCode')
-const { getLoginToken, calculateProfileCompletion, sendDataForStrapi } = require('../../../utils/helper')
+const { getLoginToken, calculateProfileCompletion, sendDataForStrapi,logActvity } = require('../../../utils/helper')
 const Sequelize = require('sequelize');
 const eventEmitter = require("../../../utils/subscriber");
 const Op = Sequelize.Op;
@@ -200,6 +200,7 @@ const handleGeneralEnquiry = (resBody, req) => {
                 if(insertInCRM) {
                     eventEmitter.emit('enquiry_placed',formSubmissionId)
                 }
+                const activity_log =  await logActvity("COURSE_ENQUIRED",userObj.userId, targetEntityId);
                 return resolve({
                     success: true,
                     code: DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code,

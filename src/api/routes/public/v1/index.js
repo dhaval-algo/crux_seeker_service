@@ -60,5 +60,6 @@ router.get('/author/:slug', ArticleController.getAuthor);
 router.post('/contact-us',footerController.sendContactEmail);
 router.post('/feedback',footerController.sendFeedbackEmail)
 
+router.post('/activity-course-viewed',injectTokenPayload, learnContentController.addActivity);
 
 module.exports = router;
