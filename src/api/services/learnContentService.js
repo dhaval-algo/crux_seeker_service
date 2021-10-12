@@ -1405,7 +1405,7 @@ module.exports = class learnContentService {
                 "sub_categories",
                 "skills",
                 "topics",
-                'title', 'id', 'status', 'regular_price'
+                "title", "id", "status", "regular_price"
             ];
 
             //priority 1 category list
@@ -1451,22 +1451,15 @@ module.exports = class learnContentService {
             }
             let sort = null
             switch (type) {                
-                case "Trending":
-                    sort = [
-                            { "activity_count.all_time.course_views" : "desc" }, 
-                            { "ratings" : "desc" },
-                            
-                        ]
+                case "Trending":                   
+                    sort = [ "activity_count.all_time.course_views:desc", "ratings:desc" ]
                     break; 
-                default:
-                    sort = [
-                            { "activity_count.last_x_days.course_views" : "desc" },
-                            { "ratings" : "desc" }
-                        ]
+                default:                  
+                    sort = [ "activity_count.last_x_days.course_views:desc", "ratings:desc"  ]
                     break;
             }
            
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sort:sort });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit,sort:sort});
             
     
             if(result.hits){
