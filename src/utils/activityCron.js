@@ -35,6 +35,12 @@ const storeActivity = async () => {
                 course_enquiries:0,
                 course_purchase:0
             }
+            activity_count[activity.resource].last_x_days = {
+                course_views:0,
+                course_wishlists:0,
+                course_enquiries:0,
+                course_purchase:0
+            }
         }
 
         switch (activity_types[activity.activityId]) {
@@ -69,6 +75,13 @@ const storeActivity = async () => {
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
+                course_views:0,
+                course_wishlists:0,
+                course_enquiries:0,
+                course_purchase:0
+            }
+
+            activity_count[activity.resource].last_x_days = {
                 course_views:0,
                 course_wishlists:0,
                 course_enquiries:0,
@@ -109,16 +122,6 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs)
     {
-        if(!activity_count[activity.resource].last_x_days)
-        {
-            activity_count[activity.resource].last_x_days = {
-                course_views:0,
-                course_wishlists:0,
-                course_enquiries:0,
-                course_purchase:0
-            }
-        }
-
         switch (activity_types[activity.activityId]) {
             case "COURSE_VIEW": 
                 activity_count[activity.resource].last_x_days.course_views= Number(activity.count)
@@ -152,16 +155,6 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_loggedout)
     {
-        if(!activity_count[activity.resource].last_x_days)
-        {
-            activity_count[activity.resource].last_x_days = {
-                course_views:0,
-                course_wishlists:0,
-                course_enquiries:0,
-                course_purchase:0
-            }
-        }
-
         switch (activity_types[activity.activityId]) {
             case "COURSE_VIEW": 
                 activity_count[activity.resource].last_x_days.course_views += Number(activity.count)
