@@ -1143,8 +1143,10 @@ module.exports = class learnContentService {
                         topics: course.topics_list.map(topc => topc.slug)
                     }
                     RedisConnection.set("listing-course-"+course.slug, courseSlugs);
+                    RedisConnection.expire("listing-course-"+course.slug, process.env.CACHE_EXPIRE_LISTING_COURSE);
                 });
                 RedisConnection.set(cacheName, data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE);
             }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
@@ -1185,7 +1187,8 @@ module.exports = class learnContentService {
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-                    RedisConnection.set(cacheName, data);                    
+                    RedisConnection.set(cacheName, data); 
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_COURSE);                   
                 }) 
                 
             }else{

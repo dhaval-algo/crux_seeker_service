@@ -32,6 +32,7 @@ module.exports = class CustomPageService {
 
             let data = { content:result.hits[0]._source };
             RedisConnection.set(cacheKey, data);
+            RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_CUSTOM_PAGE); 
 
             callback(null, {status: 'success', message: 'Fetched successfully!', data:data});
         } else {
