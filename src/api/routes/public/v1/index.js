@@ -20,7 +20,7 @@ const injectTokenPayload = require("../../../../services/v1/middleware/injectTok
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
 router.get('/learn-content-filters/', learnContentController.getLearnContentFilters);
-router.get('/learn-content/:slug', learnContentController.getSingleLearnContent);
+router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
 router.get('/learn-content-reviews/:courseId',learnContentController.getReviews);
 
 router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);

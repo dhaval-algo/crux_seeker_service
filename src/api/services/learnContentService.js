@@ -1167,12 +1167,14 @@ module.exports = class learnContentService {
 
     async getLearnContent(req, callback, skipCache){
         const slug = req.params.slug;
+        let courseId = null
         currencies = await getCurrencies();
 
         let cacheName = `single-course-${slug}_${req.query.currency}`
         let useCache = false
         if(skipCache !=true) {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
+            courseId = cacheData.id
             if(cacheData.noCacheData != true) {
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 useCache = true
@@ -1184,7 +1186,7 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
-
+                courseId = data.id
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
@@ -1196,6 +1198,8 @@ module.exports = class learnContentService {
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
         }
+        req.body.courseId = courseId
+        this.addActivity(req, (err, data) => {})
     }
 
     async getReviews(req, callback) {
