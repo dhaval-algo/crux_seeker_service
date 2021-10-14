@@ -63,8 +63,11 @@ if(ENABLE_SITEMAP_CRON)
             console.log("Error in copying", error);
         }
     });
-
-
+}
+// cron jobs
+const CACHE_INVALIDATION_CONSUMER = process.env.CACHE_INVALIDATION_CONSUMER || false;
+if(CACHE_INVALIDATION_CONSUMER)
+{
     const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
     const rankingHome = new rankingHomeService();
     rankingHome.rankingHomeSQSConsumer();

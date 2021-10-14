@@ -41,6 +41,7 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, footerData);
+            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_PAGE_FOOTER); 
 
             callback(null, {status: 'success', message: 'Fetched successfully!', data:footerData});
         } else {

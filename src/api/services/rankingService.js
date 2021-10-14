@@ -72,7 +72,9 @@ module.exports = class rankingService {
         if (result.hits && result.hits.length) {
             let response = await formatHomepageData(result.hits[0]._source);
             RedisConnection.set('ranking-article-slug', response.articles);
+            RedisConnection.expire('ranking-article-slug', process.env.CACHE_EXPIRE_ARTCLE_SLUG);
             RedisConnection.set('ranking-page', response.data);
+            RedisConnection.expire('ranking-page', process.env.CACHE_EXPIRE_RANKING_PAGE);
             return callback(null, { success: true, data:response.data });
         }
         return callback(null, { success: true, data:data })
