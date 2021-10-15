@@ -6,6 +6,7 @@ const multer = require('multer');
 const upload = multer();
 const path = require('path');
 const cron = require('node-cron')
+const compression = require('compression')
 
 global.appRoot = path.resolve(__dirname);
 
@@ -15,6 +16,9 @@ const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/site
 
 // create 
 const app = express();
+// compress all responses
+app.use(compression())
+
 app.set('trust proxy', true)
 app.use(bodyParser.json({ limit: '50mb' }));
 //resource path 
