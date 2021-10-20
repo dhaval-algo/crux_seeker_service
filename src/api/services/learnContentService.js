@@ -891,11 +891,12 @@ module.exports = class learnContentService {
         }
 
         let slugs = [];
+        let query_slug;
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
             
             for(let i=0; i<slugs.length; i++){
-                let query_slug = slugs[i].replace("&", "%26");
+                query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
@@ -1126,6 +1127,20 @@ module.exports = class learnContentService {
                 slug:req.query['slug'] || null,
                 label:slugLabel || null,
                 description: slug_description || null,
+            }
+            
+            if(slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic")
+            {
+                data.get_started =  {}
+                let param = {
+                    params: {type: "Populer"},
+                    query:{[slug_pageType]:slugLabel, page:1, limit : 6, currency: req.query['currency']}
+                }
+                data.get_started.popular = await this.getPopularCourses(param, (err, data) => {}, true)
+                param.params.type = "Trending"
+                data.get_started.trending = await this.getPopularCourses(param, (err, data) => {}, true)
+                param.params.type = "Free"
+                data.get_started.free = await this.getPopularCourses(param, (err, data) => {}, true)
             }
             
             let meta_information = await generateMetaInfo  ('learn-content-list', result);
@@ -1398,7 +1413,7 @@ module.exports = class learnContentService {
         }
     }
 
-    async getPopularCourses(req, callback) {
+    async getPopularCourses(req, callback, returnData) {
         let { type } = req.params; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
         
@@ -1453,10 +1468,9 @@ module.exports = class learnContentService {
                     sort = [{ "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
-
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort});
             
-    
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort});
+                
             if(result.hits){
                 for(const hit of result.hits){
                     var data = await this.generateSingleViewData(hit._source,true,currency)
@@ -1465,7 +1479,15 @@ module.exports = class learnContentService {
             }
             
             let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
-            callback(null, response);
+            if(returnData)
+            {
+                return courses;
+            }
+            else
+            {
+                callback(null, response);
+            }
+            
         } catch (error) {
             console.log("Error while processing data for popular courses", error);
             callback(error, null);
