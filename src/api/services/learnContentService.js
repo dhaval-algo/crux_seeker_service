@@ -1212,7 +1212,7 @@ module.exports = class learnContentService {
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
         }
-        req.body.courseId = courseId
+        req.body = {courseId: courseId}
         this.addActivity(req, (err, data) => {})
     }
 
