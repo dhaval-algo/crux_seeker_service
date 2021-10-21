@@ -7,6 +7,8 @@ const upload = multer();
 const path = require('path');
 const cron = require('node-cron')
 const compression = require('compression')
+const Sentry = require("@sentry/node");
+const Tracing = require("@sentry/tracing");
 
 global.appRoot = path.resolve(__dirname);
 
@@ -14,10 +16,20 @@ const routes = require('./src/routes');
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 const { storeActivity} = require('./src/utils/activityCron');
 
-// create 
+Sentry.init({
+  //dsn: "https://f23bb5364b9840c582710a48e3bf03ef@o1046450.ingest.sentry.io/6022217",
+
+  // Set tracesSampleRate to 1.0 to capture 100%
+  // of transactions for performance monitoring.
+  // We recommend adjusting this value in production
+  tracesSampleRate: 1.0,
+});
+
 const app = express();
 // compress all responses
 app.use(compression())
+
+app.use(Sentry.Handlers.requestHandler());
 
 app.set('trust proxy', true)
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -123,6 +135,7 @@ if(ENABLE_ACTVITY_LOG_CRON)
     });
 }
    
+app.use(Sentry.Handlers.errorHandler());
 
 //start server
 const port = process.env.PORT || "3001";

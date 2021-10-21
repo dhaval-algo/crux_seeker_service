@@ -5,6 +5,8 @@
   "main": "server.js",
   "dependencies": {
     "@elastic/elasticsearch": "^7.9.1",
+    "@sentry/node": "^6.13.3",
+    "@sentry/tracing": "^6.13.3",
     "aws-elasticsearch-connector": "^9.0.0",
     "aws-sdk": "^2.766.0",
     "axios": "^0.20.0",
