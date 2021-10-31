@@ -31,27 +31,6 @@ const allowZeroCountFields = ['level','categories','sub_categories'];
 
 const helperService = require("../../utils/helper");
 
-/* const getFilterConfigs = async () => {
-    let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=Learn_Content&filterable_eq=true&_sort=order:ASC`);
-    if (response.ok) {
-    let json = await response.json();
-    //console.log("Filter Configs <> ", json);
-    return json;
-    } else {
-        return [];
-    }
-};
-
-const getMediaurl = (mediaUrl) => {
-    if(mediaUrl !== null && mediaUrl !== undefined){
-        const isRelative = !mediaUrl.match(/(\:|\/\\*\/)/);
-        if(isRelative){
-            mediaUrl = process.env.ASSET_URL+mediaUrl;
-        }
-    }    
-    return mediaUrl;
-}; */
-
 const getBaseCurrency = (result) => {
     return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
 };
@@ -133,40 +112,6 @@ const round = (value, step) => {
     var inv = 1.0 / step;
     return Math.round(value * inv) / inv;
 };
-
-/* const getPaginationQuery = (query) => {
-    let page = 1;
-    let size = 25;
-    let from = 0;
-    if(query['page']){
-      page = parseInt(query['page']);
-    }
-    if(query['size']){
-      size = parseInt(query['size']);
-    }      
-    if(page > 1){
-      from = (page-1)*size;
-    }
-    return {
-      from,
-      size,
-      page
-    };
-}; */
-
-/* const parseQueryFilters = (filter) => {
-    const parsedFilterString = decodeURIComponent(filter);
-    let query_filters = [];
-    const filterArray = parsedFilterString.split("::");
-    for(const qf of filterArray){
-        const qfilters = qf.split(":");
-        query_filters.push({
-            key: qfilters[0],
-            value: qfilters[1].split(",")
-        });
-    }
-    return query_filters;
-}; */
 
 const parseQueryRangeFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
@@ -251,10 +196,7 @@ const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) =
             delete queryPayload['from'];
             delete queryPayload['size'];
         }
-        //queryPayload.from = 0;
-        //queryPayload.size = count;
-
-        //console.log("queryPayload <> ", queryPayload); 
+        
         let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
         const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT},fields);
         if(result.total && result.total.value > 0){
@@ -376,11 +318,6 @@ const getMaxValue = (data, attribute, userCurrency) => {
     let maxValue = 0;
     for(const esData of data){
         const entity = esData._source;
-        /* const baseCurrency = getBaseCurrency(entity);
-        const convertedAmount = getCurrencyAmount(entity[attribute], currencies, baseCurrency, userCurrency);
-        if(convertedAmount > maxValue){
-            maxValue = convertedAmount;
-        } */
         if(entity[attribute] > maxValue){
             maxValue = entity[attribute];
         }
@@ -417,6 +354,16 @@ const getRangeOptions = (data, attribute) => {
     options = options.filter(item => item.count > 0);
     return options;
 };
+
+
+const duration_keys = [
+    { key: 'Less Than 2 Hours', to: 2 },
+    { key: 'Less Than a Week', to: 168 },
+    { key: '1 - 4 Weeks', from: 168, to: 672 },
+    { key: '1 - 3 Months', from: 672, to: 2016 },
+    { key: '3+ Months', from: 2016 },
+]
+
 
 const getDurationRangeOptions = (data, attribute) => {
     let options = [
@@ -627,51 +574,6 @@ const getFilterOption = async (data, filter) => {
     return options;
 };
 
-
-/* const getFilterAttributeName = (attribute_name) => {
-    const keywordFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
-    if(keywordFields.includes(attribute_name)){
-        return `${attribute_name}.keyword`;
-    }else{
-        return attribute_name;
-    }
-}; */
-
-/* const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
-    for(let filter of filters){
-        if(filter.filter_type == "Checkboxes"){
-            let seleteddFilter = parsedFilters.find(o => o.key === filter.label);
-            if(seleteddFilter && filter.options){
-                for(let option of filter.options){
-                    if(seleteddFilter.value.includes(option.label)){
-                        option.selected = true;
-                    }
-                }
-            }
-        }
-        if(filter.filter_type == "RangeOptions"){
-            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            if(seleteddFilter && filter.options){
-                for(let option of filter.options){
-                    if((option.start ==  seleteddFilter.start) && (option.end ==  seleteddFilter.end)){
-                        option.selected = true;
-                    }
-                }
-            }
-        }
-        if(filter.filter_type == "RangeSlider"){
-            let seleteddFilter = parsedRangeFilters.find(o => o.key === filter.label);
-            if(seleteddFilter){
-                filter.min = seleteddFilter.start;
-                filter.max = seleteddFilter.end;
-            }
-        }
-    }
-
-    return filters;
-}; */
-
-
 const getSlugMapping = (req) => {
     slugMapping = [];
     if(req.query['pageType'] !== null){
@@ -685,120 +587,20 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
-const getFiltersModified = async (result,filters) => {
-    for(let i=0;i<filters.length;i++){
-        let label = filters[i].field;
-        for(let j=0;j<filters[i].options.length;j++){
-            let value = filters[i].options[j].label;
-
-        }
-    }
-    let cnt = 0;
-    for(let i=0;i<result.hits.length;i++){
-        if(result.hits[i]._source.level=="Advanced"){
-            cnt++;
-        }
-    }
-    return cnt;
-}
-
-const calculateNewCnt = async (data,filters) => {
-    
-    let ogFilters = JSON.parse(JSON.stringify(filters));
-    for(let i=0;i<filters.length;i++){
-        let field = filters[i].field;
-        let ops = filters[i].options;
-        let cnt = 0;
-        for(let j=0;j<ops.length;j++){
-            
-            cnt = 0;
-            for(let k=0;k<data.length;k++){
-                let dtVal = data[k]._source[field];
-                if(Array.isArray(dtVal)){
-                    if(dtVal.includes(ops[j].label)){
-                        cnt++;
-                    }
-                    // for(let dtArrVal of dtVal){
-                    //     if(field=='topics'){
-                    //         console.log('DTVAL type',dtArrVal,"<<>>",ops[j].label);
-                    //     }
-                    //     if(dtArrVal == ops[j].label){
-                    //         cnt++;
-                    //     }
-                    // }
-                }else{
-                    if(dtVal == ops[j].label){
-                        cnt++;
-                    }
-                }
-            }
-            
-            if(cnt == 0){
-
-                (ogFilters[i].options).splice(j,1);
-               
-                
-            }else{
-                if(filters[i].filter_type == "Checkboxes" && ogFilters[i].options && ogFilters[i].options[j]){
-                    ogFilters[i].options[j].count = cnt;
-                }
-            }
-        }
-        
-    }
-    return ogFilters;
-}
-
-
-/* const updateFilterCount = (filters, parsedFilters, filterConfigs, data) => {
-    if(parsedFilters.length <= 0){
-        return filters;
-    }
-    for(let filter of filters){
-        if(filter.filter_type !== 'Checkboxes'){
-            continue;
-        }
-        let parsedFilter = parsedFilters.find(o => o.key === filter.label);
-        if(!parsedFilter){
-            for(let option of filter.options){
-                option.count = 0;
-                let elasticAttribute = filterConfigs.find(o => o.label === filter.label);
-                    if(!elasticAttribute){
-                        continue;
-                    }
-                for(const esData of data){
-                    
-                    const entity = esData._source; 
-                    let entityData = entity[elasticAttribute.elastic_attribute_name];
-                    if(entityData){
-                        if(Array.isArray(entityData)){
-                            if(entityData.includes(option.label)){
-                                option.count++;
-                            }
-                        }else{
-                            if(entityData == option.label){
-                                option.count++;
-                            }
-                        }
-                    }
-                }
-                if(option.count == 0){
-                    option.disabled = true;
-                }
-            }
-        }
-
-        filter.options = filter.options.filter(function( obj ) {
-            return !obj.disabled;
-          });
-    }
-    return filters;
-}; */
-
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
+
+
+        console.log("========== \n")
+        let startTime = new Date().getTime();
+
         try{
+
+
+
+        console.time("get_list");
+
         let defaultSize = await getPaginationDefaultSize();
         let defaultSort = "ratings:desc";
         let useCache = false;
@@ -830,30 +632,36 @@ module.exports = class learnContentService {
                 cacheName = "listing-search_"+apiCurrency;                
             }
 
-            //required to update the cache once for bare queries after changing default sort to highest rated.
-            //else it would keep using the old cache with sort order newest.
             cacheName += `_${defaultSort}`;
 
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
+                    console.timeEnd("get_list");
                     return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 }
             }
         }
 
+
+        console.time("getCurrencies");
         currencies = await getCurrencies();
+        console.timeEnd("getCurrencies");
+
+
+        console.log(`Point 1: ${(new Date().getTime() - startTime) / 1000}s`);
 
         slugMapping = getSlugMapping(req);
 
+        console.time("getFilterConfig");
         const filterConfigs = await getFilterConfigs('Learn_Content');
+        console.timeEnd("getFilterConfig");
+        
         const query = { 
             "bool": {
-                //"should": [],
                 "must": [
                     {term: { "status.keyword": 'published' }}                
                 ],
-                //"filter": []
             }
         };
 
@@ -910,7 +718,6 @@ module.exports = class learnContentService {
             }           
         }
 
-        let queryString = null;
         if(req.query['q']){
             query.bool.must.push( 
                 {                    
@@ -941,45 +748,214 @@ module.exports = class learnContentService {
         let parsedFilters = [];
         let parsedRangeFilters = [];
         
-        let filterQuery = JSON.parse(JSON.stringify(query));
-        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-
-        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
+        //let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
         
         //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
        
-        let filters = filterResponse.filters;
+        let filters = [];
         
+
+
+        let esFilters = {};
+
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){                
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-                    /* query.bool.filter.push({
+
+                    let filter_object = {
                         "terms": {[attribute_name]: filter.value}
-                    }); */
-                    /* query.bool.must.push({
-                        "terms": {[attribute_name]: filter.value}
-                    }); */
+                    };
 
-                    // for(const fieldValue of filter.value){
-                    //     query.bool.must.push({
-                    //         "term": {[attribute_name]: fieldValue}
-                    //     });
-                    // }
+                    query.bool.must.push(filter_object);
+                    esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
+                }
+            }
+        }
 
-                    query.bool.must.push({
-                        "terms": {[attribute_name]: filter.value}
-                    });
+        if(req.query['rf']){
+            parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
+            for(const filter of parsedRangeFilters){
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                    let rangeQuery = {};
+                    if(filter.start !== "MIN"){
+                        let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
+                        if(filter.key == 'Price'){
+                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');                            
+                        }
+                        rangeQuery["gte"] = startValue;
+                    }
+                    if(filter.end !== "MAX"){
+                        let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
+                        if(filter.key == 'Price'){
+                            endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
+                            rangeQuery["lte"] = endValue;
+                        }else{
+                            rangeQuery["lt"] = endValue;
+                        }
+                    }
+
+                    let filter_object = {
+                        "range": {
+                            [attribute_name]: rangeQuery
+                         }
+                    };
+
+                    query.bool.must.push(filter_object);
+                    esFilters[elasticAttribute.elastic_attribute_name] = filter_object;                 
+                }
+            }
+        }
 
 
-              
+        //Aggreation query build 
+
+        let published_filter = { term: { "status.keyword": "published"  }};
+
+        let aggs = {
+            course_filters: {
+                global: {},
+                aggs: {
 
                 }
             }
         }
-        /*Ordering as per category tree*/
+
+       
+        const topHitsSize = 200;
+        const  rating_keys = [4.5,4.0,3.5,3.0].map(value=> ({ key: `${value} and Above`, from: value }));
+        const duration_keys = [
+            { key: 'Less Than 2 Hours', to: 2 },
+            { key: 'Less Than a Week', to: 168 },
+            { key: '1 - 4 Weeks', from: 168, to: 672 },
+            { key: '1 - 3 Months', from: 672, to: 2016 },
+            { key: '3+ Months', from: 2016 },
+        ]
+
+        for(let filter of filterConfigs) {
+            
+
+            let exemted_filters = esFilters;
+
+            if(esFilters.hasOwnProperty(filter.elastic_attribute_name)){
+                console.time("removingObs");
+                let {[filter.elastic_attribute_name]: ignored_filter, ...all_filters } = esFilters 
+                exemted_filters = all_filters;
+                console.timeEnd("removingObs");
+            }
+
+            exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
+
+            exemted_filters.push(published_filter);
+
+            let aggs_object = {
+                filter: { bool: { filter: exemted_filters } },
+                aggs: {}
+            }
+
+            switch(filter.filter_type){
+                case "Checkboxes":
+                    aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                    break;
+                case "RangeOptions":
+                    aggs_object.aggs['filtered'] = {
+                        range: {
+                            field: filter.elastic_attribute_name,
+                            ranges: filter.elastic_attribute_name == "ratings" ? rating_keys : duration_keys
+                        }
+                    }
+                    break;
+                case "RangeSlider":
+                    aggs_object.aggs['min'] = { min: {field: filter.elastic_attribute_name}}
+                    aggs_object.aggs['max'] = { max: {field: filter.elastic_attribute_name}} 
+                    break;
+            }
+            aggs.course_filters.aggs[filter.elastic_attribute_name] = aggs_object;
+        }
+
+        queryPayload.aggs = aggs;
+
+        // --Aggreation query build
+        
+
+
+        console.log(`Point 2: ${(new Date().getTime() - startTime) / 1000}s`);
+
+        //console.log(aggs);
+        console.time("fetchList");
+        let result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
+        console.timeEnd("fetchList");
+
+        //console.dir(result,{depth: 3});
+
+        /**
+         * Aggregation object from elastic search
+         */
+        let aggs_result = result.aggregations;
+
+        /**
+         * Hits Array from elastic search
+         */
+        result = result.hits;
+
+            for (let filter of filterConfigs) {
+
+                let facet = aggs_result.course_filters[filter.elastic_attribute_name];
+
+                let formatedFilters = {
+                    label: filter.label,
+                    field: filter.elastic_attribute_name,
+                    filterable: filter.filterable,
+                    sortable: filter.sortable,
+                    order: filter.order,
+                    is_singleton: filter.is_singleton,
+                    is_collapsed: filter.is_collapsed,
+                    display_count: filter.display_count,
+                    disable_at_zero_count: filter.disable_at_zero_count,
+                    is_attribute_param: filter.is_attribute_param,
+                    filter_type: filter.filter_type,
+                    is_essential: filter.is_essential,
+                    sort_on: filter.sort_on,
+                    sort_order: filter.sort_order,
+                    false_facet_value: filter.false_facet_value,
+                    implicit_filter_skip: filter.implicit_filter_skip,
+                    implicit_filter_default_value: filter.implicit_filter_default_value,
+                };
+
+                if(filter.filter_type == "RangeSlider"){
+                    formatedFilters.min = facet.min.value;
+                    formatedFilters.max = facet.max.value;
+                    formatedFilters.minValue = facet.min.value;
+                    formatedFilters.maxValue = facet.max.value;
+                } else {
+                    formatedFilters.options = facet.filtered.buckets.map(item => {
+                        let option = {
+                        label: item.key,
+                        count: item.doc_count,
+                        selected: false, //Todo need to updated selected.
+                        disabled: false
+                        }
+
+                        if(filter.filter_type == "RangeOptions") {
+                            option.start = item.from ? item.from : "MIN"
+                            option.end = item.to ? item.to : "MAX"
+                        }
+                        return option;
+                    });
+                }
+
+                filters.push(formatedFilters);
+ 
+            }
+
+
+
+                    /*Ordering as per category tree*/
         let formatCategory = true;
         if(parsedFilters)
         {
@@ -991,12 +967,18 @@ module.exports = class learnContentService {
                 }
             }
         }
+
+
         if(formatCategory)
         {
            let category_tree =[];
            let categoryFiletrOption =[];
            let categorykey = 0;
+
+           console.time("get-tree");
            let response = await fetch(`${apiBackendUrl}/category-tree`);
+           console.timeEnd("get-tree");
+
             if (response.ok) {
                let json = await response.json();
                if(json && json.final_tree){
@@ -1031,87 +1013,45 @@ module.exports = class learnContentService {
             }
 
         }
-        
-        if(req.query['rf']){
-            parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
-            for(const filter of parsedRangeFilters){
-                /* if(filter.key == "Ratings"){
-                    if(filter.start !== "MIN"){
-                        filter.start = filter.start*100;
-                    }
-                    if(filter.end !== "MAX"){
-                        filter.end = filter.end*100;
-                    }
-                } */
-                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
-                if(elasticAttribute){
-                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
 
-                    let rangeQuery = {};
-                    if(filter.start !== "MIN"){
-                        let startValue = (filter.key == "Ratings") ? (filter.start*100) : filter.start;
-                        if(filter.key == 'Price'){
-                            startValue = getCurrencyAmount(startValue, currencies, req.query['currency'], 'USD');                            
-                        }
-                        rangeQuery["gte"] = startValue;
-                    }
-                    if(filter.end !== "MAX"){
-                        let endValue = (filter.key == "Ratings") ? (filter.end*100) : filter.end;
-                        if(filter.key == 'Price'){
-                            endValue = getCurrencyAmount(endValue, currencies, req.query['currency'], 'USD');
-                            rangeQuery["lte"] = endValue;
-                        }else{
-                            rangeQuery["lt"] = endValue;
-                        }
-                        
-                    }
 
-                    query.bool.must.push({
-                        "range": {
-                            [attribute_name]: rangeQuery
-                         }
-                    });                 
-                }
+            //update selected flags
+            if (parsedFilters.length > 0 || parsedRangeFilters.length > 0) {
+                //filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+                //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+
+                console.time("updatedSelected");
+                filters = await updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+                console.timeEnd("updatedSelected");
             }
-        }
 
-        const result = await elasticService.search('learn-content', query, queryPayload);
 
-        if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits, req.query['currency'],useCache);
 
             let pagination = {
                 page: paginationQuery.page,
-                count: list.length,
+                count: result.hits,
                 perPage: paginationQuery.size,
                 totalCount: result.total.value,
-                total: filterResponse.total
+                total: result.total.value
               }
 
-            //let filters = await getFilters(result.hits, filterConfigs);
-            //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value); 
-            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);           
-            
-            //update selected flags
-            if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
-                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields); 
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
-                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+              let list = [];
+            if (result.total && result.total.value > 0) {
+
+                console.time("genList")
+                list = await this.generateListViewData(result.hits, req.query['currency'], useCache);
+                console.timeEnd("genList")
+
             }
+
 
             //Remove filters if requested by slug
-            for(let i=0; i<slugs.length; i++){
+            for (let i = 0; i < slugs.length; i++) {
                 const config = filterConfigs.find(o => o.elastic_attribute_name === slugMapping[i].elastic_key);
-                if(config){
+                if (config) {
                     filters = filters.filter(o => o.label !== config.label);
                 }
-            }
-
-            if(req.query['q'] && parsedFilters.length == 0 && parsedRangeFilters.length == 0){
-               
-              //  filters = await calculateNewCnt(result.hits,filters);
-                
             }
 
             let data = {
@@ -1120,36 +1060,45 @@ module.exports = class learnContentService {
                 pagination: pagination,
                 sort: req.query['sort'],
             };
-            
-            
-            data.page_details =  {
-                pageType: slug_pageType|| "default",                   
-                slug:req.query['slug'] || null,
-                label:slugLabel || null,
+
+
+            data.page_details = {
+                pageType: slug_pageType || "default",
+                slug: req.query['slug'] || null,
+                label: slugLabel || null,
                 description: slug_description || null,
             }
-            
-            if(slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic")
-            {
-                data.get_started =  {}
+
+            //TODO dont send data if filters are applied.
+            console.time("fetchOverview");
+            if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
+                data.get_started = {}
                 let param = {
-                    params: {type: "Populer"},
-                    query:{[slug_pageType]:slugLabel, page:1, limit : 6, currency: req.query['currency']}
+                    params: { type: "Populer" },
+                    query: { [slug_pageType]: slugLabel, page: 1, limit: 6, currency: req.query['currency'] }
                 }
-                data.get_started.popular = await this.getPopularCourses(param, (err, data) => {}, true)
+                data.get_started.popular = await this.getPopularCourses(param, (err, data) => { }, true)
                 param.params.type = "Trending"
-                data.get_started.trending = await this.getPopularCourses(param, (err, data) => {}, true)
+                data.get_started.trending = await this.getPopularCourses(param, (err, data) => { }, true)
                 param.params.type = "Free"
-                data.get_started.free = await this.getPopularCourses(param, (err, data) => {}, true)
+                data.get_started.free = await this.getPopularCourses(param, (err, data) => { }, true)
             }
-            
-            let meta_information = await generateMetaInfo  ('learn-content-list', result);
-            if(meta_information)
-            {
-                data.meta_information  = meta_information;
-            } 
-            
-            if(useCache) {
+
+            console.timeEnd("fetchOverview");
+
+            console.time("genMeta");
+            let meta_information = await generateMetaInfo('learn-content-list', result);
+            console.timeEnd("genMeta");
+            if (meta_information) {
+                data.meta_information = meta_information;
+            }
+
+                
+            console.timeEnd("get_list");
+
+            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+
+            if (useCache) {
                 list.forEach((course) => {
                     let courseSlugs = {
                         course_slug: course.slug,
@@ -1157,27 +1106,20 @@ module.exports = class learnContentService {
                         sub_categories: course.sub_categories_list.map(subcat => subcat.slug),
                         topics: course.topics_list.map(topc => topc.slug)
                     }
-                    RedisConnection.set("listing-course-"+course.slug, courseSlugs);
-                    RedisConnection.expire("listing-course-"+course.slug, process.env.CACHE_EXPIRE_LISTING_COURSE);
+                    RedisConnection.set("listing-course-" + course.slug, courseSlugs);
+                    RedisConnection.expire("listing-course-" + course.slug, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24);
                 });
                 RedisConnection.set(cacheName, data);
-                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24 );
             }
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            //update selected flags
-            if(parsedFilters.length > 0 || parsedRangeFilters.length > 0){
-                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
-                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-            }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters}});
-        }  
+
+
     }catch(e){
-        console.log("getLearnContentList errorr",e);
         callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
         
-    }      
+    }
+
+    
     }
 
     async getLearnContent(req, callback, skipCache){
@@ -1330,8 +1272,6 @@ module.exports = class learnContentService {
       }
 
       }catch(error){
-          //console.log("getReviewsError");
-          //console.dir(error,{depth: null})
           callback({status: "fail", message:"someting went wrong"},null);
       }
     }
