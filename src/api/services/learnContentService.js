@@ -56,20 +56,76 @@ const getBaseCurrency = (result) => {
     return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
 };
 
-const getEntityLabelBySlug = async (entity, slug) => {
-    let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
-
-    if (response.ok) {
-    let json = await response.json();
-    
-    if(json && json.length){
-        return json[0].default_display_label;
-    }else{
-        return null;
-    }    
-    } else {
-        return null;
+const getEntityLabelBySlugFromCache= async (entity, slug) =>
+{
+    let cacheName = `enity_slug_${entity}`;
+    let entities = {}
+    let useCache = false        
+    let cacheData = await RedisConnection.getValuesSync(cacheName);
+    if(cacheData.noCacheData != true) {
+        entities =  cacheData   
+        useCache = true				 
+    }          
+    if(useCache !=true)
+    {
+        let response = await fetch(`${apiBackendUrl}/${entity}?_limit=-1`);
+        if (response.ok) {
+            let json = await response.json();
+            if(json){
+                for(let entity of json)
+                {                    
+                    if( entity.slug){
+                        entities[entity.slug] = {
+                        "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
+                        "description"  :(entity.description)?entity.description :null,
+                        }
+                    }                    
+                }
+            }
+        }
+        RedisConnection.set(cacheName, entities);
+        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
     }
+
+    return entities[slug]
+}
+
+const getEntityLabelBySlug = async (entity, slug) => {
+
+    let response = await getEntityLabelBySlugFromCache(entity, slug)
+    if(response)
+    {
+        return response;
+    }
+    else
+    {
+        let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
+        
+        if (response.ok) {
+        let json = await response.json();
+        
+        if(json && json.length){
+            let cacheName = `enity_slug_${entity}`;
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+
+                cacheData[slug] = {
+                "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
+                "description"  :(json[0].description)?json[0].description :null,
+                }
+                RedisConnection.set(cacheName, cacheData);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
+            }
+
+            return json[0];
+        }else{
+            return null;
+        }    
+        } else {
+            return null;
+        }
+    }
+   
 };
 
 const round = (value, step) => {
@@ -258,7 +314,7 @@ const formatFilters = async (data, filterData, query, userCurrency) => {
             false_facet_value: filter.false_facet_value,
             implicit_filter_skip: filter.implicit_filter_skip,
             implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
+            options: (filter.filter_type == "Checkboxes") ? await getFilterOption(data, filter)  : [],
         };
 
         //Force level options to predefined order
@@ -435,9 +491,45 @@ const getDurationRangeOptions = (data, attribute) => {
 };
 
 
-const getFilterOption = (data, filter) => {
+const getFilterOption = async (data, filter) => {
     let options = [];
     let others = null;
+    if(filter.elastic_attribute_name =="learn_type")
+    { 
+        var learn_types_images = {};
+        let cacheName = `learn_type_images`
+        let useCache = false        
+        let cacheData = await RedisConnection.getValuesSync(cacheName);
+        if(cacheData.noCacheData != true) {
+            learn_types_images =  cacheData   
+            useCache = true				 
+        }
+              
+        if(useCache !=true)
+        {
+            let response = await fetch(`${apiBackendUrl}/learn-types`);
+            if (response.ok) {
+                let json = await response.json();
+                if(json){
+                    for(let learn_type of json)
+                    {
+                        
+                        if( learn_type.image &&  learn_type.image.formats){
+                            learn_types_images[learn_type.default_display_label] = {
+                            "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
+                            "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
+                            "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
+                            "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
+                            }
+                        }                    
+                    }
+                }
+            }           
+            RedisConnection.set(cacheName, learn_types_images);
+            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
+        }       
+              
+    }
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
@@ -484,7 +576,7 @@ const getFilterOption = (data, filter) => {
                 if(entityData == 'Free_With_Condition'){
                     continue;
                 }
-
+                
                 if(entityData == 'Others'){
                     if(others != null){
                         others.count++;
@@ -503,12 +595,25 @@ const getFilterOption = (data, filter) => {
                 if(existing){
                     existing.count++;
                 }else{
-                    options.push({
-                        label: entityData,
-                        count: 1,
-                        selected: false,
-                        disabled: false
-                    });
+                    if(filter.elastic_attribute_name =="learn_type")
+                    {
+                        options.push({
+                            label: entityData,
+                            count: 1,
+                            selected: false,
+                            disabled: false,
+                            image:learn_types_images[entityData]
+                        });
+                    }
+                    else
+                    {
+                        options.push({
+                            label: entityData,
+                            count: 1,
+                            selected: false,
+                            disabled: false
+                        });
+                    }                   
                 }
             }
         }
@@ -571,10 +676,10 @@ const getSlugMapping = (req) => {
     slugMapping = [];
     if(req.query['pageType'] !== null){
         if(req.query['pageType'] == "category"){
-            slugMapping = [{elastic_key: "categories" , entity_key: "categories"}, {elastic_key: "sub_categories" , entity_key: "sub-categories"}];
+            slugMapping = [{elastic_key: "categories" , entity_key: "categories", pageType:"category" }, {elastic_key: "sub_categories" , entity_key: "sub-categories",pageType:"sub_category" }];
         }
         if(req.query['pageType'] == "topic"){
-            slugMapping = [{elastic_key: "topics" , entity_key: "topics"}];
+            slugMapping = [{elastic_key: "topics" , entity_key: "topics", pageType:"topic"}];
         }            
     }
     return slugMapping;
@@ -786,12 +891,16 @@ module.exports = class learnContentService {
         }
 
         let slugs = [];
+        let query_slug;
         if(req.query['slug']){
             slugs = req.query['slug'].split(",");
             
             for(let i=0; i<slugs.length; i++){
-                let query_slug = slugs[i].replace("&", "%26");
-                let slugLabel = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                query_slug = slugs[i].replace("&", "%26");
+                var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                var slugLabel = slug_data.default_display_label;
+                var slug_pageType = slugMapping[i].pageType;
+                var slug_description = slug_data.description;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -1009,8 +1118,31 @@ module.exports = class learnContentService {
                 list: list,
                 filters: filters,
                 pagination: pagination,
-                sort: req.query['sort']
+                sort: req.query['sort'],
             };
+            
+            
+            data.page_details =  {
+                pageType: slug_pageType|| "default",                   
+                slug:req.query['slug'] || null,
+                label:slugLabel || null,
+                description: slug_description || null,
+            }
+            
+            if(slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic")
+            {
+                data.get_started =  {}
+                let param = {
+                    params: {type: "Populer"},
+                    query:{[slug_pageType]:slugLabel, page:1, limit : 6, currency: req.query['currency']}
+                }
+                data.get_started.popular = await this.getPopularCourses(param, (err, data) => {}, true)
+                param.params.type = "Trending"
+                data.get_started.trending = await this.getPopularCourses(param, (err, data) => {}, true)
+                param.params.type = "Free"
+                data.get_started.free = await this.getPopularCourses(param, (err, data) => {}, true)
+            }
+            
             let meta_information = await generateMetaInfo  ('learn-content-list', result);
             if(meta_information)
             {
@@ -1026,8 +1158,10 @@ module.exports = class learnContentService {
                         topics: course.topics_list.map(topc => topc.slug)
                     }
                     RedisConnection.set("listing-course-"+course.slug, courseSlugs);
+                    RedisConnection.expire("listing-course-"+course.slug, process.env.CACHE_EXPIRE_LISTING_COURSE);
                 });
                 RedisConnection.set(cacheName, data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE);
             }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
@@ -1048,12 +1182,14 @@ module.exports = class learnContentService {
 
     async getLearnContent(req, callback, skipCache){
         const slug = req.params.slug;
+        let courseId = null
         currencies = await getCurrencies();
 
         let cacheName = `single-course-${slug}_${req.query.currency}`
         let useCache = false
         if(skipCache !=true) {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
+            courseId = cacheData.id
             if(cacheData.noCacheData != true) {
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 useCache = true
@@ -1065,17 +1201,20 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
-
+                courseId = data.id
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-                    RedisConnection.set(cacheName, data);
+                    RedisConnection.set(cacheName, data); 
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_COURSE);                   
                 }) 
                 
             }else{
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
         }
+        req.body = {courseId: courseId}
+        this.addActivity(req, (err, data) => {})
     }
 
     async getReviews(req, callback) {
@@ -1272,6 +1411,89 @@ module.exports = class learnContentService {
             callback(error, null);
         }
     }
+
+    async getPopularCourses(req, callback, returnData) {
+        let { type } = req.params; // Populer, Trending,Free
+        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        
+        let offset= (page -1) * limit
+        
+        let courses = [];
+        try {
+            
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ]
+                }
+            }
+            if(category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if(sub_category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "sub_categories.keyword":  decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if(topic){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "topics.keyword":  decodeURIComponent(topic)
+                        }
+                    }
+                );
+            } 
+            
+            if(type && type =="Free"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Free" } }
+                );
+            }
+            let sort = null
+            switch (type) {                
+                case "Trending":
+                    sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
+                    break; 
+                default:
+                    sort = [{ "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" }]
+                    break;
+            }
+            
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort});
+                
+            if(result.hits){
+                for(const hit of result.hits){
+                    var data = await this.generateSingleViewData(hit._source,true,currency)
+                    courses.push(data);
+                }
+            }
+            
+            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+            if(returnData)
+            {
+                return courses;
+            }
+            else
+            {
+                callback(null, response);
+            }
+            
+        } catch (error) {
+            console.log("Error while processing data for popular courses", error);
+            callback(error, null);
+        }
+    }
+
+    
 
     async fetchCourseBySlug(slug) {
         const query = { "bool": {
@@ -1820,5 +2042,19 @@ module.exports = class learnContentService {
         }
 
         return orderData;
+    }
+
+    async addActivity(req, callback){
+       try {
+           
+            const {user} = req;
+            const {courseId} = req.body	
+            const activity_log =  await helperService.logActvity("COURSE_VIEW",(user)? user.userId : null, courseId);
+            callback(null, {status: 'success', message: 'Added successfully!', data: null});
+       } catch (error) {
+           console.log("Course activity error",  error)
+            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+       }
+        
     }
 }

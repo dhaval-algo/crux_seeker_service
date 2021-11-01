@@ -257,7 +257,6 @@ module.exports = class sectionService {
   async getSectionContent(slug, callback,skipCache) {
     let data = {}
     try {
-      console.log("skipCache------>",skipCache,slug)
       if(skipCache != true) {
           let cacheData = await RedisConnection.getValuesSync('section-page-'+slug);
           if(cacheData.noCacheData != true) {
@@ -275,11 +274,11 @@ module.exports = class sectionService {
       
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
-        console.log("section-------------->",'section-page-'+slug)
         let response = await buildSectionView(result.hits[0]._source)
-        console.log("response.articles",response.articles)
         RedisConnection.set('section-article-'+slug, response.articles);
+        RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
         RedisConnection.set('section-page-'+slug, response.data);
+        RedisConnection.expire('section-page-'+slug, process.env.CACHE_EXPIRE_SECTION_PAGE);
 
         return callback(null, { success: true, data:response.data })
       }
@@ -310,7 +309,9 @@ module.exports = class sectionService {
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
         RedisConnection.set('blog-home-article-slug', response.articles);
+        RedisConnection.expire('blog-home-article-slug', process.env.CACHE_EXPIRE_HOME_ARTICLE_SLUG);
         RedisConnection.set('blog-home-page', response.data);
+        RedisConnection.expire('blog-home-page', process.env.CACHE_EXPIRE_BLOG_HOME_PAGE);
 
         return callback(null, { success: true,  data:response.data })
       }

@@ -11,7 +11,7 @@ global.appRoot = path.resolve(__dirname);
 
 const routes = require('./src/routes');
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
-
+const { storeActivity} = require('./src/utils/activityCron');
 
 // create 
 const app = express();
@@ -63,8 +63,11 @@ if(ENABLE_SITEMAP_CRON)
             console.log("Error in copying", error);
         }
     });
-
-
+}
+// cron jobs
+const CACHE_INVALIDATION_CONSUMER = process.env.CACHE_INVALIDATION_CONSUMER || false;
+if(CACHE_INVALIDATION_CONSUMER)
+{
     const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
     const rankingHome = new rankingHomeService();
     rankingHome.rankingHomeSQSConsumer();
@@ -103,6 +106,18 @@ if(ENABLE_SITEMAP_CRON)
 }
 
 //Redis SQS consumers
+
+const ENABLE_ACTVITY_LOG_CRON = process.env.ENABLE_ACTVITY_LOG_CRON || false;
+if(ENABLE_ACTVITY_LOG_CRON)
+{
+    cron.schedule( process.env.ACIVITY_TRACKING_CRON_TIME, async function () {
+        try {        
+            await storeActivity()
+        } catch (error) {
+            console.log("Error in cron", error);
+        }
+    });
+}
    
 
 //start server

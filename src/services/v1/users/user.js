@@ -17,7 +17,8 @@ const {
     generateSingleViewData,
     sendDataForStrapi,
     sendSuspendedEmail,
-    sendActivatedEmail
+    sendActivatedEmail,
+    logActvity
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -1011,6 +1012,7 @@ const addCourseToWishList = async (req,res) => {
     const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
     const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
     let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
+    const activity_log =  await logActvity("COURSE_WISHLIST", user.userId, courseId);
     sendDataForStrapi(data, "profile-add-wishlist");
     return res.status(200).json({
         success:true,
@@ -1054,7 +1056,8 @@ const addCourseToRecentlyViewed = async (req,res) => {
             }
     
             const newRecord = await models.recently_viewed_course.create(unque_data);
-        }
+           
+        } 
 
         success = true;
         message = "Course added to recently viewed";
