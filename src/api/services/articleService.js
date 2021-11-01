@@ -117,9 +117,6 @@ module.exports = class articleService {
                 if(elasticAttribute){
                     let attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
 
-                    console.log(attribute_name);
-                    console.log(filter.value)
-
                     let filterObject = {
                         "terms": {[attribute_name == "author_first_name" ? "author_slug.keyword" : attribute_name ]: filter.value}
                     }
@@ -194,7 +191,6 @@ module.exports = class articleService {
             switch(filter.filter_type){
                 case "Checkboxes":
                     if(filter.elastic_attribute_name == "author_first_name"){
-                        console.log("in authro slug");
                         aggs_object.aggs['filtered'] = { terms: {script: "doc['author_first_name.keyword'].value + '::' + doc['author_last_name.keyword'].value + '::' + doc['author_slug.keyword'].value", size: topHitsSize}}
                     }
                     else { 
