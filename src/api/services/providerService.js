@@ -171,6 +171,9 @@ module.exports = class providerService {
                 req.query['sort'] == undefined
                 || req.query['sort'] == defaultSort
             )
+            && (
+                req.query['page'] == undefined || req.query['page'] == 1 ||  req.query['page'] == ""
+            )
         ) 
         {
             useCache = true;
