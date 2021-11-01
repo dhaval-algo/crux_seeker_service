@@ -615,6 +615,9 @@ module.exports = class providerService {
             data.rank_details = result.ranks.find(o => o.slug === rank);
         }
 
+        if(!isList){
+            data.institute_rankings = result.ranks;
+        }
         if(result.ranks){
             let sortedRanks = _.sortBy( result.ranks, 'rank' );
             let featuredCount = 0;
