@@ -1396,6 +1396,28 @@ const sendDataForStrapi = (userMeta, action) => {
     }
    publishToSNS(process.env.USER_PROFILE_TOPIC_ARN, userData, action)
 }
+
+const logActvity = async (type, userId, resource) => {
+    userId = (userId)? userId : 0
+    const activity =  await models.activity.findOne({ where: {type:type} });
+    if(userId > 0)
+    {
+        const activity_log = await models.activity_log.create({
+            userId: userId,
+            activityId:activity.id,
+            resource: resource
+        })
+    }
+    else
+    {
+        const activity_log = await models.activity_log_loggedout.create({
+            activityId:activity.id,
+            resource: resource
+        })
+    }
+    
+    return resource;
+}
    
 module.exports = {
     encryptStr,
@@ -1419,5 +1441,6 @@ module.exports = {
     roundOff,
     sendDataForStrapi,
     sendSuspendedEmail,
-    sendActivatedEmail
+    sendActivatedEmail,
+    logActvity
 }

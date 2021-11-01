@@ -371,6 +371,7 @@ module.exports = class providerService {
 
             if(useCache) {
                RedisConnection.set(cacheName, data);
+               RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_PROVIDER); 
             }
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
@@ -407,6 +408,7 @@ module.exports = class providerService {
             if(result.hits && result.hits.length > 0){
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
                 RedisConnection.set(cacheName, data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
             }else{
                 callback({status: 'failed', message: 'Not found!'}, null);

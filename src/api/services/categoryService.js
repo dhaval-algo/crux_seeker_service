@@ -96,6 +96,7 @@ module.exports = class categoryService {
             {
                 let data = await getCategoryTree();
                 RedisConnection.set(cacheName, data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_CATEGORE_TREEE); 
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
             }
         }catch(err){

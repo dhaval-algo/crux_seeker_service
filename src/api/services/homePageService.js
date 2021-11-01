@@ -388,7 +388,7 @@ module.exports = class homePageService {
       {
         result = await elasticService.search('home-page', query,payload);
         await RedisConnection.set('home-page', result);
-        RedisConnection.expire('home-page', 120);
+        RedisConnection.expire('home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
      
       if (result.hits && result.hits.length) {

@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
     user.hasMany(models.user_role, { foreignKey: 'userId' });
     user.hasMany(models.user_permission, { foreignKey: 'userId' });
     user.hasMany(models.otp, { foreignKey: 'userId' });
+    user.hasMany(models.activity_log, { foreignKey: 'userId' });
   };
   return user;
 };
