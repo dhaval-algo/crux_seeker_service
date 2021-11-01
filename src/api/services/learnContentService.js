@@ -355,16 +355,6 @@ const getRangeOptions = (data, attribute) => {
     return options;
 };
 
-
-const duration_keys = [
-    { key: 'Less Than 2 Hours', to: 2 },
-    { key: 'Less Than a Week', to: 168 },
-    { key: '1 - 4 Weeks', from: 168, to: 672 },
-    { key: '1 - 3 Months', from: 672, to: 2016 },
-    { key: '3+ Months', from: 2016 },
-]
-
-
 const getDurationRangeOptions = (data, attribute) => {
     let options = [
         {
@@ -477,6 +467,7 @@ const getFilterOption = async (data, filter) => {
         }       
               
     }
+
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity[filter.elastic_attribute_name];
@@ -597,8 +588,6 @@ module.exports = class learnContentService {
 
         try{
 
-
-
         console.time("get_list");
 
         let defaultSize = await getPaginationDefaultSize();
@@ -643,6 +632,7 @@ module.exports = class learnContentService {
             }
         }
 
+        let esFilters = {};
 
         console.time("getCurrencies");
         currencies = await getCurrencies();
@@ -689,13 +679,14 @@ module.exports = class learnContentService {
         if(req.query['courseIds']){
             let courseIds = req.query['courseIds'].split(",");
             
-            query.bool.must.push(
-                {
-                    "terms": {
-                      "id": courseIds 
-                    }
+            let filter_object = {
+                "terms": {
+                  "id": courseIds 
                 }
-            )
+            }
+
+            query.bool.must.push(filter_object)
+            esFilters['courseIds'] = filter_object;
         }
 
         let slugs = [];
@@ -712,15 +703,22 @@ module.exports = class learnContentService {
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
-                query.bool.must.push({
+
+
+                let filter_object =  {
                     "terms": {[`${slugMapping[i].elastic_key}.keyword`]: [slugLabel]}
-                });
+                }
+
+                query.bool.must.push(filter_object);
+
+                esFilters['slugged'] = filter_object;
+
             }           
         }
 
         if(req.query['q']){
-            query.bool.must.push( 
-                {                    
+
+            let filter_object = {                    
                 "bool": {
                     "should": [
                       {
@@ -742,7 +740,10 @@ module.exports = class learnContentService {
                     ]
                   }                    
                 }
-            );
+
+
+            query.bool.must.push(filter_object);
+            esFilters['q'] = filter_object;
             
         }
         let parsedFilters = [];
@@ -756,7 +757,7 @@ module.exports = class learnContentService {
         
 
 
-        let esFilters = {};
+
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -843,10 +844,8 @@ module.exports = class learnContentService {
             let exemted_filters = esFilters;
 
             if(esFilters.hasOwnProperty(filter.elastic_attribute_name)){
-                console.time("removingObs");
                 let {[filter.elastic_attribute_name]: ignored_filter, ...all_filters } = esFilters 
                 exemted_filters = all_filters;
-                console.timeEnd("removingObs");
             }
 
             exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
@@ -905,6 +904,46 @@ module.exports = class learnContentService {
 
             for (let filter of filterConfigs) {
 
+
+
+                if(filter.elastic_attribute_name =="learn_type")
+                { 
+                    var learn_types_images = {};
+                    let cacheName = `learn_type_images`
+                    let useCache = false        
+                    let cacheData = await RedisConnection.getValuesSync(cacheName);
+                    if(cacheData.noCacheData != true) {
+                        learn_types_images =  cacheData   
+                        useCache = true				 
+                    }
+                          
+                    if(useCache !=true)
+                    {
+                        let response = await fetch(`${apiBackendUrl}/learn-types`);
+                        if (response.ok) {
+                            let json = await response.json();
+                            if(json){
+                                for(let learn_type of json)
+                                {
+                                    
+                                    if( learn_type.image &&  learn_type.image.formats){
+                                        learn_types_images[learn_type.default_display_label] = {
+                                        "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
+                                        "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
+                                        "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
+                                        "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
+                                        }
+                                    }                    
+                                }
+                            }
+                        }           
+                        RedisConnection.set(cacheName, learn_types_images);
+                        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
+                    }       
+                          
+                }
+
+
                 let facet = aggs_result.course_filters[filter.elastic_attribute_name];
 
                 let formatedFilters = {
@@ -928,6 +967,16 @@ module.exports = class learnContentService {
                 };
 
                 if(filter.filter_type == "RangeSlider"){
+
+                    if(facet.min.value >= 0 && facet.min.value === facet.max.value)
+                    facet.max.value +=1;
+
+
+                    if(filter.elastic_attribute_name === "basePriceRound"){
+                        facet.min.value = facet.min.value > 0 ? getCurrencyAmount(facet.min.value, currencies,'USD',req.query['currency']): facet.min.value;
+                        facet.max.value = facet.max.value > 0 ? getCurrencyAmount(facet.max.value, currencies, 'USD',req.query['currency']): facet.max.value;
+                    }
+
                     formatedFilters.min = facet.min.value;
                     formatedFilters.max = facet.max.value;
                     formatedFilters.minValue = facet.min.value;
@@ -938,13 +987,19 @@ module.exports = class learnContentService {
                         label: item.key,
                         count: item.doc_count,
                         selected: false, //Todo need to updated selected.
-                        disabled: false
+                        disabled: false,
+                        image: null
                         }
 
                         if(filter.filter_type == "RangeOptions") {
                             option.start = item.from ? item.from : "MIN"
                             option.end = item.to ? item.to : "MAX"
                         }
+
+                
+                        if(filter.elastic_attribute_name == "learn_type")
+                        {   option.image  = learn_types_images[item.key] }
+
                         return option;
                     });
                 }
@@ -1026,8 +1081,6 @@ module.exports = class learnContentService {
             }
 
 
-
-
             let pagination = {
                 page: paginationQuery.page,
                 count: result.hits,
@@ -1071,18 +1124,18 @@ module.exports = class learnContentService {
 
             //TODO dont send data if filters are applied.
             console.time("fetchOverview");
-            if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
-                data.get_started = {}
-                let param = {
-                    params: { type: "Populer" },
-                    query: { [slug_pageType]: slugLabel, page: 1, limit: 6, currency: req.query['currency'] }
-                }
-                data.get_started.popular = await this.getPopularCourses(param, (err, data) => { }, true)
-                param.params.type = "Trending"
-                data.get_started.trending = await this.getPopularCourses(param, (err, data) => { }, true)
-                param.params.type = "Free"
-                data.get_started.free = await this.getPopularCourses(param, (err, data) => { }, true)
-            }
+            // if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
+            //     data.get_started = {}
+            //     let param = {
+            //         params: { type: "Populer" },
+            //         query: { [slug_pageType]: slugLabel, page: 1, limit: 6, currency: req.query['currency'] }
+            //     }
+            //     data.get_started.popular = await this.getPopularCourses(param, (err, data) => { }, true)
+            //     param.params.type = "Trending"
+            //     data.get_started.trending = await this.getPopularCourses(param, (err, data) => { }, true)
+            //     param.params.type = "Free"
+            //     data.get_started.free = await this.getPopularCourses(param, (err, data) => { }, true)
+            // }
 
             console.timeEnd("fetchOverview");
 
