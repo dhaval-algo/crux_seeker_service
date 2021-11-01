@@ -968,10 +968,6 @@ module.exports = class learnContentService {
 
                 if(filter.filter_type == "RangeSlider"){
 
-                    if(facet.min.value >= 0 && facet.min.value === facet.max.value)
-                    facet.max.value +=1;
-
-
                     if(filter.elastic_attribute_name === "basePriceRound"){
                         facet.min.value = facet.min.value > 0 ? getCurrencyAmount(facet.min.value, currencies,'USD',req.query['currency']): facet.min.value;
                         facet.max.value = facet.max.value > 0 ? getCurrencyAmount(facet.max.value, currencies, 'USD',req.query['currency']): facet.max.value;
