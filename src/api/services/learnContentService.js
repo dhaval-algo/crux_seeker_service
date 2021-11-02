@@ -9,11 +9,8 @@ const {
     getPaginationQuery,
     getPaginationDefaultSize,
     getMediaurl,
-    updateFilterCount,
-    calculateFilterCount,
     getFilterAttributeName,
     updateSelectedFilters,
-    sortFilterOptions
 } = require('../utils/general');
 
 const redisConnection = require('../../services/v1/redis');
@@ -25,7 +22,6 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
-const MAX_RESULT = 10000;
 const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
@@ -186,385 +182,6 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
-const getFilters = async (data, filterConfigs) => {
-    return formatFilters(data, filterConfigs);
-};
-
-//
-const getAllFilters = async (query, queryPayload, filterConfigs, userCurrency) => {
-        if(queryPayload.from !== null && queryPayload.size !== null){
-            delete queryPayload['from'];
-            delete queryPayload['size'];
-        }
-        
-        let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
-        const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT},fields);
-        if(result.total && result.total.value > 0){
-            //return formatFilters(result.hits, filterConfigs, query, userCurrency);
-            // console.log("result",result)
-            return {
-                filters: await formatFilters(result.hits, filterConfigs, query, userCurrency),
-                total: result.total.value
-            };
-        }else{
-            //return [];
-            return {
-                filters: [],
-                total: 0
-            }
-        }
-};
-
-const getInitialData = async (query) => {
-    delete query.bool['filter'];
-    for(let i=0; i<query.bool.must.length; i++){
-         if(query.bool.must[i]["range"]){
-                query.bool.must.splice(i, 1);
-        }
-    } 
-   
-    const result = await elasticService.search('learn-content', query, {from: 0, size: 25});
-    if(result.total && result.total.value > 0){
-        return result.hits;
-    }else{
-        return [];
-    }
-};
-
-const formatFilters = async (data, filterData, query, userCurrency) => {
-    let filters = [];
-    const initialData = await getInitialData(query);
-    let emptyOptions = [];
- 
-    for(const filter of filterData){
-
-        let formatedFilters = {
-            label: filter.label,
-            field: filter.elastic_attribute_name,
-            filterable: filter.filterable,
-            sortable: filter.sortable,
-            order: filter.order,
-            is_singleton: filter.is_singleton,
-            is_collapsed: filter.is_collapsed,
-            display_count: filter.display_count,
-            disable_at_zero_count: filter.disable_at_zero_count,
-            is_attribute_param: filter.is_attribute_param,
-            filter_type: filter.filter_type,
-            is_essential: filter.is_essential,
-            sort_on: filter.sort_on,
-            sort_order: filter.sort_order,
-            false_facet_value: filter.false_facet_value,
-            implicit_filter_skip: filter.implicit_filter_skip,
-            implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: (filter.filter_type == "Checkboxes") ? await getFilterOption(data, filter)  : [],
-        };
-
-        //Force level options to predefined order
-        if(filter.elastic_attribute_name == 'level'){
-            let newOptions = [];
-            let orderedLabels = ['Beginner','Intermediate','Advanced'];
-            for(const label of orderedLabels){
-                let opt = formatedFilters.options.find(o => o.label === label);
-                if(opt){
-                    newOptions.push(opt);
-                }
-            }
-            formatedFilters.options = newOptions;
-        }
-
-        if(rangeFilterTypes.includes(filter.filter_type)){
-            if(filter.filter_type == 'RangeSlider'){
-
-                const maxValue = getMaxValue(initialData, filter.elastic_attribute_name, userCurrency);
-                if(maxValue <= 0){
-                    continue;
-                }
-
-                formatedFilters.min = 0;
-                formatedFilters.max = maxValue;
-                formatedFilters.minValue = 0;
-                formatedFilters.maxValue = maxValue;
-            }
-
-            if(filter.filter_type == 'RangeOptions'){
-                if(filter.elastic_attribute_name == 'ratings'){
-                    formatedFilters.options = getRangeOptions(initialData, filter.elastic_attribute_name);
-                }
-                if(filter.elastic_attribute_name == 'total_duration_in_hrs'){
-                    formatedFilters.options = getDurationRangeOptions(initialData, filter.elastic_attribute_name);
-                }
-            }
-        }  
-        
-        if(filter.filter_type !== 'RangeSlider'){
-            if(formatedFilters.options.length <= 0){
-                emptyOptions.push(filter.label);
-            }
-        }
-
-        filters.push(formatedFilters);
-    }
-
-    if(emptyOptions.length > 0){
-        filters = filters.filter(function( obj ) {
-            return !emptyOptions.includes(obj.label);
-          });
-    }
-
-    return filters;    
-};
-
-const getMaxValue = (data, attribute, userCurrency) => {
-    let maxValue = 0;
-    for(const esData of data){
-        const entity = esData._source;
-        if(entity[attribute] > maxValue){
-            maxValue = entity[attribute];
-        }
-    }
-    if(maxValue > 0){
-        maxValue = getCurrencyAmount(maxValue, currencies, process.env.DEFAULT_CURRENCY, userCurrency);
-    }
-    return maxValue;
-};
-
-
-const getRangeOptions = (data, attribute) => {
-    let predefinedOptions = [4.5,4.0,3.5,3.0];
-    let options = [];
-    for(let i=0; i<predefinedOptions.length; i++){
-        count = 0;
-        for(const esData of data){
-            const entity = esData._source;
-            if(entity[attribute] >= predefinedOptions[i]*100){                
-                count++;
-            }
-        }
-
-        let option = {
-            label: `${predefinedOptions[i].toString()} & Above`,
-            count: count,
-            selected: false,
-            start: predefinedOptions[i],
-            end: 'MAX',
-            disabled: (count > 0) ? false : true
-        };
-        options.push(option);
-    }
-    options = options.filter(item => item.count > 0);
-    return options;
-};
-
-const getDurationRangeOptions = (data, attribute) => {
-    let options = [
-        {
-            label: 'Less Than 2 Hours',
-            count: 0,
-            selected: false,
-            start: 'MIN',
-            end: 2,
-            disabled: true
-        },
-        {
-            label: 'Less Than a Week',
-            count: 0,
-            selected: false,
-            start: 'MIN',
-            end: 168,
-            disabled: true
-        },
-        {
-            label: '1 - 4 Weeks',
-            count: 0,
-            selected: false,
-            start: 168,
-            end: 672,
-            disabled: true
-        },
-        {
-            label: '1 - 3 Months',
-            count: 0,
-            selected: false,
-            start: 672,
-            end: 2016,
-            disabled: true
-        },
-        {
-            label: '3+ Months',
-            count: 0,
-            selected: false,
-            start: 2016,
-            end: 'MAX',
-            disabled: true
-        }
-    ];
-
-    for(let poption of options){
-        for(const esData of data){
-            const entity = esData._source;
-            if(poption.start !== 'MIN' && poption.end !== 'MAX'){
-                if(entity[attribute] >= poption.start && entity[attribute] <= poption.end){
-                    poption.count++;
-                }
-            }else{
-                if(poption.start == 'MIN'){
-                    if(entity[attribute] <= poption.end){
-                        poption.count++;
-                    }
-                }
-                if(poption.end == 'MAX'){
-                    if(entity[attribute] >= poption.start){
-                        poption.count++;
-                    }
-                }
-            }           
-        }
-        if(poption.count > 0){
-            poption.disabled = false;
-        }
-    }
-    options = options.filter(item => item.count > 0);
-    return options;
-};
-
-
-const getFilterOption = async (data, filter) => {
-    let options = [];
-    let others = null;
-    if(filter.elastic_attribute_name =="learn_type")
-    { 
-        var learn_types_images = {};
-        let cacheName = `learn_type_images`
-        let useCache = false        
-        let cacheData = await RedisConnection.getValuesSync(cacheName);
-        if(cacheData.noCacheData != true) {
-            learn_types_images =  cacheData   
-            useCache = true				 
-        }
-              
-        if(useCache !=true)
-        {
-            let response = await fetch(`${apiBackendUrl}/learn-types`);
-            if (response.ok) {
-                let json = await response.json();
-                if(json){
-                    for(let learn_type of json)
-                    {
-                        
-                        if( learn_type.image &&  learn_type.image.formats){
-                            learn_types_images[learn_type.default_display_label] = {
-                            "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
-                            "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
-                            "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
-                            "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
-                            }
-                        }                    
-                    }
-                }
-            }           
-            RedisConnection.set(cacheName, learn_types_images);
-            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
-        }       
-              
-    }
-
-    for(const esData of data){
-        const entity = esData._source;
-        let entityData = entity[filter.elastic_attribute_name];
-
-        if(filter.label == "Price Type" && entityData == 'emi'){
-            //console.log("entityData <> ", entityData);
-            continue;
-        }
-
-        if(entityData){
-            if(Array.isArray(entityData)){
-                for(const entry of entityData){
-                    if(entry == 'Free_With_Condition'){
-                        continue;
-                    }
-
-                    if(entry == 'Others'){
-                        if(others != null){
-                            others.count++;
-                        }else{
-                            others = {
-                                label: entry,
-                                count: 1,
-                                selected: false,
-                                disabled: false
-                            }
-                        }                        
-                        continue;
-                    }
-
-                    let existing = options.find(o => o.label === entry);
-                    if(existing){
-                        existing.count++;
-                    }else{
-                        options.push({
-                            label: entry,
-                            count: 1,
-                            selected: false,
-                            disabled: false
-                        });
-                    }
-                }
-            }else{
-                if(entityData == 'Free_With_Condition'){
-                    continue;
-                }
-                
-                if(entityData == 'Others'){
-                    if(others != null){
-                        others.count++;
-                    }else{
-                        others = {
-                            label: entityData,
-                            count: 1,
-                            selected: false,
-                            disabled: false
-                        }
-                    }                        
-                    continue;
-                }
-
-                let existing = options.find(o => o.label === entityData);
-                if(existing){
-                    existing.count++;
-                }else{
-                    if(filter.elastic_attribute_name =="learn_type")
-                    {
-                        options.push({
-                            label: entityData,
-                            count: 1,
-                            selected: false,
-                            disabled: false,
-                            image:learn_types_images[entityData]
-                        });
-                    }
-                    else
-                    {
-                        options.push({
-                            label: entityData,
-                            count: 1,
-                            selected: false,
-                            disabled: false
-                        });
-                    }                   
-                }
-            }
-        }
-    }
-
-    if(others != null){
-        options.push(others);
-    }
-
-    options = sortFilterOptions(options);
-    return options;
-};
-
 const getSlugMapping = (req) => {
     slugMapping = [];
     if(req.query['pageType'] !== null){
@@ -582,13 +199,9 @@ module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
 
-
-        console.log("========== \n")
         let startTime = new Date().getTime();
 
         try{
-
-        console.time("get_list");
 
         let defaultSize = await getPaginationDefaultSize();
         let defaultSort = "ratings:desc";
@@ -634,18 +247,12 @@ module.exports = class learnContentService {
 
         let esFilters = {};
 
-        console.time("getCurrencies");
+
         currencies = await getCurrencies();
-        console.timeEnd("getCurrencies");
-
-
-        console.log(`Point 1: ${(new Date().getTime() - startTime) / 1000}s`);
-
         slugMapping = getSlugMapping(req);
 
-        console.time("getFilterConfig");
+
         const filterConfigs = await getFilterConfigs('Learn_Content');
-        console.timeEnd("getFilterConfig");
         
         const query = { 
             "bool": {
@@ -747,18 +354,9 @@ module.exports = class learnContentService {
             
         }
         let parsedFilters = [];
-        let parsedRangeFilters = [];
-        
-        //let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
-        
-        //let filters = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs, req.query['currency']);
-       
+        let parsedRangeFilters = [];       
         let filters = [];
         
-
-
-
-
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){                
@@ -880,17 +478,8 @@ module.exports = class learnContentService {
         queryPayload.aggs = aggs;
 
         // --Aggreation query build
-        
 
-
-        console.log(`Point 2: ${(new Date().getTime() - startTime) / 1000}s`);
-
-        //console.log(aggs);
-        console.time("fetchList");
         let result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
-        console.timeEnd("fetchList");
-
-        //console.dir(result,{depth: 3});
 
         /**
          * Aggregation object from elastic search
@@ -1026,9 +615,7 @@ module.exports = class learnContentService {
            let categoryFiletrOption =[];
            let categorykey = 0;
 
-           console.time("get-tree");
            let response = await fetch(`${apiBackendUrl}/category-tree`);
-           console.timeEnd("get-tree");
 
             if (response.ok) {
                let json = await response.json();
@@ -1068,14 +655,8 @@ module.exports = class learnContentService {
 
             //update selected flags
             if (parsedFilters.length > 0 || parsedRangeFilters.length > 0) {
-                //filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'learn-content', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
-                //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-
-                console.time("updatedSelected");
                 filters = await updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-                console.timeEnd("updatedSelected");
             }
-
 
             let pagination = {
                 page: paginationQuery.page,
@@ -1087,11 +668,7 @@ module.exports = class learnContentService {
 
               let list = [];
             if (result.total && result.total.value > 0) {
-
-                console.time("genList")
                 list = await this.generateListViewData(result.hits, req.query['currency'], useCache);
-                console.timeEnd("genList")
-
             }
 
 
@@ -1119,7 +696,7 @@ module.exports = class learnContentService {
             }
 
             //TODO dont send data if filters are applied.
-            console.time("fetchOverview");
+            
             // if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
             //     data.get_started = {}
             //     let param = {
@@ -1133,11 +710,8 @@ module.exports = class learnContentService {
             //     data.get_started.free = await this.getPopularCourses(param, (err, data) => { }, true)
             // }
 
-            console.timeEnd("fetchOverview");
-
-            console.time("genMeta");
             let meta_information = await generateMetaInfo('learn-content-list', result);
-            console.timeEnd("genMeta");
+            
             if (meta_information) {
                 data.meta_information = meta_information;
             }
