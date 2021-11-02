@@ -6,6 +6,7 @@ const multer = require('multer');
 const upload = multer();
 const path = require('path');
 const cron = require('node-cron')
+const compression = require('compression')
 const Sentry = require("@sentry/node");
 const Tracing = require("@sentry/tracing");
 
@@ -25,6 +26,8 @@ Sentry.init({
 });
 
 const app = express();
+// compress all responses
+app.use(compression())
 
 app.use(Sentry.Handlers.requestHandler());
 
