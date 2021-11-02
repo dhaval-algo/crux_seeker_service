@@ -239,7 +239,6 @@ module.exports = class learnContentService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    console.timeEnd("get_list");
                     return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 }
             }
@@ -716,8 +715,6 @@ module.exports = class learnContentService {
                 data.meta_information = meta_information;
             }
 
-                
-            console.timeEnd("get_list");
 
             callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
 
