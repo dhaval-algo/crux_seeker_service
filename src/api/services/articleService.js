@@ -7,11 +7,8 @@ const {
     parseQueryFilters,
     getPaginationQuery,
     getMediaurl,
-    updateFilterCount,
-    calculateFilterCount,
     getFilterAttributeName,
     updateSelectedFilters,
-    sortFilterOptions,
     generateMetaInfo,
     compareRule
 } = require('../utils/general');
@@ -21,133 +18,6 @@ const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
 const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
-
-const getAllFilters = async (query, queryPayload, filterConfigs) => {
-    if(queryPayload.from !== null && queryPayload.size !== null){
-        delete queryPayload['from'];
-        delete queryPayload['size'];
-    }
-
-    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
-    fields.push('author_slug');
-    fields.push('author_last_name');
-
-    const result = await elasticService.search('article', query, {from: 0, size: MAX_RESULT},fields);
-    if(result.total && result.total.value > 0){
-        return {
-            filters: await formatFilters(result.hits, filterConfigs, query),
-            total: result.total.value
-        };
-    }else{
-        return {
-            filters: [],
-            total: result.total.value
-        };
-    }
-};
-
-
-const formatFilters = async (data, filterData, query) => {
-    let filters = [];
-    let emptyOptions = [];
-    for(const filter of filterData){
-
-        if(filter.elastic_attribute_name == 'author_first_name')
-        {
-            filter.elastic_attribute_name = 'author_slug';
-        }
-        let formatedFilters = {
-            label: filter.label,
-            field: filter.elastic_attribute_name,
-            filterable: filter.filterable,
-            sortable: filter.sortable,
-            order: filter.order,
-            is_singleton: filter.is_singleton,
-            is_collapsed: filter.is_collapsed,
-            display_count: filter.display_count,
-            disable_at_zero_count: filter.disable_at_zero_count,
-            is_attribute_param: filter.is_attribute_param,
-            filter_type: filter.filter_type,
-            is_essential: filter.is_essential,
-            sort_on: filter.sort_on,
-            sort_order: filter.sort_order,
-            false_facet_value: filter.false_facet_value,
-            implicit_filter_skip: filter.implicit_filter_skip,
-            implicit_filter_default_value: filter.implicit_filter_default_value,
-            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
-        };
-        
-        if(filter.filter_type !== 'RangeSlider'){
-            if(formatedFilters.options.length <= 0){
-                emptyOptions.push(filter.label);
-            }
-        }
-
-        
-        filters.push(formatedFilters);
-    }
-
-    if(emptyOptions.length > 0){
-        filters = filters.filter(function( obj ) {
-            return !emptyOptions.includes(obj.label);
-          });
-    }
-
-    return filters;    
-};
-
-
-const getFilterOption = (data, filter) => {
-    let options = [];
-    for(const esData of data){
-        const entity = esData._source;
-        let entityData = entity[filter.elastic_attribute_name];
-        if(filter.elastic_attribute_name == 'author_slug')
-        {
-            entityData = entity['author_first_name'];
-            if(entity['author_last_name']!= 'null')
-            {
-                entityData += ` ${entity['author_last_name']}`;
-            }            
-        }
-        if(entityData){
-            if(Array.isArray(entityData)){
-                for(const entry of entityData){
-                    let existing = options.find(o => o.label === entry);
-                    if(existing){
-                        existing.count++;
-                    }else{
-                        options.push({
-                            label: entry,
-                            count: 1,
-                            selected: false,
-                            disabled: false
-                        });
-                    }
-                }
-            }else{
-                let existing = options.find(o => o.label === entityData);
-                if(existing){
-                    existing.count++;
-                }else{
-                    let option = {
-                        label: entityData,
-                        count: 1,
-                        selected: false,
-                        disabled: false
-                    }
-                    if(filter.elastic_attribute_name == 'author_slug')
-                    {
-                        option.author_slug = entity['author_slug']
-                    }
-                    options.push(option);
-                }
-            }
-        }
-    }
-    options = sortFilterOptions(options);
-    return options;
-};
 
 const CheckArticleRewards = async (user, premium) => {  
     let rewards = [];
@@ -178,26 +48,29 @@ module.exports = class articleService {
     async getArticleList(req, callback){
         const filterConfigs = await getFilterConfigs('Article');
         
+        let esFilters = {}
+
+        let publishedFilter = {term: { "status.keyword": 'published' }};
+        esFilters['published'] = publishedFilter;
+
         const query = { 
             "bool": {
                 "must": [
-                    {term: { "status.keyword": 'published' }}                
+                    publishedFilter                
                 ],
-                //"filter": []
             }
         };
 
-
         if(req.articleIds)
         {
-            query.bool.must.push({ 
+            let filterObject = { 
                 "ids": {
                     "values": req.articleIds
+                }}
 
-
-
-                }})
+            query.bool.must.push(filterObject);
         }
+
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
@@ -224,10 +97,7 @@ module.exports = class articleService {
         let parsedFilters = [];
         let parsedRangeFilters = [];
 
-        let filterQuery = JSON.parse(JSON.stringify(query));
-        let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
-        let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs);
-        let filters = filterResponse.filters;
+        let filters = [];
 
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -241,24 +111,18 @@ module.exports = class articleService {
             }
            
             for(const filter of parsedFilters){
+                
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
-                if(elasticAttribute){
-                    const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-                    /* query.bool.filter.push({
-                        "terms": {[attribute_name]: filter.value}
-                    }); */
-                    /* query.bool.must.push({
-                        "terms": {[attribute_name]: filter.value}
-                    }); */
-                    // for(const fieldValue of filter.value){
-                    //     query.bool.must.push({
-                    //         "term": {[attribute_name]: fieldValue}
-                    //     });
-                    // }
 
-                    query.bool.must.push({
-                        "terms": {[attribute_name]: filter.value}
-                    });
+                if(elasticAttribute){
+                    let attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                    let filterObject = {
+                        "terms": {[attribute_name == "author_first_name" ? "author_slug.keyword" : attribute_name ]: filter.value}
+                    }
+
+                    query.bool.must.push(filterObject);
+                    esFilters[elasticAttribute.elastic_attribute_name] = filterObject;
 
                 }
             }
@@ -266,47 +130,164 @@ module.exports = class articleService {
         
         let queryString = null;
         if(req.query['q']){
-            query.bool.must.push(
-                {                    
-                    "bool": {
-                        "should": [
-                            {
-                                "query_string" : {
-                                    "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                                    "fields" : (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-                                    "analyze_wildcard" : true,
-                                    "allow_leading_wildcard": true
-                                }
-                            },
-                            {
-                                "multi_match": {
 
-                                    "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+            let filterObject = {                    
+                "bool": {
+                    "should": [
+                        {
+                            "query_string" : {
+                                "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
+                                "fields" : (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+                                "analyze_wildcard" : true,
+                                "allow_leading_wildcard": true
+                            }
+                        },
+                        {
+                            "multi_match": {
 
-                                    "query": decodeURIComponent(req.query['q']).trim(),
-                                    "fuzziness": "AUTO",
-                                    "prefix_length": 0                              
-                                }
-                            }           
-                        ]
-                        }                    
-                    }
-                
-            );         
+                                "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
+
+                                "query": decodeURIComponent(req.query['q']).trim(),
+                                "fuzziness": "AUTO",
+                                "prefix_length": 0                              
+                            }
+                        }           
+                    ]
+                    }                    
+                }
+
+            query.bool.must.push(filterObject);
+            esFilters['q'] = filterObject;         
         }
 
-         /*Ordering as per category tree*/
-         let formatCategory = true;
-         if(parsedFilters)
-         {
-             for (let parsedFilter of parsedFilters)
-             {
-                 if (parsedFilter.key =="Industry")
-                 {
-                     formatCategory = false;
-                 }
-             }
-         }
+         //FILTER FACET AGGREGATIONS
+         let aggs = {
+            all_filters: {
+                global: {},
+                aggs: {
+
+                }
+            }
+        }
+        const topHitsSize = 200;   
+
+
+        for(let filter of filterConfigs) {
+
+            let exemted_filters = esFilters;
+
+            if(esFilters.hasOwnProperty(filter.elastic_attribute_name)){
+                let {[filter.elastic_attribute_name]: ignored_filter, ...all_filters } = esFilters 
+                exemted_filters = all_filters;
+            }
+
+            exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
+
+            let aggs_object = {
+                filter: { bool: { filter: exemted_filters } },
+                aggs: {}
+            }
+
+            switch(filter.filter_type){
+                case "Checkboxes":
+                    if(filter.elastic_attribute_name == "author_first_name"){
+                        aggs_object.aggs['filtered'] = { terms: {script: "doc['author_first_name.keyword'].value + '::' + doc['author_last_name.keyword'].value + '::' + doc['author_slug.keyword'].value", size: topHitsSize}}
+                    }
+                    else { 
+                        aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                    }
+                    break;
+                case "RangeSlider":
+                    aggs_object.aggs['min'] = { min: {field: filter.elastic_attribute_name}}
+                    aggs_object.aggs['max'] = { max: {field: filter.elastic_attribute_name}} 
+                    break;
+            }
+            aggs.all_filters.aggs[filter.elastic_attribute_name] = aggs_object;
+        }
+
+        queryPayload.aggs = aggs;
+        
+        let result = await elasticService.searchWithAggregate('article', query, queryPayload, queryString);
+        let aggs_result = result.aggregations;
+        result = result.hits;
+
+        for (let filter of filterConfigs) {
+
+            let facet = aggs_result.all_filters[filter.elastic_attribute_name];
+
+            let formatedFilters = {
+                label: filter.label,
+                field: filter.elastic_attribute_name == "author_first_name" ? "author_slug" : filter.elastic_attribute_name,
+                filterable: filter.filterable,
+                sortable: filter.sortable,
+                order: filter.order,
+                is_singleton: filter.is_singleton,
+                is_collapsed: filter.is_collapsed,
+                display_count: filter.display_count,
+                disable_at_zero_count: filter.disable_at_zero_count,
+                is_attribute_param: filter.is_attribute_param,
+                filter_type: filter.filter_type,
+                is_essential: filter.is_essential,
+                sort_on: filter.sort_on,
+                sort_order: filter.sort_order,
+                false_facet_value: filter.false_facet_value,
+                implicit_filter_skip: filter.implicit_filter_skip,
+                implicit_filter_default_value: filter.implicit_filter_default_value,
+            };
+
+            if(filter.filter_type == "RangeSlider"){
+
+                if(filter.elastic_attribute_name === "basePriceRound"){
+                    facet.min.value = facet.min.value > 0 ? getCurrencyAmount(facet.min.value, currencies,'USD',req.query['currency']): facet.min.value;
+                    facet.max.value = facet.max.value > 0 ? getCurrencyAmount(facet.max.value, currencies, 'USD',req.query['currency']): facet.max.value;
+                }
+
+                formatedFilters.min = facet.min.value;
+                formatedFilters.max = facet.max.value;
+                formatedFilters.minValue = facet.min.value;
+                formatedFilters.maxValue = facet.max.value;
+            } else {
+                formatedFilters.options = facet.filtered.buckets.map(item => {
+                    let option = {
+                    label: item.key,
+                    count: item.doc_count,
+                    selected: false, //Todo need to updated selected.
+                    disabled: false,
+                    }
+
+                    if(filter.elastic_attribute_name == 'author_first_name')
+                    {
+                       let [fname, lname, slug] = item.key.split("::");
+                       option.label = `${fname}${(lname != 'null' && lname !== ''? " "+lname : '')}`.trim()
+                       option.author_slug = slug
+                    }
+
+                    if(filter.filter_type == "RangeOptions") {
+                        option.start = item.from ? item.from : "MIN"
+                        option.end = item.to ? item.to : "MAX"
+                    }
+
+                    return option;
+                });
+            }
+
+            filters.push(formatedFilters);
+
+        }
+
+
+        let formatCategory = true;
+        if(parsedFilters)
+        {
+            for (let parsedFilter of parsedFilters)
+            {
+                if (parsedFilter.key =="Industry")
+                {
+                    formatCategory = false;
+                }
+            }
+        }
+
         if(formatCategory)
         {
            let category_tree =[];
@@ -345,67 +326,49 @@ module.exports = class articleService {
             filters[categorykey].options = categoryFiletrOption;
 
         }
+
+
+        if(parsedFilters.length > 0){
+            //filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
+            filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+        }
+
+        let pagination = {
+            page: paginationQuery.page,
+            count: result.hits.length,
+            perPage: paginationQuery.size,
+            totalCount: result.total.value,
+            total: result.total.value
+        }
         
-        const result = await elasticService.search('article', query, queryPayload, queryString);
-        
+        let list = [];
         if(result.total && result.total.value > 0){
+            list = await this.generateListViewData(result.hits, req);
+        }
 
-            const list = await this.generateListViewData(result.hits, req);
-
-            let pagination = {
-                page: paginationQuery.page,
-                count: list.length,
-                perPage: paginationQuery.size,
-                totalCount: result.total.value,
-                total: filterResponse.total
-            }
-
-            //let filters = await getAllFilters(query, queryPayload, filterConfigs, result.total.value);
-            //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits);
-
-            //update selected flags
-            if(parsedFilters.length > 0){
-                //filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-               // filters = await updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, result.hits, filterResponse.total, query, allowZeroCountFields);
-
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
-                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-            }
-
-            for (let filter of filters)
+        for (let filter of filters)
+        {
+            if(filter.label =="Tag")
             {
-                if(filter.label =="Tag")
-                {
-                    filter.label ="Author Type";
-                }
+                filter.label ="Author Type";
             }
+        }
 
-              let data = {
-                list: list,
-                filters: filters,
-                pagination: pagination,
-                sort: req.query['sort']
-              };
+          let data = {
+            list: list,
+            filters: filters,
+            pagination: pagination,
+            sort: req.query['sort']
+          };
 
-              let meta_information = await generateMetaInfo  ('article-list', result.hits);
-              if(meta_information)
-              {
-                  data.meta_information  = meta_information;
-              }    
-            
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-        }else{
-            if(parsedFilters.length > 0){
-                //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields, parsedRangeFilters);
-             //   filters = await updateFilterCount(filters, parsedFilters, filterConfigs, 'article', result.hits, filterResponse.total, query, allowZeroCountFields);
-                filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
-            }
-            let meta_information = await generateMetaInfo  ('article-list', result.hits);
-            
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {total: filterResponse.total}, filters: filters, meta_information:meta_information}});
-        }        
+          let meta_information = await generateMetaInfo  ('article-list', result.hits);
+          if(meta_information)
+          {
+              data.meta_information  = meta_information;
+          }    
+        
+        callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+
     }
 
     async getArticle( slug, req, callback){
@@ -433,8 +396,6 @@ module.exports = class articleService {
         }
         return datas;
     }
-
-
 
     async generateSingleViewData(result, isList = false, req){
         try{
