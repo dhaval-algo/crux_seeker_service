@@ -8,6 +8,7 @@ const path = require('path');
 const cron = require('node-cron')
 const Sentry = require("@sentry/node");
 const Tracing = require("@sentry/tracing");
+const compression = require('compression')
 
 global.appRoot = path.resolve(__dirname);
 
@@ -27,6 +28,8 @@ Sentry.init({
 const app = express();
 
 app.use(Sentry.Handlers.requestHandler());
+// compress all responses
+app.use(compression())
 
 app.set('trust proxy', true)
 app.use(bodyParser.json({ limit: '50mb' }));
