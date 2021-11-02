@@ -4,6 +4,7 @@ const { Client } = require('@elastic/elasticsearch');
 const AWS = require('aws-sdk')
 const createAwsElasticsearchConnector = require('aws-elasticsearch-connector');
 
+const LEARN_CONTENT_VERSION = process.env.LEARN_CONTENT_VERSION || "";
 
 const elasticClient = () => {
   if(process.env.ELASTIC_CONNECTION_TYPE == 'server'){
@@ -29,6 +30,7 @@ const elasticClient = () => {
 module.exports = {
 
   search: async (index, query, payload={}, fields = null) => {
+    if(index === "learn-content") index += LEARN_CONTENT_VERSION;
     const client = elasticClient();
     let finalQuery = {
       index: index,
@@ -78,6 +80,7 @@ module.exports = {
   }, 
 
   searchWithAggregate: async (index, query, payload={}, q) => {
+    if(index === "learn-content") index += LEARN_CONTENT_VERSION;
     const client = elasticClient();
     let finalQuery = {
       index: index,
@@ -124,6 +127,7 @@ module.exports = {
 
 
   plainSearch: async (index, queryBody) => {
+    if(index === "learn-content") index += LEARN_CONTENT_VERSION;
     const client = elasticClient();
     let finalQuery = {
       index: index,
@@ -139,6 +143,7 @@ module.exports = {
   }, 
 
   count: async (index, queryBody) => {
+    if(index === "learn-content") index += LEARN_CONTENT_VERSION;
     const client = elasticClient();
     let finalQuery = {
       index: index,

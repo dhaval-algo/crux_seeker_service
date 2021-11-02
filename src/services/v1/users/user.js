@@ -1838,9 +1838,9 @@ module.exports = {
     removeBookmarkArticle,
     bookmarkArticleData,
     fetchbookmarkIds,
-    updatePhone,
     suspendAccount,
     reactivateAccount,
+    updatePhone,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body

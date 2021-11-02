@@ -95,7 +95,8 @@ module.exports = class searchService {
         });
        
         const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
-        //console.log("Result Reponse <<>>>>>> <> ", JSON.stringify(result));
+        
+        
         let data = {
             result: [],
             totalCount: 0,
@@ -229,6 +230,7 @@ module.exports = class searchService {
                 description: "Advice"
             };
         }
+
         return data;
     }
     
