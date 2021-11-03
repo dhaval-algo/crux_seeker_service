@@ -426,7 +426,7 @@ module.exports = class learnContentService {
 
        
         const topHitsSize = 200;
-        const  rating_keys = [4.5,4.0,3.5,3.0].map(value=> ({ key: `${value} and Above`, from: value }));
+        const  rating_keys = [4.5,4.0,3.5,3.0].map(value=> ({ key: `${value} and Above`, from: value*100 }));
         const duration_keys = [
             { key: 'Less Than 2 Hours', to: 2 },
             { key: 'Less Than a Week', to: 168 },
@@ -570,13 +570,12 @@ module.exports = class learnContentService {
                         let option = {
                         label: item.key,
                         count: item.doc_count,
-                        selected: false, //Todo need to updated selected.
-                        disabled: false,
-                        image: null
+                        selected: false, //Todo need to updated selected here.
+                        disabled: item.doc_count <= 0,
                         }
 
                         if(filter.filter_type == "RangeOptions") {
-                            option.start = item.from ? item.from : "MIN"
+                            option.start = item.from ? filter.elastic_attribute_name == "ratings" ? item.from /100 : item.from : "MIN"
                             option.end = item.to ? item.to : "MAX"
                         }
 
@@ -586,6 +585,7 @@ module.exports = class learnContentService {
 
                         return option;
                     });
+                    if(filter.elastic_attribute_name == "ratings") formatedFilters.options.reverse();
                 }
 
                 filters.push(formatedFilters);
