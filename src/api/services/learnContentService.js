@@ -596,65 +596,68 @@ module.exports = class learnContentService {
 
                     /*Ordering as per category tree*/
         let formatCategory = true;
-        if(parsedFilters)
-        {
-            for (let parsedFilter of parsedFilters)
-            {
-                if (parsedFilter.key =="Category")
-                {
-                    formatCategory = false;
-                }
-            }
-        }
+        // if(parsedFilters)
+        // {
+        //     for (let parsedFilter of parsedFilters)
+        //     {
+        //         if (parsedFilter.key =="Category")
+        //         {
+        //             formatCategory = false;
+        //         }
+        //     }
+        // }
 
 
-        if(formatCategory)
-        {
-           let category_tree =[];
-           let categoryFiletrOption =[];
-           let categorykey = 0;
 
-           let response = await fetch(`${apiBackendUrl}/category-tree`);
-
-            if (response.ok) {
-               let json = await response.json();
-               if(json && json.final_tree){
-                   category_tree = json.final_tree;
-                }
-            }
-            if(category_tree && category_tree.length)
-            {
-                for(let category of category_tree )
-                {
-                    let i= 0;
-                    for(let filter of filters)
-                    {
-                        if(filter.field =="categories")
-                        {
-                            for(let option of filter.options)
-                            {
-                                if(category.label == option.label)
-                                {
-                                    categoryFiletrOption.push(option);
-                                }
-                            }
-                            categorykey = i;
-                            
-                        }
-                        i++;
-                    }
-                }
-            }
-            if(filters[categorykey]) {
-                filters[categorykey].options = categoryFiletrOption;
-            }
-
-        }
 
 
             //update selected flags
             if (parsedFilters.length > 0 || parsedRangeFilters.length > 0) {
                 filters = await updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
+
+
+            if(formatCategory)
+            {
+               let category_tree =[];
+               let categoryFiletrOption =[];
+               let categorykey = 0;
+    
+               let response = await fetch(`${apiBackendUrl}/category-tree`);
+    
+                if (response.ok) {
+                   let json = await response.json();
+                   if(json && json.final_tree){
+                       category_tree = json.final_tree;
+                    }
+                }
+                if(category_tree && category_tree.length)
+                {
+                    for(let category of category_tree )
+                    {
+                        let i= 0;
+                        for(let filter of filters)
+                        {
+                            if(filter.field =="categories")
+                            {
+                                for(let option of filter.options)
+                                {
+                                    if(category.label == option.label)
+                                    {
+                                        categoryFiletrOption.push(option);
+                                    }
+                                }
+                                categorykey = i;
+                                
+                            }
+                            i++;
+                        }
+                    }
+                }
+                if(filters[categorykey]) {
+                    filters[categorykey].options = categoryFiletrOption;
+                }
+    
             }
 
             let pagination = {
@@ -736,7 +739,7 @@ module.exports = class learnContentService {
 
     }catch(e){
         callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
-        
+
     }
 
     
