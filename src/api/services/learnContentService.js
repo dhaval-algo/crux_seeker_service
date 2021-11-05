@@ -1021,7 +1021,7 @@ module.exports = class learnContentService {
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
                  esQuery.bool.filter.push(
-                    { "term": { "pricing_type": true } }
+                    { "term": { "display_price": true } }
                 );
             }
             let sort = null
