@@ -371,6 +371,11 @@ module.exports = class learnContentService {
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                 }
             }
+            if(req.query['f'].includes("Price Type:"))
+            {
+                query.bool.must.push(  { "term": { "display_price": true } });
+                esFilters["display_price"] =   { "term": { "display_price": true } };
+            }
         }
 
         if(req.query['rf']){
@@ -446,6 +451,11 @@ module.exports = class learnContentService {
             }
 
             exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
+
+            if(filter.elastic_attribute_name == "pricing_type")
+            {
+                exemted_filters.push(  { "term": { "display_price": true } });
+            }
 
             exemted_filters.push(published_filter);
 
