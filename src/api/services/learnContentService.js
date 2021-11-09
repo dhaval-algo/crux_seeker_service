@@ -371,6 +371,11 @@ module.exports = class learnContentService {
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                 }
             }
+            if(req.query['f'].includes("Price Type:"))
+            {
+                query.bool.must.push(  { "term": { "display_price": true } });
+                esFilters["display_price"] =   { "term": { "display_price": true } };
+            }
         }
 
         if(req.query['rf']){
