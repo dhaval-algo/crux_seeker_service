@@ -452,6 +452,11 @@ module.exports = class learnContentService {
 
             exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
 
+            if(filter.elastic_attribute_name == "pricing_type")
+            {
+                exemted_filters.push(  { "term": { "display_price": true } });
+            }
+
             exemted_filters.push(published_filter);
 
             let aggs_object = {
