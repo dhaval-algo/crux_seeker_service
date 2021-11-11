@@ -872,7 +872,7 @@ const verifyAccount = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log(error);
+          console.log(error);
     }
 
 
@@ -1160,22 +1160,38 @@ const removeCourseFromWishList = async (req,res) => {
 
 const fetchWishListIds = async (req,res) => {
     const { user } = req
+    let {page,limit}=req.query
+
+    if(limit<0|| !limit) limit=10
+    if (page<1|| !page) page=1
+
+    const offset=(page-1)*limit
     
+
     let where = {
         userId: user.userId,
         key: { [Op.in]: ['course_wishlist'] },
     }
 
-    let resForm = await models.user_meta.findAll({
+    
+    const wishlistedCourses=await models.user_meta.findAndCountAll({
         attributes:['value'],
-        where
+        where,
+        offset:offset,
+        limit:limit
     })
-    let wishedList = resForm.map((rec) => rec.value)
+
+    let wishedList = wishlistedCourses.rows.map((rec) => rec.value)
     return res.status(200).json({
         success:true,
         data: {
             userId: user.userId,
             courses:wishedList
+        },
+        pagination:{
+            page:page,
+            limit:limit,
+            total:wishlistedCourses.count
         }
     })
 }
@@ -1184,24 +1200,42 @@ const wishListCourseData = async (req,res) => {
     try {
         
          const { user } = req
+         let {page,limit}=req.query
+
+         if(limit<0|| !limit) limit=10
+         if (page<1 || !page) page=1
+
+        const offset=(page-1)*limit
         const {searchStr} = req.query
         let where = {
             userId: user.userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
         
-        let resForm = await models.user_meta.findAll({
+        const wishlistedCourses = await models.user_meta.findAndCountAll({
             attributes:['value'],
-            where
+            where,
+            offset:offset,
+            limit:limit
         })
-        let wishedListIds = resForm.map((rec) => rec.value)
+        
+       
+        let wishedListIds = wishlistedCourses.rows.map((rec) => rec.value)
+      
         wishedListIds = wishedListIds.filter(w => !!w)
+        
         if(!wishedListIds.length) {
+            
             return res.status(200).json({
                 success:true,
                 data: {
                     ids:wishedListIds,
                     courses:[]
+                },
+                pagination:{
+                    page:page,
+                    limit:limit,
+                    total:wishlistedCourses.count
                 }
             })
         }
@@ -1240,6 +1274,11 @@ const wishListCourseData = async (req,res) => {
                     userId: user.userId,
                     ids:wishedListIds,
                     courses:[]
+                },
+                pagination:{
+                    page:page,
+                    limit:limit,
+                    total:wishlistedCourses.count
                 }
             })
         }
@@ -1249,6 +1288,11 @@ const wishListCourseData = async (req,res) => {
                 userId: user.userId,
                 ids:wishedListIds,
                 courses:courses
+            },
+            pagination:{
+                page:page,
+                limit:limit,
+                total:wishlistedCourses.count
             }
         })
     } catch (error) {
