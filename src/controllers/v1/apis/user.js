@@ -36,6 +36,7 @@ router.post('/fetch-bookmark',authenticateJWT, userService.fetchbookmarkIds);
 router.post('/suspend-account',authenticateAdminJWT, userService.suspendAccount);
 router.post('/reactivate-account', authenticateAdminJWT, userService.reactivateAccount);
 router.post('/update-phone',authenticateJWT, userService.updatePhone);
+router.get('/fetch-user-pending-actions',authenticateJWT,userService.getUserPendingActions);
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
     res.setHeader('Content-Type', 'text/json')

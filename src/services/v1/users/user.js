@@ -1899,6 +1899,76 @@ const reactivateAccount = async (req, res) => {
     }
 }
 
+const getUserPendingActions = async (req, res) => {
+    try {
+        const { user } = req
+        const userId = user.userId
+        let response = {
+
+            pendingProfileActions: {
+                personal: [],
+                work_experience: [],
+                profile_picture: [],
+                education: [],
+
+            },
+
+            verification: {
+                phoneVerified: null,
+                emailVerified: null
+            }
+
+        }
+        const userMeta = {
+
+            "personal": ["firstName", "lastName", 'gender', "dob", "phone", "city", "email"],
+            "work_experience": ["workExp"],
+            "profile_picture": ["profilePicture"],
+            "education": ["education"]
+
+        }
+
+        for (const key in userMeta) {
+            const result = await models.user_meta.findAll({
+                attributes: ["key", "value"],
+                where: {
+
+                    key: { [Op.in]: userMeta[key] },
+                    userId: userId
+                }
+
+            })
+
+            const availableFieldsForThisKey = result.map((field) => field.key)
+            userMeta[key].forEach((field) => {
+                if (!availableFieldsForThisKey.includes(field)) response.pendingProfileActions[key].push(field)
+            })
+
+        }
+
+        const userVerificationData = await models.user.findAll({
+            attributes: ["verified", "phoneVerified"],
+            where: {
+
+                id: userId
+            }
+
+        })
+        response.verification.phoneVerified = userVerificationData[0]["phoneVerified"] ? true : false
+        response.verification.emailVerified = userVerificationData[0]["verified"]
+
+        res.send({ message: "success", data: response })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({
+            success: false,
+            message: "internal server error",
+            error: error
+
+        })
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -1933,6 +2003,7 @@ module.exports = {
     suspendAccount,
     reactivateAccount,
     updatePhone,
+    getUserPendingActions,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
