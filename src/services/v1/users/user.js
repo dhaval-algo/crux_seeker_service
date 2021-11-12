@@ -1431,7 +1431,8 @@ const getEnquiryList = async (req,res) => {
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
-            instituteName:"" 
+            instituteName:"" ,
+            images:{}
         }
         let queryBody = {
             "query": {
@@ -1451,6 +1452,7 @@ const getEnquiryList = async (req,res) => {
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
+                        enquiry.images=hit._source.images
                         
                     // }
                 }
