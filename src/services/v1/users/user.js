@@ -872,7 +872,7 @@ const verifyAccount = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log(error);
+          console.log(error);
     }
 
 
@@ -1160,97 +1160,163 @@ const removeCourseFromWishList = async (req,res) => {
 
 const fetchWishListIds = async (req,res) => {
     const { user } = req
+    let {page,limit}=req.query
+
+    if(limit<0|| !limit) limit=10
+    if (page<1|| !page) page=1
+
+    const offset=(page-1)*limit
     
+
     let where = {
         userId: user.userId,
         key: { [Op.in]: ['course_wishlist'] },
     }
 
-    let resForm = await models.user_meta.findAll({
+    
+    const wishlistedCourses=await models.user_meta.findAndCountAll({
         attributes:['value'],
-        where
+        where,
+        offset:offset,
+        limit:limit
     })
-    let wishedList = resForm.map((rec) => rec.value)
+
+    let wishedList = wishlistedCourses.rows.map((rec) => rec.value)
     return res.status(200).json({
         success:true,
         data: {
             userId: user.userId,
             courses:wishedList
+        },
+        pagination:{
+            page:page,
+            limit:limit,
+            total:wishlistedCourses.count
         }
     })
 }
 
 const wishListCourseData = async (req,res) => {
     try {
-        
-         const { user } = req
-        const {searchStr} = req.query
+         
+        const { user } = req
+        let { page, limit } = req.query
+
+        if (limit < 0 || !limit) limit = 10
+        if (page < 1 || !page) page = 1
+
+        const offset = (page - 1) * limit
+        const { queryString } = req.query
+        let wishedListIds = []
+        let totalCount = 0
         let where = {
             userId: user.userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
-        
-        let resForm = await models.user_meta.findAll({
-            attributes:['value'],
-            where
-        })
-        let wishedListIds = resForm.map((rec) => rec.value)
-        wishedListIds = wishedListIds.filter(w => !!w)
-        if(!wishedListIds.length) {
+           
+        if (!queryString) {
+            const wishlistedCourses = await models.user_meta.findAndCountAll({
+                attributes: ['value'],
+                where,
+                offset: offset,
+                limit: limit
+            })
+
+            wishedListIds = wishlistedCourses.rows.map((rec) => rec.value)
+            totalCount = wishlistedCourses.count
+        }
+        else {
+
+            const totalWishListOfUser = await models.user_meta.findAll({
+                attributes: ['value'],
+                where,
+            })
+
+            wishedListIds = totalWishListOfUser.map((rec) => rec.value)
+
+        }
+        if (!wishedListIds) {
+            wishedListIds = wishedListIds.filter(w => !!w)
             return res.status(200).json({
-                success:true,
+                success: true,
                 data: {
-                    ids:wishedListIds,
-                    courses:[]
+                    ids: wishedListIds,
+                    courses: []
+                },
+                pagination: {
+                    page: page,
+                    limit: limit,
+                    total: totalCount
                 }
             })
         }
+
         let queryBody = {
-            "size":1000,
+            "size": 1000,
             "query": {
-              "ids": {
-                  "values": wishedListIds
-                  //"values": ["LRN_CNT_PUB_282", "LRN_CNT_PUB_638", "LRN_CNT_PUB_3543", "LRN_CNT_PUB_1742", "LRN_CNT_PUB_3525"]
-              },
-              "match_phrase":{}
+                "bool": {
+                    "must": [{
+                        "term": { "status.keyword": "published" }
+                    },
+                    {
+                        "match_phrase": {
+                            "title": queryString
+                        }
+
+                    },
+
+                    {
+                        "ids": {
+                            "values": wishedListIds
+                        }
+                    }
+                    ]
+                }
             }
-        };
-
-
-        if(searchStr){ 
-            queryBody.query.match_phrase["title"]=searchStr
-        }else {
-            delete queryBody.query.match_phrase
         }
 
-        
+        if (!queryString)  delete queryBody.query.bool.must[1]
+
         const result = await elasticService.plainSearch('learn-content', queryBody);
+        
         let courses = []
+        let wishListIdsFromElastic=[]
         if(result.hits){
             if(result.hits.hits && result.hits.hits.length > 0){
                 for(const hit of result.hits.hits){
+                  
                     const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
+                    wishListIdsFromElastic.push(course.id)
                     courses.push(course);
                 }
             }
-        } else {
+        }
+        if (!queryString) {
             return res.status(200).json({
-                success:true,
+                success: true,
+
                 data: {
                     userId: user.userId,
-                    ids:wishedListIds,
-                    courses:[]
+                    ids: wishedListIds,
+                    courses: courses
+                },
+                pagination: {
+                    page: page,
+                    limit: limit,
+                    total: totalCount
                 }
             })
         }
-        return res.status(200).json({
-            success:true,
-            data: {
-                userId: user.userId,
-                ids:wishedListIds,
-                courses:courses
-            }
-        })
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    userId: user.userId,
+                    ids: wishListIdsFromElastic,
+                    courses: courses
+                }
+            })
+        }
     } catch (error) {
         console.log(error);
             return res.status(500).send({error,success:false})
@@ -1365,7 +1431,7 @@ const getEnquiryList = async (req,res) => {
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
-            instituteName:""
+            instituteName:"" 
         }
         let queryBody = {
             "query": {
