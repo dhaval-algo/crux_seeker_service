@@ -1540,6 +1540,13 @@ const uploadResumeFile = async (req,res) =>{
     let resumeB =  getFileBuffer(buffer);
     let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
     let path = `images/profile-images/${resumeName}`
+    let today = new Date();
+    let dd = String(today.getDate()).padStart(2, '0');
+    let mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    let yyyy = today.getFullYear();
+
+    today = dd + '/' + mm + '/' + yyyy;
+    
     // if(filename.endsWith('.doc')){
     //     contentType = 'application/msword';
     // }
@@ -1556,7 +1563,8 @@ const uploadResumeFile = async (req,res) =>{
     let s3Path = await uploadResumeToS3(path,resumeB)
     let fileValue = {
         filename:filename,
-        filepath:s3Path
+        filepath:s3Path,
+        uploadDate:today,
     }
     const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     if(!existResume) {
@@ -1586,6 +1594,21 @@ const deleteResumeFile = async (req,res) => {
     let data = {email:userinfo.value}
     sendDataForStrapi(data, "remove-resume");
     return res.status(200).json({success:true, resumeFile:{}})
+}
+
+const uploadPrimarySkills = async (req,res) => {
+    const {data} =req.body
+    const { user} = req;
+    const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
+    if(!existSkills) {
+        await models.user_meta.create({value:JSON.stringify(data),key:'primarySkills',metaType:'primary',userId:user.userId})      
+    } else {
+        await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
+    }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let learn_profile = {email:userinfo.value, data:data}
+    sendDataForStrapi(learn_profile, "update-learn-profile");
+    return res.status(200).json({success:true,data:data})
 }
 
 const uploadSkills = async (req,res) => {
@@ -1901,6 +1924,7 @@ module.exports = {
     deleteResumeFile,
     removeProfilePic,
     uploadSkills,
+    uploadPrimarySkills,
     fetchUserMetaObjByUserId,
     bookmarkArticle,
     removeBookmarkArticle,
