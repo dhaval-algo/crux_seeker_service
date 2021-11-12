@@ -1494,6 +1494,10 @@ const getEnquiryList = async (req,res) => {
     
 }
 
+const updateEmail =async (req,res) => {
+
+}
+
 const uploadProfilePic =async (req,res) => {
     // getBucketNames()\
     const {image} =req.body
@@ -1931,6 +1935,7 @@ module.exports = {
     suspendAccount,
     reactivateAccount,
     updatePhone,
+    updateEmail,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body

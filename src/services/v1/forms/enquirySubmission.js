@@ -242,7 +242,10 @@ const handleUserProfileSubmission = (resBody, req) => {
         let userObj = { ...user };
 
         try {         
-            await updateProfileMeta(formData, userObj)
+            const meta = await updateProfileMeta(formData, userObj)
+            if(!meta.success && !meta){
+                return resolve(meta)
+            }
             const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
             formData.push({key:"email",value: userinfo.value})
             sendDataForStrapi(formData, "update-user-profile")
@@ -275,6 +278,22 @@ const updateProfileMeta = (formData, userObj) => {
               //user meta {key:"", value:"", metaType:""}
             // prepare entries in for user_meta and make entries
             for(let key in formData ) {
+                
+                if(formData[key]['key'] == "education" || formData[key]['key'] == "workExp"){
+                    let data = JSON.parse(formData[key]['value'])
+                    if(data.length > 20){
+                        return resolve(
+                            { 
+                                success: false, 
+                                data:{
+                                    code: "EXCEEDED_LENGTH",
+                                    message: "Length should be less than 20"
+                                }
+                            }
+                        )
+                    }
+                }
+
                 formData[key]['userId'] = userObj.userId
                 formData[key]['metaType'] = "primary"
                 const where = {
