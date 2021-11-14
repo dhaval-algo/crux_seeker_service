@@ -1375,7 +1375,7 @@ const getEnquiryList = async (req,res) => {
           ]
         }  
       }
-    const totalResult = await elasticService.search('learn-content', query, {size: 1000});
+    const totalResult = await elasticService.search('learn-content', query, {size: 1000}, _source=["_id"]);
     let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
@@ -1435,6 +1435,7 @@ const getEnquiryList = async (req,res) => {
             images:{}
         }
         let queryBody = {
+            "_source":["title","categories","provider_name","images"],
             "query": {
               "terms": {
                   "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
@@ -1485,12 +1486,9 @@ const getEnquiryList = async (req,res) => {
     //build res
     } catch (error) {
         console.log(error);
-        return res.status(200).send({
-            success:true,
-            data:{
-                enquires:[],
-                count:0
-            }
+        return res.status(500).send({
+            success:false,
+            error:error
         })
     }
     
