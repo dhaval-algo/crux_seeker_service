@@ -1375,7 +1375,7 @@ const getEnquiryList = async (req,res) => {
           ]
         }  
       }
-    const totalResult = await elasticService.search('learn-content', query, {size: 1000}, _source=["_id"]);
+    const totalResult = await elasticService.search('learn-content', query, {size: 1000},fields= ["_id"]);
     let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
