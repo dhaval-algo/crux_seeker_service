@@ -971,12 +971,21 @@ const resetPassword = async (req,res) => {
 const getProfileProgress = async (req,res) => {
     const { user } = req
     const profileRes = await calculateProfileCompletion(user)
-    return res.status(200).json({
-        success:true,
-        data: {
-            profileProgress:profileRes
-        }
-    })
+    if(profileRes){
+        return res.status(200).json({
+            success:true,
+            data: {
+                profileProgress:profileRes
+            }
+        })
+
+    }
+    else{
+        return res.status(500).json({
+            success:false,
+            message:"internal server error"
+        })
+    }
 }
 
 const getCourseWishlist = async (req,res) => {
