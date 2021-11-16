@@ -1015,20 +1015,54 @@ const getCourseWishlist = async (req,res) => {
     })
 }
 
-const addCourseToWishList = async (req,res) => {
-    const { user} = req;
-    const {courseId} = req.body
-    const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
-    const activity_log =  await logActvity("COURSE_WISHLIST", user.userId, courseId);
-    sendDataForStrapi(data, "profile-add-wishlist");
-    return res.status(200).json({
-        success:true,
-        data: {
-            wishlist:resMeta
+const addCourseToWishList = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { courseIds } = req.body
+
+        if (!(courseIds instanceof Array) || !courseIds.length) {
+            return res.status(400).json({
+                success: false,
+                message: "invalid request sent"
+            })
         }
-    })
+        const dataToSave = courseIds.map((courseId) => {
+            return {
+                key: "course_wishlist",
+                value: courseId,
+                userId: userId
+            }
+        })
+
+        const resMeta = await models.user_meta.bulkCreate(dataToSave)
+        const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+
+        const userinfo = await models.user_meta.findOne({
+            attributes: ["value"],
+            where: {
+                userId: user.userId, metaType: 'primary', key: 'email'
+            }
+        })
+        const data = { email: userinfo.value, courseIds: numericIds }
+        await logActvity("COURSE_WISHLIST", userId, courseIds);
+        sendDataForStrapi(data, "profile-add-wishlist");
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                wishlist: resMeta
+            }
+        })
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
 }
 
 const addCourseToRecentlyViewed = async (req,res) => {
@@ -1656,26 +1690,52 @@ const fetchUserMetaObjByUserId = async (id) => {
 }
 
 const bookmarkArticle = async (req,res) => {
-    const { user} = req;
-    const {articleId} = req.body
-    if(articleId)
-    {
-        const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
-        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-        let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
-        sendDataForStrapi(data, "profile-bookmark-article");
-        return res.status(200).json({
-            success:true,
-            data: {
-                bookmarks:resMeta
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { articleIds } = req.body
+
+        if (!(articleIds instanceof Array) || !articleIds.length) {
+            return res.status(400).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        const dataToSave = articleIds.map((articleId) => {
+            return {
+                key: "article_bookmark",
+                value: articleId,
+                userId: userId
             }
         })
-    }
-    else{
-        return res.status(500).json({
-            success:false,
-            data: {
+
+        const resMeta = await models.user_meta.bulkCreate(dataToSave)
+        const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
+        
+        const userinfo = await models.user_meta.findOne({
+            attributes: ["value"],
+            where: {
+                userId: user.userId, metaType: 'primary', key: 'email'
             }
+        })
+        const data = { email: userinfo.value, articleIds: numericIds }
+        sendDataForStrapi(data, "profile-bookmark-article");
+        
+        return res.status(200).json({
+            success: true,
+            data: {
+                bookmarks: resMeta
+            }
+        })
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+
         })
     }
 }
