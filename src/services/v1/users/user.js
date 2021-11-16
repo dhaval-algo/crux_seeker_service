@@ -1209,6 +1209,7 @@ const wishListCourseData = async (req,res) => {
     try {
          
         const { user } = req
+        const userId=user.userId
         let { page, limit } = req.query
 
         if (limit < 0 || !limit) limit = 10
@@ -1219,7 +1220,7 @@ const wishListCourseData = async (req,res) => {
         let wishedListIds = []
         let totalCount = 0
         let where = {
-            userId: user.userId,
+            userId: userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
            
@@ -1244,11 +1245,12 @@ const wishListCourseData = async (req,res) => {
             wishedListIds = totalWishListOfUser.map((rec) => rec.value)
 
         }
-        if (!wishedListIds) {
+        if (!wishedListIds.length) {
             wishedListIds = wishedListIds.filter(w => !!w)
             return res.status(200).json({
                 success: true,
                 data: {
+                    userId:userId,
                     ids: wishedListIds,
                     courses: []
                 },
@@ -1305,7 +1307,7 @@ const wishListCourseData = async (req,res) => {
                 success: true,
 
                 data: {
-                    userId: user.userId,
+                    userId: userId,
                     ids: wishedListIds,
                     courses: courses
                 },
@@ -1320,7 +1322,7 @@ const wishListCourseData = async (req,res) => {
             return res.status(200).json({
                 success: true,
                 data: {
-                    userId: user.userId,
+                    userId: userId,
                     ids: wishListIdsFromElastic,
                     courses: courses
                 }
