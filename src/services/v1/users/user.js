@@ -1037,12 +1037,21 @@ const resetPassword = async (req,res) => {
 const getProfileProgress = async (req,res) => {
     const { user } = req
     const profileRes = await calculateProfileCompletion(user)
-    return res.status(200).json({
-        success:true,
-        data: {
-            profileProgress:profileRes
-        }
-    })
+    if(profileRes){
+        return res.status(200).json({
+            success:true,
+            data: {
+                profileProgress:profileRes
+            }
+        })
+
+    }
+    else{
+        return res.status(500).json({
+            success:false,
+            message:"internal server error"
+        })
+    }
 }
 
 const getCourseWishlist = async (req,res) => {
@@ -1072,20 +1081,54 @@ const getCourseWishlist = async (req,res) => {
     })
 }
 
-const addCourseToWishList = async (req,res) => {
-    const { user} = req;
-    const {courseId} = req.body
-    const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
-    const activity_log =  await logActvity("COURSE_WISHLIST", user.userId, courseId);
-    sendDataForStrapi(data, "profile-add-wishlist");
-    return res.status(200).json({
-        success:true,
-        data: {
-            wishlist:resMeta
+const addCourseToWishList = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { courseIds } = req.body
+
+        if (!(courseIds instanceof Array) || !courseIds.length) {
+            return res.status(400).json({
+                success: false,
+                message: "invalid request sent"
+            })
         }
-    })
+        const dataToSave = courseIds.map((courseId) => {
+            return {
+                key: "course_wishlist",
+                value: courseId,
+                userId: userId
+            }
+        })
+
+        const resMeta = await models.user_meta.bulkCreate(dataToSave)
+        const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+
+        const userinfo = await models.user_meta.findOne({
+            attributes: ["value"],
+            where: {
+                userId: user.userId, metaType: 'primary', key: 'email'
+            }
+        })
+        const data = { email: userinfo.value, courseIds: numericIds }
+        await logActvity("COURSE_WISHLIST", userId, courseIds);
+        sendDataForStrapi(data, "profile-add-wishlist");
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                wishlist: resMeta
+            }
+        })
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
 }
 
 const addCourseToRecentlyViewed = async (req,res) => {
@@ -1266,6 +1309,7 @@ const wishListCourseData = async (req,res) => {
     try {
          
         const { user } = req
+        const userId=user.userId
         let { page, limit } = req.query
 
         if (limit < 0 || !limit) limit = 10
@@ -1276,7 +1320,7 @@ const wishListCourseData = async (req,res) => {
         let wishedListIds = []
         let totalCount = 0
         let where = {
-            userId: user.userId,
+            userId: userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
            
@@ -1301,11 +1345,12 @@ const wishListCourseData = async (req,res) => {
             wishedListIds = totalWishListOfUser.map((rec) => rec.value)
 
         }
-        if (!wishedListIds) {
+        if (!wishedListIds.length) {
             wishedListIds = wishedListIds.filter(w => !!w)
             return res.status(200).json({
                 success: true,
                 data: {
+                    userId:userId,
                     ids: wishedListIds,
                     courses: []
                 },
@@ -1362,7 +1407,7 @@ const wishListCourseData = async (req,res) => {
                 success: true,
 
                 data: {
-                    userId: user.userId,
+                    userId: userId,
                     ids: wishedListIds,
                     courses: courses
                 },
@@ -1377,7 +1422,7 @@ const wishListCourseData = async (req,res) => {
             return res.status(200).json({
                 success: true,
                 data: {
-                    userId: user.userId,
+                    userId: userId,
                     ids: wishListIdsFromElastic,
                     courses: courses
                 }
@@ -1441,7 +1486,7 @@ const getEnquiryList = async (req,res) => {
           ]
         }  
       }
-    const totalResult = await elasticService.search('learn-content', query, {size: 1000});
+    const totalResult = await elasticService.search('learn-content', query, {size: 1000},fields= ["_id"]);
     let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
@@ -1501,6 +1546,7 @@ const getEnquiryList = async (req,res) => {
             images:{}
         }
         let queryBody = {
+            "_source":["title","categories","provider_name","images"],
             "query": {
               "terms": {
                   "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
@@ -1551,12 +1597,9 @@ const getEnquiryList = async (req,res) => {
     //build res
     } catch (error) {
         console.log(error);
-        return res.status(200).send({
-            success:true,
-            data:{
-                enquires:[],
-                count:0
-            }
+        return res.status(500).send({
+            success:false,
+            error:error
         })
     }
     
@@ -1754,26 +1797,52 @@ const fetchUserMetaObjByUserId = async (id) => {
 }
 
 const bookmarkArticle = async (req,res) => {
-    const { user} = req;
-    const {articleId} = req.body
-    if(articleId)
-    {
-        const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
-        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-        let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
-        sendDataForStrapi(data, "profile-bookmark-article");
-        return res.status(200).json({
-            success:true,
-            data: {
-                bookmarks:resMeta
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { articleIds } = req.body
+
+        if (!(articleIds instanceof Array) || !articleIds.length) {
+            return res.status(400).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        const dataToSave = articleIds.map((articleId) => {
+            return {
+                key: "article_bookmark",
+                value: articleId,
+                userId: userId
             }
         })
-    }
-    else{
-        return res.status(500).json({
-            success:false,
-            data: {
+
+        const resMeta = await models.user_meta.bulkCreate(dataToSave)
+        const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
+        
+        const userinfo = await models.user_meta.findOne({
+            attributes: ["value"],
+            where: {
+                userId: user.userId, metaType: 'primary', key: 'email'
             }
+        })
+        const data = { email: userinfo.value, articleIds: numericIds }
+        sendDataForStrapi(data, "profile-bookmark-article");
+        
+        return res.status(200).json({
+            success: true,
+            data: {
+                bookmarks: resMeta
+            }
+        })
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+
         })
     }
 }
@@ -2010,6 +2079,73 @@ const reactivateAccount = async (req, res) => {
     }
 }
 
+const getUserPendingActions = async (req, res) => {
+    try {
+        const { user } = req
+        const userId = user.userId
+        let response = {
+
+            pendingProfileActions: {
+                personal: [],
+                work_experience: [],
+                profile_picture: [],
+                education: [],
+                resume:[],
+                skills:[]
+            },
+
+            verification: {
+                phoneVerified: null,
+                emailVerified: null
+            }
+        }
+        const userMeta = {
+            "personal": ["firstName", "lastName", 'gender', "dob", "phone", "city", "email"],
+            "work_experience": ["workExp"],
+            "profile_picture": ["profilePicture"],
+            "education": ["education"],
+            "resume":["resumeFile"],
+            "skills":["skills"]
+        }
+
+        for (const key in userMeta) {
+            const result = await models.user_meta.findAll({
+                attributes: ["key", "value"],
+                where: {
+                    metaType:"primary",
+                    key: { [Op.in]: userMeta[key] },
+                    userId: userId
+                }
+            })
+
+            const availableFieldsForThisKey = result.map((field) => field.key)
+            userMeta[key].forEach((field) => {
+                if (!availableFieldsForThisKey.includes(field)) response.pendingProfileActions[key].push(field)
+            })
+        }
+
+        const userVerificationData = await models.user.findAll({
+            attributes: ["verified", "phoneVerified"],
+            where: {
+                id: userId
+            }
+        })
+        
+        if(userVerificationData.length){
+        response.verification.phoneVerified = userVerificationData[0]["phoneVerified"] ? true : false
+        response.verification.emailVerified = userVerificationData[0]["verified"]
+        }
+        res.send({ message: "success", data: response })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({
+            success: false,
+            message: "internal server error",
+            error: error
+        })
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -2044,6 +2180,7 @@ module.exports = {
     suspendAccount,
     reactivateAccount,
     updatePhone,
+    getUserPendingActions,
     updateEmail,
     saveUserLastSearch: async (req,callback) => {
                 

@@ -912,78 +912,117 @@ const sendResetPasswordLink = (userObj, useQueue) => {
 
 
 
-const calculateProfileCompletion =  (userObj) => {
+const calculateProfileCompletion = (userObj) => {
     return new Promise(async (resolve) => {
         try {
-            const sections = {
-                "education": {
-                    weightage:25,
-                    fieldCount:5,
-                    fields: ["instituteName","degree", "specialization", "graduationYear", "grade"]
+            const userId = userObj.userId
+            let profileProgress = 0
+            const fields = {
+                education: {
+                    weightage: 15,
+
                 },
-                "profile_picture": {
-                    weightage: 25,
-                    fieldCount: 1,
-                    fields: ["profilePicture"]
+                profilePicture: {
+                    weightage: 10,
+
                 },
-                "work_experience":{
-                    weightage:25,
-                    fieldCount:4,
-                    fields: ["experience","jobTitle", "industry", "company"]
+                firstName: {
+                    weightage: 4,
+
                 },
-                "basic_information":{
-                    weightage:25,
-                    fieldCount:7,
-                    fields: ["firstName","lastName", 'gender', "dob", "phone","city", "email"]
+                dob: {
+                    weightage: 2,
+
+                },
+                gender: {
+                    weightage: 2,
+
+                },
+                city: {
+                    weightage: 2,
+
+                },
+                resumeFile: {
+                    weightage: 20,
+
+                },
+                skills: {
+                    weightage: 20,
+
+                },
+                workExp: {
+                    weightage: 15,
+
                 }
             }
-            let profileCompleted = 0
-        
-            for (const key in sections) {
-                const element = sections[key];
-                const meta = await models.user_meta.findAll({
-                    where:{
-                        metaType:"primary",
-                        key:{[Op.in]:sections[key].fields},
-                        userId:userObj.userId || userObj.id
-                    },
-                    order: [
-                        ['createdAt', 'DESC']
-                    ]
+
+            const verificationFields = {
+
+                verified: {
+                    weightage: 5
+                },
+                phoneVerified: {
+                    weightage: 5
+                }
+            }
+
+
+            const userData = await models.user_meta.findAll({
+                attributes: ["key", "value"],
+                
+                where: {
+                    metaType:"primary",
+                    key: { [Op.in]: Object.keys(fields) },
+                    userId: userId
+                },
+                order: [
+                    ['createdAt', 'DESC']
+                ]
+            })
+
+            const userVerificationData = await models.user.findAll({
+                attributes: Object.keys(verificationFields),
+                where: {
+
+                    id: userId
+                }
+
+            })
+
+            profileProgress = userData.reduce((accumulator, currField) => {
+
+                if (currField.value) return accumulator + fields[currField.key].weightage
+
+                return 0
+            }, 0)
+
+            if (userVerificationData.length && userVerificationData[0]["verified"]) {
+                profileProgress += verificationFields.verified.weightage
+            }
+
+            if (userVerificationData.length && userVerificationData[0]['phoneVerified']) {
+                profileProgress += verificationFields.phoneVerified.weightage
+            }
+            else {
+                const phoneData = await models.user_meta.findAll({
+                    attributes: ["key", "value"],
+                    where: {
+                        key: { [Op.in]: ["phone"] },
+                        userId: userId
+                    }
+
                 })
-                if(meta.length) {
-                    const formValues = meta.map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
-                        
-                        for (var key in x) {
-                            if(!acc[key])
-                                acc[key] = x[key]
-                        };
-                        return acc;
-                    }, {});
-                    let fieldEntered = 0
-                    sections[key].fields.forEach( field => {
-                       if(formValues[field]) {
-                           fieldEntered++
-                       }
-                    });
-                    let fieldCount = sections[key].fieldCount
-                    // if(key =="work_experience" && formValues['experience']){
-                    //     if (JSON.parse(formValues['experience'])!=null && JSON.parse(formValues['experience']).value.toLowerCase() == 'college student') {
-                    //         fieldCount = 1
-                    //     }
-                    // }
-                    const secComltd = (sections[key].weightage/fieldCount) * fieldEntered
-                    profileCompleted = profileCompleted + secComltd;
-                } else {
-                    profileCompleted = profileCompleted + 0
+                
+                if (phoneData.length && phoneData[0].value) {
+                    if (phoneData[0].value.slice(0, 2) != '91') {
+                        profileProgress += verificationFields.phoneVerified.weightage
+                    }
                 }
-                    
             }
-            resolve(Math.ceil(profileCompleted))
-            
+            resolve(profileProgress)
         } catch (error) {
-            console.log("Profile progress err",error);
-            resolve(0)
+            console.log("Profile progress err", error);
+            resolve(null)
         }
     })
 }
@@ -1400,6 +1439,17 @@ const sendDataForStrapi = (userMeta, action) => {
 const logActvity = async (type, userId, resource) => {
     userId = (userId)? userId : 0
     const activity =  await models.activity.findOne({ where: {type:type} });
+    if (type=="COURSE_WISHLIST"){
+        const dataToLog=resource.map((courseId)=>{
+            return {
+            userId:userId,
+            activityId:activity.id,
+            resource:courseId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
     if(userId > 0)
     {
         const activity_log = await models.activity_log.create({
