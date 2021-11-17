@@ -131,8 +131,8 @@ const OTP_TYPES = {
     SIGNIN:'signin',
     RESETPASSWORD:'reset_password',
     SIGNUP:'signup',
-    PHONEVERIFICATION: 'phoneverification'
-
+    PHONEVERIFICATION: 'phoneverification',
+    EMAILVERIFICATION: 'emailverification'
 }
 
 const FORM_TYPES = {

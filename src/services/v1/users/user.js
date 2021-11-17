@@ -39,6 +39,8 @@ let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
 const{sendSMS} =  require('../../../communication/v1/communication');
+const{sendEmail} =  require('../../../communication/v1/communication');
+
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -154,7 +156,7 @@ const verifyOtp = async (req, res, next) => {
     try {
         const body = req.body;
         const audience = req.headers.origin;
-        const { otp = "", username = "" ,otpType} = body;
+        const { otp = "", username = "" ,otpType, email=""} = body;
         // validate input
         if (!otp.trim()) {
             return res.status(200).json({
@@ -173,6 +175,41 @@ const verifyOtp = async (req, res, next) => {
             const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
             let phone = userPhone.value.substring(2, 12);
             await sendSMSWelcome(phone)
+        }
+        if(otpType == OTP_TYPES.EMAILVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
+        {
+            /*
+                email = new email
+                Get the new email.
+                Get the old email from the Database.
+                Generate OTP.
+                Send the OTP to the new email.
+                Verify OTP.
+                SEND EMAIL(Your email has been changed to the old email)
+                Store Old Email in a new attribute
+                Change Email.  
+            */
+            const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+            const oldEmail = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'email'}})
+            let emailPayload = {
+                fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+                toemail: oldEmail,
+                email_type: "reset_email_to_old",
+                email_data: {
+                    old_email: oldEmail,
+                    new_email: email
+                }
+            }
+            await sendEmail(emailPayload);
+            
+            const existEntry = await models.user_meta.findOne({where:{userId:userMeta.userId, value:oldEmail, metaType:'primary', key:'oldEmail'}})
+            if(!existEntry){
+                await models.user_meta.create({where:{userId:userMeta.userId, value:oldEmail, metaType:'primary', key:'oldEmail'}})
+            }else{
+                await models.user_meta.update({where:{userId:userMeta.userId, value:oldEmail, metaType:'primary', key:'oldEmail'}})
+            }
+            await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'email'}})
+            await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'username'}})
         }
         return res.status(200).json(response);
     } catch (error) {
@@ -602,6 +639,9 @@ const generateOtp = async (resData) => {
                             }
                         },
                         {
+                            otpType: otpType
+                        },
+                        {
                             createdAt: {
                                 [Op.gt]: new Date(new Date().getTime() - 1 * defaults.getValue('otpSpan') * 60 * 1000)
                             }
@@ -677,6 +717,11 @@ const startVerifyOtp = async (resData) => {
             }
 
             if(otpType == OTP_TYPES.PHONEVERIFICATION)
+            {
+                return resolve(otpRes);
+            }
+
+            if(otpType == OTP_TYPES.EMAILVERIFICATION)
             {
                 return resolve(otpRes);
             }
@@ -1497,7 +1542,45 @@ const getEnquiryList = async (req,res) => {
 }
 
 const updateEmail =async (req,res) => {
-
+    /*
+        Get the new email.
+        Get the old email from the Database.
+        Generate OTP.
+        Send the OTP to the new email.
+        // Following is in the verify OTP API
+        // Verify OTP.
+        // SEND EMAIL(Your email has been changed to the old email)
+        // Store Old Email in a new attribute
+        // Change Email.    
+    */
+    const { user } = req     
+    const { email } = req.body
+    try
+    {
+        let userId = user.userId
+        let oldEmail_obj = await models.user_meta.findOne({where:{userId:userId, key:'email'}});
+        const oldEmail = oldEmail_obj.value;
+        const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
+        const response = await generateOtp({ username:oldEmail, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+        let emailPayload = {
+            fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+            toemail: email,
+            email_type: "reset_email_to_new",
+            email_data: {
+                otp: response.data.otp
+            }
+        }
+        await sendEmail(emailPayload);
+        return res.status(200).json({
+            success: true,
+            data: {
+            }
+        })
+    }
+    catch(err){
+        console.log("updateEmail: ",err)
+        return resolve(err);
+    }
 }
 
 const uploadProfilePic =async (req,res) => {
