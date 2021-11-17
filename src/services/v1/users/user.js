@@ -168,6 +168,9 @@ const verifyOtp = async (req, res, next) => {
         }
 
         const response = await startVerifyOtp({ username, otp, audience, provider: LOGIN_TYPES.LOCAL, otpType });
+        if(!response.success){
+            return res.status(200).json(response);
+        }
         if(otpType == OTP_TYPES.PHONEVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
         {
             const response = await verifyPhone( username);
@@ -193,23 +196,41 @@ const verifyOtp = async (req, res, next) => {
             const oldEmail = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'email'}})
             let emailPayload = {
                 fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
-                toemail: oldEmail,
+                toemail: oldEmail.value,
                 email_type: "reset_email_to_old",
                 email_data: {
-                    old_email: oldEmail,
+                    old_email: oldEmail.value,
                     new_email: email
                 }
             }
             await sendEmail(emailPayload);
             
-            const existEntry = await models.user_meta.findOne({where:{userId:userMeta.userId, value:oldEmail, metaType:'primary', key:'oldEmail'}})
+            const existEntry = await models.user_meta.findOne({where:{userId:userMeta.userId, value:oldEmail.value, metaType:'primary', key:'oldEmail'}})
             if(!existEntry){
-                await models.user_meta.create({where:{userId:userMeta.userId, value:oldEmail, metaType:'primary', key:'oldEmail'}})
+                await models.user_meta.create({userId:userMeta.userId, value:oldEmail.value, metaType:'primary', key:'oldEmail'})
             }else{
-                await models.user_meta.update({where:{userId:userMeta.userId, value:oldEmail, metaType:'primary', key:'oldEmail'}})
+                await models.user_meta.update({value:oldEmail.value},{where:{userId:userMeta.userId, metaType:'primary', key:'oldEmail'}})
             }
-            await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'email'}})
-            await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'username'}})
+            await models.user_meta.update({
+                value:email
+            }, {
+                where: {
+                    userId:userMeta.userId,
+                    metaType:'primary', 
+                    key:'email'
+                }
+            });
+            await models.user_login.update({
+                email: email
+            }, {
+                where: {
+                    userId:userMeta.userId,
+                    provider:LOGIN_TYPES.LOCAL
+
+                }
+            });
+            // await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'email'}})
+            // await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'username'}})
         }
         return res.status(200).json(response);
     } catch (error) {
@@ -1562,6 +1583,9 @@ const updateEmail =async (req,res) => {
         const oldEmail = oldEmail_obj.value;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
         const response = await generateOtp({ username:oldEmail, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+        if(!response.success){
+            return res.status(200).json(response);
+        }
         let emailPayload = {
             fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
             toemail: email,
@@ -1579,7 +1603,7 @@ const updateEmail =async (req,res) => {
     }
     catch(err){
         console.log("updateEmail: ",err)
-        return resolve(err);
+        return res.status(200).json(err)
     }
 }
 
