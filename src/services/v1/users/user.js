@@ -38,9 +38,7 @@ const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
-const{sendSMS} =  require('../../../communication/v1/communication');
-const{sendEmail} =  require('../../../communication/v1/communication');
-
+const{sendSMS, sendEmail} =  require('../../../communication/v1/communication');
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -1689,7 +1687,7 @@ const removeProfilePic = async (req,res) => {
 }
 
 const uploadResumeFile = async (req,res) =>{
-    const {buffer, filename} =req.body
+    const {buffer, filename, size = 0} =req.body
     const {user}=req
     let resumeB =  getFileBuffer(buffer);
     let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
@@ -1719,6 +1717,7 @@ const uploadResumeFile = async (req,res) =>{
         filename:filename,
         filepath:s3Path,
         uploadDate:today,
+        size:size
     }
     const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     if(!existResume) {
