@@ -2083,58 +2083,126 @@ const getUserPendingActions = async (req, res) => {
     try {
         const { user } = req
         const userId = user.userId
+        let profileProgress = 0
         let response = {
 
-            pendingProfileActions: {
-                personal: [],
-                work_experience: [],
-                profile_picture: [],
-                education: [],
-                resume:[],
-                skills:[]
-            },
+            pendingProfileActions: [],
 
             verification: {
                 phoneVerified: null,
                 emailVerified: null
+            },
+
+            profileProgress: null
+        }
+
+        const fields = {
+            education: {
+                weightage: 15,
+            },
+            profilePicture: {
+                weightage: 10,
+            },
+            firstName: {
+                weightage: 4,
+            },
+            dob: {
+                weightage: 2,
+            },
+            gender: {
+                weightage: 2,
+            },
+            city: {
+                weightage: 2,
+            },
+            resumeFile: {
+                weightage: 20,
+            },
+            skills: {
+                weightage: 20,
+            },
+            workExp: {
+                weightage: 15,
             }
         }
-        const userMeta = {
-            "personal": ["firstName", "lastName", 'gender', "dob", "phone", "city", "email"],
-            "work_experience": ["workExp"],
-            "profile_picture": ["profilePicture"],
-            "education": ["education"],
-            "resume":["resumeFile"],
-            "skills":["skills"]
+
+        const verificationFields = {
+            verified: {
+                weightage: 5
+            },
+            phoneVerified: {
+                weightage: 5
+            }
         }
 
-        for (const key in userMeta) {
-            const result = await models.user_meta.findAll({
-                attributes: ["key", "value"],
-                where: {
-                    metaType:"primary",
-                    key: { [Op.in]: userMeta[key] },
-                    userId: userId
-                }
-            })
-
-            const availableFieldsForThisKey = result.map((field) => field.key)
-            userMeta[key].forEach((field) => {
-                if (!availableFieldsForThisKey.includes(field)) response.pendingProfileActions[key].push(field)
-            })
-        }
+        const result = await models.user_meta.findAll({
+            attributes: ["key", "value"],
+            where: {
+                metaType: "primary",
+                key: { [Op.in]: Object.keys(fields) },
+                userId: userId
+            }
+        })
 
         const userVerificationData = await models.user.findAll({
-            attributes: ["verified", "phoneVerified"],
+            attributes: Object.keys(verificationFields),
             where: {
                 id: userId
             }
         })
-        
-        if(userVerificationData.length){
-        response.verification.phoneVerified = userVerificationData[0]["phoneVerified"] ? true : false
-        response.verification.emailVerified = userVerificationData[0]["verified"]
+
+        const availableFields = result.map((field) => {
+            if (field.value) {
+                return field.key
+            }
+        })
+
+        for (const field in fields) {
+
+            if (availableFields.includes(field)) {
+                profileProgress += fields[field].weightage
+            }
+            else {
+                response.pendingProfileActions.push(field)
+            }
         }
+
+        if (userVerificationData.length) {
+
+            if (userVerificationData[0]["verified"]) {
+                response.verification.emailVerified = true
+                profileProgress += verificationFields.verified.weightage
+            }
+            else {
+                response.verification.emailVerified = false
+            }
+
+            if (userVerificationData[0]["phoneVerified"]) {
+                response.verification.phoneVerified = true
+                profileProgress += verificationFields.phoneVerified.weightage
+            }
+            else {
+                const phoneData = await models.user_meta.findAll({
+                    attributes: ["key", "value"],
+                    where: {
+                        key: { [Op.in]: ["phone"] },
+                        userId: userId
+                    }
+                })
+
+                if (phoneData.length && phoneData[0].value) {
+                    if (phoneData[0].value.slice(0, 2) != '91') {
+                        response.verification.phoneVerified = true
+                        profileProgress += verificationFields.phoneVerified.weightage
+                    }
+                    else{
+                        response.verification.phoneVerified=false
+                    }
+                }
+            }
+        }
+
+        response.profileProgress=profileProgress
         res.send({ message: "success", data: response })
     } catch (error) {
         console.log(error)
