@@ -38,9 +38,7 @@ const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
-const{sendSMS} =  require('../../../communication/v1/communication');
-const{sendEmail} =  require('../../../communication/v1/communication');
-
+const{sendSMS, sendEmail} =  require('../../../communication/v1/communication');
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
