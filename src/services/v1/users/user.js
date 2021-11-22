@@ -39,6 +39,7 @@ let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
 const{sendSMS, sendEmail} =  require('../../../communication/v1/communication');
+const validators = require("../../../utils/validators")
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -1267,20 +1268,15 @@ const removeCourseFromWishList = async (req,res) => {
 
 const fetchWishListIds = async (req,res) => {
     const { user } = req
-    let {page,limit}=req.query
-
-    if(limit<0|| !limit) limit=10
-    if (page<1|| !page) page=1
-
+    const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+   
     const offset=(page-1)*limit
     
-
     let where = {
         userId: user.userId,
         key: { [Op.in]: ['course_wishlist'] },
     }
 
-    
     const wishlistedCourses=await models.user_meta.findAndCountAll({
         attributes:['value'],
         where,
