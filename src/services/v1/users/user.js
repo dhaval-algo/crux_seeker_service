@@ -1427,13 +1427,9 @@ const wishListCourseData = async (req,res) => {
 // fetch list of the enquires
 const getEnquiryList = async (req,res) => {
     try {
-        let { limit=10, page=1 } = req.query;
     const { user } = req;
-    let offset = 0
-
-    if(page>1) {
-        offset =  (page-1)* limit
-    }
+    const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+    const offset =  (page-1)* limit
     
     // const count = await models.form_submission.findAll({
 	
