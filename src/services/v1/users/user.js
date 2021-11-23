@@ -2172,6 +2172,7 @@ const getUserPendingActions = async (req, res) => {
                 const phoneData = await models.user_meta.findAll({
                     attributes: ["key", "value"],
                     where: {
+                        metaType: "primary",
                         key: { [Op.in]: ["phone"] },
                         userId: userId
                     }
