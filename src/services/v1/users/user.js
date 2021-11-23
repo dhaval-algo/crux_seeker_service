@@ -1304,11 +1304,7 @@ const wishListCourseData = async (req,res) => {
          
         const { user } = req
         const userId=user.userId
-        let { page, limit } = req.query
-
-        if (limit < 0 || !limit) limit = 10
-        if (page < 1 || !page) page = 1
-
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
         const offset = (page - 1) * limit
         const { queryString } = req.query
         let wishedListIds = []
