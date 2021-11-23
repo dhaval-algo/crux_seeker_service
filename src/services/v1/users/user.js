@@ -153,9 +153,12 @@ const sendOtp = async (req, res, next) => {
 */
 const verifyOtp = async (req, res, next) => {
     try {
+        const { user } = req
         const body = req.body;
         const audience = req.headers.origin;
-        const { otp = "", username = "" ,otpType, email=""} = body;
+        let userId = user.userId
+        const { otp = "", otpType, email=""} = body;
+        // const { otp = "", username = "" ,otpType, email=""} = body;
         // validate input
         if (!otp.trim()) {
             return res.status(200).json({
@@ -163,10 +166,34 @@ const verifyOtp = async (req, res, next) => {
                 'message': 'OTP is required',
                 'data': {}
             });
-
+        }
+        if(!isEmail(email)){
+            return res.status(500).json({
+                code: "NOT AN EMAIL",
+                message: "Please enter email in xyz_email.com format.",
+                success: false,
+                data: {}
+            })
+        }
+        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+        if(email_already_exist){
+            return res.status(500).json({
+                code: "EMAIL ALREADY EXIST",
+                message: "Please enter email which is not already used.",
+                success: false,
+                data: {}
+            })
+        }
+        let providerObj = await models.user_login.findOne({where:{userId:userId}})
+        const provider = providerObj.provider
+        if(!provider || provider == ''){
+            provider = LOGIN_TYPES.LOCAL
         }
 
-        const response = await startVerifyOtp({ username, otp, audience, provider: LOGIN_TYPES.LOCAL, otpType });
+        let userObj = await models.user_meta.findOne({where:{userId:userId, key:"email", metaType:"primary"}})
+        const username = userObj.value
+        
+        const response = await startVerifyOtp({ username, otp, audience, provider: provider, otpType });
         if(!response.success){
             return res.status(200).json(response);
         }
@@ -191,30 +218,30 @@ const verifyOtp = async (req, res, next) => {
                 Store Old Email in a new attribute
                 Change Email.  
             */
-            const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
-            const oldEmail = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'email'}})
+            // const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+            // const oldEmail = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'email'}})
             let emailPayload = {
                 fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
-                toemail: oldEmail.value,
+                toemail: username,
                 email_type: "reset_email_to_old",
                 email_data: {
-                    old_email: oldEmail.value,
+                    old_email: username,
                     new_email: email
                 }
             }
             await sendEmail(emailPayload);
             
-            const existEntry = await models.user_meta.findOne({where:{userId:userMeta.userId, value:oldEmail.value, metaType:'primary', key:'oldEmail'}})
+            const existEntry = await models.user_meta.findOne({where:{userId:userId, value:username, metaType:'primary', key:'oldEmail'}})
             if(!existEntry){
-                await models.user_meta.create({userId:userMeta.userId, value:oldEmail.value, metaType:'primary', key:'oldEmail'})
+                await models.user_meta.create({userId:userId, value:username, metaType:'primary', key:'oldEmail'})
             }else{
-                await models.user_meta.update({value:oldEmail.value},{where:{userId:userMeta.userId, metaType:'primary', key:'oldEmail'}})
+                await models.user_meta.update({value:username},{where:{userId:userId, metaType:'primary', key:'oldEmail'}})
             }
             await models.user_meta.update({
                 value:email
             }, {
                 where: {
-                    userId:userMeta.userId,
+                    userId:userId,
                     metaType:'primary', 
                     key:'email'
                 }
@@ -223,20 +250,17 @@ const verifyOtp = async (req, res, next) => {
                 email: email
             }, {
                 where: {
-                    userId:userMeta.userId,
-                    provider:LOGIN_TYPES.LOCAL
-
+                    userId:userId,
+                    provider:provider
                 }
             });
-            // await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'email'}})
-            // await models.user_meta.update({where:{userId:userMeta.userId, value:email, metaType:'primary', key:'username'}})
         }
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
         return res.status(500).json({
-            'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-            'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+            code: DEFAULT_CODES.SYSTEM_ERROR.code,
+            message: DEFAULT_CODES.SYSTEM_ERROR.message,
             success: false
         });
     }
@@ -628,7 +652,7 @@ const checkPassword = (userObj, resPwd) => {
     }
 */
 const generateOtp = async (resData) => {
-    let { username, userId, otpType } = resData;
+    let { username, userId, provider, otpType } = resData;
     return new Promise(async (resolve, reject) => {
         try {
 
@@ -643,7 +667,7 @@ const generateOtp = async (resData) => {
                     }
                 }
             */
-            const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
+            const verificationRes = await userExist(username, provider);
             if (!verificationRes.success) {
                 return resolve(verificationRes)
             }
@@ -1607,13 +1631,37 @@ const updateEmail =async (req,res) => {
     const { email } = req.body
     try
     {
+        if(!isEmail(email)){
+            return res.status(500).json({
+                code: "NOT AN EMAIL",
+                message: "Please enter email in xyz_email.com format.",
+                success: false,
+                data: {}
+            })
+        }
+        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+        if(email_already_exist){
+            return res.status(500).json({
+                code: "EMAIL ALREADY EXIST",
+                message: "Please enter email which is not already used.",
+                success: false,
+                data: {}
+            })
+        }
+
         let userId = user.userId
-        let oldEmail_obj = await models.user_meta.findOne({where:{userId:userId, key:'email'}});
-        const oldEmail = oldEmail_obj.value;
+        let providerObj = await models.user_login.findOne({where:{userId:userId}})
+        const provider = providerObj.provider
+        if(!provider || provider == ''){
+            provider = LOGIN_TYPES.LOCAL
+        }
+
+        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email'}});
+        const oldEmail = oldEmailObj.value;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
-        const response = await generateOtp({ username:oldEmail, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+        const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
         if(!response.success){
-            return res.status(200).json(response);
+            return res.status(500).json(response);
         }
         let emailPayload = {
             fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
@@ -1625,14 +1673,12 @@ const updateEmail =async (req,res) => {
         }
         await sendEmail(emailPayload);
         return res.status(200).json({
-            success: true,
-            data: {
-            }
+            success: true
         })
     }
     catch(err){
         console.log("updateEmail: ",err)
-        return res.status(200).json(err)
+        return res.status(500).json(err)
     }
 }
 
