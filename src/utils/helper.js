@@ -1385,7 +1385,8 @@ const sendDataForStrapi = (userMeta, action) => {
                         "degree": education.degree.label,
                         "specialization": education.specialization.label,
                         "year_of_graduation": education.graduationYear,
-                        "grade": education.grade                    
+                        "grade": education.grade,
+                        "grade_type":education.grade_type           
                     })
                 }
             }

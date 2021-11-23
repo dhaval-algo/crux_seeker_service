@@ -77,6 +77,7 @@ const createLoggedUserMeta = async (userId) => {
                     "graduationYear",
                     "specialization",
                     "grade",
+                    "grade_type",
                     "jobTitle",
                     "industry",
                     "company",
@@ -106,6 +107,7 @@ const createLoggedUserMeta = async (userId) => {
             experience: '',
             degree: '',
             grade: '',
+            grade_type: '',
             institute: '',
             specialization: '',
             year_of_graduation: '',
@@ -119,6 +121,7 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.last_name = metaObjVal.lastName || "Not given";
         strapiObj.gender = metaObjVal.gender || "";
         strapiObj.grade = metaObjVal.grade || "";
+        strapiObj.grade_type = metaObjVal.grade_type || "";
         strapiObj.email = metaObjVal.email || "";
         strapiObj.date_of_birth = metaObjVal.dob || "";
         strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
@@ -177,6 +180,7 @@ const prepareStrapiData = (enquiry_id) => {
             experience:'',
             degree:'',
             grade:'',
+            grade_type:'',
             institute:'',
             specialization:'',
             year_of_graduation:'',
@@ -229,6 +233,7 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || "";
                 strapiObj.grade = metaObjVal.grade || "";
+                strapiObj.grade_type = metaObjVal.grade_type || "";
                 strapiObj.email = metaObjVal.email || "";
                 strapiObj.date_of_birth = metaObjVal.dob || "";
                 strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
