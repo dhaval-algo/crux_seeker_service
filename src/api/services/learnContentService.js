@@ -373,8 +373,28 @@ module.exports = class learnContentService {
             }
             if(req.query['f'].includes("Price Type:"))
             {
-                query.bool.must.push(  { "term": { "display_price": true } });
-                esFilters["display_price"] =   { "term": { "display_price": true } };
+                query.bool.must.push(  {          
+                    "bool": {
+                      "must_not": [
+                        {"term": {
+                          "display_price": {
+                            "value": "false"
+                          }
+                        }}
+                      ]
+                    }
+                 });
+                esFilters["display_price"] =  {          
+                    "bool": {
+                      "must_not": [
+                        {"term": {
+                          "display_price": {
+                            "value": "false"
+                          }
+                        }}
+                      ]
+                    }
+                 };
             }
         }
 
@@ -454,7 +474,17 @@ module.exports = class learnContentService {
 
             if(filter.elastic_attribute_name == "pricing_type")
             {
-                exemted_filters.push(  { "term": { "display_price": true } });
+                exemted_filters.push(  {          
+                    "bool": {
+                      "must_not": [
+                        {"term": {
+                          "display_price": {
+                            "value": "false"
+                          }
+                        }}
+                      ]
+                    }
+                 });
             }
 
             exemted_filters.push(published_filter);
