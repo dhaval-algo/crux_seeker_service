@@ -1631,6 +1631,14 @@ const updateEmail =async (req,res) => {
     const { email } = req.body
     try
     {
+        if(email.trim() == '') {
+            return res.status(200).json({
+                code: "EMPTY VALUES ARE NOT ACCEPTED",
+                message: "Please enter email in xyz@email.com format.",
+                success: false,
+                data: {}
+            });
+        }
         if(!isEmail(email)){
             return res.status(200).json({
                 code: "NOT AN EMAIL",
