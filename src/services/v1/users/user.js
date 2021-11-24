@@ -168,16 +168,16 @@ const verifyOtp = async (req, res, next) => {
             });
         }
         if(!isEmail(email)){
-            return res.status(500).json({
+            return res.status(200).json({
                 code: "NOT AN EMAIL",
-                message: "Please enter email in xyz_email.com format.",
+                message: "Please enter email in xyz@email.com format.",
                 success: false,
                 data: {}
             })
         }
         let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
         if(email_already_exist){
-            return res.status(500).json({
+            return res.status(200).json({
                 code: "EMAIL ALREADY EXIST",
                 message: "Please enter email which is not already used.",
                 success: false,
@@ -1632,16 +1632,16 @@ const updateEmail =async (req,res) => {
     try
     {
         if(!isEmail(email)){
-            return res.status(500).json({
+            return res.status(200).json({
                 code: "NOT AN EMAIL",
-                message: "Please enter email in xyz_email.com format.",
+                message: "Please enter email in xyz@email.com format.",
                 success: false,
                 data: {}
             })
         }
         let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
         if(email_already_exist){
-            return res.status(500).json({
+            return res.status(200).json({
                 code: "EMAIL ALREADY EXIST",
                 message: "Please enter email which is not already used.",
                 success: false,
