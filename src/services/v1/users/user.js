@@ -254,6 +254,8 @@ const verifyOtp = async (req, res, next) => {
                     provider:provider
                 }
             });
+            let data = {old_email:username, new_email:email}
+            sendDataForStrapi(data, "update-email");
         }
         return res.status(200).json(response);
     } catch (error) {

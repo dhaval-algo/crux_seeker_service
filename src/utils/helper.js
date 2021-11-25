@@ -1430,6 +1430,9 @@ const sendDataForStrapi = (userMeta, action) => {
             break;
         case "remove-resume":
             userData = userMeta
+            break;
+        case "update-email":
+            userData = userMeta
             break;                        
         default:
             break;
