@@ -254,6 +254,20 @@ const verifyOtp = async (req, res, next) => {
                     provider:provider
                 }
             });
+            // If everything goes fine updating the verified status
+            const userEntry = await models.user.findOne({where:{id:userId}})
+            if(userEntry){
+                if(!userEntry.verified){
+                    await models.user.update(
+                        {
+                            verified: true 
+                        },
+                        {
+                            where: { id: userId }
+                        }
+                    )
+                }
+            }
             let data = {old_email:username, new_email:email}
             sendDataForStrapi(data, "update-email");
         }
