@@ -1361,63 +1361,10 @@ const wishListCourseData = async (req,res) => {
             })
 
         const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
-        
-       
-        let allActiveIds = await elasticService.plainSearch('learn-content', {
-            "_source": ["_id"],
-            "size": 2000,
-            "query": {
-                "bool": {
-                    "must": [
-                        {
-                            "term": { "status.keyword": "published" }
-                        },
-            
-                        {
-                         "ids": {
-                            "values": totalWishedListIds
-                        }
-                      }
-                    ]
-                }
-            }
-        });
-
-        if (allActiveIds.hits && allActiveIds.hits.hits && allActiveIds.hits.hits.length) {
-            allActiveIds = allActiveIds.hits.hits.map((course) => course._id)
-
-        }
-
-        else {
-            allActiveIds = []
-
-        }
-
-        if (!allActiveIds.length) {
-
-            return res.status(200).json({
-                success: true,
-                data: {
-                    userId: userId,
-                    ids: allActiveIds,
-                    courses: []
-                },
-                pagination: {
-                    page: page,
-                    limit: limit,
-                    total: totalCount
-                }
-            })
-        }
-
-        if (!queryString) {
-            totalCount = allActiveIds.length
-            allActiveIds = allActiveIds.slice(offset, offset + limit)
-
-        }
 
         let queryBody = {
-            "size": 1000,
+            "from":offset,
+            "size": limit,
             "query": {
                 "bool": {
                     "must": [{
@@ -1430,7 +1377,7 @@ const wishListCourseData = async (req,res) => {
                     },
                     {
                         "ids": {
-                            "values": allActiveIds
+                            "values": totalWishedListIds
                         }
                     }
                     ]
@@ -1445,49 +1392,33 @@ const wishListCourseData = async (req,res) => {
         let courses = []
         let wishListIdsFromElastic=[]
         if(result.hits){
+            totalCount=result.hits.total.value
             if(result.hits.hits && result.hits.hits.length > 0){
+                
                 for(const hit of result.hits.hits){
-                  
                     const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
                     wishListIdsFromElastic.push(course.id)
                     courses.push(course);
                 }
             }
         }
-        if (!queryString) {
-            return res.status(200).json({
-                success: true,
 
-                data: {
-                    userId: userId,
-                    ids: wishListIdsFromElastic,
-                    courses: courses
-                },
-                pagination: {
-                    page: page,
-                    limit: limit,
-                    total: totalCount
-                }
-            })
-        }
-        else {
+        return res.status(200).json({
+            success: true,
 
-            const paginatedIds=wishListIdsFromElastic.slice(offset,offset+limit)
-            const paginatedCourses=courses.slice(offset,offset+limit)
-            return res.status(200).json({
-                success: true,
-                data: {
-                    userId: userId,
-                    ids: paginatedIds,
-                    courses: paginatedCourses
-                },
-                pagination: {
-                    page: page,
-                    limit: limit,
-                    total: wishListIdsFromElastic.length
-                }
-            })
-        }
+            data: {
+                userId: userId,
+                ids: wishListIdsFromElastic,
+                courses: courses
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+       
+        
     } catch (error) {
         console.log(error);
             return res.status(500).send({error,success:false})
