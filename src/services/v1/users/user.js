@@ -1333,41 +1333,59 @@ const wishListCourseData = async (req,res) => {
         const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
         const offset = (page - 1) * limit
         const { queryString } = req.query
-        let wishedListIds = []
+        
         let totalCount = 0
         let where = {
             userId: userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
-           
-        if (!queryString) {
-            const wishlistedCourses = await models.user_meta.findAndCountAll({
+
+        const totalWishListOfUser = await models.user_meta.findAll({
                 attributes: ['value'],
                 where,
-                offset: offset,
-                limit: limit
+                order: [["id","DESC"]]
             })
 
-            wishedListIds = wishlistedCourses.rows.map((rec) => rec.value)
-            totalCount = wishlistedCourses.count
+        const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
+        
+       
+        let allActiveIds = await elasticService.plainSearch('learn-content', {
+            "_source": ["_id"],
+            "size": 2000,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": { "status.keyword": "published" }
+                        },
+            
+                        {
+                         "ids": {
+                            "values": totalWishedListIds
+                        }
+                      }
+                    ]
+                }
+            }
+        });
+
+        if (allActiveIds.hits && allActiveIds.hits.hits && allActiveIds.hits.hits.length) {
+            allActiveIds = allActiveIds.hits.hits.map((course) => course._id)
+
         }
+
         else {
-
-            const totalWishListOfUser = await models.user_meta.findAll({
-                attributes: ['value'],
-                where,
-            })
-
-            wishedListIds = totalWishListOfUser.map((rec) => rec.value)
+            allActiveIds = []
 
         }
-        if (!wishedListIds.length) {
-            wishedListIds = wishedListIds.filter(w => !!w)
+
+        if (!allActiveIds.length) {
+
             return res.status(200).json({
                 success: true,
                 data: {
-                    userId:userId,
-                    ids: wishedListIds,
+                    userId: userId,
+                    ids: allActiveIds,
                     courses: []
                 },
                 pagination: {
@@ -1376,6 +1394,12 @@ const wishListCourseData = async (req,res) => {
                     total: totalCount
                 }
             })
+        }
+
+        if (!queryString) {
+            totalCount = allActiveIds.length
+            allActiveIds = allActiveIds.slice(offset, offset + limit)
+
         }
 
         let queryBody = {
@@ -1389,12 +1413,10 @@ const wishListCourseData = async (req,res) => {
                         "match_phrase": {
                             "title": queryString
                         }
-
                     },
-
                     {
                         "ids": {
-                            "values": wishedListIds
+                            "values": allActiveIds
                         }
                     }
                     ]
@@ -1424,7 +1446,7 @@ const wishListCourseData = async (req,res) => {
 
                 data: {
                     userId: userId,
-                    ids: wishedListIds,
+                    ids: wishListIdsFromElastic,
                     courses: courses
                 },
                 pagination: {
@@ -1435,12 +1457,20 @@ const wishListCourseData = async (req,res) => {
             })
         }
         else {
+
+            const paginatedIds=wishListIdsFromElastic.slice(offset,offset+limit)
+            const paginatedCourses=courses.slice(offset,offset+limit)
             return res.status(200).json({
                 success: true,
                 data: {
                     userId: userId,
-                    ids: wishListIdsFromElastic,
-                    courses: courses
+                    ids: paginatedIds,
+                    courses: paginatedCourses
+                },
+                pagination: {
+                    page: page,
+                    limit: limit,
+                    total: wishListIdsFromElastic.length
                 }
             })
         }
