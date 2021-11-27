@@ -1124,10 +1124,10 @@ const addCourseToWishList = async (req, res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { courseIds } = req.body
+        const courseIds = validators.validateAddWishlistParams(req.body)
+        if (!courseIds) {
 
-        if (!(courseIds instanceof Array) || !courseIds.length) {
-            return res.status(400).json({
+            return res.status(200).json({
                 success: false,
                 message: "invalid request sent"
             })

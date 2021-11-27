@@ -14,9 +14,27 @@ function validatePaginationParams(data) {
 
 }
 
+function validateAddWishlistParams(body) {
+
+    const { courseIds, courseId } = body
+    schemaForCourseId = Joi.object({ courseId: Joi.string().required() })
+    schemaForCourseIds = Joi.object({ courseIds: Joi.array().items(Joi.string()).required() })
+
+    if (!schemaForCourseId.validate({courseId:courseId}).error) {
+        return [courseId]
+    }
+
+    if (!schemaForCourseIds.validate({courseIds:courseIds}).error) {
+        return courseIds
+    }
+
+    return null
+}
+
 
 module.exports = {
 
-validatePaginationParams
+validatePaginationParams,
+validateAddWishlistParams
 
 }
