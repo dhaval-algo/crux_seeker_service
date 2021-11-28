@@ -1818,12 +1818,11 @@ const bookmarkArticle = async (req,res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { articleIds } = req.body
-
-        if (!(articleIds instanceof Array) || !articleIds.length) {
-            return res.status(400).json({
-                success: false,
-                message: "invalid request sent"
+        const articleIds = validators.validateAddArticleParams(req.body)
+        if(!articleIds){
+            return res.status(200).send({
+                success:false,
+                message:"invalid request sent"
             })
         }
 
