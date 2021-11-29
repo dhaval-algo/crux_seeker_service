@@ -2106,7 +2106,7 @@ const getUserPendingActions = async (req, res) => {
             pendingProfileActions: [],
 
             verification: {
-                phoneVerified: null,
+                
                 emailVerified: null
             },
 
@@ -2140,6 +2140,9 @@ const getUserPendingActions = async (req, res) => {
             },
             workExp: {
                 weightage: 15,
+            },
+            phone: {
+                weightage: 5,
             }
         }
 
@@ -2193,7 +2196,8 @@ const getUserPendingActions = async (req, res) => {
             else {
                 response.verification.emailVerified = false
             }
-
+        
+            /*
             if (userVerificationData[0]["phoneVerified"]) {
                 response.verification.phoneVerified = true
                 profileProgress += verificationFields.phoneVerified.weightage
@@ -2218,7 +2222,10 @@ const getUserPendingActions = async (req, res) => {
                     }
                 }
             }
+            */
         }
+        
+        
 
         response.profileProgress=profileProgress
         res.send({ message: "success", data: response })

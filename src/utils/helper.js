@@ -953,6 +953,10 @@ const calculateProfileCompletion = (userObj) => {
                 workExp: {
                     weightage: 15,
 
+                },
+                phone: {
+                    weightage: 5,
+
                 }
             }
 
@@ -999,7 +1003,7 @@ const calculateProfileCompletion = (userObj) => {
             if (userVerificationData.length && userVerificationData[0]["verified"]) {
                 profileProgress += verificationFields.verified.weightage
             }
-
+            /*
             if (userVerificationData.length && userVerificationData[0]['phoneVerified']) {
                 profileProgress += verificationFields.phoneVerified.weightage
             }
@@ -1019,6 +1023,7 @@ const calculateProfileCompletion = (userObj) => {
                     }
                 }
             }
+            */
             resolve(profileProgress)
         } catch (error) {
             console.log("Profile progress err", error);
