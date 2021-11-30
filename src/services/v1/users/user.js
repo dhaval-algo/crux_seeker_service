@@ -1385,7 +1385,28 @@ const wishListCourseData = async (req,res) => {
             }
         }
 
-        if (!queryString)  delete queryBody.query.bool.must[1]
+        if (!queryString) {
+
+            delete queryBody.query.bool.must[1];
+            let scores = {};
+            totalWishedListIds.forEach((id, index) => {
+                scores[id] = index;
+            });
+            queryBody["sort"] = [
+                {
+                    "_script": {
+                        "type": "number",
+                        "script": {
+                            "lang": "painless",
+                            "inline": "return params.scores[doc['_id'].value];",
+                            "params": {
+                                "scores": scores
+                            }
+                        }
+                    }
+                }
+            ]
+        }
 
         const result = await elasticService.plainSearch('learn-content', queryBody);
         
