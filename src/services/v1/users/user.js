@@ -1904,7 +1904,9 @@ const removeBookmarkArticle = async (req,res) => {
 const bookmarkArticleData = async (req,res) => {
     try {
 
-
+        if (req.query.queryString) {
+            req.query.q = req.query.queryString
+        }
 
         const { user } = req
         let where = {
