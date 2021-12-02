@@ -1551,10 +1551,11 @@ const getEnquiryList = async (req,res) => {
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
             instituteName:"" ,
-            images:{}
+            images:{},
+            partnerName:""
         }
         let queryBody = {
-            "_source":["title","categories","provider_name","images"],
+            "_source":["title","categories","provider_name","images","partner_name"],
             "query": {
               "terms": {
                   "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
@@ -1573,6 +1574,7 @@ const getEnquiryList = async (req,res) => {
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
                         enquiry.images=hit._source.images
+                        enquiry.partnerName = hit._source.partner_name
                         
                     // }
                 }
