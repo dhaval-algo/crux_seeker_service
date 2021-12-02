@@ -1124,41 +1124,64 @@ const addCourseToWishList = async (req, res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const courseIds = validators.validateAddWishlistParams(req.body)
-        if (!courseIds) {
+        const courseIdsFromClient = validators.validateAddWishlistParams(req.body)
+        if (!courseIdsFromClient) {
 
             return res.status(200).json({
                 success: false,
                 message: "invalid request sent"
             })
         }
-        const dataToSave = courseIds.map((courseId) => {
-            return {
-                key: "course_wishlist",
-                value: courseId,
-                userId: userId
-            }
-        })
 
-        const resMeta = await models.user_meta.bulkCreate(dataToSave)
-        const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
-
-        const userinfo = await models.user_meta.findOne({
-            attributes: ["value"],
-            where: {
-                userId: user.userId, metaType: 'primary', key: 'email'
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'course_wishlist',
+                value: courseIdsFromClient
             }
-        })
-        const data = { email: userinfo.value, courseIds: numericIds }
-        await logActvity("COURSE_WISHLIST", userId, courseIds);
-        sendDataForStrapi(data, "profile-add-wishlist");
+        });
+        let courseIds = []
+        existingIds = existingIds.map((course) => course.value)
+        courseIdsFromClient.forEach((courseId) => {
+            if (!existingIds.includes(courseId)) courseIds.push(courseId)
+        });
 
-        return res.status(200).json({
-            success: true,
-            data: {
-                wishlist: resMeta
-            }
-        })
+        if (courseIds.length) {
+            const dataToSave = courseIds.map((courseId) => {
+                return {
+                    key: "course_wishlist",
+                    value: courseId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+            const userinfo = await models.user_meta.findOne({
+                attributes: ["value"],
+                where: {
+                    userId: user.userId, metaType: 'primary', key: 'email'
+                }
+            })
+            const data = { email: userinfo.value, courseIds: numericIds }
+            await logActvity("COURSE_WISHLIST", userId, courseIds);
+            sendDataForStrapi(data, "profile-add-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: []
+                }
+            })
+        }
 
     } catch (error) {
       
