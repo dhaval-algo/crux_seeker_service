@@ -1124,41 +1124,64 @@ const addCourseToWishList = async (req, res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { courseIds } = req.body
+        const courseIdsFromClient = validators.validateAddWishlistParams(req.body)
+        if (!courseIdsFromClient) {
 
-        if (!(courseIds instanceof Array) || !courseIds.length) {
-            return res.status(400).json({
+            return res.status(200).json({
                 success: false,
                 message: "invalid request sent"
             })
         }
-        const dataToSave = courseIds.map((courseId) => {
-            return {
-                key: "course_wishlist",
-                value: courseId,
-                userId: userId
-            }
-        })
 
-        const resMeta = await models.user_meta.bulkCreate(dataToSave)
-        const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
-
-        const userinfo = await models.user_meta.findOne({
-            attributes: ["value"],
-            where: {
-                userId: user.userId, metaType: 'primary', key: 'email'
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'course_wishlist',
+                value: courseIdsFromClient
             }
-        })
-        const data = { email: userinfo.value, courseIds: numericIds }
-        await logActvity("COURSE_WISHLIST", userId, courseIds);
-        sendDataForStrapi(data, "profile-add-wishlist");
+        });
+        let courseIds = []
+        existingIds = existingIds.map((course) => course.value)
+        courseIdsFromClient.forEach((courseId) => {
+            if (!existingIds.includes(courseId)) courseIds.push(courseId)
+        });
 
-        return res.status(200).json({
-            success: true,
-            data: {
-                wishlist: resMeta
-            }
-        })
+        if (courseIds.length) {
+            const dataToSave = courseIds.map((courseId) => {
+                return {
+                    key: "course_wishlist",
+                    value: courseId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+            const userinfo = await models.user_meta.findOne({
+                attributes: ["value"],
+                where: {
+                    userId: user.userId, metaType: 'primary', key: 'email'
+                }
+            })
+            const data = { email: userinfo.value, courseIds: numericIds }
+            await logActvity("COURSE_WISHLIST", userId, courseIds);
+            sendDataForStrapi(data, "profile-add-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: []
+                }
+            })
+        }
 
     } catch (error) {
       
@@ -1347,53 +1370,24 @@ const wishListCourseData = async (req,res) => {
         const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
         const offset = (page - 1) * limit
         const { queryString } = req.query
-        let wishedListIds = []
+        
         let totalCount = 0
         let where = {
             userId: userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
-           
-        if (!queryString) {
-            const wishlistedCourses = await models.user_meta.findAndCountAll({
+
+        const totalWishListOfUser = await models.user_meta.findAll({
                 attributes: ['value'],
                 where,
-                offset: offset,
-                limit: limit
+                order: [["id","DESC"]]
             })
 
-            wishedListIds = wishlistedCourses.rows.map((rec) => rec.value)
-            totalCount = wishlistedCourses.count
-        }
-        else {
-
-            const totalWishListOfUser = await models.user_meta.findAll({
-                attributes: ['value'],
-                where,
-            })
-
-            wishedListIds = totalWishListOfUser.map((rec) => rec.value)
-
-        }
-        if (!wishedListIds.length) {
-            wishedListIds = wishedListIds.filter(w => !!w)
-            return res.status(200).json({
-                success: true,
-                data: {
-                    userId:userId,
-                    ids: wishedListIds,
-                    courses: []
-                },
-                pagination: {
-                    page: page,
-                    limit: limit,
-                    total: totalCount
-                }
-            })
-        }
+        const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
 
         let queryBody = {
-            "size": 1000,
+            "from":offset,
+            "size": limit,
             "query": {
                 "bool": {
                     "must": [{
@@ -1403,12 +1397,10 @@ const wishListCourseData = async (req,res) => {
                         "match_phrase": {
                             "title": queryString
                         }
-
                     },
-
                     {
                         "ids": {
-                            "values": wishedListIds
+                            "values": totalWishedListIds
                         }
                     }
                     ]
@@ -1416,48 +1408,61 @@ const wishListCourseData = async (req,res) => {
             }
         }
 
-        if (!queryString)  delete queryBody.query.bool.must[1]
+        if (!queryString) {
+
+            delete queryBody.query.bool.must[1];
+            let scores = {};
+            totalWishedListIds.forEach((id, index) => {
+                scores[id] = index;
+            });
+            queryBody["sort"] = [
+                {
+                    "_script": {
+                        "type": "number",
+                        "script": {
+                            "lang": "painless",
+                            "inline": "return params.scores[doc['_id'].value];",
+                            "params": {
+                                "scores": scores
+                            }
+                        }
+                    }
+                }
+            ]
+        }
 
         const result = await elasticService.plainSearch('learn-content', queryBody);
         
         let courses = []
         let wishListIdsFromElastic=[]
         if(result.hits){
+            totalCount=result.hits.total.value
             if(result.hits.hits && result.hits.hits.length > 0){
+                
                 for(const hit of result.hits.hits){
-                  
                     const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
                     wishListIdsFromElastic.push(course.id)
                     courses.push(course);
                 }
             }
         }
-        if (!queryString) {
-            return res.status(200).json({
-                success: true,
 
-                data: {
-                    userId: userId,
-                    ids: wishedListIds,
-                    courses: courses
-                },
-                pagination: {
-                    page: page,
-                    limit: limit,
-                    total: totalCount
-                }
-            })
-        }
-        else {
-            return res.status(200).json({
-                success: true,
-                data: {
-                    userId: userId,
-                    ids: wishListIdsFromElastic,
-                    courses: courses
-                }
-            })
-        }
+        return res.status(200).json({
+            success: true,
+
+            data: {
+                userId: userId,
+                ids: wishListIdsFromElastic,
+                courses: courses
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+       
+        
     } catch (error) {
         console.log(error);
             return res.status(500).send({error,success:false})
@@ -1569,10 +1574,11 @@ const getEnquiryList = async (req,res) => {
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
             instituteName:"" ,
-            images:{}
+            images:{},
+            partnerName:""
         }
         let queryBody = {
-            "_source":["title","categories","provider_name","images"],
+            "_source":["title","categories","provider_name","images","partner_name"],
             "query": {
               "terms": {
                   "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
@@ -1591,6 +1597,7 @@ const getEnquiryList = async (req,res) => {
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
                         enquiry.images=hit._source.images
+                        enquiry.partnerName = hit._source.partner_name
                         
                     // }
                 }
@@ -1857,12 +1864,11 @@ const bookmarkArticle = async (req,res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { articleIds } = req.body
-
-        if (!(articleIds instanceof Array) || !articleIds.length) {
-            return res.status(400).json({
-                success: false,
-                message: "invalid request sent"
+        const articleIds = validators.validateAddArticleParams(req.body)
+        if(!articleIds){
+            return res.status(200).send({
+                success:false,
+                message:"invalid request sent"
             })
         }
 
@@ -1923,7 +1929,9 @@ const removeBookmarkArticle = async (req,res) => {
 const bookmarkArticleData = async (req,res) => {
     try {
 
-
+        if (req.query.queryString) {
+            req.query.q = req.query.queryString
+        }
 
         const { user } = req
         let where = {
@@ -2146,7 +2154,7 @@ const getUserPendingActions = async (req, res) => {
             pendingProfileActions: [],
 
             verification: {
-                phoneVerified: null,
+                
                 emailVerified: null
             },
 
@@ -2180,6 +2188,9 @@ const getUserPendingActions = async (req, res) => {
             },
             workExp: {
                 weightage: 15,
+            },
+            phone: {
+                weightage: 5,
             }
         }
 
@@ -2233,7 +2244,8 @@ const getUserPendingActions = async (req, res) => {
             else {
                 response.verification.emailVerified = false
             }
-
+        
+            /*
             if (userVerificationData[0]["phoneVerified"]) {
                 response.verification.phoneVerified = true
                 profileProgress += verificationFields.phoneVerified.weightage
@@ -2258,7 +2270,10 @@ const getUserPendingActions = async (req, res) => {
                     }
                 }
             }
+            */
         }
+        
+        
 
         response.profileProgress=profileProgress
         res.send({ message: "success", data: response })

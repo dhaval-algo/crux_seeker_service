@@ -14,9 +14,44 @@ function validatePaginationParams(data) {
 
 }
 
+function validateAddWishlistParams(body) {
+
+    const { courseIds, courseId } = body
+    schemaForCourseId = Joi.object({ courseId: Joi.string().required() })
+    schemaForCourseIds = Joi.object({ courseIds: Joi.array().items(Joi.string()).required() })
+
+    if (!schemaForCourseId.validate({courseId:courseId}).error) {
+        return [courseId]
+    }
+
+    if (!schemaForCourseIds.validate({courseIds:courseIds}).error) {
+        return courseIds
+    }
+
+    return null
+}
+
+function validateAddArticleParams(body) {
+
+    const { articleIds, articleId } = body
+    schemaForArticleId = Joi.object({ articleId: Joi.string().required() })
+    schemaForArticleIds = Joi.object({ articleIds: Joi.array().items(Joi.string()).required() })
+
+    if (!schemaForArticleId.validate({articleId:articleId}).error) {
+        return [articleId]
+    }
+
+    if (!schemaForArticleIds.validate({articleIds:articleIds}).error) {
+        return articleIds
+    }
+
+    return null
+}
 
 module.exports = {
 
-validatePaginationParams
+validatePaginationParams,
+validateAddWishlistParams,
+validateAddArticleParams
 
 }

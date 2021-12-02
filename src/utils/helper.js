@@ -953,6 +953,10 @@ const calculateProfileCompletion = (userObj) => {
                 workExp: {
                     weightage: 15,
 
+                },
+                phone: {
+                    weightage: 5,
+
                 }
             }
 
@@ -999,7 +1003,7 @@ const calculateProfileCompletion = (userObj) => {
             if (userVerificationData.length && userVerificationData[0]["verified"]) {
                 profileProgress += verificationFields.verified.weightage
             }
-
+            /*
             if (userVerificationData.length && userVerificationData[0]['phoneVerified']) {
                 profileProgress += verificationFields.phoneVerified.weightage
             }
@@ -1019,6 +1023,7 @@ const calculateProfileCompletion = (userObj) => {
                     }
                 }
             }
+            */
             resolve(profileProgress)
         } catch (error) {
             console.log("Profile progress err", error);
@@ -1367,9 +1372,9 @@ const sendDataForStrapi = (userMeta, action) => {
                 for (let workExp of JSON.parse(userData.workExp))
                 {
                     userData.experience.push({
-                        "job_title": workExp.jobTitle.label,
-                        "industry": workExp.industry.label,
-                        "company_name": workExp.company.label,
+                        "job_title": workExp.jobTitle===null?undefined:workExp.jobTitle.label,
+                        "industry": workExp.industry===null?undefined:workExp.industry.label,
+                        "company_name": workExp.company===null?undefined:workExp.company.label,
                         "experience": workExp.experience,                    
                         "currentCompany": (workExp.currentCompany=="")? false : workExp.currentCompany               
                     })
@@ -1381,9 +1386,9 @@ const sendDataForStrapi = (userMeta, action) => {
                 for (let education of JSON.parse(userData.education))
                 {
                     userData.educations.push({                    
-                        "institute": education.instituteName.label,
-                        "degree": education.degree.label,
-                        "specialization": education.specialization.label,
+                        "institute": education.instituteName===null?undefined:education.instituteName.label,
+                        "degree": education.degree===null?undefined:education.degree.label,
+                        "specialization":education.specialization===null?undefined:education.specialization.label,
                         "year_of_graduation": education.graduationYear,
                         "grade": education.grade,
                         "grade_type":education.grade_type           
