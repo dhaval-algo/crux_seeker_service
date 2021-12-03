@@ -1864,47 +1864,69 @@ const bookmarkArticle = async (req,res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const articleIds = validators.validateAddArticleParams(req.body)
-        if(!articleIds){
+        const articleIdsFromClient = validators.validateAddArticleParams(req.body)
+        if (!articleIdsFromClient) {
             return res.status(200).send({
-                success:false,
-                message:"invalid request sent"
+                success: false,
+                message: "invalid request sent"
             })
         }
 
-        const dataToSave = articleIds.map((articleId) => {
-            return {
-                key: "article_bookmark",
-                value: articleId,
-                userId: userId
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'article_bookmark',
+                value: articleIdsFromClient
             }
-        })
+        });
+        let articleIds = []
+        existingIds = existingIds.map((article) => article.value)
+        articleIdsFromClient.forEach((articleId) => {
+            if (!existingIds.includes(articleId)) articleIds.push(articleId)
+        });
 
-        const resMeta = await models.user_meta.bulkCreate(dataToSave)
-        const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
-        
-        const userinfo = await models.user_meta.findOne({
-            attributes: ["value"],
-            where: {
-                userId: user.userId, metaType: 'primary', key: 'email'
-            }
-        })
-        const data = { email: userinfo.value, articleIds: numericIds }
-        sendDataForStrapi(data, "profile-bookmark-article");
-        
-        return res.status(200).json({
-            success: true,
-            data: {
-                bookmarks: resMeta
-            }
-        })
+        if (articleIds.length) {
 
+            const dataToSave = articleIds.map((articleId) => {
+                return {
+                    key: "article_bookmark",
+                    value: articleId,
+                    userId: userId
+                }
+            })
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
+
+            const userinfo = await models.user_meta.findOne({
+                attributes: ["value"],
+                where: {
+                    userId: user.userId, metaType: 'primary', key: 'email'
+                }
+            })
+            const data = { email: userinfo.value, articleIds: numericIds }
+            sendDataForStrapi(data, "profile-bookmark-article");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    bookmarks: resMeta
+                }
+            })
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    bookmarks: []
+                }
+            })
+        }
     } catch (error) {
-      
+
         console.log(error)
         return res.status(500).json({
             success: false,
-            message:"internal server error"
+            message: "internal server error"
 
         })
     }
@@ -2203,7 +2225,7 @@ const getUserPendingActions = async (req, res) => {
             }
         }
 
-        const result = await models.user_meta.findAll({
+        const userData = await models.user_meta.findAll({
             attributes: ["key", "value"],
             where: {
                 metaType: "primary",
@@ -2218,12 +2240,30 @@ const getUserPendingActions = async (req, res) => {
                 id: userId
             }
         })
-
-        const availableFields = result.map((field) => {
+        
+        const availableFields = userData.filter((field) => {
             if (field.value) {
-                return field.key
+                try {
+                    // verify whether field.value is an array
+
+                    const obj = JSON.parse(field.value)
+                    if (Array.isArray(obj)) return obj.length != 0
+
+                    //check for empty object
+                    if (JSON.stringify(obj) == "{}") return false
+                    return true
+
+                } catch {
+                    // it is a non empty string 
+                    return true
+                }
             }
-        })
+            else {
+                return false
+            }
+        }).map((field) => field.key)
+
+        
 
         for (const field in fields) {
 
