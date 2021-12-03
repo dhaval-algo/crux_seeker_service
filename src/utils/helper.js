@@ -993,11 +993,33 @@ const calculateProfileCompletion = (userObj) => {
 
             })
 
-            profileProgress = userData.reduce((accumulator, currField) => {
+            const availableFields = userData.filter((field) => {
+                if (field.value) {
+                    try {
+                        // verify whether field.value is an array
+    
+                        const obj = JSON.parse(field.value)
+                        if (Array.isArray(obj)) return obj.length != 0
+    
+                        //check for empty object
+                        if (JSON.stringify(obj) == "{}") return false
+                        return true
+    
+                    } catch {
+                        // it is a non empty string 
+                        return true
+                    }
+                }
+                else {
+                    return false
+                }
+            })
 
-                if (currField.value) return accumulator + fields[currField.key].weightage
+            profileProgress = availableFields.reduce((accumulator, currField) => {
 
-                return 0
+                return accumulator + fields[currField.key].weightage
+
+                
             }, 0)
 
             if (userVerificationData.length && userVerificationData[0]["verified"]) {
