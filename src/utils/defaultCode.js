@@ -42,7 +42,7 @@ const DEFAULT_CODES =
     },
     INVALID_OTP: {
         code:"INVALID_OTP",
-        message:"Incorrect OTP entered. Please retry again."
+        message:"Incorrect OTP entered. Please try again."
     },
     OTP_EXPIRED: {
         code:"OTP_EXPIRED",
