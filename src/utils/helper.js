@@ -1388,9 +1388,10 @@ const sendDataForStrapi = (userMeta, action) => {
             {
                 userData.date_of_birth = moment(userData.dob.split("/").reverse().join("-"))
             }            
-            userData.experience = []
+            
             if(userData.workExp)
             {
+                userData.experience = []
                 for (let workExp of JSON.parse(userData.workExp))
                 {
                     userData.experience.push({
@@ -1402,9 +1403,10 @@ const sendDataForStrapi = (userMeta, action) => {
                     })
                 }
             }
-            userData.educations = []
+            
             if(userData.education)
             {
+                userData.educations = []
                 for (let education of JSON.parse(userData.education))
                 {
                     userData.educations.push({                    
