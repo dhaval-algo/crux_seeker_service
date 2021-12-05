@@ -2173,11 +2173,9 @@ const getUserPendingActions = async (req, res) => {
         let profileProgress = 0
         let response = {
 
-            pendingProfileActions: [],
-
-            verification: {
+            pendingProfileActions:{
+                personalDetails:[],
                 
-                emailVerified: null
             },
 
             profileProgress: null
@@ -2268,21 +2266,28 @@ const getUserPendingActions = async (req, res) => {
         for (const field in fields) {
 
             if (availableFields.includes(field)) {
-                profileProgress += fields[field].weightage
+                profileProgress += fields[field].weightage;
             }
             else {
-                response.pendingProfileActions.push(field)
+                if (["dob", "firstName", "gender", "city"].includes(field)) {
+                    response.pendingProfileActions.personalDetails.push(field);
+
+                }
+                else {
+                    response.pendingProfileActions[field] = [field];
+                }
+
             }
         }
 
         if (userVerificationData.length) {
 
             if (userVerificationData[0]["verified"]) {
-                response.verification.emailVerified = true
+                
                 profileProgress += verificationFields.verified.weightage
             }
             else {
-                response.verification.emailVerified = false
+                response.pendingProfileActions.email=["email"]
             }
         
             /*
