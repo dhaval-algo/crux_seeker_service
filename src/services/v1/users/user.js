@@ -2213,9 +2213,7 @@ const getUserPendingActions = async (req, res) => {
         let profileProgress = 0
         let response = {
 
-            pendingProfileActions: [{
-                personalDetails: []
-            },
+            pendingProfileActions: [
             ],
             profileProgress: null
         }
@@ -2301,22 +2299,25 @@ const getUserPendingActions = async (req, res) => {
         }).map((field) => field.key)
 
         
-
+        let addPersonalDetails = false
         for (const field in fields) {
 
             if (availableFields.includes(field)) {
                 profileProgress += fields[field].weightage;
             }
             else {
-                if (["dob", "firstName", "gender", "city"].includes(field)) {
-                    response.pendingProfileActions[0].personalDetails.push(field);
 
+                if (["dob", "firstName", "gender", "city"].includes(field)) {
+                    addPersonalDetails = true
                 }
                 else {
                     response.pendingProfileActions.push(field)
                 }
-
             }
+        }
+
+        if(addPersonalDetails){
+            response.pendingProfileActions.push("personalDetails")
         }
 
         if (userVerificationData.length) {
@@ -2357,8 +2358,6 @@ const getUserPendingActions = async (req, res) => {
             */
         }
         
-        
-
         response.profileProgress=profileProgress
         res.send({ message: "success", data: response })
     } catch (error) {
