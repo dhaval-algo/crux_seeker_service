@@ -1329,37 +1329,77 @@ const removeCourseFromWishList = async (req,res) => {
     })
 }
 
-const fetchWishListIds = async (req,res) => {
-    const { user } = req
-    const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
-   
-    const offset=(page-1)*limit
-    
-    let where = {
-        userId: user.userId,
-        key: { [Op.in]: ['course_wishlist'] },
-    }
+const fetchWishListIds = async (req, res) => {
+    try {
+        const { user } = req
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
 
-    const wishlistedCourses=await models.user_meta.findAndCountAll({
-        attributes:['value'],
-        where,
-        offset:offset,
-        limit:limit
-    })
+        const offset = (page - 1) * limit
+        let totalCount = 0
 
-    let wishedList = wishlistedCourses.rows.map((rec) => rec.value)
-    return res.status(200).json({
-        success:true,
-        data: {
+        let where = {
             userId: user.userId,
-            courses:wishedList
-        },
-        pagination:{
-            page:page,
-            limit:limit,
-            total:wishlistedCourses.count
+            key: { [Op.in]: ['course_wishlist'] },
         }
-    })
+
+        const wishlistedCourses = await models.user_meta.findAll({
+            attributes: ['value'],
+            where,
+            order: [["id", "DESC"]]
+        })
+
+        const totalWishedListIds = wishlistedCourses.map((rec) => rec.value)
+        const queryBody = {
+            "_source": [
+                "_id"
+            ],
+            "from": offset,
+            "size": limit,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "status.keyword": "published"
+                            }
+                        },
+                        {
+                            "ids": {
+                                "values": totalWishedListIds
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        let activeWishListIds = []
+
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        if (result && result.hits) {
+            totalCount = result.hits.total.value
+            if (result.hits.hits.length) {
+                activeWishListIds = result.hits.hits.map((wishList) => wishList._id)
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: user.userId,
+                courses: activeWishListIds
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+
+    } catch(error) {
+        console.log(error);
+        return res.status(500).send({ message: "internal server error", success: false });
+
+    }
 }
 
 const wishListCourseData = async (req,res) => {
@@ -1465,7 +1505,7 @@ const wishListCourseData = async (req,res) => {
         
     } catch (error) {
         console.log(error);
-            return res.status(500).send({error,success:false})
+            return res.status(500).send({error:error,success:false})
     }
 }
 
@@ -2175,13 +2215,8 @@ const getUserPendingActions = async (req, res) => {
         let profileProgress = 0
         let response = {
 
-            pendingProfileActions: [],
-
-            verification: {
-                
-                emailVerified: null
-            },
-
+            pendingProfileActions: [
+            ],
             profileProgress: null
         }
 
@@ -2266,25 +2301,35 @@ const getUserPendingActions = async (req, res) => {
         }).map((field) => field.key)
 
         
-
+        let addPersonalDetails = false
         for (const field in fields) {
 
             if (availableFields.includes(field)) {
-                profileProgress += fields[field].weightage
+                profileProgress += fields[field].weightage;
             }
             else {
-                response.pendingProfileActions.push(field)
+
+                if (["dob", "firstName", "gender", "city"].includes(field)) {
+                    addPersonalDetails = true
+                }
+                else {
+                    response.pendingProfileActions.push(field)
+                }
             }
+        }
+
+        if(addPersonalDetails){
+            response.pendingProfileActions.push("personalDetails")
         }
 
         if (userVerificationData.length) {
 
             if (userVerificationData[0]["verified"]) {
-                response.verification.emailVerified = true
+                
                 profileProgress += verificationFields.verified.weightage
             }
             else {
-                response.verification.emailVerified = false
+                response.pendingProfileActions.push('email')
             }
         
             /*
@@ -2315,8 +2360,6 @@ const getUserPendingActions = async (req, res) => {
             */
         }
         
-        
-
         response.profileProgress=profileProgress
         res.send({ message: "success", data: response })
     } catch (error) {
