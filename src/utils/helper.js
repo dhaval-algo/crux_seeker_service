@@ -1464,7 +1464,8 @@ const sendDataForStrapi = (userMeta, action) => {
             userData = userMeta
             break;
         case "update-phone":
-            userData = userMeta                       
+            userData = userMeta   
+            break;                    
         default:
             break;
     }
