@@ -1160,8 +1160,8 @@ module.exports = class learnContentService {
                         "values": ids
                     }
                 };
-    
-                const result = await elasticService.search('learn-content', queryBody);
+                let queryPayload = {size : 1000}
+                const result = await elasticService.search('learn-content', queryBody, queryPayload);
                 if(result.hits){
                     if(result.hits && result.hits.length > 0){
                         for(const hit of result.hits){
