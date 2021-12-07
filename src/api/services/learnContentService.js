@@ -1162,10 +1162,10 @@ module.exports = class learnContentService {
                 }
             };
 
-            const result = await elasticService.plainSearch('learn-content', queryBody);
+            const result = await elasticService.search('learn-content', queryBody);
             if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
+                if(result.hits && result.hits.length > 0){
+                    for(const hit of result.hits){
                         const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
                         courses.push(course);
                     }
