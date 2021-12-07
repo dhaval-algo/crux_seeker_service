@@ -407,7 +407,7 @@ const validateEnquiryForm = async (formData) => {
 
     if(formObj.grade !="")
     {
-        if(formObj.gradeType =='grade')
+        if(formObj.gradeType =='Grade')
         {
             const regex = /^[a-zA-Z+-]+$/g;
             let  res = regex.exec(formObj.grade)
@@ -419,7 +419,7 @@ const validateEnquiryForm = async (formData) => {
             }            
         }
 
-        if(formObj.gradeType =='percentage')
+        if(formObj.gradeType =='Percentage')
         {
             const regex = /^[0-9.%]+$/g;
             let  res = regex.exec(formObj.grade)
