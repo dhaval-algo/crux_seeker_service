@@ -1155,11 +1155,9 @@ module.exports = class learnContentService {
                 ids = req.query['ids'].split(",");
             }
             if(ids.length > 0){
-                const queryBody = {
-                    "query": {
-                      "ids": {
-                          "values": ids
-                      }
+                const queryBody =  {
+                    "ids": {
+                        "values": ids
                     }
                 };
     
