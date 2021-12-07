@@ -2010,7 +2010,7 @@ const bookmarkArticleData = async (req,res) => {
        if(resForm && resForm.length> 0)
        {
         let bookmarkIds = resForm.map((rec) => rec.value)
-        req.articleIds = bookmarkIds
+        req.query.articleIds = bookmarkIds
         req.searchField =  ['title'];
         await ArticleService.getArticleList(req, (err, data) => {
              if (data) {
