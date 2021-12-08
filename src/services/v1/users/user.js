@@ -2115,13 +2115,22 @@ const updatePhone = async (req,res) => {
             metaType:'primary',
             key:'phone',
         }
-        console.log("user=========", user)
-        console.log("phone=========", phone)
-        await models.user_meta.update({
-            value: phone,
-        }, {
-            where: where
-        });
+        const existPhone = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'phone'}})
+        if(!existPhone){
+            await models.user_meta.create({
+                userId: user.userId,
+                metaType:'primary',
+                key:'phone',
+                value: phone
+            });
+        }else{
+            await models.user_meta.update({
+                value: phone,
+            }, {
+                where: where
+            });
+        }
+        
         const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
         let data = {email:userinfo.value, phone:phone}
         sendDataForStrapi(data, "update-phone")
