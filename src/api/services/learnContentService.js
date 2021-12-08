@@ -1144,43 +1144,47 @@ module.exports = class learnContentService {
 
 
     async getCourseByIds(req, callback){
-        if(currencies.length == 0){
-            currencies = await getCurrencies();
-        }
-        let courses = [];
-        let courseOrdered = [];
-        let ids = [];
-        if(req.query['ids']){
-            ids = req.query['ids'].split(",");
-        }
-        if(ids.length > 0){
-            const queryBody = {
-                "query": {
-                  "ids": {
-                      "values": ids
-                  }
-                }
-            };
-
-            const result = await elasticService.plainSearch('learn-content', queryBody);
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
-                        courses.push(course);
+        try {
+            if(currencies.length == 0){
+                currencies = await getCurrencies();
+            }
+            let courses = [];
+            let courseOrdered = [];
+            let ids = [];
+            if(req.query['ids']){
+                ids = req.query['ids'].split(",");
+            }
+            if(ids.length > 0){
+                const queryBody =  {
+                    "ids": {
+                        "values": ids
                     }
-                    for(const id of ids){
-                        let course = courses.find(o => o.id === id);
-                        courseOrdered.push(course);
+                };
+                let queryPayload = {size : 1000}
+                const result = await elasticService.search('learn-content', queryBody, queryPayload);
+                if(result.hits){
+                    if(result.hits && result.hits.length > 0){
+                        for(const hit of result.hits){
+                            const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                            courses.push(course);
+                        }
+                        for(const id of ids){
+                            let course = courses.find(o => o.id === id);
+                            courseOrdered.push(course);
+                        }
                     }
-                }
-            }            
+                }            
+            }
+            if(callback){
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+            }else{
+                return courseOrdered;
+            }
+        } catch (error) {
+            callback(null, {status: 'error', message: 'Failed to Fetch', data: null});
+            console.log("course by id error=>",error)
         }
-        if(callback){
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
-        }else{
-            return courseOrdered;
-        }
+        
         
     }
 
