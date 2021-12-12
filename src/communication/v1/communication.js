@@ -84,6 +84,8 @@ module.exports = {
                     return emailTemplate.suspendedEmail(templateData)
             case 'reactivated_mail':
                         return emailTemplate.reactivatedEmail(templateData)
+            case 'enquiry_email_to_partner':
+                return emailTemplate.enquiryEmailToPartner(templateData)
             default:
                 return false
                 break;
