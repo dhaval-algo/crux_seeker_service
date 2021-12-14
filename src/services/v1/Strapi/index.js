@@ -198,7 +198,8 @@ const prepareStrapiData = (enquiry_id) => {
             image:null,
             send_communication_emails:null,
             correspondence_email:null,
-            provider:null
+            provider:null,
+            partner_status:null
 
         }
         try {
@@ -307,6 +308,7 @@ const prepareStrapiData = (enquiry_id) => {
                         for(const hit of partner.hits.hits){                            
                             strapiObj.send_communication_emails = hit._source.send_communication_emails? hit._source.send_communication_emails:false
                             strapiObj.correspondence_email = hit._source.correspondence_email? hit._source.correspondence_email:""
+                            strapiObj.partner_status = hit._source.status? hit._source.partner_status:"Active"
                         }
                     }
                 }               
@@ -332,7 +334,7 @@ const createRecordInStrapi = async (enquiryId) => {
 
     sendDataForStrapi(data, "update-profile-enquiries");
     /*Send email for partner*/
-    if(data.send_communication_emails)
+    if(data.send_communication_emails && data.partner_status =="Active")
     {
         let emailPayload = {
             fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
