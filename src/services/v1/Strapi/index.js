@@ -308,7 +308,7 @@ const prepareStrapiData = (enquiry_id) => {
                         for(const hit of partner.hits.hits){                            
                             strapiObj.send_communication_emails = hit._source.send_communication_emails? hit._source.send_communication_emails:false
                             strapiObj.correspondence_email = hit._source.correspondence_email? hit._source.correspondence_email:""
-                            strapiObj.partner_status = hit._source.status? hit._source.partner_status:"Active"
+                            strapiObj.partner_status = hit._source.status? hit._source.status:"Active"
                         }
                     }
                 }               
