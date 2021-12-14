@@ -1,4 +1,6 @@
 const elasticService = require("./elasticService");
+const reviewService = require("./reviewService");
+const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
@@ -821,198 +823,14 @@ module.exports = class learnContentService {
     }
 
     async getReviews(req, callback) {
-      const sortingkeys = ["newest", "highest_rated", "lowest_rated"];
-      const {
-        page = 1,
-        limit = 5,
-        sort = "highest_rated",
-        filters = {
-          keyword: null,
-        },
-      } = req.query;
-
-      const { courseId } = req.params;
-  
-      let nestedQuery = {
-          match_all: {}
-      }
-
-      let innerHits = {
-        highlight: {
-          fields: {
-            "reviews.review": {},
-          },
-        },
-        from: (page - 1) * limit,
-        size: limit,
-      };
-
-      switch (sort) {
-        case "highest_rated": case "lowest_rated":
-          innerHits.sort = { "reviews.rating": { order: sort == "highest_rated" ? "desc" : "asc" } };
-          break;
-        default:
-          innerHits.sort = { "reviews.review_date": { order: "desc" } };
-          break;
-      }
-
-      if(filters && filters.keyword){
-          nestedQuery = {
-            match: {
-              "reviews.review": filters.keyword,
-            }
-          }
-      }
-
-      let query = {
-        bool: {
-            filter: [
-                { term: { _id: {value: courseId} } }
-            ],
-          should: [
-            {
-              nested: {
-                path: "reviews",
-                query: nestedQuery,
-                inner_hits: innerHits,
-              },
-            },
-          ],
-        },
-      };
-
-      let keywordTerms = {
-          field: "reviews.review",
-          min_doc_count: 5,
-          exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for", "you", "all"],
-      };
-
-      let queryPayload = {
-        from: 0,
-        size: 1,
-        aggs: {
-          reviews: {
-            nested: {
-              path: "reviews",
-            },
-            aggs: {
-              keywords: {},
-            },
-          },
-        },
-        _source: ["title"]
-      };
-
-      queryPayload.aggs.reviews.aggs.keywords[process.env.REVIEW_AGG_TYPE || "terms"] = keywordTerms;
-
-      let response = {
-          list: [],
-          totalCount: 0,
-          filters: filters,
-          keywords: [],
-          sortKeys: sortingkeys,
-      };
-
-      try{
-      const result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
-
-      if(result.hits.total.value > 0){
-        let innerReviewHits = result.hits.hits[0].inner_hits.reviews.hits;
-        if(innerReviewHits && innerReviewHits.total.value > 0){
-            response.totalCount = innerReviewHits.total.value;
-            let reviews = innerReviewHits.hits;
-            if(reviews.length > 0){
-                for(let hitObject of reviews){
-                    response.list.push({...hitObject._source,highlight: hitObject.highlight ? hitObject.highlight['reviews.review'] : []});
-                }
-            }
-        }
-        response.keywords = result.aggregations.reviews.keywords.buckets;
-        callback(null,{status: "success", message:"all good", data: response});
-      } else {
-        callback({status: "fail", message:"No course found for courseId: "+courseId}, null);
-      }
-
-      }catch(error){
-          callback({status: "fail", message:"someting went wrong"},null);
-      }
-    }
-
-    async getRelatedCourses(req, callback) {
-        const { courseId } = req.params;
-        const { currency } = req.query;
-        const MAX_RESULTS = 6;
 
         try {
-
-            //fields to fetch 
-            let fields = [
-                "sub_categories",
-                "skills",
-                "topics",
-                'title', 'id', 'status', 'regular_price'
-            ];
-
-            //priority 1 category list
-            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
-            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
-
-            const relationData = {
-                index: "learn-content",
-                id: courseId
-            }
-
-            let esQuery = {
-                "bool": {
-                    "filter": [
-                        { "term": { "status.keyword": "published" } }
-                    ],
-                    must_not: {
-                        term: {
-                            "_id": courseId
-                        }
-                    }
-                }
-            }
-
-            function buildQueryTerms(key, i) {
-                let termQuery = { "terms": {} };
-                termQuery.terms[key] = { ...relationData, "path": key };
-                termQuery.terms.boost = 5 - (i * 0.1);
-                return termQuery;
-            }
-
-            esQuery.bool.should = [{
-                bool: {
-                    boost: 1000,
-                    should: priorityList1.map(buildQueryTerms)
-                }
-            }];
-
-            esQuery.bool.should.push({
-                bool: {
-                    boost: 10,
-                    should: priorityList2.map(buildQueryTerms)
-                }
-            })
-
-            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: MAX_RESULTS });
-            
-            let courses = [];
-            if (result && result.hits.length > 0) {
-                for (let hit of result.hits) {
-                    let course = await this.generateSingleViewData(hit._source, false, currency);
-                    const {accreditations,ads_keywords,subtitle,prerequisites,target_students,content,meta_information,...optimisedCourse} = course;
-                    courses.push(optimisedCourse);
-                }
-            }
-
-            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
-            callback(null, response);
-        } catch (error) {
-            console.log("Error while processing data for related courses", error);
-            callback(error, null);
+            let reviews = await ReviewService.getReviews("learn-content", req.params.courseId, req);
+            callback(null, { status: "success", message: "all good", data: reviews });
+        } catch (e) {
+            callback({ status: "failed", message: e.message }, null);
         }
+
     }
 
     async getPopularCourses(req, callback, returnData) {
