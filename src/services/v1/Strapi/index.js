@@ -119,9 +119,10 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.phone =   metaObjVal.phone? `+${metaObjVal.phone}`: "";
         strapiObj.first_name = metaObjVal.firstName || "";
         strapiObj.last_name = metaObjVal.lastName || "Not given";
-        strapiObj.gender = metaObjVal.gender || "";
-        strapiObj.grade = metaObjVal.grade || "";
-        strapiObj.grade_type = metaObjVal.grade_type || "";
+        strapiObj.gender = metaObjVal.gender || "";       
+        strapiObj.grade = (metaObjVal.grade)? metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+        strapiObj.grade_type = (metaObjVal.gradeType)? metaObjVal.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+
         strapiObj.email = metaObjVal.email || "";
         strapiObj.date_of_birth = metaObjVal.dob || "";
         strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
