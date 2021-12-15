@@ -201,8 +201,6 @@ module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
 
-        let startTime = new Date().getTime();
-
         try{
 
         let defaultSize = await getPaginationDefaultSize();
@@ -704,7 +702,7 @@ module.exports = class learnContentService {
 
             let pagination = {
                 page: paginationQuery.page,
-                count: result.hits,
+                count: result.hits.length,
                 perPage: paginationQuery.size,
                 totalCount: result.total.value,
                 total: result.total.value
