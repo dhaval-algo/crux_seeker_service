@@ -33,7 +33,7 @@ module.exports = class learnPathService {
             "bool": {
                 "must": [
                     { term: { "slug.keyword": slug } },
-                    { term: { "status.keyword": 'published' } }
+                    { term: { "status.keyword": 'approved' } }
                 ]
             }
         };
