@@ -59,11 +59,13 @@ module.exports = class learnPathService {
             reviews_extended: [],
             life_stages: result.life_stages,
             topics: result.topics,
-            pricing: { ...result.pricing, ...{
-                regular_price: getCurrencyAmount(result.pricing.regular_price, currencies, result.pricing.currency, currency),
-                sale_price: getCurrencyAmount(result.pricing.sale_price, currencies, result.pricing.currency, currency),
+            pricing: { 
+                regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),
+                sale_price: getCurrencyAmount(result.sale_price, currencies, result.currency, currency),
+                display_price: result.display_price,
+                pricing_type :result.pricing_type,
                 currency: currency
-            } },
+            },
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
@@ -76,8 +78,8 @@ module.exports = class learnPathService {
                 meta_title: `${result.title} | Learn Path | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
             },
             duration: {
-                total_duration: 14.2,
-                total_duration_unit: "Hours",
+                total_duration: result.total_duration,
+                total_duration_unit: result.total_duration_unit,
             },
             courses: []
         }
