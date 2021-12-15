@@ -233,7 +233,7 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || "";
                 strapiObj.grade = (metaObjVal.grade)? metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
-                strapiObj.grade_type = (metaObjVal.grade_type)? metaObjVal.grade_type.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+                strapiObj.grade_type = (metaObjVal.gradeType)? metaObjVal.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
                 strapiObj.email = metaObjVal.email || "";
                 strapiObj.date_of_birth = metaObjVal.dob || "";
                 strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
