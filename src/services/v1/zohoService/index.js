@@ -193,7 +193,7 @@ const prepareLeadData = (enquiry_id) => {
                 leadObj.First_Name = metaObjVal.firstName || "";
                 leadObj.Last_Name = metaObjVal.lastName || "Not given";
                 leadObj.Gender = metaObjVal.gender || "";
-                leadObj.Grade = metaObjVal.grade || "";
+                leadObj.Grade = (metaObjVal.grade)? metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') :  "" /*Remove unwanted slash and double quotes*/
                 leadObj.Email = metaObjVal.email || "";
                 leadObj.Graduation_Year = metaObjVal.graduationYear || "";
                 leadObj.Experience = metaObjVal.experience || "";
