@@ -138,9 +138,9 @@ module.exports = {
                 /** Initiate the payment */
                 /** Using the base price which is in USD */
                 let coursePrice = helperService.roundOff(course.finalPrice, 2);
-                let currency = course.partner_currency.iso_code;
+                let currency = course.learn_path_pricing_currency?course.learn_path_pricing_currency.iso_code:null;
                 let tax = 0.0;
-                if(course.partner_currency.iso_code === "INR") {
+                if(course.learn_path_pricing_currency&&course.learn_path_pricing_currency.iso_code === "INR") {
                     tax = helperService.roundOff(0.18 * coursePrice, 2);
                 } else {
                     /** Reject buy request for non INR courses */

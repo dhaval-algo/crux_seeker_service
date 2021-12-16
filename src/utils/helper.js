@@ -1087,7 +1087,7 @@ const generateSingleViewData = (result, isList = false) => {
             pricing: {
                 display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                 pricing_type: result.pricing_type,
-                currency: result.pricing_currency,
+                currency: result.learn_path_pricing_currency? result.learn_path_pricing_currency.iso_code:null,
                 regular_price: result.regular_price,
                 sale_price: result.sale_price,
                 offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
