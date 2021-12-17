@@ -500,7 +500,8 @@ module.exports = class learnPathService {
                 sale_price: getCurrencyAmount(result.sale_price, currencies, result.currency, currency),
                 display_price: result.display_price,
                 pricing_type: result.pricing_type,
-                currency: currency
+                currency: currency,
+                offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
             },
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
