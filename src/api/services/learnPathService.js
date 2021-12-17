@@ -344,7 +344,7 @@ module.exports = class learnPathService {
 
                 if (filter.filter_type == "RangeSlider") {
 
-                    if (filter.elastic_attribute_name === "sale_price") {
+                    if (filter.elastic_attribute_name === "basePrice") {
                         facet.min.value = facet.min.value > 0 ? getCurrencyAmount(facet.min.value, currencies, 'USD', req.query['currency']) : facet.min.value;
                         facet.max.value = facet.max.value > 0 ? getCurrencyAmount(facet.max.value, currencies, 'USD', req.query['currency']) : facet.max.value;
                     }
