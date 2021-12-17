@@ -1348,7 +1348,8 @@ const fetchWishListIds = async (req, res) => {
             order: [["id", "DESC"]]
         })
 
-        const totalWishedListIds = wishlistedCourses.map((rec) => rec.value)
+        let  totalWishedListIds = wishlistedCourses.map((rec) => rec.value)
+        totalWishedListIds = totalWishedListIds.filter(x => x != null)
         const queryBody = {
             "_source": [
                 "_id"
