@@ -484,13 +484,14 @@ module.exports = class learnPathService {
 
     async generateSingleViewData(result, isList = false, currency = process.env.DEFAULT_CURRENCY) {
         let currencies = await getCurrencies();
+        let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
         let data = {
             id: `LRN_PTH_${result.id}`,
             title: result.title,
             slug: result.slug,
             description: result.description,
             cover_images: result.images,
-            levels: result.levels,
+            levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],
             medium: result.medium,
             reviews_extended: [],
             life_stages: result.life_stages,
