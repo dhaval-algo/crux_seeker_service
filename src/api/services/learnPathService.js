@@ -526,9 +526,12 @@ module.exports = class learnPathService {
             if (reviews)
                 data.reviews_extended = reviews;
 
-            let courses = await LearnContentService.getCourseByIds({ query: { ids: result.courses.map(item => item.id).join(), currency: currency } });
-            if (courses) {
-                data.courses = courses;
+            if (result.courses && result.courses.length > 0) {
+                let courseIds = result.courses.sort((a,b) => a.position - b.position).map(item => item.id).join();
+                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, currency: currency } });
+                if (courses) {
+                    data.courses = courses;
+                }
             }
         }
 
