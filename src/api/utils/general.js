@@ -459,7 +459,7 @@ const generateMetaInfo = async (page, result, list) => {
     
     switch (page) {
         case 'learn-content':
-            meta_title = `${result.title} | ${result.provider_name} | ${process.env.SITE_URL_FOR_META_DATA}`;
+            meta_title = `${result.title} | ${result.partner_name} | ${process.env.SITE_URL_FOR_META_DATA}`;
             
             if(result.categories)
             {
@@ -467,7 +467,7 @@ const generateMetaInfo = async (page, result, list) => {
                 categories = unique_categories.join(", ");
             }
             
-            meta_description = `${result.title} by ${result.provider_name} is top course`;
+            meta_description = `${result.title} by ${result.partner_name} is top course`;
             if(categories)
             {
                 meta_description += ` for ${categories}.`;
@@ -491,11 +491,17 @@ const generateMetaInfo = async (page, result, list) => {
             
             keywords  = [result.title];
             keywords = [...keywords, ...result.categories, ...result.sub_categories, ...topics];
-            keywords.push(result.provider_name);
+            if(result.provider_name)
+            {
+                keywords.push(result.provider_name);
+            }          
             keywords.push(result.partner_name);
             keywords = [...keywords, ...result.skills];
             keywords.push(result.pricing_type);
-            keywords.push(result.medium);
+            if(result.medium)
+            {
+                keywords.push(result.medium);
+            }            
             
             extra_keyword = ['careervira courses', 'available courses'];
             keywords = [...keywords, ...extra_keyword];
