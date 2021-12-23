@@ -1457,29 +1457,37 @@ module.exports = class learnContentService {
                 data.additional_batches = []
                 for (let batch of result.additional_batches)
                 {
-                    let additional_batch = {}
-                    additional_batch.id = batch.id
-                    additional_batch.batch = batch.batch
-                    additional_batch.batch_size = batch.batch_size
-                    additional_batch.batch_start_date = batch.batch_start_date
-                    additional_batch.batch_end_date = batch.batch_end_date
-                    additional_batch.batch_enrollment_start_date = batch.batch_enrollment_start_date
-                    additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
-                    additional_batch.total_duration = batch.total_duration
-                    additional_batch.total_duration_unit = batch.total_duration_unit
-                    additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
-                    additional_batch.batch_timings = {
-                        'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
-                        'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
-                        'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
-                        'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
-                    }                    
-                    if(data.course_details.pricing.display_price){
-                        additional_batch.pricing_type = batch.pricing_type
-                        additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
-                        additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
+                    /*Show batch only if end date is not passed*/
+                    let showBatch = true
+                    if(batch.batch_end_date && (new Date(`${batch.batch_end_date} 23:59:59`) < new Date())){
+                        showBatch = false
                     }
-                    data.additional_batches.push(additional_batch);
+                    if(showBatch)
+                    {
+                        let additional_batch = {}
+                        additional_batch.id = batch.id
+                        additional_batch.batch = batch.batch
+                        additional_batch.batch_size = batch.batch_size
+                        additional_batch.batch_start_date = batch.batch_start_date
+                        additional_batch.batch_end_date = batch.batch_end_date
+                        additional_batch.batch_enrollment_start_date = batch.batch_enrollment_start_date
+                        additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
+                        additional_batch.total_duration = batch.total_duration
+                        additional_batch.total_duration_unit = batch.total_duration_unit
+                        additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
+                        additional_batch.batch_timings = {
+                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
+                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                            'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
+                            'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
+                        }                    
+                        if(data.course_details.pricing.display_price){
+                            additional_batch.pricing_type = batch.pricing_type
+                            additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
+                            additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
+                        }
+                        data.additional_batches.push(additional_batch);
+                    }
                 }
             }
 
