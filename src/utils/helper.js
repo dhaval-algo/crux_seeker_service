@@ -1406,6 +1406,28 @@ const sendDataForStrapi = (userMeta, action) => {
 const logActvity = async (type, userId, resource) => {
     userId = (userId)? userId : 0
     const activity =  await models.activity.findOne({ where: {type:type} });
+    if (type=="COURSE_WISHLIST"){
+        const dataToLog=resource.map((courseId)=>{
+            return {
+            userId:userId,
+            activityId:activity.id,
+            resource:courseId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
+    if (type=="LEARNPATH_WISHLIST"){
+        const dataToLog=resource.map((learnpathId)=>{
+            return {
+            userId:userId,
+            activityId:activity.id,
+            resource:learnpathId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
     if(userId > 0)
     {
         const activity_log = await models.activity_log.create({

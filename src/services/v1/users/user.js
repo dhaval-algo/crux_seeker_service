@@ -1274,25 +1274,77 @@ const fetchWishListIds = async (req,res) => {
 }
 
 const fetchLearnPathWishListIds = async (req,res) => {
-    const { user } = req
-    
-    let where = {
-        userId: user.userId,
-        key: { [Op.in]: ['learnpath_wishlist'] },
-    }
+    try {
+        const { user } = req
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
 
-    let resForm = await models.user_meta.findAll({
-        attributes:['value'],
-        where
-    })
-    let wishedList = resForm.map((rec) => rec.value)
-    return res.status(200).json({
-        success:true,
-        data: {
+        const offset = (page - 1) * limit
+        let totalCount = 0
+
+        let where = {
             userId: user.userId,
-            learnpaths:wishedList
+            key: { [Op.in]: ['learnpath_wishlist'] },
         }
-    })
+
+        const wishlistedLearnPaths = await models.user_meta.findAll({
+            attributes: ['value'],
+            where,
+            order: [["id", "DESC"]]
+        })
+
+        let  totalWishedListIds = wishlistedLearnPaths.map((rec) => rec.value)
+        totalWishedListIds = totalWishedListIds.filter(x => x != null)
+        const queryBody = {
+            "_source": [
+                "_id"
+            ],
+            "from": offset,
+            "size": limit,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "status.keyword": "approved"
+                            }
+                        },
+                        {
+                            "ids": {
+                                "values": totalWishedListIds
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        let activeWishListIds = []
+
+        const result = await elasticService.plainSearch('learn-path', queryBody);
+        if (result && result.hits) {
+            totalCount = result.hits.total.value
+            if (result.hits.hits.length) {
+                activeWishListIds = result.hits.hits.map((wishList) => wishList._id)
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: user.userId,
+                learnpaths : activeWishListIds
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+
+    } catch(error) {
+        console.log(error);
+        return res.status(500).send({ message: "internal server error", success: false });
+
+    }
 }
 
 const wishListCourseData = async (req,res) => {
@@ -1374,77 +1426,106 @@ const wishListCourseData = async (req,res) => {
 
 const wishListLearnPathData = async (req,res) => {
     try {
-        
         const { user } = req
-        const {searchStr} = req.query
+        const userId=user.userId
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+        const offset = (page - 1) * limit
+        const { queryString } = req.query
+        
+        let totalCount = 0
         let where = {
-            userId: user.userId,
+            userId: userId,
             key: { [Op.in]: ['learnpath_wishlist'] },
         }
-        
-        let resForm = await models.user_meta.findAll({
-            attributes:['value'],
-            where
-        })
-        let wishedListIds = resForm.map((rec) => rec.value)
-        wishedListIds = wishedListIds.filter(w => !!w)
-        if(!wishedListIds.length) {
-            return res.status(200).json({
-                success:true,
-                data: {
-                    ids:wishedListIds,
-                    courses:[]
-                }
+
+        const totalWishListOfUser = await models.user_meta.findAll({
+                attributes: ['value'],
+                where,
+                order: [["id","DESC"]]
             })
-        }
+
+        const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
+
         let queryBody = {
-            "size":1000,
+            "from":offset,
+            "size": limit,
             "query": {
-              "ids": {
-                  "values": wishedListIds
-              },
-              "match_phrase":{}
+                "bool": {
+                    "must": [{
+                        "term": { "status.keyword": "approved" }
+                    },
+                    {
+                        "match_phrase": {
+                            "title": queryString
+                        }
+                    },
+                    {
+                        "ids": {
+                            "values": totalWishedListIds
+                        }
+                    }
+                    ]
+                }
             }
-        };
-
-
-        if(searchStr){ 
-            queryBody.query.match_phrase["title"]=searchStr
-        }else {
-            delete queryBody.query.match_phrase
         }
 
-        
+        if (!queryString) {
+
+            delete queryBody.query.bool.must[1];
+            let scores = {};
+            totalWishedListIds.forEach((id, index) => {
+                scores[id] = index;
+            });
+            queryBody["sort"] = [
+                {
+                    "_script": {
+                        "type": "number",
+                        "script": {
+                            "lang": "painless",
+                            "inline": "return params.scores[doc['_id'].value];",
+                            "params": {
+                                "scores": scores
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+
         const result = await elasticService.plainSearch('learn-path', queryBody);
+        
         let learnpaths = []
+        let wishListIdsFromElastic=[]
         if(result.hits){
+            totalCount=result.hits.total.value
             if(result.hits.hits && result.hits.hits.length > 0){
+                
                 for(const hit of result.hits.hits){
                     const learnpath = await LearnPathService.generateSingleViewData(hit._source, true, req.query.currency);
+                    wishListIdsFromElastic.push(learnpath.id)
                     learnpaths.push(learnpath);
                 }
             }
-        } else {
-            return res.status(200).json({
-                success:true,
-                data: {
-                    userId: user.userId,
-                    ids:wishedListIds,
-                    learnpaths:[]
-                }
-            })
         }
+
         return res.status(200).json({
-            success:true,
+            success: true,
+
             data: {
-                userId: user.userId,
-                ids:wishedListIds,
-                learnpaths:learnpaths
+                userId: userId,
+                ids: wishListIdsFromElastic,
+                learnpaths: learnpaths
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
             }
         })
+         
     } catch (error) {
         console.log(error);
-            return res.status(500).send({error,success:false})
+            return res.status(500).send({error:error,success:false})
     }
 }
 
