@@ -1390,6 +1390,12 @@ const sendDataForStrapi = (userMeta, action) => {
             break;
         case "remove-resume":
             userData = userMeta
+            break;
+        case "profile-add-learnpath-wishlist":
+            userData = userMeta
+            break;
+        case "profile-remove-learnpath-wishlist":
+            userData = userMeta
             break;                        
         default:
             break;

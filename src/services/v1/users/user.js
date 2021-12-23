@@ -33,7 +33,9 @@ const { resolve } = require("path");
 const { default: Axios } = require("axios");
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
+const learnPathService = require("../../../api/services/learnPathService");
 let LearnContentService = new learnContentService();
+let LearnPathService = new learnPathService();
 const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
@@ -1022,6 +1024,23 @@ const addCourseToWishList = async (req,res) => {
     })
 }
 
+const addLearnPathToWishList = async (req,res) => {
+    const { user} = req;
+    const {learnpathId} = req.body
+    const resMeta = await models.user_meta.create({key:"learnpath_wishlist", value:learnpathId, userId:user.userId})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
+    const activity_log =  await logActvity("LEARNPATH_WISHLIST", user.userId, learnpathId);
+    sendDataForStrapi(data, "profile-add-learnpath-wishlist");
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+
 const addCourseToRecentlyViewed = async (req,res) => {
 
     let success = true;
@@ -1158,6 +1177,22 @@ const removeCourseFromWishList = async (req,res) => {
     })
 }
 
+const removeLearnPathFromWishList = async (req,res) => {
+    const { user} = req;
+    const {learnpathId} = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"learnpath_wishlist", value:learnpathId, userId:user.userId}})
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
+    sendDataForStrapi(data, "profile-remove-learnpath-wishlist");
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+
 const fetchWishListIds = async (req,res) => {
     const { user } = req
     
@@ -1176,6 +1211,28 @@ const fetchWishListIds = async (req,res) => {
         data: {
             userId: user.userId,
             courses:wishedList
+        }
+    })
+}
+
+const fetchLearnPathWishListIds = async (req,res) => {
+    const { user } = req
+    
+    let where = {
+        userId: user.userId,
+        key: { [Op.in]: ['learnpath_wishlist'] },
+    }
+
+    let resForm = await models.user_meta.findAll({
+        attributes:['value'],
+        where
+    })
+    let wishedList = resForm.map((rec) => rec.value)
+    return res.status(200).json({
+        success:true,
+        data: {
+            userId: user.userId,
+            learnpaths:wishedList
         }
     })
 }
@@ -1256,6 +1313,83 @@ const wishListCourseData = async (req,res) => {
             return res.status(500).send({error,success:false})
     }
 }
+
+const wishListLearnPathData = async (req,res) => {
+    try {
+        
+        const { user } = req
+        const {searchStr} = req.query
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['learnpath_wishlist'] },
+        }
+        
+        let resForm = await models.user_meta.findAll({
+            attributes:['value'],
+            where
+        })
+        let wishedListIds = resForm.map((rec) => rec.value)
+        wishedListIds = wishedListIds.filter(w => !!w)
+        if(!wishedListIds.length) {
+            return res.status(200).json({
+                success:true,
+                data: {
+                    ids:wishedListIds,
+                    courses:[]
+                }
+            })
+        }
+        let queryBody = {
+            "size":1000,
+            "query": {
+              "ids": {
+                  "values": wishedListIds
+              },
+              "match_phrase":{}
+            }
+        };
+
+
+        if(searchStr){ 
+            queryBody.query.match_phrase["title"]=searchStr
+        }else {
+            delete queryBody.query.match_phrase
+        }
+
+        
+        const result = await elasticService.plainSearch('learn-path', queryBody);
+        let learnpaths = []
+        if(result.hits){
+            if(result.hits.hits && result.hits.hits.length > 0){
+                for(const hit of result.hits.hits){
+                    const learnpath = await LearnPathService.generateSingleViewData(hit._source, true, req.query.currency);
+                    learnpaths.push(learnpath);
+                }
+            }
+        } else {
+            return res.status(200).json({
+                success:true,
+                data: {
+                    userId: user.userId,
+                    ids:wishedListIds,
+                    learnpaths:[]
+                }
+            })
+        }
+        return res.status(200).json({
+            success:true,
+            data: {
+                userId: user.userId,
+                ids:wishedListIds,
+                learnpaths:learnpaths
+            }
+        })
+    } catch (error) {
+        console.log(error);
+            return res.status(500).send({error,success:false})
+    }
+}
+
 
 // fetch list of the enquires
 const getEnquiryList = async (req,res) => {
@@ -1822,11 +1956,15 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
+    addLearnPathToWishList,
     addCourseToRecentlyViewed,
     getRecentlyViewedCourses,
     removeCourseFromWishList,
+    removeLearnPathFromWishList,
     fetchWishListIds,
+    fetchLearnPathWishListIds,
     wishListCourseData,
+    wishListLearnPathData,
     getEnquiryList,
     uploadProfilePic,
     uploadResumeFile,
