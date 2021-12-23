@@ -41,6 +41,7 @@ let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
 const{sendSMS} =  require('../../../communication/v1/communication');
+const validators = require("../../../utils/validators")
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
 // on node you can also require the whole directory using [require all](https://www.npmjs.com/package/require-all) package
@@ -1025,19 +1026,76 @@ const addCourseToWishList = async (req,res) => {
 }
 
 const addLearnPathToWishList = async (req,res) => {
-    const { user} = req;
-    const {learnpathId} = req.body
-    const resMeta = await models.user_meta.create({key:"learnpath_wishlist", value:learnpathId, userId:user.userId})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
-    const activity_log =  await logActvity("LEARNPATH_WISHLIST", user.userId, learnpathId);
-    sendDataForStrapi(data, "profile-add-learnpath-wishlist");
-    return res.status(200).json({
-        success:true,
-        data: {
-            wishlist:resMeta
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const learnPathIdsFromClient = validators.validateLearnPathAddWishlist(req.body)
+        if (!learnPathIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
         }
-    })
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'learnpath_wishlist',
+                value: learnPathIdsFromClient
+            }
+        });
+        let learnpathIds = []
+        existingIds = existingIds.map((learnpath) => learnpath.value)
+        learnPathIdsFromClient.forEach((learnpathId) => {
+            if (!existingIds.includes(learnpathId)) learnpathIds.push(learnpathId)
+        });
+
+        if (learnpathIds.length) {
+            const dataToSave = learnpathIds.map((learnpathId) => {
+                return {
+                    key: "learnpath_wishlist",
+                    value: learnpathId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            const numericIds = learnpathIds.map((learnpathId) => learnpathId.split("LRN_PTH_").pop())
+            const userinfo = await models.user_meta.findOne({
+                attributes: ["value"],
+                where: {
+                    userId: user.userId, metaType: 'primary', key: 'email'
+                }
+            })
+            const data = { email: userinfo.value, learnpathIds: numericIds }
+            await logActvity("LEARNPATH_WISHLIST", userId, learnpathIds);
+            sendDataForStrapi(data, "profile-add-learnpath-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: []
+                }
+            })
+        }
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
 }
 
 
