@@ -33,7 +33,7 @@ function validateAddWishlistParams(body) {
 
 function validateLearnPathAddWishlist(body) {
 
-    const { courseIds, courseId } = body
+    const { learnpathIds, learnpathId } = body
     schemaForLearnPathId = Joi.object({ learnpathId: Joi.string().required() })
     schemaForLearnPathIds = Joi.object({ learnpathIds: Joi.array().items(Joi.string()).required() })
 

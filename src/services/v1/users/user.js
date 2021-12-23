@@ -1327,6 +1327,10 @@ const fetchLearnPathWishListIds = async (req,res) => {
             }
         }
 
+        if(!activeWishListIds.length){
+            activeWishListIds = totalWishedListIds
+        }
+
         return res.status(200).json({
             success: true,
             data: {
