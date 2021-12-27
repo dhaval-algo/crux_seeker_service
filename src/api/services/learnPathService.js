@@ -599,5 +599,220 @@ module.exports = class learnPathService {
         }
     }
 
+    async exploreLearnPath(req, callback) {
+        try {
+            let defaultSize = ENTRY_PER_PAGE;
+            let defaultSort = "ratings:desc";
+            // currencies = await getCurrencies();
+            let filterConfigs = await getFilterConfigs('Learn_Path');
+            filterConfigs = filterConfigs.filter((filter) => ["categories", "topics","levels","life_stages"].includes(filter.elastic_attribute_name))
+            let esFilters = {};
+            const query = {
+                "bool": {
+                    "must": [
+                        { term: { "status.keyword": 'approved' } }
+                    ],
+                }
+            };
+
+            let queryPayload = {};
+            let paginationQuery = await getPaginationQuery(req.query);
+            queryPayload.from = paginationQuery.from;
+            queryPayload.size = paginationQuery.size;
+
+
+            if (!req.query['sort'] && !req.query['q']) {
+                req.query['sort'] = defaultSort;
+            }
+
+            if (req.query['sort']) {
+
+                const keywordFields = ['title'];
+                let sort = req.query['sort'];
+                let splitSort = sort.split(":");
+                if (keywordFields.includes(splitSort[0])) {
+                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                }
+                queryPayload.sort = [sort];
+
+            }
+
+            let parsedFilters = [];
+            let parsedRangeFilters = [];
+            let filters = [];
+
+
+            if (req.query['f']) {
+                parsedFilters = parseQueryFilters(req.query['f']);
+                for (const filter of parsedFilters) {
+                    let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                    if (elasticAttribute) {
+                        const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                        let filter_object = {
+                            "terms": { [attribute_name]: filter.value }
+                        };
+
+                        query.bool.must.push(filter_object);
+                        esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
+                    }
+                }
+            }
+
+            let published_filter = { term: { "status.keyword": "approved" } };
+
+            let aggs = {
+                course_filters: {
+                    global: {},
+                    aggs: {
+
+                    }
+                }
+            }
+
+            const topHitsSize = 200;
+            const rating_keys = [4.5, 4.0, 3.5, 3.0].map(value => ({ key: `${value} and Above`, from: value * 100 }));
+            const duration_keys = [
+                { key: 'Less Than 2 Hours', to: 2 },
+                { key: 'Less Than a Week', to: 168 },
+                { key: '1 - 4 Weeks', from: 168, to: 672 },
+                { key: '1 - 3 Months', from: 672, to: 2016 },
+                { key: '3+ Months', from: 2016 },
+            ]
+
+            for (let filter of filterConfigs) {
+
+
+                let exemted_filters = esFilters;
+
+                if (esFilters.hasOwnProperty(filter.elastic_attribute_name)) {
+                    let { [filter.elastic_attribute_name]: ignored_filter, ...all_filters } = esFilters
+                    exemted_filters = all_filters;
+                }
+
+                exemted_filters = Object.keys(exemted_filters).map(key => exemted_filters[key]);
+
+                exemted_filters.push(published_filter);
+
+                let aggs_object = {
+                    filter: { bool: { filter: exemted_filters } },
+                    aggs: {}
+                }
+
+                switch (filter.filter_type) {
+                    case "Checkboxes":
+                        aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                        break;
+                }
+                aggs.course_filters.aggs[filter.elastic_attribute_name] = aggs_object;
+            }
+
+            queryPayload.aggs = aggs;
+
+            // --Aggreation query build
+
+            let result = await elasticService.searchWithAggregate('learn-path', query, queryPayload);
+
+            /**
+             * Aggregation object from elastic search
+             */
+            let aggs_result = result.aggregations;
+
+            /**
+             * Hits Array from elastic search
+             */
+            result = result.hits;
+
+            for (let filter of filterConfigs) {
+
+                let facet = aggs_result.course_filters[filter.elastic_attribute_name];
+
+                let formatedFilters = {
+                    label: filter.label,
+                    field: filter.elastic_attribute_name,
+                    filterable: filter.filterable,
+                    sortable: filter.sortable,
+                    order: filter.order,
+                    is_singleton: filter.is_singleton,
+                    is_collapsed: filter.is_collapsed,
+                    display_count: filter.display_count,
+                    disable_at_zero_count: filter.disable_at_zero_count,
+                    is_attribute_param: filter.is_attribute_param,
+                    filter_type: filter.filter_type,
+                    is_essential: filter.is_essential,
+                    sort_on: filter.sort_on,
+                    sort_order: filter.sort_order,
+                    false_facet_value: filter.false_facet_value,
+                    implicit_filter_skip: filter.implicit_filter_skip,
+                    implicit_filter_default_value: filter.implicit_filter_default_value,
+                };
+
+                if (filter.filter_type == "RangeSlider") {
+
+                } else {
+                    formatedFilters.options = facet.filtered.buckets.map(item => {
+                        let option = {
+                            label: item.key,
+                            count: item.doc_count,
+                            selected: false, //Todo need to updated selected here.
+                            disabled: item.doc_count <= 0,
+                        }
+                        return option;
+                    });
+                }
+
+                filters.push(formatedFilters);
+            }
+
+            if (parsedFilters.length > 0 || parsedRangeFilters.length > 0) {
+                filters = await updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
+
+            let formatCategory = true;
+            if (formatCategory) {
+                let category_tree = [];
+                let categoryFiletrOption = [];
+                let categorykey = 0;
+
+                let response = await fetch(`${apiBackendUrl}/category-tree`);
+
+                if (response.ok) {
+                    let json = await response.json();
+                    if (json && json.final_tree) {
+                        category_tree = json.final_tree;
+                    }
+                }
+                if (category_tree && category_tree.length) {
+                    for (let category of category_tree) {
+                        let i = 0;
+                        for (let filter of filters) {
+                            if (filter.field == "categories") {
+                                for (let option of filter.options) {
+                                    if (category.label == option.label) {
+                                        categoryFiletrOption.push(option);
+                                    }
+                                }
+                                categorykey = i;
+
+                            }
+                            i++;
+                        }   
+                    }
+                }
+                if (filters[categorykey]) {
+                    filters[categorykey].options = categoryFiletrOption;
+                }
+            }
+
+            let data = {
+                filters: filters
+            };
+
+            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+        } catch (e) {
+            callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
+        }
+    }
+
 
 }

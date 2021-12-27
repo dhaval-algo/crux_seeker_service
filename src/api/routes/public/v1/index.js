@@ -27,6 +27,7 @@ router.get('/learn-content-reviews/:courseId',learnContentController.getReviews)
 router.get('/learn-path/',learnPathController.getLearnPathList);
 router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
+router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
 router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);
