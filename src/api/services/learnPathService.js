@@ -602,10 +602,15 @@ module.exports = class learnPathService {
     async exploreLearnPath(req, callback) {
         try {
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = "ratings:desc";
-            // currencies = await getCurrencies();
+
+            // Getting all the filters from entity facet table
             let filterConfigs = await getFilterConfigs('Learn_Path');
+
+            /*
+                Filtering values only for these 4 filters
+            */
             filterConfigs = filterConfigs.filter((filter) => ["categories", "topics","levels","life_stages"].includes(filter.elastic_attribute_name))
+            
             let esFilters = {};
             const query = {
                 "bool": {
@@ -620,30 +625,18 @@ module.exports = class learnPathService {
             queryPayload.from = paginationQuery.from;
             queryPayload.size = paginationQuery.size;
 
-
-            if (!req.query['sort'] && !req.query['q']) {
-                req.query['sort'] = defaultSort;
-            }
-
-            if (req.query['sort']) {
-
-                const keywordFields = ['title'];
-                let sort = req.query['sort'];
-                let splitSort = sort.split(":");
-                if (keywordFields.includes(splitSort[0])) {
-                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
-                }
-                queryPayload.sort = [sort];
-
-            }
-
             let parsedFilters = [];
             let parsedRangeFilters = [];
             let filters = [];
 
 
             if (req.query['f']) {
+                
+                /*
+                    It will parse all the filters passed through f query
+                */
                 parsedFilters = parseQueryFilters(req.query['f']);
+
                 for (const filter of parsedFilters) {
                     let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                     if (elasticAttribute) {
@@ -671,17 +664,8 @@ module.exports = class learnPathService {
             }
 
             const topHitsSize = 200;
-            const rating_keys = [4.5, 4.0, 3.5, 3.0].map(value => ({ key: `${value} and Above`, from: value * 100 }));
-            const duration_keys = [
-                { key: 'Less Than 2 Hours', to: 2 },
-                { key: 'Less Than a Week', to: 168 },
-                { key: '1 - 4 Weeks', from: 168, to: 672 },
-                { key: '1 - 3 Months', from: 672, to: 2016 },
-                { key: '3+ Months', from: 2016 },
-            ]
-
+            
             for (let filter of filterConfigs) {
-
 
                 let exemted_filters = esFilters;
 
