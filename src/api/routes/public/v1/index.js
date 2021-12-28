@@ -31,6 +31,7 @@ router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
 router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);
+router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths);
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 
 router.get('/news', newsController.getNewsContent);

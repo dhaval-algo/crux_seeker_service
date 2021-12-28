@@ -5,6 +5,7 @@ const fetch = require("node-fetch");
 
 const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
+const helperService = require("../../utils/helper");
 
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -457,6 +458,8 @@ module.exports = class learnPathService {
         const slug = req.params.slug;
         const learnPath = await this.fetchLearnPathBySlug(slug);
         if (learnPath) {
+            req.body = {learnpathId: "LRN_PTH_"+learnPath.id}
+            this.addActivity(req, (err, data) => {})
             const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
             callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
         } else {
@@ -474,7 +477,7 @@ module.exports = class learnPathService {
             }
         };
 
-        let result = await elasticService.search('learn-path', query);
+        let result = await elasticService.search('learn-path', query); 
         if (result.hits && result.hits.length > 0) {
             return result.hits[0]._source;
         } else {
@@ -798,5 +801,100 @@ module.exports = class learnPathService {
         }
     }
 
+    async addActivity(req, callback){
+        try {
+             const {user} = req;
+             const {learnpathId} = req.body	
+             const activity_log =  await helperService.logActvity("LEARNPATH_VIEW",(user)? user.userId : null, learnpathId);
+             callback(null, {status: 'success', message: 'Added successfully!', data: null});
+        } catch (error) {
+            console.log("Learn path view activity error",  error)
+            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+        }
+    }
+
+    async getPopularLearnPaths(req, callback, returnData){
+        let { type } = req.params; // Populer, Trending,Free
+        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        
+        let offset= (page -1) * limit
+        
+        let learnpaths = [];
+        try {
+            
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "approved" } }
+                    ]
+                }
+            }
+            if(category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if(sub_category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "sub_categories.keyword":  decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if(topic){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "topics.keyword":  decodeURIComponent(topic)
+                        }
+                    }
+                );
+            } 
+            
+            if(type && type =="Free"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Free" } }
+                );
+                 esQuery.bool.filter.push(
+                    { "term": { "display_price": true } }
+                );
+            }
+            let sort = null
+            switch (type) {                
+                case "Trending":
+                    sort = [{ "activity_count.last_x_days.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    break; 
+                default:
+                    sort = [{ "activity_count.all_time.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    break;
+            }
+            
+            let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort});
+                
+            if(result.hits){
+                for(const hit of result.hits){
+                    var data = await this.generateSingleViewData(hit._source,true,currency)
+                    learnpaths.push(data);
+                }
+            }
+            
+            let response = { success: true, message: "list fetched successfully", data:{ list: learnpaths } };
+            if(returnData)
+            {
+                return learnpaths;
+            }
+            else
+            {
+                callback(null, response);
+            }
+            
+        } catch (error) {
+            console.log("Error while processing data for popular learnpaths", error);
+            callback(error, null);
+        }
+    }
 
 }
