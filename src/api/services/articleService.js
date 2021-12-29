@@ -16,7 +16,7 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
-const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug'];
+const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug','article_sub_categories','article_job_roles','article_skills','article_topics'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
 
 const CheckArticleRewards = async (user, premium) => {  
