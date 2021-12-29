@@ -798,8 +798,10 @@ const generateMetaInfo = async (page, result, list) => {
                 author_names.push(`${article._source.author_first_name} ${article._source.author_last_name}`);
                 tags = [...tags, ...article._source.tags];
             }
-            
-            categories =  categories.filter((x, i, a) => a.indexOf(x) == i);
+            if(categories && categories.length > 0)
+            {
+                categories =  categories.filter((x, i, a) => a.indexOf(x) == i);
+            }
             author_names =  author_names.filter((x, i, a) => a.indexOf(x) == i);
             tags =  tags.filter((x, i, a) => a.indexOf(x) == i) ;
 
