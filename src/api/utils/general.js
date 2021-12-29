@@ -4,6 +4,7 @@ const elasticService = require("../services/elasticService");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const { Engine } = require('json-rules-engine')
+const metaInfo = require('../utils/metaInfo')
 
 const MAX_RESULT = 10000;
 const ENTRY_PER_PAGE = 25;
@@ -553,16 +554,45 @@ const generateMetaInfo = async (page, result, list) => {
             categories =  categories.filter((x, i, a) => a.indexOf(x) == i)       
             sub_categories =  sub_categories.filter((x, i, a) => a.indexOf(x) == i)
             topics =  topics.filter((x, i, a) => a.indexOf(x) == i)
-            
-            keywords = [...keywords, ...categories, ...sub_categories, ...topics];
-            
-            extra_keyword = ["online courses", "learning courses", "paid courses", "degrees", "certifications", "offline courses", "instructor courses", "courses near me", "top courses"];
-            keywords = [...keywords, ...extra_keyword];
+            const extra_keywords = ["online courses", "learning courses", "paid courses", "degrees", "certifications", "offline courses", "instructor courses", "courses near me", "top courses"];
+           
+            if (result.page_details && result.page_details.pageType) {
+
+                if (result.page_details.pageType === 'default') {
+                    keywords = [...keywords, ...categories, ...sub_categories, ...topics];
+                    keywords.push(...extra_keywords)
+                    meta_description = metaInfo.defaultMetaInformation.meta_description;
+                    meta_title = metaInfo.defaultMetaInformation.meta_title;
+                }
+                else {
+
+                    if (result.meta_information && result.meta_information.meta_keywords) {
+                        keywords = result.meta_information.meta_keywords.split(',')
+                    }
+                    else {
+
+                        keywords = [...keywords, ...categories, ...sub_categories, ...topics];
+                        keywords.push(...extra_keywords)
+
+                    }
+
+                    if (result.meta_information && result.meta_information.meta_description) {
+                        meta_description = result.meta_information.meta_description;
+                    }
+
+                    else {
+                        meta_description = metaInfo.defaultMetaInformation.meta_description;
+                    }
+
+                    meta_title = `Top ${result.page_details.label} Courses in ${new Date().getFullYear()} | Careervira`;
+                }
+
+            }
             if(keywords.length > 0){
                 keywords = [...new Set(keywords)];
                 meta_keywords = keywords.join(", ");
             }
-            meta_information = {meta_keywords :meta_keywords}
+            meta_information = {meta_keywords :meta_keywords,meta_description:meta_description,meta_title:meta_title}
             break;
         case 'provider':
             meta_title = `${result.name} | ${result.city}`;
