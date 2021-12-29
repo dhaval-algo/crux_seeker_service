@@ -19,12 +19,21 @@ const learnpathActivity = async () => {
     
     // All time counts for logged in user 
     const activity_logs_all =  await models.activity_log.findAll({
-        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId","createdAt"],         
-        group: ['activityId', "resource","createdAt"],
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
         raw:true
     })
     
-    const activity_log_x_days = activity_logs_all.filter((activity) => (activity.createdAt > moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate())) 
+    const activity_log_x_days = await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            }
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    }) 
     
     for (let activity of activity_logs_all)
     {
@@ -85,12 +94,21 @@ const learnpathActivity = async () => {
 
     // All time counts for non-logged in user 
     const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
-        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId","createdAt"],         
-        group: ['activityId', "resource", "createdAt"],
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
         raw:true
     })
 
-    const activity_logs_loggedout_x_days = activity_logs_loggedout_all.filter((activity) => (activity.createdAt > moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()))
+    const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            }
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
 
     for (let activity of activity_logs_loggedout_all)
     {
