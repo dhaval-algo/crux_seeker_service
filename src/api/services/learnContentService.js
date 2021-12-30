@@ -30,7 +30,7 @@ const allowZeroCountFields = ['level','categories','sub_categories'];
 const helperService = require("../../utils/helper");
 
 const getBaseCurrency = (result) => {
-    return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
+    return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
 };
 
 const getEntityLabelBySlugFromCache= async (entity, slug) =>
@@ -1157,7 +1157,7 @@ module.exports = class learnContentService {
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
         let canBuy = false;
-        if(result.partner_currency.iso_code === "INR" && result.pricing_type !="Free") {
+        if(result.learn_content_pricing_currency && result.learn_content_pricing_currency.iso_code === "INR" && result.pricing_type !="Free") {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
@@ -1178,7 +1178,7 @@ module.exports = class learnContentService {
                 partner_url: result.partner_url,
                 currency: result.partner_currency
             },
-            currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,            
+            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: (result.images)? result.images :null,
@@ -1217,7 +1217,7 @@ module.exports = class learnContentService {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
-                    currency: result.pricing_currency,
+                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
                     base_currency: baseCurrency,
                     user_currency: currency,
                     regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
