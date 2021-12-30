@@ -97,6 +97,32 @@ module.exports = {
          
     },
 
+    resetEmailToNew: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/reset-email-to-new.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({otp:messagData.otp, resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Careervira- Reset Email',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
+    resetEmailToOld: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/reset-email-to-old.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({old_email:messagData.old_email, new_email:messagData.new_email, resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Careervira- Reset Email',message:emailTemplate};
+ 
+        return templateData 
+         
+    }
+
 
     
 

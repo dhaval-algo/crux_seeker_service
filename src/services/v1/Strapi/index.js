@@ -77,6 +77,7 @@ const createLoggedUserMeta = async (userId) => {
                     "graduationYear",
                     "specialization",
                     "grade",
+                    "grade_type",
                     "jobTitle",
                     "industry",
                     "company",
@@ -106,6 +107,7 @@ const createLoggedUserMeta = async (userId) => {
             experience: '',
             degree: '',
             grade: '',
+            grade_type: '',
             institute: '',
             specialization: '',
             year_of_graduation: '',
@@ -117,8 +119,10 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.phone =   metaObjVal.phone? `+${metaObjVal.phone}`: "";
         strapiObj.first_name = metaObjVal.firstName || "";
         strapiObj.last_name = metaObjVal.lastName || "Not given";
-        strapiObj.gender = metaObjVal.gender || "";
-        strapiObj.grade = metaObjVal.grade || "";
+        strapiObj.gender = metaObjVal.gender || "";       
+        strapiObj.grade = (metaObjVal.grade)? metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+        strapiObj.grade_type = (metaObjVal.gradeType)? metaObjVal.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+
         strapiObj.email = metaObjVal.email || "";
         strapiObj.date_of_birth = metaObjVal.dob || "";
         strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
@@ -177,6 +181,7 @@ const prepareStrapiData = (enquiry_id) => {
             experience:'',
             degree:'',
             grade:'',
+            grade_type:'',
             institute:'',
             specialization:'',
             year_of_graduation:'',
@@ -228,7 +233,8 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.first_name = metaObjVal.firstName || "";
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || "";
-                strapiObj.grade = metaObjVal.grade || "";
+                strapiObj.grade = (metaObjVal.grade)? metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+                strapiObj.grade_type = (metaObjVal.gradeType)? metaObjVal.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
                 strapiObj.email = metaObjVal.email || "";
                 strapiObj.date_of_birth = metaObjVal.dob || "";
                 strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
