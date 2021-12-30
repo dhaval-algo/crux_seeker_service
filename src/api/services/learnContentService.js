@@ -454,10 +454,10 @@ module.exports = class learnContentService {
         const  rating_keys = [4.5,4.0,3.5,3.0].map(value=> ({ key: `${value} and Above`, from: value*100 }));
         const duration_keys = [
             { key: 'Less Than 2 Hours', to: 2 },
-            { key: 'Less Than a Week', to: 168 },
-            { key: '1 - 4 Weeks', from: 168, to: 672 },
-            { key: '1 - 3 Months', from: 672, to: 2016 },
-            { key: '3+ Months', from: 2016 },
+            { key: 'Less Than a Week', to: 55 },
+            { key: '1 - 4 Weeks', from: 56, to: 224 },
+            { key: '1 - 3 Months', from: 225, to: 672 },
+            { key: '3+ Months', from: 673 },
         ]
 
         for(let filter of filterConfigs) {
