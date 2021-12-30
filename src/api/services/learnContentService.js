@@ -1,4 +1,6 @@
 const elasticService = require("./elasticService");
+const reviewService = require("./reviewService");
+const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
@@ -198,8 +200,6 @@ const getSlugMapping = (req) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
-
-        let startTime = new Date().getTime();
 
         try{
 
@@ -702,7 +702,7 @@ module.exports = class learnContentService {
 
             let pagination = {
                 page: paginationQuery.page,
-                count: result.hits,
+                count: result.hits.length,
                 perPage: paginationQuery.size,
                 totalCount: result.total.value,
                 total: result.total.value
@@ -821,121 +821,14 @@ module.exports = class learnContentService {
     }
 
     async getReviews(req, callback) {
-      const sortingkeys = ["newest", "highest_rated", "lowest_rated"];
-      const {
-        page = 1,
-        limit = 5,
-        sort = "highest_rated",
-        filters = {
-          keyword: null,
-        },
-      } = req.query;
 
-      const { courseId } = req.params;
-  
-      let nestedQuery = {
-          match_all: {}
-      }
-
-      let innerHits = {
-        highlight: {
-          fields: {
-            "reviews.review": {},
-          },
-        },
-        from: (page - 1) * limit,
-        size: limit,
-      };
-
-      switch (sort) {
-        case "highest_rated": case "lowest_rated":
-          innerHits.sort = { "reviews.rating": { order: sort == "highest_rated" ? "desc" : "asc" } };
-          break;
-        default:
-          innerHits.sort = { "reviews.review_date": { order: "desc" } };
-          break;
-      }
-
-      if(filters && filters.keyword){
-          nestedQuery = {
-            match: {
-              "reviews.review": filters.keyword,
-            }
-          }
-      }
-
-      let query = {
-        bool: {
-            filter: [
-                { term: { _id: {value: courseId} } }
-            ],
-          should: [
-            {
-              nested: {
-                path: "reviews",
-                query: nestedQuery,
-                inner_hits: innerHits,
-              },
-            },
-          ],
-        },
-      };
-
-      let keywordTerms = {
-          field: "reviews.review",
-          min_doc_count: 5,
-          exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for", "you", "all"],
-      };
-
-      let queryPayload = {
-        from: 0,
-        size: 1,
-        aggs: {
-          reviews: {
-            nested: {
-              path: "reviews",
-            },
-            aggs: {
-              keywords: {},
-            },
-          },
-        },
-        _source: ["title"]
-      };
-
-      queryPayload.aggs.reviews.aggs.keywords[process.env.REVIEW_AGG_TYPE || "terms"] = keywordTerms;
-
-      let response = {
-          list: [],
-          totalCount: 0,
-          filters: filters,
-          keywords: [],
-          sortKeys: sortingkeys,
-      };
-
-      try{
-      const result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
-
-      if(result.hits.total.value > 0){
-        let innerReviewHits = result.hits.hits[0].inner_hits.reviews.hits;
-        if(innerReviewHits && innerReviewHits.total.value > 0){
-            response.totalCount = innerReviewHits.total.value;
-            let reviews = innerReviewHits.hits;
-            if(reviews.length > 0){
-                for(let hitObject of reviews){
-                    response.list.push({...hitObject._source,highlight: hitObject.highlight ? hitObject.highlight['reviews.review'] : []});
-                }
-            }
+        try {
+            let reviews = await ReviewService.getReviews("learn-content", req.params.courseId, req);
+            callback(null, { status: "success", message: "all good", data: reviews });
+        } catch (e) {
+            callback({ status: "failed", message: e.message }, null);
         }
-        response.keywords = result.aggregations.reviews.keywords.buckets;
-        callback(null,{status: "success", message:"all good", data: response});
-      } else {
-        callback({status: "fail", message:"No course found for courseId: "+courseId}, null);
-      }
 
-      }catch(error){
-          callback({status: "fail", message:"someting went wrong"},null);
-      }
     }
 
     async getRelatedCourses(req, callback) {
