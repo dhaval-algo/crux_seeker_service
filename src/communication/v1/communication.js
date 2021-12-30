@@ -88,6 +88,8 @@ module.exports = {
                 return emailTemplate.resetEmailToNew(templateData)
             case 'reset_email_to_old':
                 return emailTemplate.resetEmailToOld(templateData)
+            case 'enquiry_email_to_partner':
+                return emailTemplate.enquiryEmailToPartner(templateData)
             default:
                 return false
                 break;

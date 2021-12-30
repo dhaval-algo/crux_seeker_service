@@ -7,6 +7,7 @@ const elasticService = require("../../../api/services/elasticService");
 const {sendDataForStrapi} =  require('../../../utils/helper')
 const models = require("../../../../models");
 const eventEmitter2 = require('../../../utils/subscriber');
+const communication = require('../../../communication/v1/communication');
 
 const getObjectData = (metaObj) => {
     let data = {}
@@ -199,6 +200,11 @@ const prepareStrapiData = (enquiry_id) => {
             categories_list:null,
             partner_id:null,
             user_id:null,
+            image:null,
+            send_communication_emails:null,
+            correspondence_email:null,
+            provider:null,
+            partner_status:null
 
         }
         try {
@@ -229,7 +235,7 @@ const prepareStrapiData = (enquiry_id) => {
                     }
                 })
                 let metaObjVal = await getObjectData(metaObj)
-                strapiObj.phone = `+${metaObjVal.phone}` || "";
+                strapiObj.phone = (metaObjVal.phone)? `+${metaObjVal.phone}` : "";
                 strapiObj.first_name = metaObjVal.firstName || "";
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || "";
@@ -269,7 +275,7 @@ const prepareStrapiData = (enquiry_id) => {
                 }
                 
                 if(metaObjVal.city) {
-                    strapiObj.location = JSON.parse(metaObjVal.city).city
+                    strapiObj.location = JSON.parse(metaObjVal.city).label
                 }
 
                 
@@ -289,9 +295,29 @@ const prepareStrapiData = (enquiry_id) => {
                             strapiObj.course_category = hit._source.categories? hit._source.categories.toString():""
                             strapiObj.categories_list = hit._source.categories_list? hit._source.categories_list:null
                             strapiObj.partner_id = hit._source.partner_id? hit._source.partner_id:""
+                            strapiObj.image = hit._source.images? hit._source.images.small:""
+                            strapiObj.provider = hit._source.provider_name? hit._source.provider_name :""
                         }
                     }
                 }
+
+                let partnerQueryBody = {
+                    "query": {
+                      "ids": {
+                          "values": [ `PTNR_${strapiObj.partner_id}`]
+                      },
+                    }
+                };
+                const partner = await elasticService.plainSearch('partner', partnerQueryBody);
+                if(partner.hits){
+                    if(partner.hits.hits && partner.hits.hits.length > 0){
+                        for(const hit of partner.hits.hits){                            
+                            strapiObj.send_communication_emails = hit._source.send_communication_emails? hit._source.send_communication_emails:false
+                            strapiObj.correspondence_email = hit._source.correspondence_email? hit._source.correspondence_email:""
+                            strapiObj.partner_status = hit._source.status? hit._source.status:"Active"
+                        }
+                    }
+                }               
 
             }
             strapiObj = cleanObject(strapiObj)
@@ -313,8 +339,30 @@ const createRecordInStrapi = async (enquiryId) => {
     }
 
     sendDataForStrapi(data, "update-profile-enquiries");
+    /*Send email for partner*/
+    if(data.send_communication_emails && data.partner_status =="Active")
+    {
+        let emailPayload = {
+            fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
+            toemail: data.correspondence_email,
+            email_type: "enquiry_email_to_partner",
+            email_data: {
+                courseImgUrl:  data.image,
+                course_name: data.course_name,
+                provider:data.provider,
+                full_name: data.first_name + ' ' + data.last_name,
+                email: data.email,
+                phone:data.phone,
+                city:data.location
+            }
+        }
+        
+        communication.sendEmail(emailPayload, false)
+    }
+
+    /* Create recorde in strapi enquiry collection*/
     axios.post(request_url, data).then((response) => {        
-        console.log(response.data);
+       // console.log(response.data);
         return
     }).catch(e => {
         console.log(e);
