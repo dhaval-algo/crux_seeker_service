@@ -7,6 +7,8 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
 
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -51,11 +53,49 @@ const parseQueryRangeFilters = (filter) => {
 };
 
 module.exports = class learnPathService {
-    async getLearnPathList(req, callback) {
+    async getLearnPathList(req, callback, skipCache) {
 
         try {
             let defaultSize = ENTRY_PER_PAGE;
             let defaultSort = "ratings:desc";
+            let useCache = false;
+            let cacheName = "";
+
+            if(
+                req.query['learnPathIds'] == undefined
+                && req.query['f'] == undefined
+                && (req.query['q'] == undefined || req.query['q'] == '')
+                && req.query['rf'] == undefined
+                && (req.query['page'] == "1" || req.query['page'] == undefined)
+                && (
+                    req.query['size'] == undefined
+                    || req.query['size'] == defaultSize
+                )
+                && (
+                    req.query['sort'] == undefined
+                    || req.query['sort'] == defaultSort
+                )
+            ) {
+                useCache = true;
+                let apiCurrency = process.env.DEFAULT_CURRENCY;
+                if(req.query['currency'] != undefined){
+                    apiCurrency = req.query['currency'];
+                }
+               
+                if((req.query['slug'] != undefined) && (req.query['q'] == undefined || req.query['q'] == "")) {
+                    cacheName = "learnpath-"+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
+                }
+    
+                cacheName += `_${defaultSort}`;
+    
+                if(skipCache != true) {
+                    let cacheData = await RedisConnection.getValuesSync(cacheName);
+                    if(cacheData.noCacheData != true) {
+                        return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    }
+                }
+            }
+
             currencies = await getCurrencies();
             const filterConfigs = await getFilterConfigs('Learn_Path');
 
@@ -448,22 +488,48 @@ module.exports = class learnPathService {
                 data.meta_information = meta_information;
             }
 
+            if (useCache == true) {
+                RedisConnection.set(cacheName, data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24 );
+            }
+
             callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
         } catch (e) {
             callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
 
-    async getLearnPath(req, callback) {
-        const slug = req.params.slug;
-        const learnPath = await this.fetchLearnPathBySlug(slug);
-        if (learnPath) {
-            req.body = {learnpathId: "LRN_PTH_"+learnPath.id}
+    async getLearnPath(req, callback, skipCache) {
+        try{
+            let learnpathId = null
+            const slug = req.params.slug;
+            let cacheName = `single-learnpath-${slug}_${req.query.currency}`
+            let useCache = false
+            if(skipCache != true){
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                learnpathId = cacheData.id
+                if(cacheData.noCacheData != true) {
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    useCache = true
+                }
+            }
+            if(useCache != true){
+                const learnPath = await this.fetchLearnPathBySlug(slug);
+                if (learnPath) {
+                    const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
+                    learnpathId = learnPath.id
+                    callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+                    RedisConnection.set(cacheName, data); 
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
+                } else {
+                    callback({ status: 'failed', message: 'Not found!' }, null);
+                }
+            }
+            req.body = {learnpathId: "LRN_PTH_"+learnpathId}
             this.addActivity(req, (err, data) => {})
-            const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
-        } else {
-            callback({ status: 'failed', message: 'Not found!' }, null);
+        }
+        catch(err){
+            console.log(err)
         }
     }
 
