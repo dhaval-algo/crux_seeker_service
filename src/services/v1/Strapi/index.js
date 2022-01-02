@@ -249,27 +249,27 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
 
                 if(education.specialization) {
-                    strapiObj.specialization = JSON.parse(education.specialization).label
+                    strapiObj.specialization = education.specialization.label
                 }
 
                 if(education.degree) {
-                    strapiObj.degree = JSON.parse(education.degree).label
+                    strapiObj.degree = education.degree.label
                 }
 
                 if(education.instituteName) {
-                    strapiObj.institute = JSON.parse(education.instituteName).label
+                    strapiObj.institute = education.instituteName.label
                 }               
 
                 if(workExp.jobTitle) {
-                    strapiObj.job_title = JSON.parse(workExp.jobTitle).label
+                    strapiObj.job_title = workExp.jobTitle.label
                 }
 
                 if(workExp.industry) {
-                    strapiObj.industry = JSON.parse(workExp.industry).label
+                    strapiObj.industry = workExp.industry.label
                 }
 
                 if(workExp.company) {
-                    strapiObj.company_name = JSON.parse(workExp.company).label
+                    strapiObj.company_name = workExp.company.label
                 }
 
                 if(workExp.currentCompany) {
