@@ -157,9 +157,9 @@ const createLoggedUserMeta = async (userId) => {
         }  
 
         if(workExp && workExp.experience) {
-            strapiObj.experience = experience
+            strapiObj.experience =  workExp.experience
         }
-        
+
         strapiObj = cleanObject(strapiObj)
         resolve(strapiObj)
       
