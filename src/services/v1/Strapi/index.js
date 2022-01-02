@@ -124,37 +124,42 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
         strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
 
-        if(education.specialization) {
+        if(education && education.specialization) {
             strapiObj.specialization = education.specialization.label
         }
 
-        if(education.degree) {
+        if(education && education.degree) {
             strapiObj.degree = education.degree.label
         }
 
-        if(education.instituteName) {
+        if(education && education.instituteName) {
             strapiObj.institute = education.instituteName.label
-        }               
+        }  
+        
+        if(education && education.graduationYear) {
+            strapiObj.year_of_graduation = education.graduationYear
+        }
 
-        if(workExp.jobTitle) {
+        if(workExp && workExp.jobTitle) {
             strapiObj.job_title = workExp.jobTitle.label
         }
 
-        if(workExp.industry) {
+        if(workExp && workExp.industry) {
             strapiObj.industry = workExp.industry.label
         }
 
-        if(workExp.company) {
+        if(workExp && workExp.company) {
             strapiObj.company_name = workExp.company.label
         }
 
-        if(workExp.currentCompany) {
+        if(workExp && workExp.currentCompany) {
             strapiObj.current_company = Boolean(workExp.currentCompany)
         }  
 
-        strapiObj.year_of_graduation = education.graduationYear || "";
-        strapiObj.experience = workExp.experience || "";
-
+        if(workExp && workExp.experience) {
+            strapiObj.experience = experience
+        }
+        
         strapiObj = cleanObject(strapiObj)
         resolve(strapiObj)
       
