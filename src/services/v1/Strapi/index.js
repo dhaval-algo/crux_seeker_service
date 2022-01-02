@@ -234,9 +234,7 @@ const prepareStrapiData = (enquiry_id) => {
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || ""; 
                 strapiObj.email = metaObjVal.email || "";
-                strapiObj.date_of_birth = metaObjVal.dob || "";
-                strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
-                strapiObj.experience = metaObjVal.experience || "";
+                strapiObj.date_of_birth = metaObjVal.dob || "";                
                 if(metaObjVal.city) {
                     strapiObj.location = JSON.parse(metaObjVal.city).city
                 }
@@ -274,8 +272,10 @@ const prepareStrapiData = (enquiry_id) => {
 
                 if(workExp.currentCompany) {
                     strapiObj.current_company = Boolean(workExp.currentCompany)
-                }              
+                }  
 
+                strapiObj.year_of_graduation = education.graduationYear || "";
+                strapiObj.experience = workExp.experience || "";
                 
                 let queryBody = {
                     "query": {
