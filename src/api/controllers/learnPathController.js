@@ -13,6 +13,16 @@ module.exports = {
         });        
     },
 
+    getLearnPathByIds: async (req, res) => {
+      LearnPathService.getLearnpathByIds(req, (err, data) => {
+          if (data) {
+              res.status(200).send(data);
+          } else {
+              res.status(200).send(err);
+          }
+      });        
+    },
+
     getSingleLearnPath: async (req, res) => {
         const slug = req.params.slug;
         LearnPathService.getLearnPath(req, (err, data) => {

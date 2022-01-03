@@ -499,6 +499,47 @@ module.exports = class learnPathService {
         }
     }
 
+    async getLearnpathByIds(req, callback){
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
+        let learnpaths = [];
+        let learnpathOrdered = [];
+        let ids = [];
+        if(req.query['ids']){
+            ids = req.query['ids'].split(",");
+        }
+        if(ids.length > 0){
+            const queryBody = {
+                "query": {
+                  "ids": {
+                      "values": ids
+                  }
+                }
+            };
+
+            const result = await elasticService.plainSearch('learn-path', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                        learnpaths.push(learnpath);
+                    }
+                    for(const id of ids){
+                        let learnpath = learnpaths.find(o => o.id === id);
+                        learnpathOrdered.push(learnpath);
+                    }
+                }
+            }            
+        }
+        if(callback){
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: learnpathOrdered});
+        }else{
+            return learnpathOrdered;
+        }
+        
+    }
+
     async getLearnPath(req, callback, skipCache) {
         try{
             let learnpathId = null
