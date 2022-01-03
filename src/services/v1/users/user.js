@@ -250,25 +250,9 @@ const verifyOtp = async (req, res, next) => {
                 email: email
             }, {
                 where: {
-                    userId:userId,
-                    provider:provider
+                    userId:userId
                 }
             });
-            if(provider != LOGIN_TYPES.LOCAL){
-                try{
-                    await models.user_login.update({
-                        email: email
-                    }, {
-                        where: {
-                            userId:userId,
-                            provider:LOGIN_TYPES.LOCAL
-                        }
-                    });
-                }
-                catch(err){
-                    console.log("User account do not have local entry")
-                }
-            }
             // If everything goes fine updating the verified status
             const userEntry = await models.user.findOne({where:{id:userId}})
             if(userEntry){
