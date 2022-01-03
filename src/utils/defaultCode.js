@@ -137,6 +137,7 @@ const OTP_TYPES = {
 
 const FORM_TYPES = {
     ENQUIRIES: "enquiry",
+    LEARNPATHENQUIRY:"learnpathenquiry",
     SIGNUP:"signup"
 }
 
