@@ -14,6 +14,7 @@ const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
 const footerController = require('../../../controllers/footerController');
 
+const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 
 
@@ -22,6 +23,10 @@ router.get('/learn-content-list/', learnContentController.getLearnContentListing
 router.get('/learn-content-filters/', learnContentController.getLearnContentFilters);
 router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
 router.get('/learn-content-reviews/:courseId',learnContentController.getReviews);
+
+router.get('/learn-path/',learnPathController.getLearnPathList);
+router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
+router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
 
 router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);

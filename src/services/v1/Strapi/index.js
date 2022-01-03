@@ -7,6 +7,7 @@ const elasticService = require("../../../api/services/elasticService");
 const {sendDataForStrapi} =  require('../../../utils/helper')
 const models = require("../../../../models");
 const eventEmitter2 = require('../../../utils/subscriber');
+const communication = require('../../../communication/v1/communication');
 
 const getObjectData = (metaObj) => {
     let data = {}
@@ -72,16 +73,8 @@ const createLoggedUserMeta = async (userId) => {
                     "country",
                     "city",
                     "gender",
-                    "instituteName",
-                    "degree",
-                    "graduationYear",
-                    "specialization",
-                    "grade",
-                    "jobTitle",
-                    "industry",
-                    "company",
-                    "currentCompany",
-                    "experience",
+                    "education",
+                    "workExp"
                 ]
             },
         }
@@ -106,6 +99,7 @@ const createLoggedUserMeta = async (userId) => {
             experience: '',
             degree: '',
             grade: '',
+            grade_type: '',
             institute: '',
             specialization: '',
             year_of_graduation: '',
@@ -118,44 +112,55 @@ const createLoggedUserMeta = async (userId) => {
         strapiObj.first_name = metaObjVal.firstName || "";
         strapiObj.last_name = metaObjVal.lastName || "Not given";
         strapiObj.gender = metaObjVal.gender || "";
-        strapiObj.grade = metaObjVal.grade || "";
         strapiObj.email = metaObjVal.email || "";
-        strapiObj.date_of_birth = metaObjVal.dob || "";
-        strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
-        strapiObj.experience = metaObjVal.experience || "";
-    
-        if (metaObjVal.specialization) {
-            strapiObj.specialization = JSON.parse(metaObjVal.specialization).label
-        }
-    
-        if (metaObjVal.degree) {
-            strapiObj.degree = JSON.parse(metaObjVal.degree).label
-        }
-    
-        if (metaObjVal.instituteName) {
-            strapiObj.institute = JSON.parse(metaObjVal.instituteName).label
-        }        
-    
-        if (metaObjVal.jobTitle) {
-            strapiObj.job_title = JSON.parse(metaObjVal.jobTitle).label
-        }
-    
-        if (metaObjVal.industry) {
-            strapiObj.industry = JSON.parse(metaObjVal.industry).label
-        }
-    
-        if (metaObjVal.company) {
-            strapiObj.company = JSON.parse(metaObjVal.company).label
-        }
-    
-        if (metaObjVal.currentCompany) {
-            strapiObj.current_company = Boolean(metaObjVal.currentCompany)
-        }
-    
+        strapiObj.date_of_birth = metaObjVal.dob || "";        
         if (metaObjVal.city) {
             strapiObj.location = JSON.parse(metaObjVal.city).city
-            // strapiObj.location = JSON.parse(metaObjVal.city).country
         }
+
+        let educationArr = JSON.parse(metaObjVal.education)
+        let workExpArr = JSON.parse(metaObjVal.workExp)
+        let education = (educationArr && educationArr.length > 0)? educationArr[0] : null
+        let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
+        strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+        strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+
+        if(education && education.specialization) {
+            strapiObj.specialization = education.specialization.label
+        }
+
+        if(education && education.degree) {
+            strapiObj.degree = education.degree.label
+        }
+
+        if(education && education.instituteName) {
+            strapiObj.institute = education.instituteName.label
+        }  
+        
+        if(education && education.graduationYear) {
+            strapiObj.year_of_graduation = education.graduationYear
+        }
+
+        if(workExp && workExp.jobTitle) {
+            strapiObj.job_title = workExp.jobTitle.label
+        }
+
+        if(workExp && workExp.industry) {
+            strapiObj.industry = workExp.industry.label
+        }
+
+        if(workExp && workExp.company) {
+            strapiObj.company_name = workExp.company.label
+        }
+
+        if(workExp && workExp.currentCompany) {
+            strapiObj.current_company = Boolean(workExp.currentCompany)
+        }  
+
+        if(workExp && workExp.experience) {
+            strapiObj.experience =  workExp.experience
+        }
+
         strapiObj = cleanObject(strapiObj)
         resolve(strapiObj)
       
@@ -177,6 +182,7 @@ const prepareStrapiData = (enquiry_id) => {
             experience:'',
             degree:'',
             grade:'',
+            grade_type:'',
             institute:'',
             specialization:'',
             year_of_graduation:'',
@@ -194,6 +200,11 @@ const prepareStrapiData = (enquiry_id) => {
             categories_list:null,
             partner_id:null,
             user_id:null,
+            image:null,
+            send_communication_emails:null,
+            correspondence_email:null,
+            provider:null,
+            partner_status:null
 
         }
         try {
@@ -224,48 +235,53 @@ const prepareStrapiData = (enquiry_id) => {
                     }
                 })
                 let metaObjVal = await getObjectData(metaObj)
-                strapiObj.phone = `+${metaObjVal.phone}` || "";
+                strapiObj.phone = (metaObjVal.phone)? `+${metaObjVal.phone}` : "";
                 strapiObj.first_name = metaObjVal.firstName || "";
                 strapiObj.last_name = metaObjVal.lastName || "";
-                strapiObj.gender = metaObjVal.gender || "";
-                strapiObj.grade = metaObjVal.grade || "";
+                strapiObj.gender = metaObjVal.gender || ""; 
                 strapiObj.email = metaObjVal.email || "";
-                strapiObj.date_of_birth = metaObjVal.dob || "";
-                strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
-                strapiObj.experience = metaObjVal.experience || "";
-
-                if(metaObjVal.specialization) {
-                    strapiObj.specialization = JSON.parse(metaObjVal.specialization).label
-                }
-
-                if(metaObjVal.degree) {
-                    strapiObj.degree = JSON.parse(metaObjVal.degree).label
-                }
-
-                if(metaObjVal.instituteName) {
-                    strapiObj.institute = JSON.parse(metaObjVal.instituteName).label
-                }               
-
-                if(metaObjVal.jobTitle) {
-                    strapiObj.job_title = JSON.parse(metaObjVal.jobTitle).label
-                }
-
-                if(metaObjVal.industry) {
-                    strapiObj.industry = JSON.parse(metaObjVal.industry).label
-                }
-
-                if(metaObjVal.company) {
-                    strapiObj.company_name = JSON.parse(metaObjVal.company).label
-                }
-
-                if(metaObjVal.currentCompany) {
-                    strapiObj.current_company = Boolean(metaObjVal.currentCompany)
-                }
-                
+                strapiObj.date_of_birth = metaObjVal.dob || "";                
                 if(metaObjVal.city) {
                     strapiObj.location = JSON.parse(metaObjVal.city).city
                 }
 
+                let educationArr = JSON.parse(metaObjVal.education)
+                let workExpArr = JSON.parse(metaObjVal.workExp)
+                let education = educationArr[0]
+                let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
+                strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+                strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+
+                if(education.specialization) {
+                    strapiObj.specialization = education.specialization.label
+                }
+
+                if(education.degree) {
+                    strapiObj.degree = education.degree.label
+                }
+
+                if(education.instituteName) {
+                    strapiObj.institute = education.instituteName.label
+                }               
+
+                if(workExp.jobTitle) {
+                    strapiObj.job_title = workExp.jobTitle.label
+                }
+
+                if(workExp.industry) {
+                    strapiObj.industry = workExp.industry.label
+                }
+
+                if(workExp.company) {
+                    strapiObj.company_name = workExp.company.label
+                }
+
+                if(workExp.currentCompany) {
+                    strapiObj.current_company = Boolean(workExp.currentCompany)
+                }  
+
+                strapiObj.year_of_graduation = education.graduationYear || "";
+                strapiObj.experience = workExp.experience || "";
                 
                 let queryBody = {
                     "query": {
@@ -283,9 +299,29 @@ const prepareStrapiData = (enquiry_id) => {
                             strapiObj.course_category = hit._source.categories? hit._source.categories.toString():""
                             strapiObj.categories_list = hit._source.categories_list? hit._source.categories_list:null
                             strapiObj.partner_id = hit._source.partner_id? hit._source.partner_id:""
+                            strapiObj.image = hit._source.images? hit._source.images.small:""
+                            strapiObj.provider = hit._source.provider_name? hit._source.provider_name :""
                         }
                     }
                 }
+
+                let partnerQueryBody = {
+                    "query": {
+                      "ids": {
+                          "values": [ `PTNR_${strapiObj.partner_id}`]
+                      },
+                    }
+                };
+                const partner = await elasticService.plainSearch('partner', partnerQueryBody);
+                if(partner.hits){
+                    if(partner.hits.hits && partner.hits.hits.length > 0){
+                        for(const hit of partner.hits.hits){                            
+                            strapiObj.send_communication_emails = hit._source.send_communication_emails? hit._source.send_communication_emails:false
+                            strapiObj.correspondence_email = hit._source.correspondence_email? hit._source.correspondence_email:""
+                            strapiObj.partner_status = hit._source.status? hit._source.status:"Active"
+                        }
+                    }
+                }               
 
             }
             strapiObj = cleanObject(strapiObj)
@@ -307,8 +343,30 @@ const createRecordInStrapi = async (enquiryId) => {
     }
 
     sendDataForStrapi(data, "update-profile-enquiries");
+    /*Send email for partner*/
+    if(data.send_communication_emails && data.partner_status =="Active")
+    {
+        let emailPayload = {
+            fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
+            toemail: data.correspondence_email,
+            email_type: "enquiry_email_to_partner",
+            email_data: {
+                courseImgUrl:  data.image,
+                course_name: data.course_name,
+                provider:data.provider,
+                full_name: data.first_name + ' ' + data.last_name,
+                email: data.email,
+                phone:data.phone,
+                city:data.location
+            }
+        }
+        
+        communication.sendEmail(emailPayload, false)
+    }
+
+    /* Create recorde in strapi enquiry collection*/
     axios.post(request_url, data).then((response) => {        
-        console.log(response.data);
+       // console.log(response.data);
         return
     }).catch(e => {
         console.log(e);

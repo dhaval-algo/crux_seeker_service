@@ -61,11 +61,11 @@ module.exports = class articleService {
             }
         };
 
-        if(req.articleIds)
+        if(req.query.articleIds)
         {
             let filterObject = { 
                 "ids": {
-                    "values": req.articleIds
+                    "values": req.query.articleIds
                 }}
 
             query.bool.must.push(filterObject);
