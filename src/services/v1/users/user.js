@@ -250,8 +250,7 @@ const verifyOtp = async (req, res, next) => {
                 email: email
             }, {
                 where: {
-                    userId:userId,
-                    provider:provider
+                    userId:userId
                 }
             });
             // If everything goes fine updating the verified status
