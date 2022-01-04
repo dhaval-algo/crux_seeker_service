@@ -118,12 +118,12 @@ const createLoggedUserMeta = async (userId) => {
             strapiObj.location = JSON.parse(metaObjVal.city).city
         }
 
-        let educationArr = JSON.parse(metaObjVal.education)
-        let workExpArr = JSON.parse(metaObjVal.workExp)
+        let educationArr = (metaObjVal.education)? JSON.parse(metaObjVal.education) :null
+        let workExpArr = (metaObjVal.workExp) ? JSON.parse(metaObjVal.workExp):null
         let education = (educationArr && educationArr.length > 0)? educationArr[0] : null
         let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
-        strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
-        strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+        strapiObj.grade = (education && education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+        strapiObj.grade_type = (education && education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
 
         if(education && education.specialization) {
             strapiObj.specialization = education.specialization.label
