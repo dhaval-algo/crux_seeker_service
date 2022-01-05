@@ -1,4 +1,6 @@
 const elasticService = require("./elasticService");
+const reviewService = require("./reviewService");
+const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
@@ -28,7 +30,7 @@ const allowZeroCountFields = ['level','categories','sub_categories'];
 const helperService = require("../../utils/helper");
 
 const getBaseCurrency = (result) => {
-    return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
+    return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
 };
 
 const getEntityLabelBySlugFromCache= async (entity, slug) =>
@@ -198,8 +200,6 @@ const getSlugMapping = (req) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
-
-        let startTime = new Date().getTime();
 
         try{
 
@@ -702,7 +702,7 @@ module.exports = class learnContentService {
 
             let pagination = {
                 page: paginationQuery.page,
-                count: result.hits,
+                count: result.hits.length,
                 perPage: paginationQuery.size,
                 totalCount: result.total.value,
                 total: result.total.value
@@ -821,121 +821,14 @@ module.exports = class learnContentService {
     }
 
     async getReviews(req, callback) {
-      const sortingkeys = ["newest", "highest_rated", "lowest_rated"];
-      const {
-        page = 1,
-        limit = 5,
-        sort = "highest_rated",
-        filters = {
-          keyword: null,
-        },
-      } = req.query;
 
-      const { courseId } = req.params;
-  
-      let nestedQuery = {
-          match_all: {}
-      }
-
-      let innerHits = {
-        highlight: {
-          fields: {
-            "reviews.review": {},
-          },
-        },
-        from: (page - 1) * limit,
-        size: limit,
-      };
-
-      switch (sort) {
-        case "highest_rated": case "lowest_rated":
-          innerHits.sort = { "reviews.rating": { order: sort == "highest_rated" ? "desc" : "asc" } };
-          break;
-        default:
-          innerHits.sort = { "reviews.review_date": { order: "desc" } };
-          break;
-      }
-
-      if(filters && filters.keyword){
-          nestedQuery = {
-            match: {
-              "reviews.review": filters.keyword,
-            }
-          }
-      }
-
-      let query = {
-        bool: {
-            filter: [
-                { term: { _id: {value: courseId} } }
-            ],
-          should: [
-            {
-              nested: {
-                path: "reviews",
-                query: nestedQuery,
-                inner_hits: innerHits,
-              },
-            },
-          ],
-        },
-      };
-
-      let keywordTerms = {
-          field: "reviews.review",
-          min_doc_count: 5,
-          exclude: ["a","A","an","is","are", "etc", "the", "this", "that", "those", "here", "there", "and", "of", "or", "then", "to", "in", "i","course","my", "as","with","me","also","it","across","was", "for", "you", "all"],
-      };
-
-      let queryPayload = {
-        from: 0,
-        size: 1,
-        aggs: {
-          reviews: {
-            nested: {
-              path: "reviews",
-            },
-            aggs: {
-              keywords: {},
-            },
-          },
-        },
-        _source: ["title"]
-      };
-
-      queryPayload.aggs.reviews.aggs.keywords[process.env.REVIEW_AGG_TYPE || "terms"] = keywordTerms;
-
-      let response = {
-          list: [],
-          totalCount: 0,
-          filters: filters,
-          keywords: [],
-          sortKeys: sortingkeys,
-      };
-
-      try{
-      const result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
-
-      if(result.hits.total.value > 0){
-        let innerReviewHits = result.hits.hits[0].inner_hits.reviews.hits;
-        if(innerReviewHits && innerReviewHits.total.value > 0){
-            response.totalCount = innerReviewHits.total.value;
-            let reviews = innerReviewHits.hits;
-            if(reviews.length > 0){
-                for(let hitObject of reviews){
-                    response.list.push({...hitObject._source,highlight: hitObject.highlight ? hitObject.highlight['reviews.review'] : []});
-                }
-            }
+        try {
+            let reviews = await ReviewService.getReviews("learn-content", req.params.courseId, req);
+            callback(null, { status: "success", message: "all good", data: reviews });
+        } catch (e) {
+            callback({ status: "failed", message: e.message }, null);
         }
-        response.keywords = result.aggregations.reviews.keywords.buckets;
-        callback(null,{status: "success", message:"all good", data: response});
-      } else {
-        callback({status: "fail", message:"No course found for courseId: "+courseId}, null);
-      }
 
-      }catch(error){
-          callback({status: "fail", message:"someting went wrong"},null);
-      }
     }
 
     async getRelatedCourses(req, callback) {
@@ -1144,43 +1037,47 @@ module.exports = class learnContentService {
 
 
     async getCourseByIds(req, callback){
-        if(currencies.length == 0){
-            currencies = await getCurrencies();
-        }
-        let courses = [];
-        let courseOrdered = [];
-        let ids = [];
-        if(req.query['ids']){
-            ids = req.query['ids'].split(",");
-        }
-        if(ids.length > 0){
-            const queryBody = {
-                "query": {
-                  "ids": {
-                      "values": ids
-                  }
-                }
-            };
-
-            const result = await elasticService.plainSearch('learn-content', queryBody);
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
-                        courses.push(course);
+        try {
+            if(currencies.length == 0){
+                currencies = await getCurrencies();
+            }
+            let courses = [];
+            let courseOrdered = [];
+            let ids = [];
+            if(req.query['ids']){
+                ids = req.query['ids'].split(",");
+            }
+            if(ids.length > 0){
+                const queryBody =  {
+                    "ids": {
+                        "values": ids
                     }
-                    for(const id of ids){
-                        let course = courses.find(o => o.id === id);
-                        courseOrdered.push(course);
+                };
+                let queryPayload = {size : 1000}
+                const result = await elasticService.search('learn-content', queryBody, queryPayload);
+                if(result.hits){
+                    if(result.hits && result.hits.length > 0){
+                        for(const hit of result.hits){
+                            const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                            courses.push(course);
+                        }
+                        for(const id of ids){
+                            let course = courses.find(o => o.id === id);
+                            courseOrdered.push(course);
+                        }
                     }
-                }
-            }            
+                }            
+            }
+            if(callback){
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+            }else{
+                return courseOrdered;
+            }
+        } catch (error) {
+            callback(null, {status: 'error', message: 'Failed to Fetch', data: null});
+            console.log("course by id error=>",error)
         }
-        if(callback){
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
-        }else{
-            return courseOrdered;
-        }
+        
         
     }
 
@@ -1260,7 +1157,7 @@ module.exports = class learnContentService {
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
         let canBuy = false;
-        if(result.partner_currency.iso_code === "INR" && result.pricing_type !="Free") {
+        if(result.learn_content_pricing_currency && result.learn_content_pricing_currency.iso_code === "INR" && result.pricing_type !="Free") {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
@@ -1281,7 +1178,7 @@ module.exports = class learnContentService {
                 partner_url: result.partner_url,
                 currency: result.partner_currency
             },
-            currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,            
+            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: (result.images)? result.images :null,
@@ -1320,7 +1217,7 @@ module.exports = class learnContentService {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
-                    currency: result.pricing_currency,
+                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
                     base_currency: baseCurrency,
                     user_currency: currency,
                     regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
@@ -1584,6 +1481,7 @@ module.exports = class learnContentService {
             slug: data.slug,
             id: data.id,
             provider: data.provider,
+            partner: data.partner,
             cover_image: data.cover_image,
             currency: data.currency,
             description: data.description,

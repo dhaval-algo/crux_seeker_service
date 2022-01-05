@@ -7,7 +7,7 @@ const userService = require('../../../services/v1/users/user');
 let router = express.Router();
 router.post('/sign-in', userService.login);
 router.post('/send-otp', userService.sendOtp);
-router.post('/verify-otp', userService.verifyOtp);
+router.post('/verify-otp',authenticateJWT, userService.verifyOtp);
 router.get('/verify-token', authenticateJWT, userService.verifyUserToken);
 router.post('/social-signin', userService.socialSignIn);
 router.post('/sign-up', injectTokenPayload, userService.signUp);
@@ -26,6 +26,7 @@ router.get('/fetch-enquiries', authenticateJWT, userService.getEnquiryList);
 router.post ('/upload-profile',authenticateJWT, userService.uploadProfilePic);
 router.post ('/upload-resume',authenticateJWT, userService.uploadResumeFile);
 router.post ('/upload-skills',authenticateJWT, userService.uploadSkills);
+router.post ('/upload-primary-skills',authenticateJWT, userService.uploadPrimarySkills);
 router.get ('/delete-resume',authenticateJWT, userService.deleteResumeFile);
 router.get('/remove-profile', authenticateJWT, userService.removeProfilePic);
 router.post('/bookmark-article',authenticateJWT, userService.bookmarkArticle);
@@ -35,6 +36,8 @@ router.post('/fetch-bookmark',authenticateJWT, userService.fetchbookmarkIds);
 router.post('/suspend-account',authenticateAdminJWT, userService.suspendAccount);
 router.post('/reactivate-account', authenticateAdminJWT, userService.reactivateAccount);
 router.post('/update-phone',authenticateJWT, userService.updatePhone);
+router.get('/fetch-user-pending-actions',authenticateJWT,userService.getUserPendingActions);
+router.post('/update-email',authenticateJWT, userService.updateEmail);
 router.get('/create-sitemap', async (req,res) => {
     const res1 = await createSiteMap()
     res.setHeader('Content-Type', 'text/json')
