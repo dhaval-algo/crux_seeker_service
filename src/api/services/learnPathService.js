@@ -59,7 +59,7 @@ module.exports = class learnPathService {
             let defaultSize = ENTRY_PER_PAGE;
             let defaultSort = "ratings:desc";
             let useCache = false;
-            let cacheName = "";
+            let cacheName = "learnpath";
 
             if(
                 req.query['learnPathIds'] == undefined
@@ -82,11 +82,7 @@ module.exports = class learnPathService {
                     apiCurrency = req.query['currency'];
                 }
                
-                if((req.query['slug'] != undefined) && (req.query['q'] == undefined || req.query['q'] == "")) {
-                    cacheName = "learnpath-"+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
-                }
-    
-                cacheName += `_${defaultSort}`;
+                cacheName += `_${apiCurrency}_${defaultSort}`;
     
                 if(skipCache != true) {
                     let cacheData = await RedisConnection.getValuesSync(cacheName);
