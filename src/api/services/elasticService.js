@@ -115,7 +115,7 @@ module.exports = {
     if(payload._source !== null){
       finalQuery._source = payload._source;
     }
-
+    finalQuery.track_total_hits = true
     const result = await client.search(finalQuery);
     if(result && result.body){
         //return result.body.hits.hits;
