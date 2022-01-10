@@ -99,7 +99,7 @@ const handleCallBackEnquiry = (resBody, req) => {
 
 const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
-        let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
+        let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile, enquiryType="course" } = resBody;
         lastStep = true // this is set true coz we have now only one step in form
         let { formSubmissionId } = resBody;
         otherInfo = {...otherInfo,...req.useragent, userIp:req.ip}
@@ -200,7 +200,11 @@ const handleGeneralEnquiry = (resBody, req) => {
                 if(insertInCRM) {
                     eventEmitter.emit('enquiry_placed',formSubmissionId)
                 }
-                const activity_log =  await logActvity("COURSE_ENQUIRED",userObj.userId, targetEntityId);
+                if(enquiryType == "course"){
+                    const activity_log =  await logActvity("COURSE_ENQUIRED",userObj.userId, targetEntityId);
+                }else{
+                    const activity_log =  await logActvity("LEARNPATH_ENQUIRED",userObj.userId, targetEntityId);
+                }
                 return resolve({
                     success: true,
                     code: DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code,

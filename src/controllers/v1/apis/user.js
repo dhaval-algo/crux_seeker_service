@@ -27,6 +27,7 @@ router.post('/fetch-learnpathwishlist',authenticateJWT, userService.fetchLearnPa
 router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData);
 router.get('/fetch-bookmarked-learnpaths',authenticateJWT, userService.wishListLearnPathData);
 router.get('/fetch-enquiries', authenticateJWT, userService.getEnquiryList);
+router.get('/fetch-learnpath-enquiries', authenticateJWT, userService.getLearnPathEnquiryList);
 router.post ('/upload-profile',authenticateJWT, userService.uploadProfilePic);
 router.post ('/upload-resume',authenticateJWT, userService.uploadResumeFile);
 router.post ('/upload-skills',authenticateJWT, userService.uploadSkills);

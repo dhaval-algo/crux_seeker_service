@@ -1705,6 +1705,144 @@ const getEnquiryList = async (req,res) => {
     
 }
 
+const getLearnPathEnquiryList = async (req,res) => {
+    try {
+    let { limit=10, page=1 } = req.query;
+    const { user } = req;
+    let offset = 0
+
+    if(page>1) {
+        offset =  (page-1)* limit
+    }
+    
+    //Find out total enquiries
+    let config = { 
+    attributes: ['targetEntityId'],
+    where: { userId:user.userId || user.id,status:'submitted'},
+    raw: true}
+    
+    let learnpathIds = [];
+    let totalEnquiryRecs = await models.form_submission.findAll(config)
+
+    for (let key = 0; key < totalEnquiryRecs.length ; key++) {
+        learnpathIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
+    }
+
+    let query = {
+        "bool": {
+          "must": [           
+            {
+              "terms": {
+                "id": learnpathIds
+              }
+            },
+            {"term": { "status.keyword": 'approved' }}
+          ]
+        }  
+      }
+    const totalResult = await elasticService.search('learn-path', query, {size: 1000});
+    let totalCount = 0
+    let existingIds = [];
+    if(totalResult.hits){
+        if(totalResult.hits && totalResult.hits.length > 0){
+             for(const hit of totalResult.hits){                
+                existingIds.push(hit._id)                
+            }           
+        }
+        else
+        {
+            return res.status(200).send({
+                success:true,
+                data:{
+                    enquires:[],
+                    count:0
+                }
+            })
+        }
+    }
+    learnpathIds = learnpathIds.map(id =>`LRN_PTH_${id}`)
+    learnpathIds = learnpathIds.filter((id => existingIds.includes(id)))
+    totalCount = learnpathIds.length
+    //fetch enquiries
+    let formSubConfig = { 
+    attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
+    where: { userId:user.userId || user.id,status:'submitted',targetEntityId : learnpathIds},
+    limit,
+    raw: true,
+    order: sequelize.literal('"createdAt" DESC')
+    }
+    
+    if(page>1) {
+    formSubConfig.offset = offset
+    }
+    let enquiryRecs = await models.form_submission.findAll(formSubConfig)
+      
+        // no enquiries return
+    if(!enquiryRecs.length) {
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    let enquiriesDone = []
+
+    for (let key = 0; key < enquiryRecs.length ; key++) {
+        let enquiry = {
+            learnpathUrl:enquiryRecs[key].otherInfo.learnpathUrl,
+            learnpathName:'',
+            categoryName:'',
+            createdAt:enquiryRecs[key].createdAt,
+            enquiryOn:''
+        }
+        let queryBody = {
+            "query": {
+              "terms": {
+                  "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
+              },
+            }
+        };
+        
+        if(enquiryRecs[key].targetEntityType =='learnpath') {
+            enquiry.enquiryOn = 'learnpath';
+            const result = await elasticService.plainSearch('learn-path', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    // for(const hit of result.hits.hits){
+                        let hit =  result.hits.hits[0]
+                        enquiry.learnpathName = hit._source.title
+                        enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                    // }
+                }
+            }
+            enquiriesDone.push(enquiry);
+        }
+    }
+    //fetch course fron esatic
+    enquiriesDone = enquiriesDone.filter(enquiry => enquiry.learnpathName);
+    return res.status(200).send({
+        success:true,
+        data:{
+            enquiries:enquiriesDone,
+            count:totalCount
+        }
+    })
+    //build res
+    } catch (error) {
+        console.log(error);
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    
+}
+
 const uploadProfilePic =async (req,res) => {
     // getBucketNames()\
     const {image} =req.body
@@ -2109,6 +2247,7 @@ module.exports = {
     wishListCourseData,
     wishListLearnPathData,
     getEnquiryList,
+    getLearnPathEnquiryList,
     uploadProfilePic,
     uploadResumeFile,
     deleteResumeFile,
