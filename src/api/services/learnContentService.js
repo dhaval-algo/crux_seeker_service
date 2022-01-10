@@ -55,13 +55,15 @@ const getEntityLabelBySlugFromCache= async (entity, slug) =>
                 for(let entity of json)
                 {                    
                     if( entity.slug){
+                       let article_advice = [];
+                       let featured_articles = [];
                        if(entity.article_advice && entity.article_advice.length > 0)
                        {
-                           var article_advice = entity.article_advice.map((article)=> article.id);
+                           article_advice = entity.article_advice.map((article)=> article.id);
                        }
                        if(entity.featured_articles && entity.featured_articles.length > 0)
                        {
-                           var featured_articles = entity.featured_articles.map((article)=> article.id);
+                           featured_articles = entity.featured_articles.map((article)=> article.id);
                        }
                         entities[entity.slug] = {
                             "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
@@ -753,8 +755,16 @@ module.exports = class learnContentService {
             }
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
                 try {
-                    data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
-                    data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
+                    data.article_advice = []
+                    data.featured_articles = []
+                    if(slug_article_advice && slug_article_advice.length >0 )
+                    {
+                        data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
+                    }
+                    if(slug_featured_articles && slug_featured_articles.length >0 )
+                    {
+                        data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
+                    }
                 } catch (error) {
                     console.log("Error in getArticleByIds", error)
                     data.article_advice = []
