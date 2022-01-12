@@ -800,7 +800,10 @@ const generateMetaInfo = async (page, result, list) => {
             let tags = []
             for(article of result)
             {
-                categories = [...categories, ...article._source.categories];
+                if(article._source.categories && article._source.categories.length > 0)
+                {
+                    categories = [...categories, ...article._source.categories];
+                }
                 author_names.push(`${article._source.author_first_name} ${article._source.author_last_name}`);
                 tags = [...tags, ...article._source.tags];
             }
