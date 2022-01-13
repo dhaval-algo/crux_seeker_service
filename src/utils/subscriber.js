@@ -15,8 +15,8 @@ eventEmitter.on('enquiry_placed', (enquiryId) => {
 })
 
 eventEmitter.on('learnpathenquiry', (enquiryId) => {
-    createLead(enquiryId)
-    createRecordInStrapiforLearnPath(enquiryId)
+    // createLead(enquiryId)
+    // createRecordInStrapiforLearnPath(enquiryId)
 })
 
 module.exports = eventEmitter
