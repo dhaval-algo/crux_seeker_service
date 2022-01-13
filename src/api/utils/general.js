@@ -776,7 +776,9 @@ const generateMetaInfo = async (page, result, list) => {
             }       
             
             keywords =[result.title]
-            keywords = [...keywords, ...result.categories];
+            if(result.categories){
+                keywords = [...keywords, ...result.categories];
+            }
             keywords.push(`${result.author_first_name} ${result.author_last_name}`);
             keywords = [...keywords, ...result.tags];
             

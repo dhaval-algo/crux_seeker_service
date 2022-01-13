@@ -10,7 +10,9 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     generateMetaInfo,
-    compareRule
+    compareRule,
+    getCurrencies,
+    getCurrencyAmount
 } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -41,6 +43,10 @@ const CheckArticleRewards = async (user, premium) => {
         }
     }
     return rewards;
+};
+
+const getEmiBaseCurrency = (result) => {
+    return result.emi_currency? result.emi_currency.iso_code:null;
 };
 
 module.exports = class articleService {
@@ -407,42 +413,11 @@ module.exports = class articleService {
             let premium = (result.premium)? result.premium:false
             rewards = await CheckArticleRewards(req.user, premium);
         }
-        //let coverImageSize = 'large';
-        //if(isList){
-            //coverImageSize = 'thumbnail';
-       // }
-        
-        // let cover_image = null;
-        // if(result.cover_image){
-        //     if(result.cover_image[coverImageSize]){
-        //         cover_image = getMediaurl(result.cover_image[coverImageSize]);
-        //     }else{
-        //         cover_image = getMediaurl(result.cover_image['thumbnail']);
-        //     }
-        // }
-        // if(!cover_image){
-        //     cover_image = getMediaurl(result.cover_image['url']);
-        // }
         
         let author = (!isList) ? await this.getAuthor(result.author_id) : null;
          
-        let auth = await this.getAuthor(result.author_id);
-         
-        
-        // if(!author){
-        //     console.log("Author not found...");
-            // author = {
-            //     id: result.author_id,
-            //     username: result.author_username,
-            //     firstname: result.author_first_name,
-            //     lastname: result.last_name ? result.author_last_name:"",
-            //     designation: result.author_designation,
-            //     bio: result.author_bio,
-            //     slug: result.author_slug
-            // };
-        // }else{
-        //     console.log("Author found..."); 
-        // }
+        let auth = await this.getAuthor(result.author_id);         
+
         let co_authors =  [];
 
         if(result.partners)
@@ -527,6 +502,7 @@ module.exports = class articleService {
             published_date: result.published_date,
             categories: (result.categories) ? result.categories : [],
             levels: (result.levels) ? result.levels : [],
+            duration:(result.duration) ? result.duration : null,
             tags: (result.tags) ? result.tags : [],            
             section_name: result.section_name,
             section_slug: result.section_slug,
@@ -534,6 +510,25 @@ module.exports = class articleService {
             recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : [],
             ads_keywords:result.ads_keywords
         };
+
+        data.emiInUserCurrency = null
+        if(result.emi_amount){       
+            let userCurrency= req.query['currency'] || process.env.DEFAULT_CURRENCY    
+            let currencies = await getCurrencies();           
+            const emiBaseCurrency = getEmiBaseCurrency(result);
+            let emiInUserCurrency = parseFloat(getCurrencyAmount(result.emi_amount, currencies, emiBaseCurrency, userCurrency));
+            data.emiInUserCurrency = emiInUserCurrency
+        }
+
+        data.brochure = null
+        if(result.brochure){       
+            data.brochure = {
+                name: result.brochure.name,
+                ext: result.brochure.ext,
+                mime: result.brochure.mime,
+                url: result.brochure.url
+            }
+        }
 
         if(!isList){
             let meta_information = await generateMetaInfo  ('article', result);
@@ -543,7 +538,11 @@ module.exports = class articleService {
             }
         }
 
-        data.content = null;
+        data.description = null;
+        data.content_section = null
+        data.level_info = null
+        data.course_recommendation = null
+        data.conclusion = null
         if(!isList){
             data.full_access = false;
             if(rewards && rewards.length > 0)
@@ -551,13 +550,17 @@ module.exports = class articleService {
                 if(rewards[0].access_type == 'full_access')
                 {
                     data.full_access= true;
-                    data.content = result.content;
+                    data.description = result.content;
+                    data.content_section = result.content_section || null
+                    data.level_info = result.level_info || null
+                    data.course_recommendation = result.course_recommendation || null;
+                    data.conclusion = result.conclusion || null;
                 }
                 else if(rewards[0].access_type == 'partial_access')
                 {
-                    let content = result.content.replace(/<(.|\n)*?>/g, '');
-                    content = content.replace(/&nbsp;/g, ' ');
-                    data.content = content.split(' ').slice(0, 70).join(' ');
+                    let description = result.content.replace(/<(.|\n)*?>/g, '');
+                    description = description.replace(/&nbsp;/g, ' ');
+                    data.description = description.split(' ').slice(0, 70).join(' ');
                 }
             }           
         }
