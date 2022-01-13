@@ -121,8 +121,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
                 RedisConnection.set(cacheName, cacheData);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
             }
-
-            return json[0];
+            return cacheData[slug] ;
         }else{
             return null;
         }    
