@@ -101,9 +101,22 @@ const getEntityLabelBySlug = async (entity, slug) => {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             if(cacheData.noCacheData != true) {
 
+                let article_advice = [];
+                let featured_articles = [];
+                if(json[0].article_advice && json[0].article_advice.length > 0)
+                {
+                    article_advice = json[0].article_advice.map((article)=> article.id);
+                }
+                if(json[0].featured_articles && json[0].featured_articles.length > 0)
+                {
+                    featured_articles = json[0].featured_articles.map((article)=> article.id);
+                }
                 cacheData[slug] = {
                 "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
                 "description"  :(json[0].description)?json[0].description :null,
+                "meta_information":(json[0].meta_information)?json[0].meta_information :null,
+                "article_advice":article_advice,
+                "featured_articles": featured_articles
                 }
                 RedisConnection.set(cacheName, cacheData);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
