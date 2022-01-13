@@ -513,7 +513,7 @@ module.exports = class articleService {
 
         data.emiInUserCurrency = null
         if(result.emi_amount){       
-            let userCurrency= (req.query && req.query['currency'] )? req.query['currency']: process.env.DEFAULT_CURRENCY    
+            let userCurrency= (req && req.query && req.query['currency'] )? req.query['currency']: process.env.DEFAULT_CURRENCY    
             let currencies = await getCurrencies();           
             const emiBaseCurrency = getEmiBaseCurrency(result);
             let emiInUserCurrency = parseFloat(getCurrencyAmount(result.emi_amount, currencies, emiBaseCurrency, userCurrency));
