@@ -202,7 +202,7 @@ const handleGeneralEnquiry = (resBody, req) => {
                 //     updateProfileMeta(temp, userObj)
                 // }
                 if(insertInCRM) {
-                    if(targetEntityId == "learnpath"){
+                    if(enquiryType == "learnpath"){
                         eventEmitter.emit('learnpathenquiry',formSubmissionId)
                     }else{
                         eventEmitter.emit('enquiry_placed',formSubmissionId)

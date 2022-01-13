@@ -360,7 +360,7 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || "";
                 strapiObj.grade = metaObjVal.grade || "";
-                strapiObj.grade_type = metaObjVal.grade_type || "";
+                strapiObj.grade_type = metaObjVal.gradeType || "";
                 strapiObj.email = metaObjVal.email || "";
                 strapiObj.date_of_birth = metaObjVal.dob || "";
                 strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
