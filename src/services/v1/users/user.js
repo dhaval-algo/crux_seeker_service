@@ -1824,7 +1824,8 @@ const getLearnPathEnquiryList = async (req,res) => {
                             let course_dict = {
                                 course_name:'',
                                 course_category:[],
-                                partner_name:''
+                                partner_name:'',
+                                images:''
                             }
 
                             let query = {
@@ -1839,7 +1840,8 @@ const getLearnPathEnquiryList = async (req,res) => {
                             if(result_course.hits){
                                 if(result_course.hits.hits && result_course.hits.hits.length > 0){
                                     let h_course =  result_course.hits.hits[0]
-
+                                    
+                                    course_dict.images = h_course._source.images?h_course._source.images:""
                                     course_dict.course_name = h_course._source.title?h_course._source.title.toString():""
                                     course_dict.course_category = h_course._source.categories?h_course._source.categories:[]
                                     course_dict.partner_name = h_course._source.partner_name?h_course._source.partner_name.toString():""
