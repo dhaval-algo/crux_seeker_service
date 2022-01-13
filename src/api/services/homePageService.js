@@ -398,6 +398,7 @@ module.exports = class homePageService {
       return callback(null, { success: true, data:data })
 
     } catch (error) {
+      console.log(error);
       return callback(null, { success: true, data: data })
     }
   }
