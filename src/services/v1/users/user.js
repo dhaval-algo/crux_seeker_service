@@ -1820,23 +1820,33 @@ const getLearnPathEnquiryList = async (req,res) => {
                         courses.sort(function (a, b) {
                             return a.position - b.position;
                         });
-                        console.log(courses);
                         for(let course = 0;course < courses.length;course++){
                             let course_dict = {
-                                course_category:'',
+                                course_name:'',
+                                course_category:[],
                                 partner_name:''
                             }
 
                             let query = {
                                 "query": {
                                   "terms": {
-                                      "id": [courses[course].targetEntityId.replace(/[^0-9]+/, '')]
+                                      "id": [courses[course].id.replace(/[^0-9]+/, '')]
                                   },
                                 }
                             };
 
+                            const result_course = await elasticService.plainSearch('learn-content', query);
+                            if(result_course.hits){
+                                if(result_course.hits.hits && result_course.hits.hits.length > 0){
+                                    let h_course =  result_course.hits.hits[0]
+
+                                    course_dict.course_name = h_course._source.title?h_course._source.title.toString():""
+                                    course_dict.course_category = h_course._source.categories?h_course._source.categories:[]
+                                    course_dict.partner_name = h_course._source.partner_name?h_course._source.partner_name.toString():""
+                                }
+                            }
+                            enquiry.courses.push(course_dict);
                         }
-                    // }
                 }
             }
             enquiriesDone.push(enquiry);
