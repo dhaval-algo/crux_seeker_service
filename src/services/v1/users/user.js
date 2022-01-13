@@ -1788,14 +1788,15 @@ const getLearnPathEnquiryList = async (req,res) => {
         })
     }
     let enquiriesDone = []
-
     for (let key = 0; key < enquiryRecs.length ; key++) {
         let enquiry = {
             learnpathUrl:enquiryRecs[key].otherInfo.learnpathUrl,
             learnpathName:'',
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt,
-            enquiryOn:''
+            enquiryOn:'',
+            image:'',
+            courses:[]
         }
         let queryBody = {
             "query": {
@@ -1814,6 +1815,27 @@ const getLearnPathEnquiryList = async (req,res) => {
                         let hit =  result.hits.hits[0]
                         enquiry.learnpathName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                        enquiry.image = hit._source.images
+                        let courses = hit._source.courses
+                        courses.sort(function (a, b) {
+                            return a.position - b.position;
+                        });
+                        console.log(courses);
+                        for(let course = 0;course < courses.length;course++){
+                            let course_dict = {
+                                course_category:'',
+                                partner_name:''
+                            }
+
+                            let query = {
+                                "query": {
+                                  "terms": {
+                                      "id": [courses[course].targetEntityId.replace(/[^0-9]+/, '')]
+                                  },
+                                }
+                            };
+
+                        }
                     // }
                 }
             }

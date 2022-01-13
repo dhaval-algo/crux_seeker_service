@@ -296,6 +296,137 @@ const prepareStrapiData = (enquiry_id) => {
     })
 }
 
+const prepareStrapiDataforLearnPath = (enquiry_id) => {
+    return new Promise(async (resolve) => {
+        let strapiObj = {
+            first_name:"",
+            last_name:"",
+            email:"",
+            gender:"",
+            phone:"",
+            enquiry_submitted_on:moment().format(),
+            job_title:'',
+            company_name:'',
+            industry:'',
+            experience:'',
+            degree:'',
+            grade:'',
+            grade_type:'',
+            institute:'',
+            specialization:'',
+            year_of_graduation:'',
+            location:'',
+            current_company:false,
+            learn_path_url:'',
+            learn_path_name:"",
+            learn_path_category:"",
+            date_of_birth:'',
+            enquiry_type:"",
+            enquiry_on:"",
+            learn_path_id:"",
+            learning_path:null,
+            categories_list:null,
+            user_id:null,
+            userId:null
+        }
+        try {
+
+           formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
+            if(formSubRec.otherInfo) {
+                // const otherObj = JSON.parse(formSubRec.otherInfo)
+                strapiObj.learn_path_url = formSubRec.otherInfo.learnpathUrl
+            }
+            strapiObj.userId = strapiObj.user_id = formSubRec.userId;
+            strapiObj.enquiry_type = formSubRec.formTypeSource;
+            strapiObj.learn_path_id = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
+            if(formSubRec.targetEntityType == "learnpath") {
+                strapiObj.learning_path = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
+                strapiObj.enquiry_on = "learn_path";
+            }
+            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
+            if(formSubValRec != null) {
+                let metaObj = {} 
+                formSubValRec.map((rec) => {
+                    if(metaObj[rec.objectType]) {
+                        metaObj[rec.objectType].push(rec.objectId)
+                    } else {
+                        metaObj[rec.objectType] = [];
+                        metaObj[rec.objectType].push(rec.objectId)
+                    }
+                })
+                let metaObjVal = await getObjectData(metaObj)
+                strapiObj.phone = `+${metaObjVal.phone}` || "";
+                strapiObj.first_name = metaObjVal.firstName || "";
+                strapiObj.last_name = metaObjVal.lastName || "";
+                strapiObj.gender = metaObjVal.gender || "";
+                strapiObj.grade = metaObjVal.grade || "";
+                strapiObj.grade_type = metaObjVal.grade_type || "";
+                strapiObj.email = metaObjVal.email || "";
+                strapiObj.date_of_birth = metaObjVal.dob || "";
+                strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
+                strapiObj.experience = metaObjVal.experience || "";
+
+                if(metaObjVal.specialization) {
+                    strapiObj.specialization = JSON.parse(metaObjVal.specialization).label
+                }
+
+                if(metaObjVal.degree) {
+                    strapiObj.degree = JSON.parse(metaObjVal.degree).label
+                }
+
+                if(metaObjVal.instituteName) {
+                    strapiObj.institute = JSON.parse(metaObjVal.instituteName).label
+                }               
+
+                if(metaObjVal.jobTitle) {
+                    strapiObj.job_title = JSON.parse(metaObjVal.jobTitle).label
+                }
+
+                if(metaObjVal.industry) {
+                    strapiObj.industry = JSON.parse(metaObjVal.industry).label
+                }
+
+                if(metaObjVal.company) {
+                    strapiObj.company_name = JSON.parse(metaObjVal.company).label
+                }
+
+                if(metaObjVal.currentCompany) {
+                    strapiObj.current_company = Boolean(metaObjVal.currentCompany)
+                }
+                
+                if(metaObjVal.city) {
+                    strapiObj.location = JSON.parse(metaObjVal.city).city
+                }
+
+                
+                let queryBody = {
+                    "query": {
+                      "ids": {
+                          "values": [formSubRec.targetEntityId]
+                      },
+                    }
+                };
+
+                const result = await elasticService.plainSearch('learn-path', queryBody);
+                if(result.hits){
+                    if(result.hits.hits && result.hits.hits.length > 0){
+                        for(const hit of result.hits.hits){
+                            strapiObj.learn_path_name = hit._source.title
+                            strapiObj.learn_path_category = hit._source.categories? hit._source.categories.toString():""
+                            strapiObj.categories_list = hit._source.categories_list? hit._source.categories_list:null
+                        }
+                    }
+                }
+
+            }
+            strapiObj = cleanObject(strapiObj)
+            return resolve(strapiObj)
+        } catch (error) {
+            console.log(error);
+        }
+    })
+}
+
 const createRecordInStrapi = async (enquiryId) => {
     let request_url = `${process.env.API_BACKEND_URL}/enquiries`
     const data = await prepareStrapiData(enquiryId)
@@ -316,6 +447,27 @@ const createRecordInStrapi = async (enquiryId) => {
     })
 }
 
+const createRecordInStrapiforLearnPath = async (enquiryId) => {
+    let request_url = `${process.env.API_BACKEND_URL}/learn-path-enquiries`
+    const data = await prepareStrapiDataforLearnPath(enquiryId)
+    let userRes ={}
+    if(data.userId){
+        userRes = await createLoggedUserMeta(data.userId)
+        delete data.userId;
+        data.enquiry_owner = userRes
+    }
+
+    sendDataForStrapi(data, "update-profile-enquiries");
+    axios.post(request_url, data).then((response) => {        
+        console.log(response.data);
+        return
+    }).catch(e => {
+        console.log(e);
+        return
+    })
+}
+
 module.exports = {
-    createRecordInStrapi
+    createRecordInStrapi,
+    createRecordInStrapiforLearnPath
 }
