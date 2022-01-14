@@ -457,7 +457,7 @@ const createRecordInStrapiforLearnPath = async (enquiryId) => {
         data.enquiry_owner = userRes
     }
 
-    sendDataForStrapi(data, "update-profile-enquiries");
+    sendDataForStrapi(data, "update-learnpath-profile-enquiries");
     axios.post(request_url, data).then((response) => {        
         console.log(response.data);
         return

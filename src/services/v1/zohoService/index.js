@@ -244,6 +244,102 @@ const prepareLeadData = (enquiry_id) => {
     })
 }
 
+const prepareLearnPathLeadData = (enquiry_id) => {
+    return new Promise(async (resolve) => {
+        let leadObj = {
+            First_Name:"",
+            Last_Name:"",
+            Email:"",
+            Gender:"",
+            Phone:"",
+            Created_On:moment().format(),
+            Job_Title:'',
+            Company:'',
+            Company_Industry:'',
+            Experience:'',
+            Degree:'',
+            Grade:'',
+            Institute:'',
+            Specialization:'',
+            Graduation_Year:'',
+            City:'',
+            Country:'',
+            Current_Company:false,
+            Lead_Origin_or_Source:''
+        }
+        try {
+           formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
+            if(formSubRec.otherInfo) {
+                // const otherObj = JSON.parse(formSubRec.otherInfo)
+                leadObj.Lead_Origin_or_Source = formSubRec.otherInfo.learnpathUrl
+            }
+            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
+            if(formSubValRec != null) {
+                let metaObj = {} 
+                formSubValRec.map((rec) => {
+                    if(metaObj[rec.objectType]) {
+                        metaObj[rec.objectType].push(rec.objectId)
+                    } else {
+                        metaObj[rec.objectType] = [];
+                        metaObj[rec.objectType].push(rec.objectId)
+                    }
+                })
+                let metaObjVal = await getObjectData(metaObj)
+                leadObj.Phone =metaObjVal.phone ? `+${metaObjVal.phone}` :"";
+                leadObj.First_Name = metaObjVal.firstName || "";
+                leadObj.Last_Name = metaObjVal.lastName || "Not given";
+                leadObj.Gender = metaObjVal.gender || "";
+                leadObj.Grade = metaObjVal.grade || "";
+                leadObj.Email = metaObjVal.email || "";
+                leadObj.Graduation_Year = metaObjVal.graduationYear || "";
+                leadObj.Experience = metaObjVal.experience || "";
+
+                if(metaObjVal.specialization) {
+                    leadObj.Specialization = JSON.parse(metaObjVal.specialization).label
+                }
+
+                if(metaObjVal.degree) {
+                    leadObj.Degree = JSON.parse(metaObjVal.degree).label
+                }
+
+                if(metaObjVal.instituteName) {
+                    leadObj.Institute = JSON.parse(metaObjVal.instituteName).label
+                }                
+
+                if(metaObjVal.jobTitle) {
+                    leadObj.Job_Title = JSON.parse(metaObjVal.jobTitle).label
+                }
+
+                if(metaObjVal.industry) {
+                    leadObj.Company_Industry = JSON.parse(metaObjVal.industry).label
+                }
+
+                if(metaObjVal.company) {
+                    leadObj.Company = JSON.parse(metaObjVal.company).label
+                }
+
+                if(metaObjVal.currentCompany) {
+                    leadObj.Current_Company = Boolean(metaObjVal.currentCompany)
+                }
+
+                if(metaObjVal.city) {
+                    leadObj.City = JSON.parse(metaObjVal.city).city
+                }
+
+                if(metaObjVal.city) {
+                    leadObj.Country = JSON.parse(metaObjVal.city).country
+                }
+
+            }
+            leadObj = cleanObject(leadObj)
+            const data = {data:[leadObj]}
+            return resolve(data)
+        } catch (error) {
+            console.log(error);
+        }
+    })
+}
+
 const cleanObject = (obj) => {
     for (var propName in obj) { 
       if (obj[propName] === null || obj[propName] === undefined || obj[propName] == "") {
@@ -273,6 +369,28 @@ const createLead = async (enquiry_id) => {
 
 }
 
+const createLearnPathLead = async (enquiry_id) => {
+    let request_url = "https://www.zohoapis.in/crm/v2/Leads"
+    const access_token = await getAccessToken();
+    const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
+    const data = await prepareLearnPathLeadData(enquiry_id)
+    axios.post(request_url, data,{headers}).then((response) => {
+        if(response.data.details) {
+            
+            
+        } else {
+           
+
+        }
+        
+    }).catch(e => {
+        console.log("error in learnpath create lead",e.response.data);
+        console.log("error in learnpath create lead",e.response.data.details);
+    })
+
+}
+
 module.exports = {
-    createLead
+    createLead,
+    createLearnPathLead
 }
