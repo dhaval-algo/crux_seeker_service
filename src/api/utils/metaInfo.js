@@ -29,7 +29,10 @@ const getTrendingNowMetaDescription = (title) => {
     return `Browse the best ${title} offered by Careervira and choose the best program and institute that fits your specifications. `;
 }
 
+const getPartnerMetaTitle = (partnerName)=>{
 
+    return `${partnerName} | Top partners from Careervira | Careervira.com`
+}
 
 const getLearnContentListMetaInfo = (result) => {
 
@@ -214,11 +217,9 @@ const getProviderListMetaInfo = (list) => {
 }
 
 const getPartnerMetaInfo = (result) => {
-
-
     let meta_description = '';
     let meta_keywords = [];
-
+    const meta_title = getPartnerMetaTitle(result.name);
 
     if (result.meta_description) {
         meta_description = result.meta_description;
@@ -255,9 +256,8 @@ const getPartnerMetaInfo = (result) => {
             meta_keywords = [...new Set(meta_keywords)];
             meta_keywords = meta_keywords.join(", ");
         }
-
     }
-    return { meta_description: meta_description, meta_keywords: meta_keywords };
+    return { meta_title:meta_title,meta_description: meta_description, meta_keywords: meta_keywords };
 }
 
 
