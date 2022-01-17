@@ -439,6 +439,29 @@ module.exports = class articleService {
                     });
                 }
              }
+
+            if(result.partners.length > 0)
+            {
+                const partnerQuery = { 
+                    "terms": {
+                        "id": result.partners 
+                        }
+                };
+                const partnerResult = await elasticService.search('partner', partnerQuery, {}, null);
+                let partners = []
+                if(partnerResult.total && partnerResult.total.value > 0){
+                    for(let hit of partnerResult.hits){
+                        partners.push({
+                            name: hit._source.name,
+                            id: hit._source.id,
+                            slug: hit._source.slug,
+                            cover_image:  hit._source.cover_image
+                        })
+                    }
+                }
+                result.partners = partners
+            }
+
         }
         else
         {
@@ -493,6 +516,7 @@ module.exports = class articleService {
             short_description: result.short_description,
             author: author,
             co_authors: (co_authors)? co_authors : null,
+            partners: (result.partners)? result.partners : null,
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
