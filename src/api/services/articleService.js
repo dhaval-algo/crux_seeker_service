@@ -455,7 +455,7 @@ module.exports = class articleService {
                             name: hit._source.name,
                             id: hit._source.id,
                             slug: hit._source.slug,
-                            cover_image:  hit._source.cover_image
+                            image:  (hit._source.cover_image) || null
                         })
                     }
                 }
@@ -514,9 +514,9 @@ module.exports = class articleService {
             id: `ARTCL_PUB_${result.id}`,          
             cover_image: (result.cover_image)? result.cover_image : null,
             short_description: result.short_description,
-            author: author,
-            co_authors: (co_authors)? co_authors : null,
-            partners: (result.partners)? result.partners : null,
+            author: (author)? author: [],
+            co_authors: (co_authors)? co_authors : [],
+            partners: (result.partners)? result.partners : [],
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
