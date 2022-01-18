@@ -408,63 +408,16 @@ module.exports = class articleService {
         /*Rule check for article access*/
         let article_full_access = false;
         let rewards = [];
+        let author = null
         if (!isList && req)
         {
             let premium = (result.premium)? result.premium:false
             rewards = await CheckArticleRewards(req.user, premium);
         }
-        
-        let author = (!isList) ? await this.getAuthor(result.author_id) : null;
-         
-        let auth = await this.getAuthor(result.author_id);         
 
-        let co_authors =  [];
-
-        if(result.partners)
-        {
-            author = []
-            if(result.co_authors && result.co_authors.length > 0)
-            {
-                for( let co_author of result.co_authors)
-                {
-                    author.push({
-                        id: co_author.id,
-                        username: co_author.username,
-                        firstname:co_author.first_name,
-                        lastname: co_author.last_name ? co_author.last_name:"",
-                        designation: co_author.designation,
-                        bio: co_author.bio,
-                        slug: co_author.slug,
-                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
-                    });
-                }
-             }
-
-            if(result.partners.length > 0)
-            {
-                const partnerQuery = { 
-                    "terms": {
-                        "id": result.partners 
-                        }
-                };
-                const partnerResult = await elasticService.search('partner', partnerQuery, {}, null);
-                let partners = []
-                if(partnerResult.total && partnerResult.total.value > 0){
-                    for(let hit of partnerResult.hits){
-                        partners.push({
-                            name: hit._source.name,
-                            id: hit._source.id,
-                            slug: hit._source.slug,
-                            image:  (hit._source.cover_image) || null
-                        })
-                    }
-                }
-                result.partners = partners
-            }
-
-        }
-        else
-        {
+        if(result.created_by_role=='author')
+        {            
+            let auth = await this.getAuthor(result.author_id);         
             if(auth){
                 author = [{
                     id: auth.author_id,
@@ -487,25 +440,51 @@ module.exports = class articleService {
                     slug: result.author_slug
                 }];
             }
-            
-            if(result.co_authors && result.co_authors.length > 0)
-            {
-                for( let co_author of result.co_authors)
-                {
-                    co_authors.push({
-                        id: co_author.id,
-                        username: result.username,
-                        firstname:co_author.first_name,
-                        lastname: co_author.last_name ? co_author.last_name:"",
-                        designation: co_author.designation,
-                        bio: co_author.bio,
-                        slug: co_author.slug,
-                        image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
-                    });
-                }
-             }
+        }
+        else
+        {
+            author = []
         }
         
+
+        if(result.co_authors && result.co_authors.length > 0)
+        {
+            for( let co_author of result.co_authors)
+            {
+                author.push({
+                    id: co_author.id,
+                    username: co_author.username,
+                    firstname:co_author.first_name,
+                    lastname: co_author.last_name ? co_author.last_name:"",
+                    designation: co_author.designation,
+                    bio: co_author.bio,
+                    slug: co_author.slug,
+                    image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                });
+            }
+         }
+
+        if(result.partners && result.partners.length > 0 )
+        {
+            const partnerQuery = { 
+                "terms": {
+                    "id": result.partners 
+                    }
+            };
+            const partnerResult = await elasticService.search('partner', partnerQuery, {}, null);
+            let partners = []
+            if(partnerResult.total && partnerResult.total.value > 0){
+                for(let hit of partnerResult.hits){
+                    partners.push({
+                        name: hit._source.name,
+                        id: hit._source.id,
+                        slug: hit._source.slug,
+                        image:  (hit._source.cover_image) || null
+                    })
+                }
+            }
+            result.partners = partners
+        }                
 
         let data = {
             title: result.title,
@@ -515,7 +494,6 @@ module.exports = class articleService {
             cover_image: (result.cover_image)? result.cover_image : null,
             short_description: result.short_description,
             author: (author)? author: [],
-            co_authors: (co_authors)? co_authors : [],
             partners: (result.partners)? result.partners : [],
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
