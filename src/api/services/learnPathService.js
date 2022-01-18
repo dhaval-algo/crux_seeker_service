@@ -148,6 +148,36 @@ module.exports = class learnPathService {
             let parsedRangeFilters = [];
             let filters = [];
 
+            if(req.query['q']){
+
+                let filter_object = {                    
+                    "bool": {
+                        "should": [
+                          {
+                            "query_string" : {
+                                "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
+                                "fields" : ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','level^3','medium^2','courses.title'],
+                                "analyze_wildcard" : true,
+                                "allow_leading_wildcard": true
+                            }
+                          },
+                          {
+                              "multi_match": {
+                                      "fields": ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','level^3','medium^2','courses.title'],
+                                      "query": decodeURIComponent(req.query['q']).trim(),
+                                      "fuzziness": "AUTO",
+                                      "prefix_length": 0                              
+                              }
+                          }           
+                        ]
+                      }                    
+                    }
+    
+    
+                query.bool.must.push(filter_object);
+                esFilters['q'] = filter_object;
+                
+            }
 
             if (req.query['f']) {
                 parsedFilters = parseQueryFilters(req.query['f']);
