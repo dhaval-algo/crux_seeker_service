@@ -94,6 +94,7 @@ const createLoggedUserMeta = async (userId) => {
             gender: "",
             phone: "",
             job_title: '',
+            company: '',
             company_name: '',
             industry: '',
             experience: '',
@@ -150,6 +151,7 @@ const createLoggedUserMeta = async (userId) => {
         }
 
         if(workExp && workExp.company) {
+            strapiObj.company = workExp.company.label
             strapiObj.company_name = workExp.company.label
         }
 
