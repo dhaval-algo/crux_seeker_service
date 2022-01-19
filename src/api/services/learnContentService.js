@@ -30,7 +30,7 @@ const allowZeroCountFields = ['level','categories','sub_categories'];
 const helperService = require("../../utils/helper");
 
 const getBaseCurrency = (result) => {
-    return (result.partner_currency) ? result.partner_currency.iso_code : result.provider_currency;
+    return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
 };
 
 const getEntityLabelBySlugFromCache= async (entity, slug) =>
@@ -1037,43 +1037,47 @@ module.exports = class learnContentService {
 
 
     async getCourseByIds(req, callback){
-        if(currencies.length == 0){
-            currencies = await getCurrencies();
-        }
-        let courses = [];
-        let courseOrdered = [];
-        let ids = [];
-        if(req.query['ids']){
-            ids = req.query['ids'].split(",");
-        }
-        if(ids.length > 0){
-            const queryBody = {
-                "query": {
-                  "ids": {
-                      "values": ids
-                  }
-                }
-            };
-
-            const result = await elasticService.plainSearch('learn-content', queryBody);
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
-                        courses.push(course);
+        try {
+            if(currencies.length == 0){
+                currencies = await getCurrencies();
+            }
+            let courses = [];
+            let courseOrdered = [];
+            let ids = [];
+            if(req.query['ids']){
+                ids = req.query['ids'].split(",");
+            }
+            if(ids.length > 0){
+                const queryBody =  {
+                    "ids": {
+                        "values": ids
                     }
-                    for(const id of ids){
-                        let course = courses.find(o => o.id === id);
-                        courseOrdered.push(course);
+                };
+                let queryPayload = {size : 1000}
+                const result = await elasticService.search('learn-content', queryBody, queryPayload);
+                if(result.hits){
+                    if(result.hits && result.hits.length > 0){
+                        for(const hit of result.hits){
+                            const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                            courses.push(course);
+                        }
+                        for(const id of ids){
+                            let course = courses.find(o => o.id === id);
+                            courseOrdered.push(course);
+                        }
                     }
-                }
-            }            
+                }            
+            }
+            if(callback){
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+            }else{
+                return courseOrdered;
+            }
+        } catch (error) {
+            callback(null, {status: 'error', message: 'Failed to Fetch', data: null});
+            console.log("course by id error=>",error)
         }
-        if(callback){
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
-        }else{
-            return courseOrdered;
-        }
+        
         
     }
 
@@ -1153,7 +1157,7 @@ module.exports = class learnContentService {
         let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
         let tax = 0.0;
         let canBuy = false;
-        if(result.partner_currency.iso_code === "INR" && result.pricing_type !="Free") {
+        if(result.learn_content_pricing_currency && result.learn_content_pricing_currency.iso_code === "INR" && result.pricing_type !="Free") {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
@@ -1174,7 +1178,7 @@ module.exports = class learnContentService {
                 partner_url: result.partner_url,
                 currency: result.partner_currency
             },
-            currency: (result.partner_currency) ? result.partner_currency : result.provider_currency,            
+            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: (result.images)? result.images :null,
@@ -1213,7 +1217,7 @@ module.exports = class learnContentService {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
-                    currency: result.pricing_currency,
+                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
                     base_currency: baseCurrency,
                     user_currency: currency,
                     regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
@@ -1469,6 +1473,7 @@ module.exports = class learnContentService {
             slug: data.slug,
             id: data.id,
             provider: data.provider,
+            partner: data.partner,
             cover_image: data.cover_image,
             currency: data.currency,
             description: data.description,

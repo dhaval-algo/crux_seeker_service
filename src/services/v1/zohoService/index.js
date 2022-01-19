@@ -193,38 +193,44 @@ const prepareLeadData = (enquiry_id) => {
                 leadObj.First_Name = metaObjVal.firstName || "";
                 leadObj.Last_Name = metaObjVal.lastName || "Not given";
                 leadObj.Gender = metaObjVal.gender || "";
-                leadObj.Grade = metaObjVal.grade || "";
                 leadObj.Email = metaObjVal.email || "";
-                leadObj.Graduation_Year = metaObjVal.graduationYear || "";
-                leadObj.Experience = metaObjVal.experience || "";
 
-                if(metaObjVal.specialization) {
-                    leadObj.Specialization = JSON.parse(metaObjVal.specialization).label
+                let educationArr = JSON.parse(metaObjVal.education)
+                let workExpArr = JSON.parse(metaObjVal.workExp)
+                let education = (educationArr && educationArr.length > 0)? educationArr[0] : null
+                let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
+                leadObj.Grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+        
+                if(education.specialization) {
+                    leadObj.Specialization = education.specialization.label
                 }
-
-                if(metaObjVal.degree) {
-                    leadObj.Degree = JSON.parse(metaObjVal.degree).label
+        
+                if(education.degree) {
+                    leadObj.Degree = education.degree.label
                 }
-
-                if(metaObjVal.instituteName) {
-                    leadObj.Institute = JSON.parse(metaObjVal.instituteName).label
-                }                
-
-                if(metaObjVal.jobTitle) {
-                    leadObj.Job_Title = JSON.parse(metaObjVal.jobTitle).label
+        
+                if(education.instituteName) {
+                    leadObj.Institute = education.instituteName.label
+                }               
+        
+                if(workExp.jobTitle) {
+                    leadObj.Job_Title = workExp.jobTitle.label
                 }
-
-                if(metaObjVal.industry) {
-                    leadObj.Company_Industry = JSON.parse(metaObjVal.industry).label
+        
+                if(workExp.industry) {
+                    leadObj.Company_Industry = workExp.industry.label
                 }
-
-                if(metaObjVal.company) {
-                    leadObj.Company = JSON.parse(metaObjVal.company).label
+        
+                if(workExp.company) {
+                    leadObj.Company = workExp.company.label
                 }
-
-                if(metaObjVal.currentCompany) {
-                    leadObj.Current_Company = Boolean(metaObjVal.currentCompany)
-                }
+        
+                if(workExp.currentCompany) {
+                    leadObj.Current_Company = Boolean(workExp.currentCompany)
+                }  
+        
+                leadObj.Graduation_Year = education.graduationYear || "";
+                leadObj.Experience = workExp.experience || "";
 
                 if(metaObjVal.city) {
                     leadObj.City = JSON.parse(metaObjVal.city).city

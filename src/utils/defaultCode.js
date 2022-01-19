@@ -42,7 +42,7 @@ const DEFAULT_CODES =
     },
     INVALID_OTP: {
         code:"INVALID_OTP",
-        message:"Incorrect OTP entered. Please retry again."
+        message:"Incorrect OTP entered. Please try again."
     },
     OTP_EXPIRED: {
         code:"OTP_EXPIRED",
@@ -131,8 +131,8 @@ const OTP_TYPES = {
     SIGNIN:'signin',
     RESETPASSWORD:'reset_password',
     SIGNUP:'signup',
-    PHONEVERIFICATION: 'phoneverification'
-
+    PHONEVERIFICATION: 'phoneverification',
+    EMAILVERIFICATION: 'emailverification'
 }
 
 const FORM_TYPES = {
