@@ -467,9 +467,22 @@ module.exports = class articleService {
         if(result.partners && result.partners.length > 0 )
         {
             const partnerQuery = { 
-                "terms": {
-                    "id": result.partners 
-                    }
+                "bool": {
+                    "should": [
+                      {
+                        "match": {
+                         "id": {"boost": 2, "query": result.partners[0] }
+                          
+                        }
+                        
+                      },
+                       {
+                        "terms": {
+                          "id": result.partners 
+                        }
+                      }
+                    ]
+                  }
             };
             const partnerResult = await elasticService.search('partner', partnerQuery, {}, null);
             let partners = []
