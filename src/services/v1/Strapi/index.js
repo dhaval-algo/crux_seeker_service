@@ -397,40 +397,46 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
                 strapiObj.first_name = metaObjVal.firstName || "";
                 strapiObj.last_name = metaObjVal.lastName || "";
                 strapiObj.gender = metaObjVal.gender || "";
-                strapiObj.grade = (metaObjVal.grade)? metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
-                strapiObj.grade_type = (metaObjVal.gradeType)? metaObjVal.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
                 strapiObj.email = metaObjVal.email || "";
                 strapiObj.date_of_birth = metaObjVal.dob || "";
-                strapiObj.year_of_graduation = metaObjVal.graduationYear || "";
-                strapiObj.experience = metaObjVal.experience || "";
 
-                if(metaObjVal.specialization) {
-                    strapiObj.specialization = JSON.parse(metaObjVal.specialization).label
+                let educationArr = JSON.parse(metaObjVal.education)
+                let workExpArr = JSON.parse(metaObjVal.workExp)
+                let education = educationArr[0]
+                let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
+                strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+                strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+
+                if(education.specialization) {
+                    strapiObj.specialization = education.specialization.label
                 }
 
-                if(metaObjVal.degree) {
-                    strapiObj.degree = JSON.parse(metaObjVal.degree).label
+                if(education.degree) {
+                    strapiObj.degree = education.degree.label
                 }
 
-                if(metaObjVal.instituteName) {
-                    strapiObj.institute = JSON.parse(metaObjVal.instituteName).label
+                if(education.instituteName) {
+                    strapiObj.institute = education.instituteName.label
                 }               
 
-                if(metaObjVal.jobTitle) {
-                    strapiObj.job_title = JSON.parse(metaObjVal.jobTitle).label
+                if(workExp.jobTitle) {
+                    strapiObj.job_title = workExp.jobTitle.label
                 }
 
-                if(metaObjVal.industry) {
-                    strapiObj.industry = JSON.parse(metaObjVal.industry).label
+                if(workExp.industry) {
+                    strapiObj.industry = workExp.industry.label
                 }
 
-                if(metaObjVal.company) {
-                    strapiObj.company_name = JSON.parse(metaObjVal.company).label
+                if(workExp.company) {
+                    strapiObj.company_name = workExp.company.label
                 }
 
-                if(metaObjVal.currentCompany) {
-                    strapiObj.current_company = Boolean(metaObjVal.currentCompany)
-                }
+                if(workExp.currentCompany) {
+                    strapiObj.current_company = Boolean(workExp.currentCompany)
+                }  
+
+                strapiObj.year_of_graduation = education.graduationYear || "";
+                strapiObj.experience = workExp.experience || "";
                 
                 if(metaObjVal.city) {
                     strapiObj.location = JSON.parse(metaObjVal.city).city
