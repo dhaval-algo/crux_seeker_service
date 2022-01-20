@@ -495,6 +495,7 @@ module.exports = class articleService {
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
+            created_by_role: (result.created_by_role)? result.created_by_role:null, 
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
