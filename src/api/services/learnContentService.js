@@ -916,6 +916,11 @@ module.exports = class learnContentService {
         
         let courses = [];
         try {
+            let cacheKey = `popular-courses-${type}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if(cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
             
             let esQuery = {
                 "bool": {
@@ -974,8 +979,9 @@ module.exports = class learnContentService {
                     var data = await this.generateSingleViewData(hit._source,true,currency)
                     courses.push(data);
                 }
+                RedisConnection.set(cacheKey, courses,process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
             }
-            
+        }
             let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
             if(returnData)
             {
