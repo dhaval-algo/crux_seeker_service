@@ -422,8 +422,8 @@ module.exports = class articleService {
                 author = [{
                     id: auth.author_id,
                     username: auth.username,
-                    firstname: auth.firstname,
-                    lastname: auth.lastname ? auth.lastname:"",
+                    firstname: auth.firstname.trim(),
+                    lastname: auth.lastname ? auth.lastname.trim():"",
                     designation: auth.designation,
                     bio: auth.bio,
                     slug: auth.slug,
@@ -433,8 +433,8 @@ module.exports = class articleService {
                 author = [{
                     id: result.author_id,
                     username: result.author_username,
-                    firstname: result.author_first_name,
-                    lastname: result.last_name ? result.author_last_name:"",
+                    firstname: result.author_first_name.trim(),
+                    lastname: result.last_name ? result.author_last_name.trim():"",
                     designation: result.author_designation,
                     bio: result.author_bio,
                     slug: result.author_slug
@@ -454,8 +454,8 @@ module.exports = class articleService {
                 author.push({
                     id: co_author.id,
                     username: co_author.username,
-                    firstname:co_author.first_name,
-                    lastname: co_author.last_name ? co_author.last_name:"",
+                    firstname:co_author.first_name.trim(),
+                    lastname: co_author.last_name ? co_author.last_name.trim():"",
                     designation: co_author.designation,
                     bio: co_author.bio,
                     slug: co_author.slug,
@@ -489,7 +489,7 @@ module.exports = class articleService {
             if(partnerResult.total && partnerResult.total.value > 0){
                 for(let hit of partnerResult.hits){
                     partners.push({
-                        name: hit._source.name,
+                        name: hit._source.name.trim(),
                         id: hit._source.id,
                         slug: hit._source.slug,
                         image:  (hit._source.cover_image) || null
@@ -508,7 +508,7 @@ module.exports = class articleService {
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
-            created_by_role: (result.created_by_role)? result.created_by_role:null, 
+            created_by_role: (result.created_by_role)? result.created_by_role:'author', 
             comments: (result.comments && !isList) ? result.comments : [],
             social_links: {
                 facebook: result.facebook_link,
