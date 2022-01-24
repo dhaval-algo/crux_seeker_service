@@ -156,14 +156,14 @@ module.exports = class learnPathService {
                           {
                             "query_string" : {
                                 "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                                "fields" : ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','level^3','medium^2','courses.title'],
+                                "fields" : ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'],
                                 "analyze_wildcard" : true,
                                 "allow_leading_wildcard": true
                             }
                           },
                           {
                               "multi_match": {
-                                      "fields": ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','level^3','medium^2','courses.title'],
+                                      "fields": ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'],
                                       "query": decodeURIComponent(req.query['q']).trim(),
                                       "fuzziness": "AUTO",
                                       "prefix_length": 0                              
