@@ -572,6 +572,7 @@ const userExist = (username, provider) => {
                 ]
             }
             let userLogin = await models.user_login.findOne({ where: where})
+            console.log("userlogin for generate OTP ", userLogin)
             
             
             if (userLogin != null) {
