@@ -1991,7 +1991,6 @@ const getLearnPathEnquiryList = async (req,res) => {
         }  
       }
     const totalResult = await elasticService.search('learn-path', query, {size: 1000});
-    let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
         if(totalResult.hits && totalResult.hits.length > 0){
@@ -2012,7 +2011,6 @@ const getLearnPathEnquiryList = async (req,res) => {
     }
     learnpathIds = learnpathIds.map(id =>`LRN_PTH_${id}`)
     learnpathIds = learnpathIds.filter((id => existingIds.includes(id)))
-    totalCount = learnpathIds.length
     //fetch enquiries
     let formSubConfig = { 
     attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
@@ -2112,7 +2110,7 @@ const getLearnPathEnquiryList = async (req,res) => {
         success:true,
         data:{
             enquiries:enquiriesDone,
-            count:totalCount
+            count:enquiriesDone.length
         }
     })
     //build res
