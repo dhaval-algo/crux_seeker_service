@@ -557,26 +557,21 @@ const userExist = (username, provider) => {
             if (!isEmail(username)) {
                 dbCol = 'phone';
             }
-            console.log("dbcol ", dbCol)
-            console.log("username ", username)
 
             //check in db
             let where = {
                 [Op.and]: [
                     {
                         [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col(dbCol)),Sequelize.fn('lower', username))                        
+                    },
+                    {
+                        provider: {
+                            [Op.eq]: provider
+                        }
                     }
-                    // Removing for now because some account have issue in user login table. That's is a account should have 3 account tables but some have only one and let say if a user have obly google one and loggedin from local that throws a error from here.
-                    // {
-                    //     provider: {
-                    //         [Op.eq]: provider
-                    //     }
-                    // }
                 ]
             }
-            console.log("where query ", where)
             let userLogin = await models.user_login.findOne({ where: where})
-            console.log("user login ",userLogin)
             
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
@@ -2178,7 +2173,7 @@ const updateEmail =async (req,res) => {
             provider = LOGIN_TYPES.LOCAL
         }
 
-        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email'}});
+        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email',metaType:'primary'}});
         const oldEmail = oldEmailObj.value;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
         const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
