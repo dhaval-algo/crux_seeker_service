@@ -557,6 +557,8 @@ const userExist = (username, provider) => {
             if (!isEmail(username)) {
                 dbCol = 'phone';
             }
+            console.log("dbcol ", dbCol)
+            console.log("username ", username)
 
             //check in db
             let where = {
