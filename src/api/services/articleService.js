@@ -19,7 +19,7 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
-const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug'];
+const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug','article_sub_categories','article_job_roles','article_skills','article_topics'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
 
 const CheckArticleRewards = async (user, premium) => {  
@@ -250,28 +250,30 @@ module.exports = class articleService {
                 formatedFilters.minValue = facet.min.value;
                 formatedFilters.maxValue = facet.max.value;
             } else {
-                formatedFilters.options = facet.filtered.buckets.map(item => {
-                    let option = {
-                    label: item.key,
-                    count: item.doc_count,
-                    selected: false, //Todo need to updated selected.
-                    disabled: false,
-                    }
+                if(facet.filtered){
+                    formatedFilters.options = facet.filtered.buckets.map(item => {
+                        let option = {
+                        label: item.key,
+                        count: item.doc_count,
+                        selected: false, //Todo need to updated selected.
+                        disabled: false,
+                        }
 
-                    if(filter.elastic_attribute_name == 'author_first_name')
-                    {
-                       let [fname, lname, slug] = item.key.split("::");
-                       option.label = `${fname}${(lname != 'null' && lname !== ''? " "+lname : '')}`.trim()
-                       option.author_slug = slug
-                    }
+                        if(filter.elastic_attribute_name == 'author_first_name')
+                        {
+                        let [fname, lname, slug] = item.key.split("::");
+                        option.label = `${fname}${(lname != 'null' && lname !== ''? " "+lname : '')}`.trim()
+                        option.author_slug = slug
+                        }
 
-                    if(filter.filter_type == "RangeOptions") {
-                        option.start = item.from ? item.from : "MIN"
-                        option.end = item.to ? item.to : "MAX"
-                    }
+                        if(filter.filter_type == "RangeOptions") {
+                            option.start = item.from ? item.from : "MIN"
+                            option.end = item.to ? item.to : "MAX"
+                        }
 
-                    return option;
-                });
+                        return option;
+                    });
+                }
             }
 
             filters.push(formatedFilters);
