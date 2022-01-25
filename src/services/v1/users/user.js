@@ -572,8 +572,9 @@ const userExist = (username, provider) => {
                     // }
                 ]
             }
+            console.log("where query ", where)
             let userLogin = await models.user_login.findOne({ where: where})
-            
+            console.log("user login ",userLogin)
             
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
