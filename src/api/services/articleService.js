@@ -2,6 +2,9 @@ const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const models = require("../../../models");
 
+const categoryService = require("./categoryService");
+const CategoryService = new categoryService();
+
 const { 
     getFilterConfigs, 
     parseQueryFilters,
@@ -292,16 +295,9 @@ module.exports = class articleService {
 
         if(formatCategory)
         {
-           let category_tree =[];
+           let category_tree = await CategoryService.getTreeV2(false) || [];
            let categoryFiletrOption =[];
            let categorykey = 0;
-           let response = await fetch(`${apiBackendUrl}/category-tree`);
-            if (response.ok) {
-               let json = await response.json();
-               if(json && json.final_tree){
-                   category_tree = json.final_tree;
-                }
-            }
             if(category_tree && category_tree.length)
             {
                 for(let category of category_tree )

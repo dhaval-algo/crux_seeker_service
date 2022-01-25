@@ -97,11 +97,12 @@ module.exports = class REDIS {
         })
     }
 
-    async set(key,value){
+    async set(key,value, expirySeconds = null){
         this.connect();
         key='apiData-'+key;
         redis.set(key,JSON.stringify(value),function(err,response){
             if(response){
+                if(expirySeconds) redis.expire(key, expirySeconds);
                 console.log("Redis object added for key = ",key);
             }
             else{
