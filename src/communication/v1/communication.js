@@ -21,7 +21,7 @@ module.exports = {
         let thatObj = this
         return new Promise(async (resolve, reject) => { 
             try{            
-                let getTemplate = thatObj.getTemplateData(payload.email_type,payload.email_data)
+                let getTemplate = module.exports.getTemplateData(payload.email_type, payload.email_data)
                 if(!getTemplate){
                     return resolve(false);
                 }
@@ -67,7 +67,7 @@ module.exports = {
         
     },
 
-    getTemplateData: (type,templateData) => {
+    getTemplateData: (type, templateData) => {
         let template = false
         switch (type) {
             case 'activiation_mail':
@@ -84,6 +84,12 @@ module.exports = {
                     return emailTemplate.suspendedEmail(templateData)
             case 'reactivated_mail':
                         return emailTemplate.reactivatedEmail(templateData)
+            case 'reset_email_to_new':
+                return emailTemplate.resetEmailToNew(templateData)
+            case 'reset_email_to_old':
+                return emailTemplate.resetEmailToOld(templateData)
+            case 'enquiry_email_to_partner':
+                return emailTemplate.enquiryEmailToPartner(templateData)
             default:
                 return false
                 break;

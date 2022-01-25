@@ -40,7 +40,7 @@ const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
-const{sendSMS} =  require('../../../communication/v1/communication');
+const{sendSMS, sendEmail} =  require('../../../communication/v1/communication');
 const validators = require("../../../utils/validators")
 
 // note that all your subscribers must be imported somewhere in the app, so they are getting registered
@@ -155,9 +155,12 @@ const sendOtp = async (req, res, next) => {
 */
 const verifyOtp = async (req, res, next) => {
     try {
+        const { user } = req
         const body = req.body;
         const audience = req.headers.origin;
-        const { otp = "", username = "" ,otpType} = body;
+        let userId = user.userId
+        const { otp = "", otpType, email=""} = body;
+        // const { otp = "", username = "" ,otpType, email=""} = body;
         // validate input
         if (!otp.trim()) {
             return res.status(200).json({
@@ -165,10 +168,37 @@ const verifyOtp = async (req, res, next) => {
                 'message': 'OTP is required',
                 'data': {}
             });
-
+        }
+        if(!isEmail(email)){
+            return res.status(200).json({
+                code: "NOT AN EMAIL",
+                message: "Please enter email in xyz@email.com format.",
+                success: false,
+                data: {}
+            })
+        }
+        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+        if(email_already_exist){
+            return res.status(200).json({
+                code: "EMAIL ALREADY EXIST",
+                message: "Please enter email which is not already used.",
+                success: false,
+                data: {}
+            })
+        }
+        let providerObj = await models.user_login.findOne({where:{userId:userId}})
+        const provider = providerObj.provider
+        if(!provider || provider == ''){
+            provider = LOGIN_TYPES.LOCAL
         }
 
-        const response = await startVerifyOtp({ username, otp, audience, provider: LOGIN_TYPES.LOCAL, otpType });
+        let userObj = await models.user_meta.findOne({where:{userId:userId, key:"email", metaType:"primary"}})
+        const username = userObj.value
+        
+        const response = await startVerifyOtp({ username, otp, audience, provider: provider, otpType });
+        if(!response.success){
+            return res.status(200).json(response);
+        }
         if(otpType == OTP_TYPES.PHONEVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
         {
             const response = await verifyPhone( username);
@@ -177,12 +207,77 @@ const verifyOtp = async (req, res, next) => {
             let phone = userPhone.value.substring(2, 12);
             await sendSMSWelcome(phone)
         }
+        if(otpType == OTP_TYPES.EMAILVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
+        {
+            /*
+                email = new email
+                Get the new email.
+                Get the old email from the Database.
+                Generate OTP.
+                Send the OTP to the new email.
+                Verify OTP.
+                SEND EMAIL(Your email has been changed to the old email)
+                Store Old Email in a new attribute
+                Change Email.  
+            */
+            // const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+            // const oldEmail = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'email'}})
+            let emailPayload = {
+                fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+                toemail: username,
+                email_type: "reset_email_to_old",
+                email_data: {
+                    old_email: username,
+                    new_email: email
+                }
+            }
+            await sendEmail(emailPayload);
+            
+            const existEntry = await models.user_meta.findOne({where:{userId:userId, value:username, metaType:'primary', key:'oldEmail'}})
+            if(!existEntry){
+                await models.user_meta.create({userId:userId, value:username, metaType:'primary', key:'oldEmail'})
+            }else{
+                await models.user_meta.update({value:username},{where:{userId:userId, metaType:'primary', key:'oldEmail'}})
+            }
+            await models.user_meta.update({
+                value:email
+            }, {
+                where: {
+                    userId:userId,
+                    metaType:'primary', 
+                    key:'email'
+                }
+            });
+            await models.user_login.update({
+                email: email
+            }, {
+                where: {
+                    userId:userId
+                }
+            });
+            // If everything goes fine updating the verified status
+            const userEntry = await models.user.findOne({where:{id:userId}})
+            if(userEntry){
+                if(!userEntry.verified){
+                    await models.user.update(
+                        {
+                            verified: true 
+                        },
+                        {
+                            where: { id: userId }
+                        }
+                    )
+                }
+            }
+            let data = {old_email:username, new_email:email}
+            sendDataForStrapi(data, "update-email");
+        }
         return res.status(200).json(response);
     } catch (error) {
         console.log(error);
         return res.status(500).json({
-            'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-            'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+            code: DEFAULT_CODES.SYSTEM_ERROR.code,
+            message: DEFAULT_CODES.SYSTEM_ERROR.message,
             success: false
         });
     }
@@ -574,7 +669,7 @@ const checkPassword = (userObj, resPwd) => {
     }
 */
 const generateOtp = async (resData) => {
-    let { username, userId, otpType } = resData;
+    let { username, userId, provider, otpType } = resData;
     return new Promise(async (resolve, reject) => {
         try {
 
@@ -589,7 +684,7 @@ const generateOtp = async (resData) => {
                     }
                 }
             */
-            const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
+            const verificationRes = await userExist(username, provider);
             if (!verificationRes.success) {
                 return resolve(verificationRes)
             }
@@ -603,6 +698,9 @@ const generateOtp = async (resData) => {
                             username: {
                                 [Op.like]: username
                             }
+                        },
+                        {
+                            otpType: otpType
                         },
                         {
                             createdAt: {
@@ -680,6 +778,11 @@ const startVerifyOtp = async (resData) => {
             }
 
             if(otpType == OTP_TYPES.PHONEVERIFICATION)
+            {
+                return resolve(otpRes);
+            }
+
+            if(otpType == OTP_TYPES.EMAILVERIFICATION)
             {
                 return resolve(otpRes);
             }
@@ -875,7 +978,7 @@ const verifyAccount = async (req, res) => {
             })
         }
     } catch (error) {
-        console.log(error);
+          console.log(error);
     }
 
 
@@ -974,12 +1077,21 @@ const resetPassword = async (req,res) => {
 const getProfileProgress = async (req,res) => {
     const { user } = req
     const profileRes = await calculateProfileCompletion(user)
-    return res.status(200).json({
-        success:true,
-        data: {
-            profileProgress:profileRes
-        }
-    })
+    if(profileRes){
+        return res.status(200).json({
+            success:true,
+            data: {
+                profileProgress:profileRes
+            }
+        })
+
+    }
+    else{
+        return res.status(500).json({
+            success:false,
+            message:"internal server error"
+        })
+    }
 }
 
 const getCourseWishlist = async (req,res) => {
@@ -1009,20 +1121,77 @@ const getCourseWishlist = async (req,res) => {
     })
 }
 
-const addCourseToWishList = async (req,res) => {
-    const { user} = req;
-    const {courseId} = req.body
-    const resMeta = await models.user_meta.create({key:"course_wishlist", value:courseId, userId:user.userId})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
-    const activity_log =  await logActvity("COURSE_WISHLIST", user.userId, courseId);
-    sendDataForStrapi(data, "profile-add-wishlist");
-    return res.status(200).json({
-        success:true,
-        data: {
-            wishlist:resMeta
+const addCourseToWishList = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const courseIdsFromClient = validators.validateAddWishlistParams(req.body)
+        if (!courseIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
         }
-    })
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'course_wishlist',
+                value: courseIdsFromClient
+            }
+        });
+        let courseIds = []
+        existingIds = existingIds.map((course) => course.value)
+        courseIdsFromClient.forEach((courseId) => {
+            if (!existingIds.includes(courseId)) courseIds.push(courseId)
+        });
+
+        if (courseIds.length) {
+            const dataToSave = courseIds.map((courseId) => {
+                return {
+                    key: "course_wishlist",
+                    value: courseId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+            const userinfo = await models.user_meta.findOne({
+                attributes: ["value"],
+                where: {
+                    userId: user.userId, metaType: 'primary', key: 'email'
+                }
+            })
+            const data = { email: userinfo.value, courseIds: numericIds }
+            await logActvity("COURSE_WISHLIST", userId, courseIds);
+            sendDataForStrapi(data, "profile-add-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    wishlist: []
+                }
+            })
+        }
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
 }
 
 const addLearnPathToWishList = async (req,res) => {
@@ -1251,26 +1420,78 @@ const removeLearnPathFromWishList = async (req,res) => {
 }
 
 
-const fetchWishListIds = async (req,res) => {
-    const { user } = req
-    
-    let where = {
-        userId: user.userId,
-        key: { [Op.in]: ['course_wishlist'] },
-    }
+const fetchWishListIds = async (req, res) => {
+    try {
+        const { user } = req
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
 
-    let resForm = await models.user_meta.findAll({
-        attributes:['value'],
-        where
-    })
-    let wishedList = resForm.map((rec) => rec.value)
-    return res.status(200).json({
-        success:true,
-        data: {
+        const offset = (page - 1) * limit
+        let totalCount = 0
+
+        let where = {
             userId: user.userId,
-            courses:wishedList
+            key: { [Op.in]: ['course_wishlist'] },
         }
-    })
+
+        const wishlistedCourses = await models.user_meta.findAll({
+            attributes: ['value'],
+            where,
+            order: [["id", "DESC"]]
+        })
+
+        let  totalWishedListIds = wishlistedCourses.map((rec) => rec.value)
+        totalWishedListIds = totalWishedListIds.filter(x => x != null)
+        const queryBody = {
+            "_source": [
+                "_id"
+            ],
+            "from": offset,
+            "size": limit,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "status.keyword": "published"
+                            }
+                        },
+                        {
+                            "ids": {
+                                "values": totalWishedListIds
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        let activeWishListIds = []
+
+        const result = await elasticService.plainSearch('learn-content', queryBody);
+        if (result && result.hits) {
+            totalCount = result.hits.total.value
+            if (result.hits.hits.length) {
+                activeWishListIds = result.hits.hits.map((wishList) => wishList._id)
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: user.userId,
+                courses: activeWishListIds
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+
+    } catch(error) {
+        console.log(error);
+        return res.status(500).send({ message: "internal server error", success: false });
+
+    }
 }
 
 const fetchLearnPathWishListIds = async (req,res) => {
@@ -1353,78 +1574,108 @@ const fetchLearnPathWishListIds = async (req,res) => {
 
 const wishListCourseData = async (req,res) => {
     try {
+         
+        const { user } = req
+        const userId=user.userId
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+        const offset = (page - 1) * limit
+        const { queryString } = req.query
         
-         const { user } = req
-        const {searchStr} = req.query
+        let totalCount = 0
         let where = {
-            userId: user.userId,
+            userId: userId,
             key: { [Op.in]: ['course_wishlist'] },
         }
-        
-        let resForm = await models.user_meta.findAll({
-            attributes:['value'],
-            where
-        })
-        let wishedListIds = resForm.map((rec) => rec.value)
-        wishedListIds = wishedListIds.filter(w => !!w)
-        if(!wishedListIds.length) {
-            return res.status(200).json({
-                success:true,
-                data: {
-                    ids:wishedListIds,
-                    courses:[]
-                }
+
+        const totalWishListOfUser = await models.user_meta.findAll({
+                attributes: ['value'],
+                where,
+                order: [["id","DESC"]]
             })
-        }
+
+        const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
+
         let queryBody = {
-            "size":1000,
+            "from":offset,
+            "size": limit,
             "query": {
-              "ids": {
-                  "values": wishedListIds
-                  //"values": ["LRN_CNT_PUB_282", "LRN_CNT_PUB_638", "LRN_CNT_PUB_3543", "LRN_CNT_PUB_1742", "LRN_CNT_PUB_3525"]
-              },
-              "match_phrase":{}
+                "bool": {
+                    "must": [{
+                        "term": { "status.keyword": "published" }
+                    },
+                    {
+                        "match_phrase": {
+                            "title": queryString
+                        }
+                    },
+                    {
+                        "ids": {
+                            "values": totalWishedListIds
+                        }
+                    }
+                    ]
+                }
             }
-        };
-
-
-        if(searchStr){ 
-            queryBody.query.match_phrase["title"]=searchStr
-        }else {
-            delete queryBody.query.match_phrase
         }
 
-        
+        if (!queryString) {
+
+            delete queryBody.query.bool.must[1];
+            let scores = {};
+            totalWishedListIds.forEach((id, index) => {
+                scores[id] = index;
+            });
+            queryBody["sort"] = [
+                {
+                    "_script": {
+                        "type": "number",
+                        "script": {
+                            "lang": "painless",
+                            "inline": "return params.scores[doc['_id'].value];",
+                            "params": {
+                                "scores": scores
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+
         const result = await elasticService.plainSearch('learn-content', queryBody);
+        
         let courses = []
+        let wishListIdsFromElastic=[]
         if(result.hits){
+            totalCount=result.hits.total.value
             if(result.hits.hits && result.hits.hits.length > 0){
+                
                 for(const hit of result.hits.hits){
                     const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
+                    wishListIdsFromElastic.push(course.id)
                     courses.push(course);
                 }
             }
-        } else {
-            return res.status(200).json({
-                success:true,
-                data: {
-                    userId: user.userId,
-                    ids:wishedListIds,
-                    courses:[]
-                }
-            })
         }
+
         return res.status(200).json({
-            success:true,
+            success: true,
+
             data: {
-                userId: user.userId,
-                ids:wishedListIds,
-                courses:courses
+                userId: userId,
+                ids: wishListIdsFromElastic,
+                courses: courses
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
             }
         })
+       
+        
     } catch (error) {
         console.log(error);
-            return res.status(500).send({error,success:false})
+            return res.status(500).send({error:error,success:false})
     }
 }
 
@@ -1537,13 +1788,9 @@ const wishListLearnPathData = async (req,res) => {
 // fetch list of the enquires
 const getEnquiryList = async (req,res) => {
     try {
-        let { limit=10, page=1 } = req.query;
     const { user } = req;
-    let offset = 0
-
-    if(page>1) {
-        offset =  (page-1)* limit
-    }
+    const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+    const offset =  (page-1)* limit
     
     // const count = await models.form_submission.findAll({
 	
@@ -1586,7 +1833,7 @@ const getEnquiryList = async (req,res) => {
           ]
         }  
       }
-    const totalResult = await elasticService.search('learn-content', query, {size: 1000});
+    const totalResult = await elasticService.search('learn-content', query, {size: 1000},fields= ["_id"]);
     let totalCount = 0
     let existingIds = [];
     if(totalResult.hits){
@@ -1642,9 +1889,12 @@ const getEnquiryList = async (req,res) => {
             categoryName:'',
             createdAt:enquiryRecs[key].createdAt,
             enquiryOn:'',
-            instituteName:""
+            instituteName:"" ,
+            images:{},
+            partnerName:""
         }
         let queryBody = {
+            "_source":["title","categories","provider_name","images","partner_name"],
             "query": {
               "terms": {
                   "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
@@ -1662,6 +1912,8 @@ const getEnquiryList = async (req,res) => {
                         enquiry.courseName = hit._source.title
                         enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                         enquiry.instituteName = hit._source.provider_name
+                        enquiry.images=hit._source.images
+                        enquiry.partnerName = hit._source.partner_name
                         
                     // }
                 }
@@ -1694,15 +1946,87 @@ const getEnquiryList = async (req,res) => {
     //build res
     } catch (error) {
         console.log(error);
-        return res.status(200).send({
-            success:true,
-            data:{
-                enquires:[],
-                count:0
-            }
+        return res.status(500).send({
+            success:false,
+            error:error
         })
     }
     
+}
+
+const updateEmail =async (req,res) => {
+    /*
+        Get the new email.
+        Get the old email from the Database.
+        Generate OTP.
+        Send the OTP to the new email.
+        // Following is in the verify OTP API
+        // Verify OTP.
+        // SEND EMAIL(Your email has been changed to the old email)
+        // Store Old Email in a new attribute
+        // Change Email.    
+    */
+    const { user } = req     
+    const { email } = req.body
+    try
+    {
+        if(email.trim() == '') {
+            return res.status(200).json({
+                code: "EMPTY VALUES ARE NOT ACCEPTED",
+                message: "Please enter email in xyz@email.com format.",
+                success: false,
+                data: {}
+            });
+        }
+        if(!isEmail(email)){
+            return res.status(200).json({
+                code: "NOT AN EMAIL",
+                message: "Please enter email in xyz@email.com format.",
+                success: false,
+                data: {}
+            })
+        }
+        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+        if(email_already_exist){
+            return res.status(200).json({
+                code: "EMAIL ALREADY EXIST",
+                message: "Please enter email which is not already used.",
+                success: false,
+                data: {}
+            })
+        }
+
+        let userId = user.userId
+        let providerObj = await models.user_login.findOne({where:{userId:userId}})
+        const provider = providerObj.provider
+        if(!provider || provider == ''){
+            provider = LOGIN_TYPES.LOCAL
+        }
+
+        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email'}});
+        const oldEmail = oldEmailObj.value;
+        const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
+        const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
+        if(!response.success){
+            return res.status(500).json(response);
+        }
+        let emailPayload = {
+            fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+            toemail: email,
+            email_type: "reset_email_to_new",
+            email_data: {
+                otp: response.data.otp
+            }
+        }
+        await sendEmail(emailPayload);
+        return res.status(200).json({
+            success: true
+        })
+    }
+    catch(err){
+        console.log("updateEmail: ",err)
+        return res.status(500).json(err)
+    }
 }
 
 const uploadProfilePic =async (req,res) => {
@@ -1744,11 +2068,18 @@ const removeProfilePic = async (req,res) => {
 }
 
 const uploadResumeFile = async (req,res) =>{
-    const {buffer, filename} =req.body
+    const {buffer, filename, size = 0} =req.body
     const {user}=req
     let resumeB =  getFileBuffer(buffer);
     let resumeName = `86ab15d2${user.userId}EyroLPIJo`+(new Date().getTime())+filename;
     let path = `images/profile-images/${resumeName}`
+    let today = new Date();
+    let dd = String(today.getDate()).padStart(2, '0');
+    let mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+    let yyyy = today.getFullYear();
+
+    today = dd + '/' + mm + '/' + yyyy;
+    
     // if(filename.endsWith('.doc')){
     //     contentType = 'application/msword';
     // }
@@ -1765,7 +2096,9 @@ const uploadResumeFile = async (req,res) =>{
     let s3Path = await uploadResumeToS3(path,resumeB)
     let fileValue = {
         filename:filename,
-        filepath:s3Path
+        filepath:s3Path,
+        uploadDate:today,
+        size:size
     }
     const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
     if(!existResume) {
@@ -1795,6 +2128,21 @@ const deleteResumeFile = async (req,res) => {
     let data = {email:userinfo.value}
     sendDataForStrapi(data, "remove-resume");
     return res.status(200).json({success:true, resumeFile:{}})
+}
+
+const uploadPrimarySkills = async (req,res) => {
+    const {data} =req.body
+    const { user} = req;
+    const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
+    if(!existSkills) {
+        await models.user_meta.create({value:JSON.stringify(data),key:'primarySkills',metaType:'primary',userId:user.userId})      
+    } else {
+        await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
+    }
+    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    let learn_profile = {email:userinfo.value, data:data}
+    sendDataForStrapi(learn_profile, "update-learn-profile");
+    return res.status(200).json({success:true,data:data})
 }
 
 const uploadSkills = async (req,res) => {
@@ -1829,26 +2177,73 @@ const fetchUserMetaObjByUserId = async (id) => {
 }
 
 const bookmarkArticle = async (req,res) => {
-    const { user} = req;
-    const {articleId} = req.body
-    if(articleId)
-    {
-        const resMeta = await models.user_meta.create({key:"article_bookmark", value:articleId, userId:user.userId})
-        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-        let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
-        sendDataForStrapi(data, "profile-bookmark-article");
-        return res.status(200).json({
-            success:true,
-            data: {
-                bookmarks:resMeta
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const articleIdsFromClient = validators.validateAddArticleParams(req.body)
+        if (!articleIdsFromClient) {
+            return res.status(200).send({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'article_bookmark',
+                value: articleIdsFromClient
             }
-        })
-    }
-    else{
+        });
+        let articleIds = []
+        existingIds = existingIds.map((article) => article.value)
+        articleIdsFromClient.forEach((articleId) => {
+            if (!existingIds.includes(articleId)) articleIds.push(articleId)
+        });
+
+        if (articleIds.length) {
+
+            const dataToSave = articleIds.map((articleId) => {
+                return {
+                    key: "article_bookmark",
+                    value: articleId,
+                    userId: userId
+                }
+            })
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
+
+            const userinfo = await models.user_meta.findOne({
+                attributes: ["value"],
+                where: {
+                    userId: user.userId, metaType: 'primary', key: 'email'
+                }
+            })
+            const data = { email: userinfo.value, articleIds: numericIds }
+            sendDataForStrapi(data, "profile-bookmark-article");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    bookmarks: resMeta
+                }
+            })
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    bookmarks: []
+                }
+            })
+        }
+    } catch (error) {
+
+        console.log(error)
         return res.status(500).json({
-            success:false,
-            data: {
-            }
+            success: false,
+            message: "internal server error"
+
         })
     }
 }
@@ -1872,7 +2267,9 @@ const removeBookmarkArticle = async (req,res) => {
 const bookmarkArticleData = async (req,res) => {
     try {
 
-
+        if (req.query.queryString) {
+            req.query.q = req.query.queryString
+        }
 
         const { user } = req
         let where = {
@@ -1889,7 +2286,7 @@ const bookmarkArticleData = async (req,res) => {
        if(resForm && resForm.length> 0)
        {
         let bookmarkIds = resForm.map((rec) => rec.value)
-        req.articleIds = bookmarkIds
+        req.query.articleIds = bookmarkIds
         req.searchField =  ['title'];
         await ArticleService.getArticleList(req, (err, data) => {
              if (data) {
@@ -1994,14 +2391,25 @@ const updatePhone = async (req,res) => {
             metaType:'primary',
             key:'phone',
         }
-        console.log("user=========", user)
-        console.log("phone=========", phone)
-        await models.user_meta.update({
-            value: phone,
-        }, {
-            where: where
-        });
+        const existPhone = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'phone'}})
+        if(!existPhone){
+            await models.user_meta.create({
+                userId: user.userId,
+                metaType:'primary',
+                key:'phone',
+                value: phone
+            });
+        }else{
+            await models.user_meta.update({
+                value: phone,
+            }, {
+                where: where
+            });
+        }
         
+        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+        let data = {email:userinfo.value, phone:phone}
+        sendDataForStrapi(data, "update-phone")
         return res.status(200).json({
             'success': true,
             'message': 'Phone is updated',
@@ -2085,6 +2493,170 @@ const reactivateAccount = async (req, res) => {
     }
 }
 
+const getUserPendingActions = async (req, res) => {
+    try {
+        const { user } = req
+        const userId = user.userId
+        let profileProgress = 0
+        let response = {
+
+            pendingProfileActions: [
+            ],
+            profileProgress: null
+        }
+
+        const fields = {
+            education: {
+                weightage: 15,
+            },
+            profilePicture: {
+                weightage: 10,
+            },
+            firstName: {
+                weightage: 4,
+            },
+            dob: {
+                weightage: 2,
+            },
+            gender: {
+                weightage: 2,
+            },
+            city: {
+                weightage: 2,
+            },
+            resumeFile: {
+                weightage: 20,
+            },
+            skills: {
+                weightage: 20,
+            },
+            workExp: {
+                weightage: 15,
+            },
+            phone: {
+                weightage: 5,
+            }
+        }
+
+        const verificationFields = {
+            verified: {
+                weightage: 5
+            },
+            phoneVerified: {
+                weightage: 5
+            }
+        }
+
+        const userData = await models.user_meta.findAll({
+            attributes: ["key", "value"],
+            where: {
+                metaType: "primary",
+                key: { [Op.in]: Object.keys(fields) },
+                userId: userId
+            }
+        })
+
+        const userVerificationData = await models.user.findAll({
+            attributes: Object.keys(verificationFields),
+            where: {
+                id: userId
+            }
+        })
+        
+        const availableFields = userData.filter((field) => {
+            if (field.value) {
+                try {
+                    // verify whether field.value is an array
+
+                    const obj = JSON.parse(field.value)
+                    if (Array.isArray(obj)) return obj.length != 0
+
+                    //check for empty object
+                    if (JSON.stringify(obj) == "{}") return false
+                    return true
+
+                } catch {
+                    // it is a non empty string 
+                    return true
+                }
+            }
+            else {
+                return false
+            }
+        }).map((field) => field.key)
+
+        
+        let addPersonalDetails = false
+        for (const field in fields) {
+
+            if (availableFields.includes(field)) {
+                profileProgress += fields[field].weightage;
+            }
+            else {
+
+                if (["dob", "firstName", "gender", "city"].includes(field)) {
+                    addPersonalDetails = true
+                }
+                else {
+                    response.pendingProfileActions.push(field)
+                }
+            }
+        }
+
+        if(addPersonalDetails){
+            response.pendingProfileActions.push("personalDetails")
+        }
+
+        if (userVerificationData.length) {
+
+            if (userVerificationData[0]["verified"]) {
+                
+                profileProgress += verificationFields.verified.weightage
+            }
+            else {
+                response.pendingProfileActions.push('email')
+            }
+        
+            /*
+            if (userVerificationData[0]["phoneVerified"]) {
+                response.verification.phoneVerified = true
+                profileProgress += verificationFields.phoneVerified.weightage
+            }
+            else {
+                const phoneData = await models.user_meta.findAll({
+                    attributes: ["key", "value"],
+                    where: {
+                        metaType: "primary",
+                        key: { [Op.in]: ["phone"] },
+                        userId: userId
+                    }
+                })
+
+                if (phoneData.length && phoneData[0].value) {
+                    if (phoneData[0].value.slice(0, 2) != '91') {
+                        response.verification.phoneVerified = true
+                        profileProgress += verificationFields.phoneVerified.weightage
+                    }
+                    else{
+                        response.verification.phoneVerified=false
+                    }
+                }
+            }
+            */
+        }
+        
+        response.profileProgress=profileProgress
+        res.send({ message: "success", data: response })
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({
+            success: false,
+            message: "internal server error",
+            error: error
+        })
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -2114,6 +2686,7 @@ module.exports = {
     deleteResumeFile,
     removeProfilePic,
     uploadSkills,
+    uploadPrimarySkills,
     fetchUserMetaObjByUserId,
     bookmarkArticle,
     removeBookmarkArticle,
@@ -2122,6 +2695,8 @@ module.exports = {
     suspendAccount,
     reactivateAccount,
     updatePhone,
+    getUserPendingActions,
+    updateEmail,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
