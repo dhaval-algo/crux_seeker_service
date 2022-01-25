@@ -2879,7 +2879,9 @@ module.exports = {
          const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
 
         let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
-        
+        if(!suggestionList['learn-path']){
+            suggestionList['learn-path'] = []
+        }
         if( !suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
             if(suggestionList[search.type].length == process.env.LAST_SEARCH_LIMIT ) {
                 suggestionList[search.type].shift();
@@ -2906,7 +2908,9 @@ module.exports = {
          const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
 
         let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
-        
+        if(!suggestionList['learn-path']){
+            suggestionList['learn-path'] = []
+        }
         callback({success:true,data:suggestionList}) 
 
     },
@@ -2922,6 +2926,9 @@ module.exports = {
         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
 
         let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+        if(!suggestionList['learn-path']){
+            suggestionList['learn-path'] = []
+        }
         suggestionList[search.type] = suggestionList[search.type].filter(function (e) {
             return (e.title != search.title && e.slug != search.slug)
         });
