@@ -564,15 +564,15 @@ const userExist = (username, provider) => {
                     {
                         [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col(dbCol)),Sequelize.fn('lower', username))                        
                     },
-                    {
-                        provider: {
-                            [Op.eq]: provider
-                        }
-                    }
+                    // Removing for now because some account have issue in user login table. That's is a account should have 3 account tables but some have only one and let say if a user have obly google one and loggedin from local that throws a error from here.
+                    // {
+                    //     provider: {
+                    //         [Op.eq]: provider
+                    //     }
+                    // }
                 ]
             }
             let userLogin = await models.user_login.findOne({ where: where})
-            console.log("userlogin for generate OTP ", userLogin)
             
             
             if (userLogin != null) {
