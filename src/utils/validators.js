@@ -31,6 +31,23 @@ function validateAddWishlistParams(body) {
     return null
 }
 
+function validateLearnPathAddWishlist(body) {
+
+    const { learnpathIds, learnpathId } = body
+    schemaForLearnPathId = Joi.object({ learnpathId: Joi.string().required() })
+    schemaForLearnPathIds = Joi.object({ learnpathIds: Joi.array().items(Joi.string()).required() })
+
+    if (!schemaForLearnPathId.validate({learnpathId:learnpathId}).error) {
+        return [learnpathId]
+    }
+
+    if (!schemaForLearnPathIds.validate({learnpathIds:learnpathIds}).error) {
+        return learnpathIds
+    }
+
+    return null
+}
+
 function validateAddArticleParams(body) {
 
     const { articleIds, articleId } = body
@@ -52,6 +69,7 @@ module.exports = {
 
 validatePaginationParams,
 validateAddWishlistParams,
-validateAddArticleParams
+validateAddArticleParams,
+validateLearnPathAddWishlist
 
 }

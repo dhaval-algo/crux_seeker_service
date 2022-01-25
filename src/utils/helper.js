@@ -1460,6 +1460,12 @@ const sendDataForStrapi = (userMeta, action) => {
         case "remove-resume":
             userData = userMeta
             break;
+        case "profile-add-learnpath-wishlist":
+            userData = userMeta
+            break;
+        case "profile-remove-learnpath-wishlist":
+            userData = userMeta
+            break;                        
         case "update-email":
             userData = userMeta
             break;
@@ -1481,6 +1487,17 @@ const logActvity = async (type, userId, resource) => {
             userId:userId,
             activityId:activity.id,
             resource:courseId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
+    if (type=="LEARNPATH_WISHLIST"){
+        const dataToLog=resource.map((learnpathId)=>{
+            return {
+            userId:userId,
+            activityId:activity.id,
+            resource:learnpathId
             }
         })
         await models.activity_log.bulkCreate(dataToLog)

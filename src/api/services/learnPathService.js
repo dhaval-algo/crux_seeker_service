@@ -5,7 +5,10 @@ const fetch = require("node-fetch");
 
 const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
+const helperService = require("../../utils/helper");
 
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -50,11 +53,45 @@ const parseQueryRangeFilters = (filter) => {
 };
 
 module.exports = class learnPathService {
-    async getLearnPathList(req, callback) {
+    async getLearnPathList(req, callback, skipCache) {
 
         try {
             let defaultSize = ENTRY_PER_PAGE;
             let defaultSort = "ratings:desc";
+            let useCache = false;
+            let cacheName = "learnpath";
+
+            if(
+                req.query['learnPathIds'] == undefined
+                && req.query['f'] == undefined
+                && (req.query['q'] == undefined || req.query['q'] == '')
+                && req.query['rf'] == undefined
+                && (req.query['page'] == "1" || req.query['page'] == undefined)
+                && (
+                    req.query['size'] == undefined
+                    || req.query['size'] == defaultSize
+                )
+                && (
+                    req.query['sort'] == undefined
+                    || req.query['sort'] == defaultSort
+                )
+            ) {
+                useCache = true;
+                let apiCurrency = process.env.DEFAULT_CURRENCY;
+                if(req.query['currency'] != undefined){
+                    apiCurrency = req.query['currency'];
+                }
+               
+                cacheName += `_${apiCurrency}_${defaultSort}`;
+    
+                if(skipCache != true) {
+                    let cacheData = await RedisConnection.getValuesSync(cacheName);
+                    if(cacheData.noCacheData != true) {
+                        return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    }
+                }
+            }
+
             currencies = await getCurrencies();
             const filterConfigs = await getFilterConfigs('Learn_Path');
 
@@ -447,20 +484,89 @@ module.exports = class learnPathService {
                 data.meta_information = meta_information;
             }
 
+            if (useCache == true) {
+                RedisConnection.set(cacheName, data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24 );
+            }
+
             callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
         } catch (e) {
             callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
 
-    async getLearnPath(req, callback) {
-        const slug = req.params.slug;
-        const learnPath = await this.fetchLearnPathBySlug(slug);
-        if (learnPath) {
-            const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
-        } else {
-            callback({ status: 'failed', message: 'Not found!' }, null);
+    async getLearnpathByIds(req, callback){
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
+        let learnpaths = [];
+        let learnpathOrdered = [];
+        let ids = [];
+        if(req.query['ids']){
+            ids = req.query['ids'].split(",");
+        }
+        if(ids.length > 0){
+            const queryBody = {
+                "query": {
+                  "ids": {
+                      "values": ids
+                  }
+                }
+            };
+
+            const result = await elasticService.plainSearch('learn-path', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                        learnpaths.push(learnpath);
+                    }
+                    for(const id of ids){
+                        let learnpath = learnpaths.find(o => o.id === id);
+                        learnpathOrdered.push(learnpath);
+                    }
+                }
+            }            
+        }
+        if(callback){
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: learnpathOrdered});
+        }else{
+            return learnpathOrdered;
+        }
+        
+    }
+
+    async getLearnPath(req, callback, skipCache) {
+        try{
+            let learnpathId = null
+            const slug = req.params.slug;
+            let cacheName = `single-learnpath-${slug}_${req.query.currency}`
+            let useCache = false
+            if(skipCache != true){
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                learnpathId = cacheData.id
+                if(cacheData.noCacheData != true) {
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    useCache = true
+                }
+            }
+            if(useCache != true){
+                const learnPath = await this.fetchLearnPathBySlug(slug);
+                if (learnPath) {
+                    const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
+                    learnpathId = learnPath.id
+                    callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+                    RedisConnection.set(cacheName, data); 
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
+                } else {
+                    callback({ status: 'failed', message: 'Not found!' }, null);
+                }
+            }
+            req.body = {learnpathId: "LRN_PTH_"+learnpathId}
+            this.addActivity(req, (err, data) => {})
+        }
+        catch(err){
+            console.log(err)
         }
     }
 
@@ -474,7 +580,7 @@ module.exports = class learnPathService {
             }
         };
 
-        let result = await elasticService.search('learn-path', query);
+        let result = await elasticService.search('learn-path', query); 
         if (result.hits && result.hits.length > 0) {
             return result.hits[0]._source;
         } else {
@@ -599,5 +705,299 @@ module.exports = class learnPathService {
         }
     }
 
+    async exploreLearnPath(req, callback) {
+        try {
+            let defaultSize = ENTRY_PER_PAGE;
+
+            // Getting all the filters from entity facet table
+            let filterConfigs = await getFilterConfigs('Learn_Path');
+
+            /*
+                Filtering values only for these 4 filters
+            */
+            filterConfigs = filterConfigs.filter((filter) => ["categories", "topics","levels","life_stages"].includes(filter.elastic_attribute_name))
+            
+            let esFilters = {};
+            const query = {
+                "bool": {
+                    "must": [
+                        { term: { "status.keyword": 'approved' } }
+                    ],
+                }
+            };
+
+            let queryPayload = {};
+            let paginationQuery = await getPaginationQuery(req.query);
+            queryPayload.from = paginationQuery.from;
+            queryPayload.size = paginationQuery.size;
+
+            let parsedFilters = [];
+            let parsedRangeFilters = [];
+            let filters = [];
+
+
+            if (req.query['f']) {
+                
+                /*
+                    It will parse all the filters passed through f query
+                */
+                parsedFilters = parseQueryFilters(req.query['f']);
+
+                for (const filter of parsedFilters) {
+                    let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                    if (elasticAttribute) {
+                        const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                        let filter_object = {
+                            "terms": { [attribute_name]: filter.value }
+                        };
+
+                        query.bool.must.push(filter_object);
+                        esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
+                    }
+                }
+            }
+
+            let published_filter = { term: { "status.keyword": "approved" } };
+
+            let aggs = {
+                course_filters: {
+                    global: {},
+                    aggs: {
+
+                    }
+                }
+            }
+
+            const topHitsSize = 200;
+            
+            for (let filter of filterConfigs) {
+
+                let exemted_filters = esFilters;
+
+                if (esFilters.hasOwnProperty(filter.elastic_attribute_name)) {
+                    let { [filter.elastic_attribute_name]: ignored_filter, ...all_filters } = esFilters
+                    exemted_filters = all_filters;
+                }
+
+                exemted_filters = Object.keys(exemted_filters).map(key => exemted_filters[key]);
+
+                exemted_filters.push(published_filter);
+
+                let aggs_object = {
+                    filter: { bool: { filter: exemted_filters } },
+                    aggs: {}
+                }
+
+                switch (filter.filter_type) {
+                    case "Checkboxes":
+                        aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                        break;
+                }
+                aggs.course_filters.aggs[filter.elastic_attribute_name] = aggs_object;
+            }
+
+            queryPayload.aggs = aggs;
+
+            // --Aggreation query build
+
+            let result = await elasticService.searchWithAggregate('learn-path', query, queryPayload);
+
+            /**
+             * Aggregation object from elastic search
+             */
+            let aggs_result = result.aggregations;
+
+            /**
+             * Hits Array from elastic search
+             */
+            result = result.hits;
+
+            for (let filter of filterConfigs) {
+
+                let facet = aggs_result.course_filters[filter.elastic_attribute_name];
+
+                let formatedFilters = {
+                    label: filter.label,
+                    field: filter.elastic_attribute_name,
+                    filterable: filter.filterable,
+                    sortable: filter.sortable,
+                    order: filter.order,
+                    is_singleton: filter.is_singleton,
+                    is_collapsed: filter.is_collapsed,
+                    display_count: filter.display_count,
+                    disable_at_zero_count: filter.disable_at_zero_count,
+                    is_attribute_param: filter.is_attribute_param,
+                    filter_type: filter.filter_type,
+                    is_essential: filter.is_essential,
+                    sort_on: filter.sort_on,
+                    sort_order: filter.sort_order,
+                    false_facet_value: filter.false_facet_value,
+                    implicit_filter_skip: filter.implicit_filter_skip,
+                    implicit_filter_default_value: filter.implicit_filter_default_value,
+                };
+
+                if (filter.filter_type == "RangeSlider") {
+
+                } else {
+                    formatedFilters.options = facet.filtered.buckets.map(item => {
+                        let option = {
+                            label: item.key,
+                            count: item.doc_count,
+                            selected: false, //Todo need to updated selected here.
+                            disabled: item.doc_count <= 0,
+                        }
+                        return option;
+                    });
+                }
+
+                filters.push(formatedFilters);
+            }
+
+            if (parsedFilters.length > 0 || parsedRangeFilters.length > 0) {
+                filters = await updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
+            }
+
+            let formatCategory = true;
+            if (formatCategory) {
+                let category_tree = [];
+                let categoryFiletrOption = [];
+                let categorykey = 0;
+
+                let response = await fetch(`${apiBackendUrl}/category-tree`);
+
+                if (response.ok) {
+                    let json = await response.json();
+                    if (json && json.final_tree) {
+                        category_tree = json.final_tree;
+                    }
+                }
+                if (category_tree && category_tree.length) {
+                    for (let category of category_tree) {
+                        let i = 0;
+                        for (let filter of filters) {
+                            if (filter.field == "categories") {
+                                for (let option of filter.options) {
+                                    if (category.label == option.label) {
+                                        categoryFiletrOption.push(option);
+                                    }
+                                }
+                                categorykey = i;
+
+                            }
+                            i++;
+                        }   
+                    }
+                }
+                if (filters[categorykey]) {
+                    filters[categorykey].options = categoryFiletrOption;
+                }
+            }
+
+            let data = {
+                filters: filters
+            };
+
+            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+        } catch (e) {
+            callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
+        }
+    }
+
+    async addActivity(req, callback){
+        try {
+             const {user} = req;
+             const {learnpathId} = req.body	
+             const activity_log =  await helperService.logActvity("LEARNPATH_VIEW",(user)? user.userId : null, learnpathId);
+             callback(null, {status: 'success', message: 'Added successfully!', data: null});
+        } catch (error) {
+            console.log("Learn path view activity error",  error)
+            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+        }
+    }
+
+    async getPopularLearnPaths(req, callback, returnData){
+        let { type } = req.params; // Populer, Trending,Free
+        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        
+        let offset= (page -1) * limit
+        
+        let learnpaths = [];
+        try {
+            
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "approved" } }
+                    ]
+                }
+            }
+            if(category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if(sub_category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "sub_categories.keyword":  decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if(topic){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "topics.keyword":  decodeURIComponent(topic)
+                        }
+                    }
+                );
+            } 
+            
+            if(type && type =="Free"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Free" } }
+                );
+                 esQuery.bool.filter.push(
+                    { "term": { "display_price": true } }
+                );
+            }
+            let sort = null
+            switch (type) {                
+                case "Trending":
+                    sort = [{ "activity_count.last_x_days.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    break; 
+                default:
+                    sort = [{ "activity_count.all_time.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    break;
+            }
+            
+            let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort});
+                
+            if(result.hits){
+                for(const hit of result.hits){
+                    var data = await this.generateSingleViewData(hit._source,true,currency)
+                    learnpaths.push(data);
+                }
+            }
+            
+            let response = { success: true, message: "list fetched successfully", data:{ list: learnpaths } };
+            if(returnData)
+            {
+                return learnpaths;
+            }
+            else
+            {
+                callback(null, response);
+            }
+            
+        } catch (error) {
+            console.log("Error while processing data for popular learnpaths", error);
+            callback(error, null);
+        }
+    }
 
 }
