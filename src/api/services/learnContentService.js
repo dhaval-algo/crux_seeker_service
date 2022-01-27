@@ -57,6 +57,7 @@ const getEntityLabelBySlugFromCache= async (entity, slug) =>
                         entities[entity.slug] = {
                         "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
                         "description"  :(entity.description)?entity.description :null,
+                        "meta_information":(entity.meta_information)?entity.meta_information :null
                         }
                     }                    
                 }
@@ -91,6 +92,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
                 cacheData[slug] = {
                 "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
                 "description"  :(json[0].description)?json[0].description :null,
+                "meta_information":(json[0].meta_information)?json[0].meta_information :null
                 }
                 RedisConnection.set(cacheName, cacheData);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
@@ -308,6 +310,7 @@ module.exports = class learnContentService {
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
                 var slug_description = slug_data.description;
+                var slug_meta_information = slug_data.meta_information;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -730,6 +733,9 @@ module.exports = class learnContentService {
                 description: slug_description || null,
             }
 
+            result.page_details = data.page_details;
+            result.meta_information = slug_meta_information;
+
             //TODO dont send data if filters are applied.
             
             // if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
@@ -771,7 +777,7 @@ module.exports = class learnContentService {
 
 
     }catch(e){
-        console.log(e);
+        console.log(e)
         callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
 
     }
