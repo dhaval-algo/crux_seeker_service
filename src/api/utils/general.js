@@ -819,7 +819,8 @@ const generateMetaInfo = async (page, result, list) => {
                 {
                     meta_description =  meta_description.substring(0, position);
                 }
-            }else
+            }
+            if(result.content)
             {
                 content = result.content.replace(/<(.|\n)*?>/g, '');
                 content = content.replace(/&nbsp;/g, ' ');
@@ -828,7 +829,11 @@ const generateMetaInfo = async (page, result, list) => {
             }       
             
             keywords =[result.title]
-            keywords = [...keywords, ...result.categories];
+            if(result.categories && result.categories.length > 0)
+            {
+                keywords = [...keywords, ...result.categories];
+            }
+           
             keywords.push(`${result.author_first_name} ${result.author_last_name}`);
             keywords = [...keywords, ...result.tags];
             
