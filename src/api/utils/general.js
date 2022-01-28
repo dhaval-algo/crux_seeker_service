@@ -506,7 +506,7 @@ const generateMetaInfo = async (page, result, list) => {
             
             keywords  = [result.title];
 
-            if(result.topics_list)
+            if(result.topics_list && result.topics_list.length > 0)
             {
                 for(let topic of result.topics_list)
                 {
