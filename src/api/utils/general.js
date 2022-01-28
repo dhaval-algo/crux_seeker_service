@@ -502,7 +502,9 @@ const generateMetaInfo = async (page, result, list) => {
             if(result.medium)
             {
                 meta_description += ` It is an ${result.medium} course and is ${result.pricing_type}`;
-            }
+            }            
+            
+            keywords  = [result.title];
 
             if(result.topics_list)
             {
@@ -510,10 +512,9 @@ const generateMetaInfo = async (page, result, list) => {
                 {
                     topics.push(topic.default_display_label)
                 }
+                keywords = [...keywords, ...result.categories, ...result.sub_categories, ...topics];
             }
             
-            keywords  = [result.title];
-            keywords = [...keywords, ...result.categories, ...result.sub_categories, ...topics];
             if(result.provider_name)
             {
                 keywords.push(result.provider_name);
@@ -574,14 +575,20 @@ const generateMetaInfo = async (page, result, list) => {
             for (let hits of result.hits)
             {
                 let course = hits._source;
-                categories = [...categories, ...course.categories ];
-                sub_categories = [...sub_categories, ...course.sub_categories ];
-                topics = [...topics, ...course.topics ];
-            }           
-            
-            categories =  categories.filter((x, i, a) => a.indexOf(x) == i)       
-            sub_categories =  sub_categories.filter((x, i, a) => a.indexOf(x) == i)
-            topics =  topics.filter((x, i, a) => a.indexOf(x) == i)
+                if(course.topics && course.topics.length > 0)
+                {
+                    categories = [...categories, ...course.categories ];
+                    sub_categories = [...sub_categories, ...course.sub_categories ];
+                    topics = [...topics, ...course.topics ];
+                }                
+            }  
+            if(topics && topics.length > 0)
+            {
+                categories =  categories.filter((x, i, a) => a.indexOf(x) == i)       
+                sub_categories =  sub_categories.filter((x, i, a) => a.indexOf(x) == i)
+                topics =  topics.filter((x, i, a) => a.indexOf(x) == i)
+            }            
+           
             const extra_keywords = ["online courses", "learning courses", "paid courses", "degrees", "certifications", "offline courses", "instructor courses", "courses near me", "top courses"];
            
             if (result.page_details && result.page_details.pageType) {
