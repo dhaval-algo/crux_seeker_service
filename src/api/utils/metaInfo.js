@@ -45,15 +45,18 @@ const getLearnContentListMetaInfo = (result) => {
         let sub_categories = [];
         let topics = [];
 
-        if(course.topics && course.topics.length > 0)
-        {
-            for (let hits of result.hits) {
+         for (let hits of result.hits) {
                 let course = hits._source;
-                categories = [...categories, ...course.categories];
-                sub_categories = [...sub_categories, ...course.sub_categories];
-                topics = [...topics, ...course.topics];
+                if(course.topics && course.topics.length > 0)
+                {
+                    categories = [...categories, ...course.categories];
+                    sub_categories = [...sub_categories, ...course.sub_categories];
+                    topics = [...topics, ...course.topics];
+                }
             }
 
+        if(topics && topics.length > 0)
+        {
             categories = categories.filter((x, i, a) => a.indexOf(x) == i)
             sub_categories = sub_categories.filter((x, i, a) => a.indexOf(x) == i)
             topics = topics.filter((x, i, a) => a.indexOf(x) == i)
