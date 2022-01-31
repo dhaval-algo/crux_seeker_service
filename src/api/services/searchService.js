@@ -6,6 +6,7 @@ let LearnContentService = new learnContentService();
 
 const entityQueryMapping = {
     'learn-content': {label: 'Course', status: 'published', fields: ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'], source_fields: ['title']},
+    'learn-path': {label: 'Learn Path', status: 'approved', fields: ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'], source_fields: ['title']},
     'provider': {label: 'Institute', status: 'approved', fields: ['name^2','programs'], source_fields: ['name','slug']},
     'article': {label: 'Article', status: 'published', fields: ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
 };
@@ -213,7 +214,18 @@ module.exports = class searchService {
                 reviews_count: entityData.reviews.length,
                 provider: entityData.provider_name
             };
-        }else if(data_source == 'provider'){
+        }else if(data_source == 'learn-path'){
+            data = {
+                index: "learn-path",
+                title: entityData.title,
+                slug: entityData.slug,
+                rating: entityData.average_rating,
+                reviews_count: entityData.reviews.length,
+                image: entityData.images,
+                courses_count: entityData.courses.length
+            };
+        }
+        else if(data_source == 'provider'){
             data = {
                 index: data_source,
                 title: entityData.name,

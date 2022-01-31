@@ -1433,6 +1433,9 @@ const sendDataForStrapi = (userMeta, action) => {
         case "update-profile-enquiries":
             userData = userMeta
             break;
+        case "update-learnpath-profile-enquiries":
+            userData = userMeta
+            break;
         case "profile-add-wishlist":
             userData = userMeta
             break;

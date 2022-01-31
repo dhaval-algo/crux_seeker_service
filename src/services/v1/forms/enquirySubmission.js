@@ -69,7 +69,11 @@ const handleCallBackEnquiry = (resBody, req) => {
             form_submission_values = resMeta.map((meta) => { return { objectId: meta.id, objectType: 'user_meta', userId: userObj.userId, formSubmissionId: formSub.id } })
             //entries in form_submission_values
             const formSubValues = await models.form_submission_values.bulkCreate(form_submission_values)
-            eventEmitter.emit('enquiry_placed',formSub.id)
+            if(targetEntityId == "learnpath"){
+                eventEmitter.emit('learnpathenquiry',formSub.id)
+            }else{
+                eventEmitter.emit('enquiry_placed',formSub.id)
+            }
             if(!user.userId) {
                 const tokenRes = await getLoginToken({ ...userObj, audience: req.headers.origin ||"" });
                 tokenRes.code =DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code;
@@ -99,7 +103,7 @@ const handleCallBackEnquiry = (resBody, req) => {
 
 const handleGeneralEnquiry = (resBody, req) => {
     return new Promise(async (resolve, reject) => {
-        let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile } = resBody;
+        let {user, targetEntityType, targetEntityId,otherInfo,formData, formType, formTypeSource, actionType, lastStep, updateProfile, enquiryType="course" } = resBody;
         lastStep = true // this is set true coz we have now only one step in form
         let { formSubmissionId } = resBody;
         otherInfo = {...otherInfo,...req.useragent, userIp:req.ip}
@@ -198,9 +202,17 @@ const handleGeneralEnquiry = (resBody, req) => {
                 //     updateProfileMeta(temp, userObj)
                 // }
                 if(insertInCRM) {
-                    eventEmitter.emit('enquiry_placed',formSubmissionId)
+                    if(enquiryType == "learnpath"){
+                        eventEmitter.emit('learnpathenquiry',formSubmissionId)
+                    }else{
+                        eventEmitter.emit('enquiry_placed',formSubmissionId)
+                    }
                 }
-                const activity_log =  await logActvity("COURSE_ENQUIRED",userObj.userId, targetEntityId);
+                if(enquiryType == "course"){
+                    const activity_log =  await logActvity("COURSE_ENQUIRED",userObj.userId, targetEntityId);
+                }else{
+                    const activity_log =  await logActvity("LEARNPATH_ENQUIRED",userObj.userId, targetEntityId);
+                }
                 return resolve({
                     success: true,
                     code: DEFAULT_CODES.CALLBACK_INQUIRY_SUCCESS.code,

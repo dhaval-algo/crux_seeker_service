@@ -573,7 +573,6 @@ const userExist = (username, provider) => {
             }
             let userLogin = await models.user_login.findOne({ where: where})
             
-            
             if (userLogin != null) {
                 const user = await models.user.findOne({ where: { id: userLogin.userId } });
 
@@ -1954,6 +1953,177 @@ const getEnquiryList = async (req,res) => {
     
 }
 
+const getLearnPathEnquiryList = async (req,res) => {
+    try {
+    let { limit=10, page=1 } = req.query;
+    const { user } = req;
+    let offset = 0
+
+    if(page>1) {
+        offset =  (page-1)* limit
+    }
+    
+    //Find out total enquiries
+    let config = { 
+    attributes: ['targetEntityId'],
+    where: { userId:user.userId || user.id,status:'submitted'},
+    raw: true}
+    
+    let learnpathIds = [];
+    let totalEnquiryRecs = await models.form_submission.findAll(config)
+
+    for (let key = 0; key < totalEnquiryRecs.length ; key++) {
+        learnpathIds.push(totalEnquiryRecs[key].targetEntityId.replace(/[^0-9]+/, ''))
+    }
+
+    let query = {
+        "bool": {
+          "must": [           
+            {
+              "terms": {
+                "id": learnpathIds
+              }
+            },
+            {"term": { "status.keyword": 'approved' }}
+          ]
+        }  
+      }
+    const totalResult = await elasticService.search('learn-path', query, {size: 1000});
+    let existingIds = [];
+    if(totalResult.hits){
+        if(totalResult.hits && totalResult.hits.length > 0){
+             for(const hit of totalResult.hits){                
+                existingIds.push(hit._id)                
+            }           
+        }
+        else
+        {
+            return res.status(200).send({
+                success:true,
+                data:{
+                    enquires:[],
+                    count:0
+                }
+            })
+        }
+    }
+    learnpathIds = learnpathIds.map(id =>`LRN_PTH_${id}`)
+    learnpathIds = learnpathIds.filter((id => existingIds.includes(id)))
+    //fetch enquiries
+    let formSubConfig = { 
+    attributes: ['targetEntityId','otherInfo','createdAt','targetEntityType'],
+    where: { userId:user.userId || user.id,status:'submitted',targetEntityId : learnpathIds},
+    limit,
+    raw: true,
+    order: sequelize.literal('"createdAt" DESC')
+    }
+    
+    if(page>1) {
+    formSubConfig.offset = offset
+    }
+    let enquiryRecs = await models.form_submission.findAll(formSubConfig)
+      
+        // no enquiries return
+    if(!enquiryRecs.length) {
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+    let enquiriesDone = []
+    for (let key = 0; key < enquiryRecs.length ; key++) {
+        let enquiry = {
+            learnpathUrl:enquiryRecs[key].otherInfo.learnpathUrl,
+            learnpathName:'',
+            categoryName:'',
+            createdAt:enquiryRecs[key].createdAt,
+            enquiryOn:'',
+            image:'',
+            courses:[]
+        }
+        let queryBody = {
+            "query": {
+              "terms": {
+                  "id": [enquiryRecs[key].targetEntityId.replace(/[^0-9]+/, '')]
+              },
+            }
+        };
+        
+        if(enquiryRecs[key].targetEntityType =='learnpath') {
+            enquiry.enquiryOn = 'learnpath';
+            const result = await elasticService.plainSearch('learn-path', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    // for(const hit of result.hits.hits){
+                        let hit =  result.hits.hits[0]
+                        enquiry.learnpathName = hit._source.title
+                        enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
+                        enquiry.image = hit._source.images
+                        let courses = hit._source.courses
+                        courses.sort(function (a, b) {
+                            return a.position - b.position;
+                        });
+                        for(let course = 0;course < courses.length;course++){
+                            let course_dict = {
+                                course_name:'',
+                                course_category:[],
+                                partner_name:'',
+                                images:'',
+                                slug:''
+                            }
+
+                            let query = {
+                                "query": {
+                                  "terms": {
+                                      "id": [courses[course].id.replace(/[^0-9]+/, '')]
+                                  },
+                                }
+                            };
+
+                            const result_course = await elasticService.plainSearch('learn-content', query);
+                            if(result_course.hits){
+                                if(result_course.hits.hits && result_course.hits.hits.length > 0){
+                                    let h_course =  result_course.hits.hits[0]
+                                    
+                                    course_dict.slug = h_course._source.slug?h_course._source.slug:""
+                                    course_dict.images = h_course._source.images?h_course._source.images:""
+                                    course_dict.course_name = h_course._source.title?h_course._source.title.toString():""
+                                    course_dict.course_category = h_course._source.categories?h_course._source.categories:[]
+                                    course_dict.partner_name = h_course._source.partner_name?h_course._source.partner_name.toString():""
+                                }
+                            }
+                            enquiry.courses.push(course_dict);
+                        }
+                }
+            }
+            enquiriesDone.push(enquiry);
+        }
+    }
+    //fetch course fron esatic
+    enquiriesDone = enquiriesDone.filter(enquiry => enquiry.learnpathName);
+    return res.status(200).send({
+        success:true,
+        data:{
+            enquiries:enquiriesDone,
+            count:enquiriesDone.length
+        }
+    })
+    //build res
+    } catch (error) {
+        console.log(error);
+        return res.status(200).send({
+            success:true,
+            data:{
+                enquires:[],
+                count:0
+            }
+        })
+    }
+}    
+    
 const updateEmail =async (req,res) => {
     /*
         Get the new email.
@@ -2003,7 +2173,7 @@ const updateEmail =async (req,res) => {
             provider = LOGIN_TYPES.LOCAL
         }
 
-        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email'}});
+        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email',metaType:'primary'}});
         const oldEmail = oldEmailObj.value;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
         const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
@@ -2681,6 +2851,7 @@ module.exports = {
     wishListCourseData,
     wishListLearnPathData,
     getEnquiryList,
+    getLearnPathEnquiryList,
     uploadProfilePic,
     uploadResumeFile,
     deleteResumeFile,
@@ -2705,9 +2876,10 @@ module.exports = {
 
          const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
 
-
-        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
-        
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+        if(!suggestionList[search.type]){
+            suggestionList[search.type] = []
+        }
         if( !suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
             if(suggestionList[search.type].length == process.env.LAST_SEARCH_LIMIT ) {
                 suggestionList[search.type].shift();
@@ -2733,8 +2905,19 @@ module.exports = {
 
          const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
 
-        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
-        
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+        if(!suggestionList['learn-path']){
+            suggestionList['learn-path'] = []
+        }
+        if(!suggestionList['learn-content']){
+            suggestionList['learn-content'] = []
+        }
+        if(!suggestionList['provider']){
+            suggestionList['provider'] = []
+        }
+        if(!suggestionList['article']){
+            suggestionList['article'] = []
+        }
         callback({success:true,data:suggestionList}) 
 
     },
@@ -2749,7 +2932,10 @@ module.exports = {
 
         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
 
-        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-content':[],'provider':[],'article':[]};
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+        if(!suggestionList[search.type]){
+            suggestionList[search.type] = []
+        }
         suggestionList[search.type] = suggestionList[search.type].filter(function (e) {
             return (e.title != search.title && e.slug != search.slug)
         });
