@@ -21,6 +21,9 @@ const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
+const articleService = require("./articleService");
+let ArticleService = new articleService();
+
 let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
@@ -54,10 +57,21 @@ const getEntityLabelBySlugFromCache= async (entity, slug) =>
                 for(let entity of json)
                 {                    
                     if( entity.slug){
+                       let article_advice = [];
+                       let featured_articles = [];
+                       if(entity.article_advice && entity.article_advice.length > 0)
+                       {
+                           article_advice = entity.article_advice.map((article)=> article.id);
+                       }
+                       if(entity.featured_articles && entity.featured_articles.length > 0)
+                       {
+                           featured_articles = entity.featured_articles.map((article)=> article.id);
+                       }
                         entities[entity.slug] = {
-                        "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
-                        "description"  :(entity.description)?entity.description :null,
-                        "meta_information":(entity.meta_information)?entity.meta_information :null
+                            "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
+                            "description"  :(entity.description)?entity.description :null,
+                            "article_advice":article_advice,
+                            "featured_articles": featured_articles
                         }
                     }                    
                 }
@@ -89,16 +103,27 @@ const getEntityLabelBySlug = async (entity, slug) => {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             if(cacheData.noCacheData != true) {
 
+                let article_advice = [];
+                let featured_articles = [];
+                if(json[0].article_advice && json[0].article_advice.length > 0)
+                {
+                    article_advice = json[0].article_advice.map((article)=> article.id);
+                }
+                if(json[0].featured_articles && json[0].featured_articles.length > 0)
+                {
+                    featured_articles = json[0].featured_articles.map((article)=> article.id);
+                }
                 cacheData[slug] = {
                 "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
-                "description"  :(json[0].description)?json[0].description :null,
-                "meta_information":(json[0].meta_information)?json[0].meta_information :null
+                "description"  :(json[0].description)?json[0].description :null,                
+                "meta_information":(json[0].meta_information)?json[0].meta_information :null,
+                "article_advice":article_advice,
+                "featured_articles": featured_articles
                 }
                 RedisConnection.set(cacheName, cacheData);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
             }
-
-            return json[0];
+            return cacheData[slug] ;
         }else{
             return null;
         }    
@@ -311,6 +336,8 @@ module.exports = class learnContentService {
                 var slug_pageType = slugMapping[i].pageType;
                 var slug_description = slug_data.description;
                 var slug_meta_information = slug_data.meta_information;
+                var slug_article_advice = slug_data.article_advice;
+                var slug_featured_articles = slug_data.featured_articles;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -731,6 +758,25 @@ module.exports = class learnContentService {
                 slug: req.query['slug'] || null,
                 label: slugLabel || null,
                 description: slug_description || null,
+            }
+            if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
+                try {
+                    data.article_advice = []
+                    data.featured_articles = []
+                    if(slug_article_advice && slug_article_advice.length >0 )
+                    {
+                        data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
+                    }
+                    if(slug_featured_articles && slug_featured_articles.length >0 )
+                    {
+                        data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
+                    }
+                } catch (error) {
+                    console.log("Error in getArticleByIds", error)
+                    data.article_advice = []
+                    data.featured_articles = []
+                }
+               
             }
 
             result.page_details = data.page_details;

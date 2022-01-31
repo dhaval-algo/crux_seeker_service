@@ -518,8 +518,36 @@ const generateMetaInfo = async (page, result, list) => {
             break;
         case 'article':
             meta_title = `${result.title} | ${process.env.SITE_URL_FOR_META_DATA}`;
-            meta_description = result.meta_description;
-            meta_keywords = result.meta_keywords;
+            if(result.short_description)
+            {
+                meta_description = result.short_description;
+                let position = meta_description.indexOf(".")
+                if(position >0 )  
+                {
+                    meta_description =  meta_description.substring(0, position);
+                }
+            }else
+            {
+                content = result.content.replace(/<(.|\n)*?>/g, '');
+                content = content.replace(/&nbsp;/g, ' ');
+                let content_index = content.indexOf(".")       
+                meta_description = content.substring(0, (content_index > 0)? content_index :100);
+            }       
+            
+            keywords =[result.title]
+            if(result.categories){
+                keywords = [...keywords, ...result.categories];
+            }
+            keywords.push(`${result.author_first_name} ${result.author_last_name}`);
+            keywords = [...keywords, ...result.tags];
+            
+            extra_keyword = [ "careervira advice", "online marketplace", "learn content", "courses near me", "courses near me", "careervira articles", "english courses", "free articles", "learning advice", "institute advice", "ranking articles", "ranking advice", "career advice", "career path", "top courses", "experts", "top professionals", "industry experts", "careervira content", "institutes", "degrees", "certifications", "courses"];
+            keywords = [...keywords, ...extra_keyword];
+            
+            if(keywords.length > 0){
+                keywords = [...new Set(keywords)];
+                 meta_keywords = keywords.join(", ");
+            }
             meta_information = {
                 meta_title: meta_title,
                 meta_description: meta_description,

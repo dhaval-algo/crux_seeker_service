@@ -86,29 +86,32 @@ const getSubCategories = async (partner_name) => {
     for(const esData of data){
         const entity = esData._source;
         let entityData = entity['sub_categories'];
-        for(const entry of entityData){
-            if(entry == 'Others'){
-                if(others != null){
-                    others.count++;
+        if(entityData && entityData.length > 0)
+        {
+            for(const entry of entityData){
+                if(entry == 'Others'){
+                    if(others != null){
+                        others.count++;
+                    }else{
+                        others = {
+                            label: entry,
+                            slug: null,
+                            count: 1
+                        }
+                    }                        
+                    continue;
+                }
+
+                let existing = options.find(o => o.label === entry);
+                if(existing){
+                    existing.count++;
                 }else{
-                    others = {
+                    options.push({
                         label: entry,
                         slug: null,
                         count: 1
-                    }
-                }                        
-                continue;
-            }
-
-            let existing = options.find(o => o.label === entry);
-            if(existing){
-                existing.count++;
-            }else{
-                options.push({
-                    label: entry,
-                    slug: null,
-                    count: 1
-                });
+                    });
+                }
             }
         }
     }
