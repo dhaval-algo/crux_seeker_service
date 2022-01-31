@@ -27,9 +27,11 @@ router.get('/learn-content-reviews/:courseId',learnContentController.getReviews)
 router.get('/learn-path/',learnPathController.getLearnPathList);
 router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
+router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
 router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);
+router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths);
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 
 router.get('/news', newsController.getNewsContent);
@@ -39,6 +41,7 @@ router.get('/footer', footerController.getFooter);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
+router.get('/learnpaths-by-ids/', learnPathController.getLearnPathByIds);
 router.get('/course-option-by-categories/', learnContentController.getCourseOptionByCategories);
 
 router.get('/providers/', providerController.getProviderList);

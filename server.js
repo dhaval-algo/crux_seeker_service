@@ -14,7 +14,7 @@ global.appRoot = path.resolve(__dirname);
 
 const routes = require('./src/routes');
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
-const { storeActivity} = require('./src/utils/activityCron');
+const { storeActivity, learnpathActivity} = require('./src/utils/activityCron');
 
 Sentry.init({
   //dsn: "https://f23bb5364b9840c582710a48e3bf03ef@o1046450.ingest.sentry.io/6022217",
@@ -129,6 +129,7 @@ if(ENABLE_ACTVITY_LOG_CRON)
     cron.schedule( process.env.ACIVITY_TRACKING_CRON_TIME, async function () {
         try {        
             await storeActivity()
+            await learnpathActivity()
         } catch (error) {
             console.log("Error in cron", error);
         }
