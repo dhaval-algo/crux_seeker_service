@@ -5,6 +5,8 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const { Engine } = require('json-rules-engine')
 
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
 const MAX_RESULT = 10000;
 const ENTRY_PER_PAGE = 25;
 const FILTER_VALUES_SEPERATOR = "<>";
@@ -15,7 +17,6 @@ const entity_filter_mapping = {
     'article': 'Article'
 };
 
-
 const getUserCurrency = async(request) => {
     let currency = request.query.currency;
     if(!currency){
@@ -24,11 +25,21 @@ const getUserCurrency = async(request) => {
     return currency;
   }
 
-  const getCurrencies = async () => {
+  const getCurrencies = async (useCache = true) => {
+
+    let cacheKey = "get-currencies-backend";
+    if(useCache){
+        let cachedData = await RedisConnection.getValuesSync(cacheKey);
+        if(cachedData.noCacheData != true) {
+           return cachedData;
+        }
+    }
+
     let response = await fetch(`${process.env.API_BACKEND_URL}/currencies`);
     if (response.ok) {
         let json = await response.json();
         if(json && json.length){
+            RedisConnection.set(cacheKey, json,process.env.CACHE_EXPIRE_CURRENCIES || 60 * 15);
             return json;
         }else{
             return [];
@@ -68,16 +79,27 @@ const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
 };
 
 
-
+const FILTER_CONFIG_CACHE_KEY = "get-filter-confings-backend";
 const getFilterConfigs = async (entity_type) => {
+    let cachedData = await RedisConnection.getValuesSync(`${FILTER_CONFIG_CACHE_KEY}-${entity_type}`);
+    if(cachedData.noCacheData != true) {
+       return cachedData;
+    }
+
+    return await getFilterConfigsUncached(entity_type);
+};
+
+const getFilterConfigsUncached = async (entity_type) => {
+    
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=${entity_type}&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
+    RedisConnection.set(`${FILTER_CONFIG_CACHE_KEY}-${entity_type}`, json,process.env.CACHE_EXPIRE_FILTER_CONFIG || 60 * 15);
     return json;
     } else {
         return [];
     }
-};
+}
 
 const getRankingBySlug = async (slug) => {
     let response = await fetch(`${apiBackendUrl}/rankings?slug_eq=${slug}`);

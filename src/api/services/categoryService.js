@@ -5,14 +5,14 @@ const RedisConnection = new redisConnection();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
-const getCategoryTree = async () => {
+const getCategoryTree = async (parsed = true) => {
     let category_tree = [];
     let response = await fetch(`${apiBackendUrl}/category-tree`);
     if (response.ok) {
         let json = await response.json();
         if(json && json.final_tree){
             //category_tree = json.final_tree;
-            category_tree = parseCategoryTree(json.final_tree);
+            category_tree = parsed ? parseCategoryTree(json.final_tree) : json.final_tree;
         }
     }
     return category_tree;
@@ -80,6 +80,23 @@ const parseCategoryTree = (categoryTree) => {
 
 
 module.exports = class categoryService {
+
+    async getTreeV2(parsed = true){
+        try{
+            let cacheName = `category-tree`
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                return cacheData;
+            } else {
+                let data = await getCategoryTree(parsed);
+                RedisConnection.set(cacheName, data,process.env.CACHE_EXPIRE_CATEGORE_TREEE || 60 *15);
+                return data;
+            }            
+        }catch(err){
+            console.log("err", err)
+            return false;
+        } 
+    }
 
     async getTree(req, callback, skipCache){
         try{

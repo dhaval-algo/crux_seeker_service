@@ -31,6 +31,8 @@ const filterFields = ['topics','categories','sub_categories','title','level','le
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
 const helperService = require("../../utils/helper");
+const categoryService = require("./categoryService");
+const CategoryService = new categoryService();
 
 const getBaseCurrency = (result) => {
     return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
@@ -688,18 +690,9 @@ module.exports = class learnContentService {
 
             if(formatCategory)
             {
-               let category_tree =[];
+               let category_tree = await CategoryService.getTreeV2(false) || [];
                let categoryFiletrOption =[];
                let categorykey = 0;
-    
-               let response = await fetch(`${apiBackendUrl}/category-tree`);
-    
-                if (response.ok) {
-                   let json = await response.json();
-                   if(json && json.final_tree){
-                       category_tree = json.final_tree;
-                    }
-                }
                 if(category_tree && category_tree.length)
                 {
                     for(let category of category_tree )
@@ -826,6 +819,7 @@ module.exports = class learnContentService {
 
 
     }catch(e){
+        console.log(e);
         callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
 
     }
@@ -964,6 +958,11 @@ module.exports = class learnContentService {
         
         let courses = [];
         try {
+            let cacheKey = `popular-courses-${type}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if(cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
             
             let esQuery = {
                 "bool": {
@@ -1022,8 +1021,9 @@ module.exports = class learnContentService {
                     var data = await this.generateSingleViewData(hit._source,true,currency)
                     courses.push(data);
                 }
+                RedisConnection.set(cacheKey, courses,process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
             }
-            
+        }
             let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
             if(returnData)
             {
