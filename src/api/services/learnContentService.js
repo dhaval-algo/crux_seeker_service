@@ -70,6 +70,7 @@ const getEntityLabelBySlugFromCache= async (entity, slug) =>
                         entities[entity.slug] = {
                             "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
                             "description"  :(entity.description)?entity.description :null,
+                            "meta_information":(entity.meta_information)?entity.meta_information :null,
                             "article_advice":article_advice,
                             "featured_articles": featured_articles
                         }
