@@ -126,6 +126,12 @@ const sendOtp = async (req, res, next) => {
         const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
         const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
         let phone = userPhone.value.substring(2, 12);
+        if(userPhone.value.substring(0, 2) != '91'){
+            return res.status(500).json({
+                'code': 'SERVER_ERROR',
+                'description': 'Only indian number are allowed'
+            });
+        }
         await sendSMSOTP (phone, response.data.otp);
         //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
         return res.status(200).json(response);
@@ -169,7 +175,7 @@ const verifyOtp = async (req, res, next) => {
                 'data': {}
             });
         }
-        if(!isEmail(email)){
+        if(!isEmail(email) && email){
             return res.status(200).json({
                 code: "NOT AN EMAIL",
                 message: "Please enter email in xyz@email.com format.",
@@ -177,14 +183,16 @@ const verifyOtp = async (req, res, next) => {
                 data: {}
             })
         }
-        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
-        if(email_already_exist){
-            return res.status(200).json({
-                code: "EMAIL ALREADY EXIST",
-                message: "Please enter email which is not already used.",
-                success: false,
-                data: {}
-            })
+        if(email){
+            let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+            if(email_already_exist){
+                return res.status(200).json({
+                    code: "EMAIL ALREADY EXIST",
+                    message: "Please enter email which is not already used.",
+                    success: false,
+                    data: {}
+                })
+            }
         }
         let providerObj = await models.user_login.findOne({where:{userId:userId}})
         const provider = providerObj.provider
