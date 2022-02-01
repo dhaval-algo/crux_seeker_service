@@ -41,6 +41,7 @@ router.get('/footer', footerController.getFooter);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
+router.get('/learnpaths-by-ids/', learnPathController.getLearnPathByIds);
 router.get('/course-option-by-categories/', learnContentController.getCourseOptionByCategories);
 
 router.get('/providers/', providerController.getProviderList);

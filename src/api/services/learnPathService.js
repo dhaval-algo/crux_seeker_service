@@ -59,7 +59,7 @@ module.exports = class learnPathService {
             let defaultSize = ENTRY_PER_PAGE;
             let defaultSort = "ratings:desc";
             let useCache = false;
-            let cacheName = "";
+            let cacheName = "learnpath";
 
             if(
                 req.query['learnPathIds'] == undefined
@@ -82,11 +82,7 @@ module.exports = class learnPathService {
                     apiCurrency = req.query['currency'];
                 }
                
-                if((req.query['slug'] != undefined) && (req.query['q'] == undefined || req.query['q'] == "")) {
-                    cacheName = "learnpath-"+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
-                }
-    
-                cacheName += `_${defaultSort}`;
+                cacheName += `_${apiCurrency}_${defaultSort}`;
     
                 if(skipCache != true) {
                     let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -527,6 +523,47 @@ module.exports = class learnPathService {
         } catch (e) {
             callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
+    }
+
+    async getLearnpathByIds(req, callback){
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
+        let learnpaths = [];
+        let learnpathOrdered = [];
+        let ids = [];
+        if(req.query['ids']){
+            ids = req.query['ids'].split(",");
+        }
+        if(ids.length > 0){
+            const queryBody = {
+                "query": {
+                  "ids": {
+                      "values": ids
+                  }
+                }
+            };
+
+            const result = await elasticService.plainSearch('learn-path', queryBody);
+            if(result.hits){
+                if(result.hits.hits && result.hits.hits.length > 0){
+                    for(const hit of result.hits.hits){
+                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                        learnpaths.push(learnpath);
+                    }
+                    for(const id of ids){
+                        let learnpath = learnpaths.find(o => o.id === id);
+                        learnpathOrdered.push(learnpath);
+                    }
+                }
+            }            
+        }
+        if(callback){
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: learnpathOrdered});
+        }else{
+            return learnpathOrdered;
+        }
+        
     }
 
     async getLearnPath(req, callback, skipCache) {
