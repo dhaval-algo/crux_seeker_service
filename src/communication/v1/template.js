@@ -3,6 +3,17 @@ const path = require('path');
 const fs = require("fs");
 const handlebars = require("handlebars");
 
+/*Create partials for Email header and footer*/
+let emailHeaderTemplatesPath = path.join(__dirname, './templates/emailHeader.hbs');
+let emailHeaderTemplatSource = fs.readFileSync(emailHeaderTemplatesPath, 'utf8');
+let emailHeaderTemplate = handlebars.compile(emailHeaderTemplatSource);
+handlebars.registerPartial('emailHeader', emailHeaderTemplate);
+let emailFooterTemplatesPath = path.join(__dirname, './templates/emailFooter.hbs');
+let emailFooterTemplatSource = fs.readFileSync(emailFooterTemplatesPath, 'utf8');
+let emailFooterTemplate = handlebars.compile(emailFooterTemplatSource);
+handlebars.registerPartial('emailFooter', emailFooterTemplate);
+
+
 module.exports = {
 
  
@@ -33,6 +44,7 @@ module.exports = {
     },
 
     resetPasswordEmail: function(messagData){
+        
         let templatesPath = path.join(__dirname, './templates/resetpassword-email2.hbs');
 
         let source = fs.readFileSync(templatesPath, 'utf8');
@@ -72,6 +84,7 @@ module.exports = {
     },
 
     suspendedEmail: function(messagData){
+        
         let templatesPath = path.join(__dirname, './templates/suspended-mail.hbs');
 
         let source = fs.readFileSync(templatesPath, 'utf8');
