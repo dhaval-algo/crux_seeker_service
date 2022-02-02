@@ -134,7 +134,11 @@ const sendOtp = async (req, res, next) => {
         }
         await sendSMSOTP (phone, response.data.otp);
         //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
-        return res.status(200).json(response);
+        return res.status(200).json({
+            'success': 'true',
+            'code': 'OTP_SENT',
+            'message':'Otp has been sent.'
+        });
     } catch (error) {
         console.log(error);
         return res.status(500).json({
