@@ -1,270 +1,197 @@
-<!DOCTYPE html>
-<html>
+{{> emailHeader }}
+<div class="content" style="background: white; padding: 40px;">
+    <div class="infoBlock"
+        style="margin: 0 0 30px;  padding: 30px;text-align: center; background: #FAFAFA; border: 1px solid #007FCA;">
 
-<head>
-    <meta charset="UTF-8">
+        <h4 class="mainTitle"
+            style="font-size: 20px; line-height: 25px; letter-spacing: 1px; font-weight: 600; margin-bottom: 0; padding-bottom: 5px; position: relative;">
+            Welcome to Careervira</h4>
+        <span
+            style="border-bottom:1px solid #007FCA;height: 4px;width: 60px;display: block;margin: auto;"></span>
+        <span
+            style="border-bottom:1px solid #007FCA;height: 4px;width: 40px;display: block;margin: auto;"></span>
+        <p
+            style="font-size: 16px;line-height: 22px; letter-spacing: 1px; padding-bottom: 10px; color: rgba(0,0,0,0.7);">
+            Thank you for signing up. We are glad to have you here. As a new member you will get:</p>
 
-    <title>Crux - Verification</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
-</head>
+        <ul
+            style="padding-left: 0; display: flex; align-items: center;justify-content: center; text-align: center;">
+            <li
+                style="list-style-type: none;font-size: 16px;letter-spacing: 0.5px; font-weight: 400; margin-right:15px;">
+                <img src={{resource_link}}/static/images/tick.png width="15"
+                    style="width: 15px ; margin-right: 6px;"> View learn content</li>
+            <li
+                style="list-style-type: none;font-size: 16px;letter-spacing: 0.5px; font-weight: 400; margin-right:15px;">
+                <img src={{resource_link}}/static/images/tick.png width="15"
+                    style="width: 15px ; margin-right: 6px;"> Enquire</li>
+            <li
+                style="list-style-type: none;font-size: 16px;letter-spacing: 0.5px; font-weight: 400; margin-right:15px;">
+                <img src={{resource_link}}/static/images/tick.png width="15"
+                    style="width: 15px ; margin-right: 6px;"> Buy courses</li>
+        </ul>
 
-<body style="font-family: 'Montserrat',Roboto; background: #f3f3f3;">
-    <div class="frise"></div>
-    <div class="container details">
+    </div>
 
-        <div class="main " style="margin: 50px auto; max-width: 650px; width:100%; min-width: 650px;">
-            <div class="template-card" style="max-width: 650px; width:100%; margin: auto;">
-                <!-- header -->
-                <div class="header" style="
-              background: white;
-              padding-top: 70px;
-              padding-bottom: 50px;
-              border-bottom: 1px solid rgba(173, 173, 173, 0.3);
-            ">
-                    <p style="
-                color: #202022;
-                font-family: Montserrat, sans-serif;
-                font-size: 16px;
-                font-weight: 400;
-                line-height: 1.5;
-                margin: 0 !important;
-                text-align: center;
-              ">
-                        <img src={{resource_link}}/static/images/logo2.png width="170"
-                            style="clear:both;display:inline-block;max-width:100%;outline:0;text-decoration:none"
-                            class="CToWUd">
-                    </p>
-                </div>
-                <div class="content" style="background: white; padding: 40px;">
-                    <div class="infoBlock"
-                        style="margin: 0 0 30px;  padding: 30px;text-align: center; background: #FAFAFA; border: 1px solid #007FCA;">
+    <p style="font-size: 18px; line-height: 30px; letter-spacing: 0.8px;">The course will get you
+        started in building your FIRST artificial neural network using deep learning techniques.
+        Following my previous course on logistic regression, we take this basic building block, and
+        build full-on non linear neural networks right out of the gate using Python and Numpy.</p>
 
-                        <h4 class="mainTitle"
-                            style="font-size: 20px; line-height: 25px; letter-spacing: 1px; font-weight: 600; margin-bottom: 0; padding-bottom: 5px; position: relative;">
-                            Welcome to Careervira</h4>
-                        <span
-                            style="border-bottom:1px solid #007FCA;height: 4px;width: 60px;display: block;margin: auto;"></span>
-                        <span
-                            style="border-bottom:1px solid #007FCA;height: 4px;width: 40px;display: block;margin: auto;"></span>
-                        <p
-                            style="font-size: 16px;line-height: 22px; letter-spacing: 1px; padding-bottom: 10px; color: rgba(0,0,0,0.7);">
-                            Thank you for signing up. We are glad to have you here. As a new member you will get:</p>
+    <p style="font-size: 15px;"><a href="#"
+            style="font-size: 15px; color: #FC876D; margin-right: 6px; ">Click here</a>
+        <span style="font-weight: 300;">to know more</span></p>
 
-                        <ul
-                            style="padding-left: 0; display: flex; align-items: center;justify-content: center; text-align: center;">
-                            <li
-                                style="list-style-type: none;font-size: 16px;letter-spacing: 0.5px; font-weight: 400; margin-right:15px;">
-                                <img src={{resource_link}}/static/images/tick.png width="15"
-                                    style="width: 15px ; margin-right: 6px;"> View learn content</li>
-                            <li
-                                style="list-style-type: none;font-size: 16px;letter-spacing: 0.5px; font-weight: 400; margin-right:15px;">
-                                <img src={{resource_link}}/static/images/tick.png width="15"
-                                    style="width: 15px ; margin-right: 6px;"> Enquire</li>
-                            <li
-                                style="list-style-type: none;font-size: 16px;letter-spacing: 0.5px; font-weight: 400; margin-right:15px;">
-                                <img src={{resource_link}}/static/images/tick.png width="15"
-                                    style="width: 15px ; margin-right: 6px;"> Buy courses</li>
-                        </ul>
+    <div style="display: flex; align-items: center; justify-content: center; margin-top: 80px">
+        <span class="seperator"
+            style="width: 50%;border-bottom: 0.25px solid rgba(0, 0, 0, 0.2); margin: 1px 0;"></span>
+        <h3 class="title"
+            style="border: 2px solid; padding: 0 30px;margin: 0px 0px 0; background: black;"></h3>
+        <span class="seperator"
+            style="width: 50%; border-bottom: 0.25px solid rgba(0, 0, 0, 0.2);margin: 1px 0;"></span>
+    </div>
 
-                    </div>
+    <h4 style="text-transform: uppercase; font-size: 18px;font-weight: 400; text-align: center;"> Here
+        are some top courses to get you started</h4>
 
-                    <p style="font-size: 18px; line-height: 30px; letter-spacing: 0.8px;">The course will get you
-                        started in building your FIRST artificial neural network using deep learning techniques.
-                        Following my previous course on logistic regression, we take this basic building block, and
-                        build full-on non linear neural networks right out of the gate using Python and Numpy.</p>
-
-                    <p style="font-size: 15px;"><a href="#"
-                            style="font-size: 15px; color: #FC876D; margin-right: 6px; ">Click here</a>
-                        <span style="font-weight: 300;">to know more</span></p>
-
-                    <div style="display: flex; align-items: center; justify-content: center; margin-top: 80px">
-                        <span class="seperator"
-                            style="width: 50%;border-bottom: 0.25px solid rgba(0, 0, 0, 0.2); margin: 1px 0;"></span>
-                        <h3 class="title"
-                            style="border: 2px solid; padding: 0 30px;margin: 0px 0px 0; background: black;"></h3>
-                        <span class="seperator"
-                            style="width: 50%; border-bottom: 0.25px solid rgba(0, 0, 0, 0.2);margin: 1px 0;"></span>
-                    </div>
-
-                    <h4 style="text-transform: uppercase; font-size: 18px;font-weight: 400; text-align: center;"> Here
-                        are some top courses to get you started</h4>
-
-                    <div class="courses-list" style="display: flex; margin: 55px 0;">
-                        <div class="image-block" style="width: 150px; height: 160px; background: #f8f8f8;">
-                            <img src={{resource_link}}/static/images/article-img.png
-                                style="width:150px; height: 160px;">
-                        </div>
+    <div class="courses-list" style="display: flex; margin: 55px 0;">
+        <div class="image-block" style="width: 150px; height: 160px; background: #f8f8f8;">
+            <img src={{resource_link}}/static/images/article-img.png
+                style="width:150px; height: 160px;">
+        </div>
 
 
-                        <div class="content-block"
-                            style="width: 70%;background: #f8f8f8;padding-left: 15px;height: 160px;">
-                            <h3
-                                style="font-size: 20px;font-weight: 600;letter-spacing: 0.8px;line-height: 25px; margin-bottom: 0">
-                                The Creative Html5 & CSS3 course</h3>
-                            <p
-                                style="color: rgba(0,0,0,0.7); font-size: 14px;letter-spacing: 0.3px;font-weight: 500; margin-bottom: 5px">
-                                Released 1 week ago</p>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 16px"> <img
-                                    src={{resource_link}}/static/images/star.png
-                                    style="width: 16px; height: 15px; margin: 4px 4px -1px 0;">4.9</span>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 13px">(11,809 viewers)</span>
-                            <span
-                                style="background: rgba(0,0,0,0.7); height: 2px; width: 2px; border-radius: 50px;display: inline-block;margin: 2px 4px;">
-                            </span>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 14px"> 1 hour 10 minutes</span>
-                            <p style="font-size: 18px; font-weight: 600;letter-spacing: 0.8px; margin-bottom: 10px">$799
-                            </p>
-                        </div>
-                    </div>
+        <div class="content-block"
+            style="width: 70%;background: #f8f8f8;padding-left: 15px;height: 160px;">
+            <h3
+                style="font-size: 20px;font-weight: 600;letter-spacing: 0.8px;line-height: 25px; margin-bottom: 0">
+                The Creative Html5 & CSS3 course</h3>
+            <p
+                style="color: rgba(0,0,0,0.7); font-size: 14px;letter-spacing: 0.3px;font-weight: 500; margin-bottom: 5px">
+                Released 1 week ago</p>
+            <span style="color: rgba(0,0,0,0.7); font-size: 16px"> <img
+                    src={{resource_link}}/static/images/star.png
+                    style="width: 16px; height: 15px; margin: 4px 4px -1px 0;">4.9</span>
+            <span style="color: rgba(0,0,0,0.7); font-size: 13px">(11,809 viewers)</span>
+            <span
+                style="background: rgba(0,0,0,0.7); height: 2px; width: 2px; border-radius: 50px;display: inline-block;margin: 2px 4px;">
+            </span>
+            <span style="color: rgba(0,0,0,0.7); font-size: 14px"> 1 hour 10 minutes</span>
+            <p style="font-size: 18px; font-weight: 600;letter-spacing: 0.8px; margin-bottom: 10px">$799
+            </p>
+        </div>
+    </div>
 
-                    <div class="courses-list" style="display: flex; margin: 35px 0;">
-                        <div class="image-block" style="width: 150px; height: 160px; background: #f8f8f8;">
-                            <img src={{resource_link}}/static/images/article-img.png
-                                style="width:150px; height: 160px;">
-                        </div>
-
-
-                        <div class="content-block"
-                            style="width: 70%;background: #f8f8f8;padding-left: 15px;height: 160px;">
-                            <h3
-                                style="font-size: 20px;font-weight: 600;letter-spacing: 0.8px;line-height: 25px; margin-bottom: 0">
-                                The Creative Html5 & CSS3 course</h3>
-                            <p
-                                style="color: rgba(0,0,0,0.7); font-size: 14px;letter-spacing: 0.3px;font-weight: 500; margin-bottom: 5px">
-                                Released 1 week ago</p>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 16px"> <img
-                                    src={{resource_link}}/static/images/star.png
-                                    style="width: 16px; height: 15px; margin: 4px 4px -1px 0;">4.9</span>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 13px">(11,809 viewers)</span>
-                            <span
-                                style="background: rgba(0,0,0,0.7); height: 2px; width: 2px; border-radius: 50px;display: inline-block;margin: 2px 4px;">
-                            </span>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 14px"> 1 hour 10 minutes</span>
-                            <p style="font-size: 18px; font-weight: 600;letter-spacing: 0.8px; margin-bottom: 10px">$799
-                            </p>
-                        </div>
-                    </div>
-                    <div class="courses-list" style="display: flex; margin: 35px 0;">
-                        <div class="image-block" style="width: 150px; height: 160px; background: #f8f8f8;">
-                            <img src={{resource_link}}/static/images/article-img.png
-                                style="width:150px; height: 160px;">
-                        </div>
-
-                        <div class="content-block"
-                            style="width: 70%;background: #f8f8f8;padding-left: 15px;height: 160px;">
-                            <h3
-                                style="font-size: 20px;font-weight: 600;letter-spacing: 0.8px;line-height: 25px; margin-bottom: 0">
-                                The Creative Html5 & CSS3 course</h3>
-                            <p
-                                style="color: rgba(0,0,0,0.7); font-size: 14px;letter-spacing: 0.3px;font-weight: 500; margin-bottom: 5px">
-                                Released 1 week ago</p>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 16px"> <img
-                                    src={{resource_link}}/static/images/star.png
-                                    style="width: 16px; height: 15px; margin: 4px 4px -1px 0;">4.9</span>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 13px">(11,809 viewers)</span>
-                            <span
-                                style="background: rgba(0,0,0,0.7); height: 2px; width: 2px; border-radius: 50px;display: inline-block;margin: 2px 4px;">
-                            </span>
-                            <span style="color: rgba(0,0,0,0.7); font-size: 14px"> 1 hour 10 minutes</span>
-                            <p style="font-size: 18px; font-weight: 600;letter-spacing: 0.8px; margin-bottom: 10px">$799
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="trending">
-                        <div
-                            style="display: flex; align-items: center; justify-content: center;margin-bottom: 55px;padding-top: 40px;">
-                            <span class="seperator"
-                                style="width: 40%;border-bottom: 0.25px solid rgba(0, 0, 0, 0.2);margin: 15px 0;"></span>
-                            <h3 class="title" style=" font-size: 18px;
-                              font-family: Monserrate;
-                                line-height: 150%;
-                                letter-spacing: 0.05em;
-                                text-transform: uppercase;
-                                position: relative;
-                                padding: 0 30px;
-                                margin: 0 30px;
-                                white-space: nowrap;
-                                font-weight: 400; border-bottom: 2px solid;">Trending Now</h3>
-                            <span class="seperator"
-                                style="width: 40%;border-bottom: 0.25px solid rgba(0, 0, 0, 0.2); margin: 15px 0;"></span>
-                        </div>
-                        <p style="margin-bottom: 30px; color: rgba(0,0,0,0.7); font-size: 18px;letter-spacing: 0.8px;">
-                            As a Careervira member you get an exclusive insight into our Top 10 recommendation</p>
-
-                        <div class="artiles" style="display: flex; margin-bottom: 40px; min-width:100%;">
-                            <div class="image" style="width: 50%; height: fit-content;">
-                                <img src={{resource_link}}/static/images/course-2.png
-                                    style="width: 100%; border-radius: 10px;filter: drop-shadow(0px 0px 3px black);opacity: 0.9;">
-                            </div>
-                            <div
-                                style="background:linear-gradient(100.3deg,#6BC8FF 0%,#A0DCFF 72.01%) ; width: 50%; padding:0 10px; margin: 45px 0; display: flex; padding: 0 15px;border-radius: 4px;">
-                                <img src={{resource_link}}/static/images/back-arrow.png
-                                    style="width: 22px; height: 15px; margin: 24px 10px;">
-                                <h4 style="color: black; font-size: 16px; font-weight: 400; margin: 20px 0;"> Top 10
-                                    Most viewed courses </h4>
-                            </div>
-                        </div>
-
-                        <div class="artiles" style="display: flex; margin-bottom: 40px; min-width:100%;">
-                            <div
-                                style="background:linear-gradient(100.3deg,#6BC8FF 0%,#A0DCFF 72.01%) ; width: 50%; padding:0 10px; margin: 45px 0; display: flex; padding: 0 15px;border-radius: 4px;">
-                                <h4 style="color: black; font-size: 16px; font-weight: 400; margin: 20px 0;"> Top 10
-                                    Most Popular degrees </h4>
-                                <img src={{resource_link}}/static/images/back-arrow1.png
-                                    style="width: 22px; height: 15px; margin: 24px 10px;">
-                            </div>
-                            <div class="image"
-                                style="width: 50%; height: fit-content; position: relative;margin-right: 20px;">
-                                <img src={{resource_link}}/static/images/course-1.png
-                                    style="width: 100%; border-radius: 10px;filter: drop-shadow(0px 0px 3px black);opacity: 0.9;">
-                            </div>
-                        </div>
-
-                        <p style="font-size: 18px">Thank you again for being a part of this. It means a lot to all of
-                            us.</p>
-
-                        <p style="font-size: 18px">Regards,<br>
-                            The Careervira Team</p>
+    <div class="courses-list" style="display: flex; margin: 35px 0;">
+        <div class="image-block" style="width: 150px; height: 160px; background: #f8f8f8;">
+            <img src={{resource_link}}/static/images/article-img.png
+                style="width:150px; height: 160px;">
+        </div>
 
 
-                        <div class="follow-text mb-15 w-50 text-center"
-                            style="margin-bottom: 15px;width: 100%; text-align: center;">
-                            <a href="https://www.facebook.com" target="_blank" class="d-inline-block"
-                                style="text-decoration: none;">
-                                <img width="8" src={{resource_link}}/static/images/fb.png />
-                            </a>
-                            <a href="https://www.twitter.com" target="_blank" class="d-inline-block"
-                                style="text-decoration: none; padding: 0 8px;">
-                                <img width="16" src={{resource_link}}/static/images/twitter.png />
-                            </a>
-                            <a href="https://www.linkedin.com" target="_blank" class="d-inline-block"
-                                style="text-decoration: none;">
-                                <img width="18" src={{resource_link}}/static/images/linkedin.png />
-                            </a>
-                        </div>
+        <div class="content-block"
+            style="width: 70%;background: #f8f8f8;padding-left: 15px;height: 160px;">
+            <h3
+                style="font-size: 20px;font-weight: 600;letter-spacing: 0.8px;line-height: 25px; margin-bottom: 0">
+                The Creative Html5 & CSS3 course</h3>
+            <p
+                style="color: rgba(0,0,0,0.7); font-size: 14px;letter-spacing: 0.3px;font-weight: 500; margin-bottom: 5px">
+                Released 1 week ago</p>
+            <span style="color: rgba(0,0,0,0.7); font-size: 16px"> <img
+                    src={{resource_link}}/static/images/star.png
+                    style="width: 16px; height: 15px; margin: 4px 4px -1px 0;">4.9</span>
+            <span style="color: rgba(0,0,0,0.7); font-size: 13px">(11,809 viewers)</span>
+            <span
+                style="background: rgba(0,0,0,0.7); height: 2px; width: 2px; border-radius: 50px;display: inline-block;margin: 2px 4px;">
+            </span>
+            <span style="color: rgba(0,0,0,0.7); font-size: 14px"> 1 hour 10 minutes</span>
+            <p style="font-size: 18px; font-weight: 600;letter-spacing: 0.8px; margin-bottom: 10px">$799
+            </p>
+        </div>
+    </div>
+    <div class="courses-list" style="display: flex; margin: 35px 0;">
+        <div class="image-block" style="width: 150px; height: 160px; background: #f8f8f8;">
+            <img src={{resource_link}}/static/images/article-img.png
+                style="width:150px; height: 160px;">
+        </div>
 
-                    </div>
-                </div>
+        <div class="content-block"
+            style="width: 70%;background: #f8f8f8;padding-left: 15px;height: 160px;">
+            <h3
+                style="font-size: 20px;font-weight: 600;letter-spacing: 0.8px;line-height: 25px; margin-bottom: 0">
+                The Creative Html5 & CSS3 course</h3>
+            <p
+                style="color: rgba(0,0,0,0.7); font-size: 14px;letter-spacing: 0.3px;font-weight: 500; margin-bottom: 5px">
+                Released 1 week ago</p>
+            <span style="color: rgba(0,0,0,0.7); font-size: 16px"> <img
+                    src={{resource_link}}/static/images/star.png
+                    style="width: 16px; height: 15px; margin: 4px 4px -1px 0;">4.9</span>
+            <span style="color: rgba(0,0,0,0.7); font-size: 13px">(11,809 viewers)</span>
+            <span
+                style="background: rgba(0,0,0,0.7); height: 2px; width: 2px; border-radius: 50px;display: inline-block;margin: 2px 4px;">
+            </span>
+            <span style="color: rgba(0,0,0,0.7); font-size: 14px"> 1 hour 10 minutes</span>
+            <p style="font-size: 18px; font-weight: 600;letter-spacing: 0.8px; margin-bottom: 10px">$799
+            </p>
+        </div>
+    </div>
+
+    <div class="trending">
+        <div
+            style="display: flex; align-items: center; justify-content: center;margin-bottom: 55px;padding-top: 40px;">
+            <span class="seperator"
+                style="width: 40%;border-bottom: 0.25px solid rgba(0, 0, 0, 0.2);margin: 15px 0;"></span>
+            <h3 class="title" style=" font-size: 18px;
+                font-family: Monserrate;
+                line-height: 150%;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                position: relative;
+                padding: 0 30px;
+                margin: 0 30px;
+                white-space: nowrap;
+                font-weight: 400; border-bottom: 2px solid;">Trending Now</h3>
+            <span class="seperator"
+                style="width: 40%;border-bottom: 0.25px solid rgba(0, 0, 0, 0.2); margin: 15px 0;"></span>
+        </div>
+        <p style="margin-bottom: 30px; color: rgba(0,0,0,0.7); font-size: 18px;letter-spacing: 0.8px;">
+            As a Careervira member you get an exclusive insight into our Top 10 recommendation</p>
+
+        <div class="artiles" style="display: flex; margin-bottom: 40px; min-width:100%;">
+            <div class="image" style="width: 50%; height: fit-content;">
+                <img src={{resource_link}}/static/images/course-2.png
+                    style="width: 100%; border-radius: 10px;filter: drop-shadow(0px 0px 3px black);opacity: 0.9;">
             </div>
-            <div class="footer" style="width: 100%; text-align: center;">
-                <p>
-                    <span style="color: #8a8a8a">Send to <a href="mailto:ashish@gmail.com"
-                            style="color: #8a8a8a; text-decoration: none;">ashish@gmail.com</a></span> |
-                    <span style="color: #8a8a8a"> Unsubscribe | Privacy Policy </span>
-                </p>
-                <p style="color: #8a8a8a"> Need help? Contact us at <a href="mailto:support@thecrux.com"
-                        style="color: #8a8a8a; text-decoration: none;">support@thecrux.com</a></p>
-                <p>
-                    <span style="color: #8a8a8a">Crux company Name & Address</span>
-                    <span style="color: #8a8a8a"> 20 square Road,#02-01, 049. United States</span>
-                </p>
-            </div>
-            <div class="nav">
-                <ul></ul>
+            <div
+                style="background:linear-gradient(100.3deg,#6BC8FF 0%,#A0DCFF 72.01%) ; width: 50%; padding:0 10px; margin: 45px 0; display: flex; padding: 0 15px;border-radius: 4px;">
+                <img src={{resource_link}}/static/images/back-arrow.png
+                    style="width: 22px; height: 15px; margin: 24px 10px;">
+                <h4 style="color: black; font-size: 16px; font-weight: 400; margin: 20px 0;"> Top 10
+                    Most viewed courses </h4>
             </div>
         </div>
 
-</body>
+        <div class="artiles" style="display: flex; margin-bottom: 40px; min-width:100%;">
+            <div
+                style="background:linear-gradient(100.3deg,#6BC8FF 0%,#A0DCFF 72.01%) ; width: 50%; padding:0 10px; margin: 45px 0; display: flex; padding: 0 15px;border-radius: 4px;">
+                <h4 style="color: black; font-size: 16px; font-weight: 400; margin: 20px 0;"> Top 10
+                    Most Popular degrees </h4>
+                <img src={{resource_link}}/static/images/back-arrow1.png
+                    style="width: 22px; height: 15px; margin: 24px 10px;">
+            </div>
+            <div class="image"
+                style="width: 50%; height: fit-content; position: relative;margin-right: 20px;">
+                <img src={{resource_link}}/static/images/course-1.png
+                    style="width: 100%; border-radius: 10px;filter: drop-shadow(0px 0px 3px black);opacity: 0.9;">
+            </div>
+        </div>
 
-</html>
+        <p style="font-size: 18px">Thank you again for being a part of this. It means a lot to all of
+            us.</p>
+
+        <p style="font-size: 18px">Regards,<br>
+            The Careervira Team</p>
+
+
+    </div>
+</div>
+{{> emailFooter }}
