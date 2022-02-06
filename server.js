@@ -60,26 +60,7 @@ app.use("/api", require("./src/api/routes"));
 // Set up routes
 routes.init(app);
 
-// cron jobs
-const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
-if(ENABLE_SITEMAP_CRON)
-{
-    cron.schedule('0 3 * * *', async function () {
-        try {        
-            await createSiteMap()
-        } catch (error) {
-            console.log("Error in cron", error);
-        }
-    });
 
-    cron.schedule('0 4 * * * ', async function () {
-        try {        
-            await copySiteMapS3ToFolder()
-        } catch (error) {
-            console.log("Error in copying", error);
-        }
-    });
-}
 // cron jobs
 const CACHE_INVALIDATION_CONSUMER = process.env.CACHE_INVALIDATION_CONSUMER || false;
 if(CACHE_INVALIDATION_CONSUMER)
@@ -123,19 +104,6 @@ if(CACHE_INVALIDATION_CONSUMER)
 
 //Redis SQS consumers
 
-const ENABLE_ACTVITY_LOG_CRON = process.env.ENABLE_ACTVITY_LOG_CRON || false;
-if(ENABLE_ACTVITY_LOG_CRON)
-{
-    cron.schedule( process.env.ACIVITY_TRACKING_CRON_TIME, async function () {
-        try {        
-            await storeActivity()
-            await learnpathActivity()
-        } catch (error) {
-            console.log("Error in cron", error);
-        }
-    });
-}
-   
 app.use(Sentry.Handlers.errorHandler());
 
 //start server

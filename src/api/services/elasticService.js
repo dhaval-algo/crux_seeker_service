@@ -46,6 +46,11 @@ module.exports = {
     //if(q){
       //finalQuery.q = q;
     //}
+
+    
+    if(payload.search_after !== null){
+      finalQuery.body.search_after = payload.search_after;
+    }
     
     if(payload.from !== null){
       finalQuery.from = payload.from;
@@ -69,7 +74,7 @@ module.exports = {
     if(payload._source !== null){
       finalQuery._source = payload._source;
     } 
-
+    finalQuery.track_total_hits = true
     const result = await client.search(finalQuery);
     if(result && result.body){
         //return result.body.hits.hits;
