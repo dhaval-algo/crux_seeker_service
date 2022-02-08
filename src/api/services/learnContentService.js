@@ -574,7 +574,7 @@ module.exports = class learnContentService {
 
                 if(filter.elastic_attribute_name =="learn_type")
                 { 
-                    var learn_types_images = this.getLearnTypeImages();        
+                    var learn_types_images = await this.getLearnTypeImages();        
                           
                 }
 
