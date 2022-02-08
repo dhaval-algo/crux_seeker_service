@@ -66,6 +66,14 @@ const  invalidateRankingFilter = async () => {
     }  
 }
 
+const  invalidatTopics = async () => {
+    try {
+        await CategoryService.getTopics({query:{}}, (err, data) => {}, true);
+    } catch (error) {
+        console.log("Ranking Filter cache invalidation Error",error)
+    }  
+}
+
 
    
 module.exports = {
@@ -74,5 +82,6 @@ module.exports = {
     invalidateLearnTypeImages,
     invalidateCurrencies,
     invalidateFilterConfigs,
-    invalidateRankingFilter
+    invalidateRankingFilter,
+    invalidatTopics
 }
