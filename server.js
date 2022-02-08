@@ -60,50 +60,6 @@ app.use("/api", require("./src/api/routes"));
 // Set up routes
 routes.init(app);
 
-
-// cron jobs
-const CACHE_INVALIDATION_CONSUMER = process.env.CACHE_INVALIDATION_CONSUMER || false;
-if(CACHE_INVALIDATION_CONSUMER)
-{
-    const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
-    const rankingHome = new rankingHomeService();
-    rankingHome.rankingHomeSQSConsumer();
-
-    const blogHomeService = require('./src/services/v1/redis/blogHomeService');
-    const blogHome = new blogHomeService();
-    blogHome.blogHomeSQSConsumer();
-
-    const sectionPageService = require('./src/services/v1/redis/sectionPageService');
-    const sectionPage = new sectionPageService();
-    sectionPage.sectionSQSConsumer();
-
-    const learnContentListService = require('./src/services/v1/redis/learnContentListService');
-    const learnContentList = new learnContentListService();
-    learnContentList.learnContentListSQSConsumer(); 
-    
-    const articleService = require('./src/services/v1/redis/articleService');
-    const article = new articleService();
-    article.articleSQSConsumer();
-    
-    const FooterService = require('./src/services/v1/redis/footerService');
-    const footerService = new FooterService();
-    footerService.footerSQSConsumer();
-
-    const CustomPageService = require('./src/services/v1/redis/customPageService');
-    const customPageService = new CustomPageService();
-    customPageService.customPageSQSConsumer();
-
-    const CategoryTreeService = require('./src/services/v1/redis/categoryTreeService');
-    const categoryTreeService = new CategoryTreeService();
-    categoryTreeService.categoryTreeSQSConsumer();
-
-    const ProviderService = require('./src/services/v1/redis/providerService');
-    const providerService = new ProviderService();
-    providerService.providerSQSConsumer();
-}
-
-//Redis SQS consumers
-
 app.use(Sentry.Handlers.errorHandler());
 
 //start server
