@@ -567,6 +567,11 @@ module.exports = class articleService {
                     data.description = result.content;
                     data.content_section = result.content_section || null
                     data.level_info = result.level_info || null
+                    if(data.level_info){
+                        data.level_info.levels_beginner = result.levels_beginner || null
+                        data.level_info.levels_intermediate = result.levels_intermediate || null
+                        data.level_info.levels_advance = result.levels_advance || null
+                    }
                     data.course_recommendation = result.course_recommendation || null;
                     data.conclusion = result.conclusion || null;
                 }
