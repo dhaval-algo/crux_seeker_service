@@ -1230,7 +1230,7 @@ module.exports = class learnContentService {
                 effort: effort,
                 total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
                 total_video_content_unit: result.total_video_content_unit,
-                language: result.languages.join(", "),
+                language: ( result.languages) ? result.languages.join(", "): null,
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
                 level: (result.level) ? result.level : null,
                 medium: (result.medium) ? result.medium : null,
