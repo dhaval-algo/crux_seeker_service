@@ -648,5 +648,20 @@ module.exports = {
 
             }
         })
+    },
+    copySiteMapS3ToFolder : async () => {
+        const sitemaps = ['advice.xml', 'course.xml','categories-subcategories.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
+        const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
+        const FRONTEND_PUBLIC_DIR = process.env.FRONTEND_PUBLIC_DIR || "/home/ubuntu/apps/crux-frontend/public";
+        for (const sitemap of sitemaps)
+        {
+            exec(`aws s3 cp s3://${AWS_CDN_BUCKET}/sitemaps/${sitemap} ${FRONTEND_PUBLIC_DIR}/${sitemap}`,( err, stdout, stderr) => {
+                if (err) {
+                    // node couldn't execute the command
+                    console.log("Error in copying",err )
+                    return;
+                }           
+            });
+        }        
     }    
 }
