@@ -4,7 +4,7 @@ const path = require('path');
 const cron = require('node-cron')
 
 global.appRoot = path.resolve(__dirname);
-const { createSiteMap } = require('./src/services/v1/sitemap');
+const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 const { storeActivity, learnpathActivity} = require('./src/utils/activityCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics} = require('./src/utils/cacheInvalidationCron');
 
@@ -13,11 +13,19 @@ const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeIma
 const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
 if(ENABLE_SITEMAP_CRON)
 {
-    cron.schedule('0 3 * * *', async function () {
+    cron.schedule(process.env.SITEMAP_GENERATE_CRON_TIME, async function () {
         try {        
             await createSiteMap()
         } catch (error) {
             console.log("Error in cron", error);
+        }
+    });
+
+    cron.schedule(process.env.SITEMAP_COPY_CRON_TIME, async function () {
+        try {        
+            await copySiteMapS3ToFolder()
+        } catch (error) {
+            console.log("Error in copying", error);
         }
     });
 }
