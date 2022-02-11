@@ -81,15 +81,30 @@ const parseCategoryTree = (categoryTree) => {
 
 module.exports = class categoryService {
 
-    async getTreeV2(parsed = true){
+    async getTreeV2(parsed = true, skipCache=false ){
         try{
+
             let cacheName = `category-tree`
-            let cacheData = await RedisConnection.getValuesSync(cacheName);
-            if(cacheData.noCacheData != true) {
-                return cacheData;
-            } else {
+            let useCache = false
+            if(parsed !=true)
+            {
+                cacheName +='-unparsed'
+            }
+            else
+            {
+                cacheName +='-parsed'
+            }
+            if(skipCache !=true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    useCache = true
+                    return cacheData;                    
+                }
+            }
+            if(useCache !=true)
+            {
                 let data = await getCategoryTree(parsed);
-                RedisConnection.set(cacheName, data,process.env.CACHE_EXPIRE_CATEGORE_TREEE || 60 *15);
+                RedisConnection.set(cacheName, data);
                 return data;
             }            
         }catch(err){
@@ -112,15 +127,48 @@ module.exports = class categoryService {
             if(useCache !=true)
             {
                 let data = await getCategoryTree();
-                RedisConnection.set(cacheName, data);
-                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_CATEGORE_TREEE); 
+                if(data)
+                {
+                    RedisConnection.set(cacheName, data);
+                }
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
             }
         }catch(err){
             console.log("err", err)
             callback(null, {status: 'success', message: 'No records found!', data: []});
         }        
-    }   
+    }  
+    
+    async getTopics(req, callback, skipCache){
+        try{
+            let cacheName = `topics`
+            let useCache = false
+            if(skipCache !=true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    useCache = true
+                }            
+            }
+            if(useCache !=true)
+            {
+                let response = await fetch(`${apiBackendUrl}/topics?_limit=-1`);
+                let data 
+                if (response.ok) {
+                     data = await response.json();
+                }
+                
+                if(data)
+                {
+                    RedisConnection.set(cacheName, data);
+                }
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            }
+        }catch(err){
+            console.log("err", err)
+            callback(null, {status: 'success', message: 'No records found!', data: []});
+        }        
+    }
 
 
 }

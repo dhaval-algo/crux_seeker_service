@@ -5,6 +5,9 @@ let LearnContentService = new learnContentService();
 const articleService = require("./articleService");
 let ArticleService = new articleService();
 
+const categoryService = require("./categoryService");
+const CategoryService = new categoryService();
+
 const {generateMetaInfo} = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -69,13 +72,7 @@ const getPartnerCoursesData = async (partner_name) => {
 
 const getAllCategoryTree = async () => {
     let category_tree = [];
-    let response = await fetch(`${apiBackendUrl}/category-tree`);
-    if (response.ok) {
-        let json = await response.json();
-        if(json && json.final_tree){
-            category_tree = json.final_tree;
-        }
-    }
+    category_tree = CategoryService.getTreeV2(false) || [];
     return category_tree;
 };
 
