@@ -10,6 +10,9 @@ const helperService = require("../../utils/helper");
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 
+const categoryService = require("./categoryService");
+const CategoryService = new categoryService();
+
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const {
@@ -381,7 +384,7 @@ module.exports = class learnPathService {
                             }
                         }
                         RedisConnection.set(cacheName, learn_types_images);
-                        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);
+                       // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);
                     }
 
                 }
@@ -457,14 +460,8 @@ module.exports = class learnPathService {
                 let categoryFiletrOption = [];
                 let categorykey = 0;
 
-                let response = await fetch(`${apiBackendUrl}/category-tree`);
+                category_tree = CategoryService.getTreeV2(false) || [];
 
-                if (response.ok) {
-                    let json = await response.json();
-                    if (json && json.final_tree) {
-                        category_tree = json.final_tree;
-                    }
-                }
                 if (category_tree && category_tree.length) {
                     for (let category of category_tree) {
                         let i = 0;

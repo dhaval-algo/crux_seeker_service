@@ -17,4 +17,14 @@ module.exports = {
         });        
     },
 
+    getTopics: async (req, res) => {
+        CategoryService.getTopics(req, (err, data) => {
+            if (data) {                
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
+
 };
