@@ -1316,6 +1316,9 @@ module.exports = class learnContentService {
                 data.meta_information  = meta_information;
             }            
         }
+        else{
+            data.meta_information = result.meta_information
+        }
 
         if(!isList){
             if(result.instructors && result.instructors.length > 0){
@@ -1517,8 +1520,8 @@ module.exports = class learnContentService {
             ratings: data.ratings,
             categories_list: data.categories_list,
             sub_categories_list : data.sub_categories_list,
-            topics_list : data.topics_list
-
+            topics_list : data.topics_list,
+            meta_information: data.meta_information
         }
 
         return isList ? listData : data;
