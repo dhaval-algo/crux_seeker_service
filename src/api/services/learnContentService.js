@@ -916,7 +916,7 @@ module.exports = class learnContentService {
             if (result && result.hits.length > 0) {
                 for (let hit of result.hits) {
                     let course = await this.generateSingleViewData(hit._source, false, currency);
-                    const {accreditations,ads_keywords,subtitle,prerequisites,target_students,content,meta_information,...optimisedCourse} = course;
+                    const {accreditations,ads_keywords,subtitle,prerequisites,target_students,content,...optimisedCourse} = course;
                     courses.push(optimisedCourse);
                 }
             }
