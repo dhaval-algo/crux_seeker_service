@@ -124,7 +124,7 @@ const sendOtp = async (req, res, next) => {
         */
         const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL, otpType});
         if(!response.success){
-            return response;
+            return res.status(500).json(response);
         }
         const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
         const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
