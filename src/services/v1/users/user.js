@@ -2827,6 +2827,8 @@ const getUserPendingActions = async (req, res) => {
                         response.verification.phoneVerified=false
                         response.pendingProfileActions.push("phoneVerification")
                     }
+                }else{
+                    response.pendingProfileActions.push('phone') 
                 }
             }
         }
