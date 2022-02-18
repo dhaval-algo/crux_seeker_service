@@ -2592,6 +2592,14 @@ const updatePhone = async (req,res) => {
             });
         }
         
+        await models.user.update({
+            phoneVerified: false,
+        }, {
+            where: {
+                id: user.userId
+            }
+        });
+        
         const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
         let data = {email:userinfo.value, phone:phone}
         sendDataForStrapi(data, "update-phone")
