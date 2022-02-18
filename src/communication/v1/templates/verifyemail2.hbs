@@ -1,16 +1,35 @@
 {{> emailHeader }}
-<p style="margin-bottom: 24px;margin-top: 30px;color: #010010;">Hello, you are a click away.</p>
-<p style="margin-bottom: 24px;color: #010010;">Hit the button below to verify your email and get back to great learning content!</p>
-<a href="{{verification_link}}" target="_blank">
-    <button type="button" style="border:0;color:#fff;height: 40px;font-weight: bold; letter-spacing: 1px;left: 114px;top: 223px;background: #2196F3;border-radius: 2px;padding: 11px 12px;font-size: 14px;"> VERIFY MY EMAIL
-                        </button>
-</a>
-<p style="margin: 24px 0;color: #010010 !important;"><span style="color: #010010;">Or copy this link and paste it in your browser.</span> <br>
-    <a href="#" style="color: #2196F3; font-weight: 500;">
-                        {{verification_link}} </a>
-</p>
-
-<p style="color: #010010;">
-    Cheers, <br> The Careervira Team
-</p>
+<p style="margin-bottom: 24px;margin-top: 25px;color: #2b2b2b;">Hello,</p>
+                <p style="margin-bottom: 24px;color: #2b2b2b;">You are a click away from exploring top global professional courses, programmes and learning partners.</p>
+                <p style="margin-bottom: 30px;color: #2b2b2b;">Simply click on the link below to validate your email and start exploring</p>
+                <div class="button-block" style="text-align:center; justify-content: center; width: 100%; margin: 20px auto;font-family: Montserrat;">
+                <a href="{{verification_link}}" target="_blank" style="display: inline-block;
+                    box-sizing: border-box;
+                    border-radius: 4px;
+                    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1);
+                    padding: 10px;
+                    font-size: 12px;
+                    line-height: 18px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    color: #fff;
+                    background-color: #1483dc;
+                    border-color: #1483dc;
+                    border: 0;
+                    outline: 0;
+                    font-family:Montserrat;
+                    cursor: pointer;">
+                    Verify my email
+                    
+                </a>
+                </div>
+                <p style="margin-bottom: 24px; margin-top: 16px;color: #2b2b2b;">Alternatively,</p>
+                <p style="margin: 24px 0"><span style="color: #2b2b2b;">Paste this link in your browser: </span> 
+                    <span><a href="#" style="color: #2196F3; font-weight: 500;">
+                    {{verification_link}} 
+                    </a></span>
+                </p>
+                
+                <p style="width: 90%;color: #6a6a6a;padding: 50px 0 24px;font-style: italic;font-weight: 400;text-align: center;">This is an auto generated email. Please do not reply to this email.</p>
 {{> emailFooter }}
+
