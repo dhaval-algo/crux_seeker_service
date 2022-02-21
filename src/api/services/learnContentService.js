@@ -339,7 +339,7 @@ module.exports = class learnContentService {
                 query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 if(!slug_data){
-                    return callback(null, {status: 400, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+                    return callback(null, {status: 404, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
                 }
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
