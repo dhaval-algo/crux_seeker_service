@@ -880,11 +880,10 @@ module.exports = class learnContentService {
     }
 
     async getRelatedCourses(req, callback) {
-        const  courseId =  req.body.courseId.toString();
-        const {currency} = req.body;
-        const MAX_RESULTS = 6;
-
         try {
+            const  courseId =  req.body.courseId.toString();
+            const {currency} = req.body;
+            const MAX_RESULTS = 6;
 
             //fields to fetch 
             let fields = [

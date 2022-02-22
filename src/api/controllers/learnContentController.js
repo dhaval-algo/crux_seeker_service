@@ -74,6 +74,9 @@ module.exports = {
                 }
             });
                 break;
+            default:
+                res.status(200).send({});
+                break;
         }
     },
     getPopularCourses: async (req, res)=>{
