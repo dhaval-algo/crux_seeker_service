@@ -29,7 +29,7 @@ router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
 router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
-router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
+router.get('/recommended-courses/', learnContentController.getRecommendedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);
 router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths);
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);

@@ -22,6 +22,7 @@ const RedisConnection = new redisConnection();
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const articleService = require("./articleService");
+const mLService = require("./mLService");
 let ArticleService = new articleService();
 
 let slugMapping = [];
@@ -879,8 +880,8 @@ module.exports = class learnContentService {
     }
 
     async getRelatedCourses(req, callback) {
-        const { courseId } = req.params;
-        const { currency } = req.query;
+        const  courseId =  req.body.courseId.toString();
+        const {currency} = req.body;
         const MAX_RESULTS = 6;
 
         try {
@@ -946,8 +947,16 @@ module.exports = class learnContentService {
                     courses.push(optimisedCourse);
                 }
             }
-
-            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+           
+            const mlCourses = await this.getSimilarCoursesML(courseId, MAX_RESULTS, currency);
+            let show = null;
+            if (mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
+                show = 'ml';
+            }
+            else {
+                show = 'logic';
+            }
+            const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
             callback(null, response);
         } catch (error) {
             console.log("Error while processing data for related courses", error);
@@ -1623,5 +1632,36 @@ module.exports = class learnContentService {
             callback(null, {status: 'error', message: 'Failed to Add', data: null});
        }
         
+    }
+
+
+
+    async getSimilarCoursesML(courseId, count, currency = process.env.DEFAULT_CURRENCY) {
+
+        const cacheName = `ml-similar-courses-${courseId}-${count}-${currency}`
+        let cacheData = await RedisConnection.getValuesSync(cacheName);
+        if (!cacheData.noCacheData) {
+            return cacheData
+        } else {
+            const {result,courseIdSimilarityMap} = await mLService.getSimilarCoursesDataML(courseId, count);
+
+            let courses = [];
+            if (result.hits) {
+                if (result.hits.hits && result.hits.hits.length > 0) {
+
+                    for (const hit of result.hits.hits) {
+                        let course = await this.generateSingleViewData(hit._source, false, currency);
+                        const { accreditations, ads_keywords, subtitle, prerequisites, target_students, content, meta_information, ...optimisedCourse } = course;
+                        optimisedCourse.similarity = courseIdSimilarityMap[optimisedCourse.id];
+                        courses.push(optimisedCourse);
+                    }
+
+                    RedisConnection.set(cacheName, courses);
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE);
+                }
+            }
+
+            return courses;
+        }
     }
 }

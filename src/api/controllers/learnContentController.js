@@ -62,14 +62,19 @@ module.exports = {
     },
 
 
-    getRelatedCourses: async (req, res)=>{
-        LearnContentService.getRelatedCourses(req,(err, data)=>{
-            if (data) {
-                res.status(200).send(data);
-            } else {
-                res.status(200).send(err);
-            }
-        })
+    getRecommendedCourses: async (req, res) => {
+        const { type } = req.body;
+
+        switch (type) {
+            case "related-courses": LearnContentService.getRelatedCourses(req, (err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+        }
     },
     getPopularCourses: async (req, res)=>{
         LearnContentService.getPopularCourses(req,(err, data)=>{
