@@ -299,7 +299,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
                 leadObj.First_Name = metaObjVal.firstName || "";
                 leadObj.Last_Name = metaObjVal.lastName || "Not given";
                 leadObj.Gender = metaObjVal.gender || "";
-                leadObj.Grade = metaObjVal.grade || "";
+                leadObj.Grade = metaObjVal.grade.replace(/"/g,"").replace(/\\/g, '') ||  "";
                 leadObj.Email = metaObjVal.email || "";
                 leadObj.Graduation_Year = metaObjVal.graduationYear || "";
                 leadObj.Experience = metaObjVal.experience || "";
