@@ -172,6 +172,7 @@ const createLoggedUserMeta = async (userId) => {
 const prepareStrapiData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let strapiObj = {
+            enquiry_id:"",
             first_name:"",
             last_name:"",
             email:"",
@@ -210,8 +211,8 @@ const prepareStrapiData = (enquiry_id) => {
 
         }
         try {
-
-           formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
+            strapiObj.enquiry_id = 'LRN_CNT_ENQ_' + enquiry_id
+            formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
                 strapiObj.source_url = formSubRec.otherInfo.sourceUrl
@@ -337,6 +338,7 @@ const prepareStrapiData = (enquiry_id) => {
 const prepareStrapiDataforLearnPath = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let strapiObj = {
+            enquiry_id:"",
             first_name:"",
             last_name:"",
             email:"",
@@ -368,8 +370,8 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
             userId:null
         }
         try {
-
-           formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
+            strapiObj.enquiry_id = 'LRN_PTH_ENQ_'+enquiry_id
+            formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
                 strapiObj.learn_path_url = formSubRec.otherInfo.learnpathUrl
