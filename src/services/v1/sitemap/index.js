@@ -68,8 +68,8 @@ function createCourse() {
                     ]
                 }
             };
-            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
-            const result = await elasticService.search('learn-content', query, payload );
+            let payload= {sortObject: [{"id": {"order": "asc"}}], size: MAX_RESULT,_source:["slug", "updated_at"] }
+            let result = await elasticService.search('learn-content', query, payload );
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
             });
@@ -88,6 +88,7 @@ function createCourse() {
             });
             
             if (result.hits) {
+                let last_sort_val;
                 if (result.hits && result.hits.length > 0) {
                     for (const hit of result.hits) {
                         smStream.write({
@@ -96,15 +97,37 @@ function createCourse() {
                             changefreq: 'daily', 
                             priority: 0.9
                         });
+                        last_sort_val = hit.sort
                     }
                 }
                 //generate course url 
 
-                smStream.end();
+               // generate url after 10000 
+                if(result.total.value > MAX_RESULT )
+                {
+                    for (let i=1; i < Math.ceil(result.total.value/MAX_RESULT) ; i++)
+                    {
+                        payload= {sortObject: [{"id": {"order": "asc"}}], search_after:last_sort_val, size: MAX_RESULT,_source:["slug", "updated_at"] }
+                        result = await elasticService.search('learn-content', query, payload );
+                        if (result.hits && result.hits.length > 0) {
+                            for (const hit of result.hits) {
+                                smStream.write({
+                                    url: `/course/${hit._source.slug}`,
+                                    lastmod: hit._source.updated_at,
+                                    changefreq: 'daily', 
+                                    priority: 0.9
+                                });
+                                last_sort_val = hit.sort
+                            }
+                        }
+                    }
+                }
+
+                smStream.end();                
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'course.xml'
+                let path = 'sitemaps/course.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -157,7 +180,7 @@ function createProvider() {
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'institute.xml'
+                let path = 'sitemaps/institute.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -205,7 +228,7 @@ function createPartner() {
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'partner.xml'
+                let path = 'sitemaps/partner.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -253,7 +276,7 @@ function createNews() {
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'news.xml'
+                let path = 'sitemaps/news.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -335,7 +358,7 @@ function createCategories() {
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'categories-subcategories.xml'
+                let path = 'sitemaps/categories-subcategories.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -387,7 +410,7 @@ function createTopic(obj, smsStream) {
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'topic.xml'
+                let path = 'sitemaps/topic.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -478,7 +501,7 @@ function createAdvice() {
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
-                let path = 'advice.xml'
+                let path = 'sitemaps/advice.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
                 resolve(sitemap)
@@ -535,7 +558,7 @@ function createRanking() {
             // generate a sitemap and add the XML feed to a url which will be used later on.
             const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
             //write to aws 
-            let path = 'ranking.xml'
+            let path = 'sitemaps/ranking.xml'
             let contentType = 'text/xml'
             const res = await uploadFileToS3(path, sitemap, contentType)
             resolve(sitemap)
@@ -591,7 +614,7 @@ function createTrendingNow() {
             // generate a sitemap and add the XML feed to a url which will be used later on.
             const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
             //write to aws 
-            let path = 'trending-now.xml'
+            let path = 'sitemaps/trending-now.xml'
             let contentType = 'text/xml'
             const res = await uploadFileToS3(path, sitemap, contentType)
             resolve(sitemap)
@@ -626,35 +649,19 @@ module.exports = {
             }
         })
     },
-    copySiteMapS3ToFolder: async () => {
+    copySiteMapS3ToFolder : async () => {
         const sitemaps = ['advice.xml', 'course.xml','categories-subcategories.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml'];
         const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
-        const PROJECT_DIR = process.env.PROJECT_DIR || "/home/ubuntu";
         const FRONTEND_PUBLIC_DIR = process.env.FRONTEND_PUBLIC_DIR || "/home/ubuntu/apps/crux-frontend/public";
         for (const sitemap of sitemaps)
         {
-            exec(`aws s3 cp s3://${AWS_CDN_BUCKET}/${sitemap} ${PROJECT_DIR}/sitemapfiles/${sitemap}`,( err, stdout, stderr) => {
+            exec(`aws s3 cp s3://${AWS_CDN_BUCKET}/sitemaps/${sitemap} ${FRONTEND_PUBLIC_DIR}/${sitemap}`,( err, stdout, stderr) => {
                 if (err) {
                     // node couldn't execute the command
                     console.log("Error in copying",err )
                     return;
-                }
-
-                exec(`cp ${PROJECT_DIR}/sitemapfiles/${sitemap} ${FRONTEND_PUBLIC_DIR}/${sitemap}`,( err, stdout, stderr) => {
-                    if (err) {
-                        // node couldn't execute the command
-                        console.log("Error in copying to public folder",err )
-                        return;
-                    }
-                });
+                }           
             });
-        }
-        exec(`pm2 restart frontend`, ( err, stdout, stderr) => {
-            if (err) {
-                // node couldn't execute the command
-                console.log("Error in restarting frontend", err )
-                return;
-            }            
-        })
-    }
+        }        
+    }    
 }

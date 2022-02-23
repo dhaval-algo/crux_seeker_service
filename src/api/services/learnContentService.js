@@ -39,15 +39,17 @@ const getBaseCurrency = (result) => {
     return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
 };
 
-const getEntityLabelBySlugFromCache= async (entity, slug) =>
+const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
 {
     let cacheName = `enity_slug_${entity}`;
     let entities = {}
-    let useCache = false        
-    let cacheData = await RedisConnection.getValuesSync(cacheName);
-    if(cacheData.noCacheData != true) {
-        entities =  cacheData   
-        useCache = true				 
+    let useCache = false 
+    if(skipCache !=true) {       
+        let cacheData = await RedisConnection.getValuesSync(cacheName);
+        if(cacheData.noCacheData != true) {
+            entities =  cacheData   
+            useCache = true				 
+        }
     }          
     if(useCache !=true)
     {
@@ -80,10 +82,13 @@ const getEntityLabelBySlugFromCache= async (entity, slug) =>
             }
         }
         RedisConnection.set(cacheName, entities);
-        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
+       // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
     }
-
-    return entities[slug]
+    if(skipCache !=true) {
+        return entities[slug]
+    }else{
+        return entities
+    }
 }
 
 const getEntityLabelBySlug = async (entity, slug) => {
@@ -123,7 +128,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
                 "featured_articles": featured_articles
                 }
                 RedisConnection.set(cacheName, cacheData);
-                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
+               // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
             }
             return cacheData[slug] ;
         }else{
@@ -570,38 +575,7 @@ module.exports = class learnContentService {
 
                 if(filter.elastic_attribute_name =="learn_type")
                 { 
-                    var learn_types_images = {};
-                    let cacheName = `learn_type_images`
-                    let useCache = false        
-                    let cacheData = await RedisConnection.getValuesSync(cacheName);
-                    if(cacheData.noCacheData != true) {
-                        learn_types_images =  cacheData   
-                        useCache = true				 
-                    }
-                          
-                    if(useCache !=true)
-                    {
-                        let response = await fetch(`${apiBackendUrl}/learn-types`);
-                        if (response.ok) {
-                            let json = await response.json();
-                            if(json){
-                                for(let learn_type of json)
-                                {
-                                    
-                                    if( learn_type.image &&  learn_type.image.formats){
-                                        learn_types_images[learn_type.default_display_label] = {
-                                        "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
-                                        "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
-                                        "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
-                                        "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
-                                        }
-                                    }                    
-                                }
-                            }
-                        }           
-                        RedisConnection.set(cacheName, learn_types_images);
-                        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
-                    }       
+                    var learn_types_images = await this.getLearnTypeImages();        
                           
                 }
 
@@ -1264,7 +1238,7 @@ module.exports = class learnContentService {
                 effort: effort,
                 total_video_content: getDurationText(result.total_video_content_in_hrs, result.total_video_content_unit),
                 total_video_content_unit: result.total_video_content_unit,
-                language: result.languages.join(", "),
+                language: ( result.languages) ? result.languages.join(", "): null,
                 subtitles: (result.subtitles && result.subtitles.length > 0) ? result.subtitles.join(", ") : null,
                 level: (result.level) ? result.level : null,
                 medium: (result.medium) ? result.medium : null,
@@ -1633,7 +1607,50 @@ module.exports = class learnContentService {
         
     }
 
+    async invalidateEntityLabelCache(entity) 
+    {
+        getEntityLabelBySlugFromCache(entity, null, true)
+    }
 
+    async getLearnTypeImages(skipCache = false) 
+    {
+        let learn_types_images = {}
+        let cacheName = `learn_type_images`
+        let useCache = false
+        if(skipCache !=true) {    
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                learn_types_images =  cacheData   
+                useCache = true				 
+            }
+        }
+              
+        if(useCache !=true)
+        {
+            let response = await fetch(`${apiBackendUrl}/learn-types`);
+            if (response.ok) {
+                let json = await response.json();
+                if(json){
+                    for(let learn_type of json)
+                    {
+                        
+                        if( learn_type.image &&  learn_type.image.formats){
+                            learn_types_images[learn_type.default_display_label] = {
+                            "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
+                            "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
+                            "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
+                            "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
+                            }
+                        }                    
+                    }
+                }
+            }           
+            RedisConnection.set(cacheName, learn_types_images);
+           // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
+        } 
+
+        return learn_types_images
+    }
 
     async getSimilarCoursesML(courseId, count, currency = process.env.DEFAULT_CURRENCY) {
 
