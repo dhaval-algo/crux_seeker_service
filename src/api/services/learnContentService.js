@@ -856,8 +856,8 @@ module.exports = class learnContentService {
     async getRelatedCourses(req, callback) {
         try {
             const  courseId =  req.body.courseId.toString();
-            const {currency} = req.body;
-            const MAX_RESULTS = 6;
+            const {currency,page=1,limit=6} = req.body;
+            const offset = (page-1) * limit;
 
             //fields to fetch 
             let fields = [
@@ -910,7 +910,7 @@ module.exports = class learnContentService {
                 }
             })
 
-            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: MAX_RESULTS });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
             
             let courses = [];
             if (result && result.hits.length > 0) {
@@ -921,7 +921,7 @@ module.exports = class learnContentService {
                 }
             }
            
-            const mlCourses = await this.getSimilarCoursesML(courseId, MAX_RESULTS, currency);
+            const mlCourses = await this.getSimilarCoursesML(courseId,currency,page,limit);
             let show = null;
             if (mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
                 show = 'ml';
@@ -938,14 +938,14 @@ module.exports = class learnContentService {
     }
 
     async getPopularCourses(req, callback, returnData) {
-        let { type } = req.params; // Populer, Trending,Free
-        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        let { subType } = req.body; // Populer, Trending,Free
+        let { category, sub_category, topic, currency=process.env.DEFAULT_CURRENCY, page = 1, limit =20} = req.body;       
         
-        let offset= (page -1) * limit
+        const offset= (page -1) * limit
         
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${type}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if(cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -983,7 +983,7 @@ module.exports = class learnContentService {
                 );
             } 
             
-            if(type && type =="Free"){
+            if(subType && subType =="Free"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
@@ -992,7 +992,7 @@ module.exports = class learnContentService {
                 );
             }
             let sort = null
-            switch (type) {                
+            switch (subType) {                
                 case "Trending":
                     sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
                     break; 
@@ -1652,14 +1652,14 @@ module.exports = class learnContentService {
         return learn_types_images
     }
 
-    async getSimilarCoursesML(courseId, count, currency = process.env.DEFAULT_CURRENCY) {
+    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page, limit) {
 
-        const cacheName = `ml-similar-courses-${courseId}-${count}-${currency}`
+        const cacheName = `ml-similar-courses-${courseId}-${page}-${limit}-${currency}`
         let cacheData = await RedisConnection.getValuesSync(cacheName);
         if (!cacheData.noCacheData) {
             return cacheData
         } else {
-            const {result,courseIdSimilarityMap} = await mLService.getSimilarCoursesDataML(courseId, count);
+            const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId,page, limit);
 
             let courses = [];
             if (result.hits) {
@@ -1672,8 +1672,11 @@ module.exports = class learnContentService {
                         courses.push(optimisedCourse);
                     }
 
-                    RedisConnection.set(cacheName, courses);
-                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE);
+                    if (page == 1) {
+
+                        RedisConnection.set(cacheName, courses);
+                        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
+                    }
                 }
             }
 

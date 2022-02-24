@@ -74,6 +74,19 @@ module.exports = {
                 }
             });
                 break;
+                
+            case "courses-to-get-started":LearnContentService.getPopularCourses(req,(err, data)=>{
+                if (data) {
+                    if(process.env.API_CACHE_CONTROL_HEADER)
+                    {
+                        res.set('Cache-control', process.env.API_CACHE_CONTROL_HEADER)
+                    }
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            })
+                break;
             default:
                 res.status(200).send({});
                 break;
@@ -90,7 +103,7 @@ module.exports = {
             } else {
                 res.status(200).send(err);
             }
-        })
+        });
     },
 
     getReviews: async (req, res) => {

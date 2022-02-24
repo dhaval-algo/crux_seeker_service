@@ -1,5 +1,3 @@
-const redisConnection = require('../../services/v1/redis');
-const RedisConnection = new redisConnection();
 const elasticService = require("./elasticService");
 const axios = require("axios");
 const defaults = require('../../services/v1/defaults/defaults');
@@ -17,17 +15,14 @@ const whetherShowMLCourses = (recommendationType) => {
 }
 
 
-const getSimilarCoursesDataML = async (courseId, count) => {
+const getSimilarCoursesDataML = async (courseId, page=1,limit=6) => {
     try {
 
         if (!courseId) {
             return;
         }
-        if (!count) {
-            count = 5;
-        }
-
-        const url = `${process.env.ML_SERVICE_PUBLIC_V1}/get-similar-courses?course_id=${courseId}&count=${count}`;
+       
+        const url = `${process.env.ML_SERVICE_PUBLIC_V1}/get-similar-courses?course_id=${courseId}&page=${page}&limit=${limit}`;
         const response = await axios.get(url);
         if (response.status == 200) {
 
@@ -42,7 +37,7 @@ const getSimilarCoursesDataML = async (courseId, count) => {
 
             let esQuery = {
                 "from": 0,
-                "size": count,
+                "size": limit,
                 "sort": [
                     {
                         "_script": {
@@ -80,8 +75,7 @@ const getSimilarCoursesDataML = async (courseId, count) => {
                     }
                 }
             }
-            let result = await elasticService.plainSearch("learn-content", esQuery);
-
+            const result = await elasticService.plainSearch("learn-content", esQuery);
             return { result: result, courseIdSimilarityMap: scores };
         }
 
