@@ -1011,7 +1011,7 @@ module.exports = class learnContentService {
                 RedisConnection.set(cacheKey, courses,process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
             }
         }
-            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+            let response = { success: true, message: "list fetched successfully", data:{ list: courses,mlList:[],show:"logic" } };
             if(returnData)
             {
                 return courses;
@@ -1681,6 +1681,61 @@ module.exports = class learnContentService {
             }
 
             return courses;
+        }
+    }
+    async getTopCategories(req, callback) {
+        try {
+
+            const cacheName = "top-categories";
+            const cacheData = await RedisConnection.getValuesSync(cacheName);
+            if (!cacheData.noCacheData) {
+                return callback(null, cacheData);
+            }
+
+            const query = {
+                bool: {
+                    "must": [
+                        {
+                            "ids": {
+                                "values": [
+                                    "HOME_2"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            };
+            const result = await elasticService.search('home-page', query, { _source: "category_recommendations" });
+            let categoryRecommendations = [];
+            if (result && result.hits && result.hits.length) {
+                categoryRecommendations = result.hits[0]["_source"]["category_recommendations"];
+            }
+
+            const response = { "success": true, message: "list fetched successfully", data: { list: categoryRecommendations } };
+
+            RedisConnection.set(cacheName, response);
+            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TOP_CATEGORIES || 86400);
+            callback(null, response);
+
+        }
+        catch (error) {
+            console.log("Error occured while fetching top categories : ",error)
+            callback(null, { "success": false ,message: "failed to fetch", data: { list: [] } });
+
+        }
+    }
+
+
+    async exploreCoursesFromTopCatgeories(req, callback) {
+
+        try {
+            req.body.subType = "Popular"
+            const data = await this.getPopularCourses(req, null, true);
+            callback(null, { "success": true ,message: "list fetched successfully", data: { list: data,mlList:[],show:"logic" } });
+
+        } catch (error) {
+            console.log("Error occured while fetching top courses : ",error)
+            callback(null, { "success": false ,message: "failed to fetch", data: { list: [] } });
         }
     }
 }

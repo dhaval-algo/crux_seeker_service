@@ -85,13 +85,34 @@ module.exports = {
                 } else {
                     res.status(200).send(err);
                 }
-            })
+            });
+                break;
+            case "explore-courses-from-top-categories":LearnContentService.exploreCoursesFromTopCatgeories(req, (err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+
                 break;
             default:
                 res.status(200).send({});
                 break;
         }
     },
+
+    getTopCategories : async(req,res)=>{
+
+        LearnContentService.getTopCategories(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });
+    },
+
     getPopularCourses: async (req, res)=>{
         LearnContentService.getPopularCourses(req,(err, data)=>{
             if (data) {
