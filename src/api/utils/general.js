@@ -125,9 +125,8 @@ const getRankingFilter = async (useCache = true) => {
            return cachedData;
         }
     }
-    else
-    {
-        let response = await fetch(`${apiBackendUrl}/rankings?visible_eq=true&custom_eq=false&_sort=name:ASC`);
+    
+    let response = await fetch(`${apiBackendUrl}/rankings?visible_eq=true&custom_eq=false&_sort=name:ASC`);
         if (response.ok) {
         let rankings = await response.json();
         let rankingFilter = {
@@ -161,8 +160,6 @@ const getRankingFilter = async (useCache = true) => {
         } else {
             return [];
         }
-        
-    }
 
 };
 
