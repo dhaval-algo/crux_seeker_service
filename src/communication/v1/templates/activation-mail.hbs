@@ -1,40 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-
-<title>Careervira - Welcome</title>
-</head>
-<body>
-<div class="frise"></div>
-<div class="container details">
-    
-    <div class="main">
-        <div class="cadre">
+{{> emailHeader }}
  
-                <div class="content">
-                <p style="Margin:0;Margin-bottom:12px;color:#202022;font-family:arial,sans-serif;font-size:16px;font-weight:400;line-height:1.5;margin:0!important;margin-bottom:12px;padding:0 0 15px;text-align:center"><img src="https://ci4.googleusercontent.com/proxy/6Niva_88EqBwpXDqiVA7FSbElf0dtyo7S5fiRQOr4WqRN7Gw0Rm1xO22DBsGCEDrWvQAfLeij79UoNKcv7FnNSmjmPsyqKt5dvTglmhjWqtd0KQ0HxHHSNwtBjl62kFYY7Ga2Ni2Uy6h9_z2Fgkf5AKnGmQqSq1-1iNwPJK7=s0-d-e1-ft#https://cb-invoice-logos-prod.s3.us-east-1.amazonaws.com/mailtmc-test/logo_1599564649_16CHPwS9zmG2v1Ik2.png" width="109" style="clear:both;display:inline-block;max-width:100%;outline:0;text-decoration:none" class="CToWUd"></p>
+<div class="content">
+    <p style="Margin:0;Margin-bottom:12px;color:#202022;font-family:arial,sans-serif;font-size:16px;font-weight:400;line-height:1.5;margin:0!important;margin-bottom:12px;padding:0 0 15px;text-align:center"><img src="https://ci4.googleusercontent.com/proxy/6Niva_88EqBwpXDqiVA7FSbElf0dtyo7S5fiRQOr4WqRN7Gw0Rm1xO22DBsGCEDrWvQAfLeij79UoNKcv7FnNSmjmPsyqKt5dvTglmhjWqtd0KQ0HxHHSNwtBjl62kFYY7Ga2Ni2Uy6h9_z2Fgkf5AKnGmQqSq1-1iNwPJK7=s0-d-e1-ft#https://cb-invoice-logos-prod.s3.us-east-1.amazonaws.com/mailtmc-test/logo_1599564649_16CHPwS9zmG2v1Ik2.png" width="109" style="clear:both;display:inline-block;max-width:100%;outline:0;text-decoration:none" class="CToWUd"></p>
 
-                Dear {{full_name}},<br><br>
+    Dear {{full_name}},<br><br>
 
-                Thank you for creating an account.<br>
+    Thank you for creating an account.<br>
 
-                Your username is {{account_email}}. To log in, you must verify your account.<br>
+    Your username is {{account_email}}. To log in, you must verify your account.<br>
 
-                Verification Link : {{verification_link}}<br><br>
+    Verification Link : {{verification_link}}<br><br>
 
-                
-                Thanks again for choosing !<br><br>
+    
+    Thanks again for choosing !<br><br>
 
-                Sincerely,<br>
-                The Team at Careervira
-                </div>
-        </div>
-    </div>
-    <div class="nav">
-        <ul></ul>
-    </div>
+    Sincerely,<br>
+    The Team at Careervira
 </div>
-
-</body>
-</html>
+{{> emailFooter }}
