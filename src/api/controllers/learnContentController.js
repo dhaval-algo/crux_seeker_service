@@ -63,7 +63,7 @@ module.exports = {
 
 
     getRecommendedCourses: async (req, res) => {
-        const { type } = req.body;
+        const { type } = req.query;
 
         switch (type) {
             case "related-courses": LearnContentService.getRelatedCourses(req, (err, data) => {

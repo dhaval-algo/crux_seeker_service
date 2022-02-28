@@ -855,8 +855,8 @@ module.exports = class learnContentService {
 
     async getRelatedCourses(req, callback) {
         try {
-            const  courseId =  req.body.courseId.toString();
-            const {currency,page=1,limit=6} = req.body;
+            const  courseId =  req.query.courseId.toString();
+            const {currency,page=1,limit=6} = req.query;
             const offset = (page-1) * limit;
 
             //fields to fetch 
@@ -938,8 +938,8 @@ module.exports = class learnContentService {
     }
 
     async getPopularCourses(req, callback, returnData) {
-        let { subType } = req.body; // Populer, Trending,Free
-        let { category, sub_category, topic, currency=process.env.DEFAULT_CURRENCY, page = 1, limit =20} = req.body;       
+        let { subType } = req.query; // Populer, Trending,Free
+        let { category, sub_category, topic, currency=process.env.DEFAULT_CURRENCY, page = 1, limit =20} = req.query;       
         
         const offset= (page -1) * limit
         
@@ -1729,7 +1729,7 @@ module.exports = class learnContentService {
     async exploreCoursesFromTopCatgeories(req, callback) {
 
         try {
-            req.body.subType = "Popular"
+            req.query.subType = "Popular"
             const data = await this.getPopularCourses(req, null, true);
             callback(null, { "success": true ,message: "list fetched successfully", data: { list: data,mlList:[],show:"logic" } });
 
