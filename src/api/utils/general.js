@@ -40,7 +40,7 @@ const getUserCurrency = async(request) => {
     if (response.ok) {
         let json = await response.json();
         if(json && json.length){
-            RedisConnection.set(cacheKey, json,process.env.CACHE_EXPIRE_CURRENCIES || 60 * 15);
+            RedisConnection.set(cacheKey, json);
             return json;
         }else{
             return [];
@@ -87,7 +87,7 @@ const getFilterConfigs = async (entity_type) => {
        return cachedData;
     }
 
-    return await getFilterConfigsUncached(entity_type);
+    return await module.exports.getFilterConfigsUncached(entity_type);
 };
 
 const getFilterConfigsUncached = async (entity_type) => {
@@ -95,7 +95,7 @@ const getFilterConfigsUncached = async (entity_type) => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=${entity_type}&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
-    RedisConnection.set(`${FILTER_CONFIG_CACHE_KEY}-${entity_type}`, json,process.env.CACHE_EXPIRE_FILTER_CONFIG || 60 * 15);
+    RedisConnection.set(`${FILTER_CONFIG_CACHE_KEY}-${entity_type}`, json);
     return json;
     } else {
         return [];
@@ -116,40 +116,51 @@ const getRankingBySlug = async (slug) => {
     }
 };
 
-const getRankingFilter = async () => {
+const getRankingFilter = async (useCache = true) => {
+
+    let cacheKey = "ranking-filter";
+    if(useCache){
+        let cachedData = await RedisConnection.getValuesSync(cacheKey);
+        if(cachedData.noCacheData != true) {
+           return cachedData;
+        }
+    }
+    
     let response = await fetch(`${apiBackendUrl}/rankings?visible_eq=true&custom_eq=false&_sort=name:ASC`);
-    if (response.ok) {
-    let rankings = await response.json();
-    let rankingFilter = {
-        label: 'Ranking',
-        filterable: true,
-        is_collapsed: true,
-        filter_type: 'Checkboxes',
-        options: []
-    };
-
-    rankings = rankings.sort(function(a,b) {
-        let ac = a.name.toLowerCase();
-        let bc = b.name.toLowerCase();
-        if (ac == bc) return 0;
-        if (ac > bc) return 1;
-        return -1;
-    });
-
-
-    for(const rank of rankings){
-        rankingFilter.options.push({
-            label: rank.name,
-            slug: rank.slug,
-            count: 0,
-            selected: false,
-            disabled: false
+        if (response.ok) {
+        let rankings = await response.json();
+        let rankingFilter = {
+            label: 'Ranking',
+            filterable: true,
+            is_collapsed: true,
+            filter_type: 'Checkboxes',
+            options: []
+        };
+    
+        rankings = rankings.sort(function(a,b) {
+            let ac = a.name.toLowerCase();
+            let bc = b.name.toLowerCase();
+            if (ac == bc) return 0;
+            if (ac > bc) return 1;
+            return -1;
         });
-    }
-    return rankingFilter;
-    } else {
-        return [];
-    }
+    
+    
+        for(const rank of rankings){
+            rankingFilter.options.push({
+                label: rank.name,
+                slug: rank.slug,
+                count: 0,
+                selected: false,
+                disabled: false
+            });
+        }
+        RedisConnection.set(cacheKey, rankingFilter);
+        return rankingFilter;
+        } else {
+            return [];
+        }
+
 };
 
 const parseQueryFilters = (filter) => {
@@ -603,6 +614,7 @@ const compareRule = async (rule,engineEvent,facts) =>{
     getCurrencies,
     getCurrencyAmount,
     getFilterConfigs,
+    getFilterConfigsUncached,
     parseQueryFilters,
     round,
     getPaginationQuery,
