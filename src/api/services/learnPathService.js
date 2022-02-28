@@ -460,7 +460,7 @@ module.exports = class learnPathService {
                 let categoryFiletrOption = [];
                 let categorykey = 0;
 
-                category_tree = CategoryService.getTreeV2(false) || [];
+                category_tree = await CategoryService.getTreeV2(false) || [];
 
                 if (category_tree && category_tree.length) {
                     for (let category of category_tree) {
