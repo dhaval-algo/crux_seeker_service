@@ -123,12 +123,25 @@ const sendOtp = async (req, res, next) => {
         * Check if user exists or resgistered user
         */
         const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL, otpType});
+        if(!response.success){
+            return res.status(500).json(response);
+        }
         const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
         const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
         let phone = userPhone.value.substring(2, 12);
+        if(userPhone.value.substring(0, 2) != '91'){
+            return res.status(500).json({
+                'code': 'SERVER_ERROR',
+                'description': 'Only indian number are allowed'
+            });
+        }
         await sendSMSOTP (phone, response.data.otp);
         //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
-        return res.status(200).json(response);
+        return res.status(200).json({
+            'success': 'true',
+            'code': 'OTP_SENT',
+            'message':'Otp has been sent.'
+        });
     } catch (error) {
         console.log(error);
         return res.status(500).json({
@@ -169,7 +182,7 @@ const verifyOtp = async (req, res, next) => {
                 'data': {}
             });
         }
-        if(!isEmail(email)){
+        if(!isEmail(email) && email){
             return res.status(200).json({
                 code: "NOT AN EMAIL",
                 message: "Please enter email in xyz@email.com format.",
@@ -177,14 +190,16 @@ const verifyOtp = async (req, res, next) => {
                 data: {}
             })
         }
-        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
-        if(email_already_exist){
-            return res.status(200).json({
-                code: "EMAIL ALREADY EXIST",
-                message: "Please enter email which is not already used.",
-                success: false,
-                data: {}
-            })
+        if(email){
+            let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+            if(email_already_exist){
+                return res.status(200).json({
+                    code: "EMAIL ALREADY EXIST",
+                    message: "Please enter email which is not already used.",
+                    success: false,
+                    data: {}
+                })
+            }
         }
         let providerObj = await models.user_login.findOne({where:{userId:userId}})
         const provider = providerObj.provider
@@ -2577,6 +2592,14 @@ const updatePhone = async (req,res) => {
             });
         }
         
+        await models.user.update({
+            phoneVerified: false,
+        }, {
+            where: {
+                id: user.userId
+            }
+        });
+        
         const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
         let data = {email:userinfo.value, phone:phone}
         sendDataForStrapi(data, "update-phone")
@@ -2672,7 +2695,8 @@ const getUserPendingActions = async (req, res) => {
 
             pendingProfileActions: [
             ],
-            profileProgress: null
+            profileProgress: null,
+            verification:{}
         }
 
         const fields = {
@@ -2702,10 +2726,10 @@ const getUserPendingActions = async (req, res) => {
             },
             workExp: {
                 weightage: 15,
-            },
-            phone: {
-                weightage: 5,
             }
+            // phone: {
+            //     weightage: 5,
+            // }
         }
 
         const verificationFields = {
@@ -2787,7 +2811,7 @@ const getUserPendingActions = async (req, res) => {
                 response.pendingProfileActions.push('email')
             }
         
-            /*
+            
             if (userVerificationData[0]["phoneVerified"]) {
                 response.verification.phoneVerified = true
                 profileProgress += verificationFields.phoneVerified.weightage
@@ -2809,10 +2833,12 @@ const getUserPendingActions = async (req, res) => {
                     }
                     else{
                         response.verification.phoneVerified=false
+                        response.pendingProfileActions.push("phoneVerification")
                     }
+                }else{
+                    response.pendingProfileActions.push('phone') 
                 }
             }
-            */
         }
         
         response.profileProgress=profileProgress
