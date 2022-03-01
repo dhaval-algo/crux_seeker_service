@@ -16,7 +16,7 @@ const footerController = require('../../../controllers/footerController');
 
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
-
+const recommendationMiddleware = require("../../../../services/v1/middleware/recommendation");
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
@@ -29,7 +29,7 @@ router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
 router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
-router.get('/recommended-courses/', learnContentController.getRecommendedCourses);
+router.get('/recommended-courses/',recommendationMiddleware, learnContentController.getRecommendedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);
 router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths);
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);

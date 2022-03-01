@@ -3,8 +3,9 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
+const userService = require("../../services/v1/users/user");
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
-
+const models = require("../../../models");
 const { 
     getFilterConfigs, 
     parseQueryFilters,
@@ -1736,6 +1737,124 @@ module.exports = class learnContentService {
         } catch (error) {
             console.log("Error occured while fetching top courses : ",error)
             callback(null, { "success": false ,message: "failed to fetch", data: { list: [] } });
+        }
+    }
+
+
+    async getTopPicksForYou(req, callback) {
+
+        try {
+            const userId = req.user.userId;
+            const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+
+            let skills = null;
+            const topSkills = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'primarySkills' } });
+
+            if (topSkills && topSkills.value && topSkills.value != "{}") {
+                skills = JSON.parse(topSkills.value);
+            }
+            else {
+                const additionalSkills = await models.user_meta.findOne({ where: { userId: userId, metaType: 'primary', key: 'skills' } })
+                if (additionalSkills && additionalSkills.value && additionalSkills.value != "{}") skills = JSON.parse(additionalSkills.value);
+            }
+
+            let workExp = null;
+            const workExperience = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'workExp' } });
+
+            let skillsKeywords = [];
+            let workExpKeywords = [];
+
+            if (skills) {
+                for (const key in skills) {
+                    skillsKeywords.push(key);
+                    skillsKeywords.push(...skills[key]);
+                }
+            }
+
+            if (workExperience && workExperience.value && workExperience.value != "[]") {
+                workExp = JSON.parse(workExperience.value);
+                workExp.forEach((workExp) => {
+                    if (workExp.jobTitle) {
+                        workExpKeywords.push(workExp.jobTitle.label);
+                    }
+
+                    if (workExp.industry) {
+                        workExpKeywords.push(workExp.industry.label);
+                    }
+                });
+            }
+
+            let limitForSkills = 0;
+            let limitForWorkExp = 0;
+
+            if (skills && workExp) {
+                limitForSkills = Math.floor(limit / 2);
+                limitForWorkExp = limit - limitForSkills;
+            }
+            else if (skills) {
+                limitForSkills = limit;
+            }
+            else if (workExp) {
+                limitForWorkExp = limit;
+            }
+
+            const esQuery = {
+                bool: {
+                    must: [
+                        {
+                            term: {
+                                "status.keyword": "published"
+                            }
+                        }
+                    ],
+                    should: [
+                        {
+                            query_string: {
+                                default_field: "title"
+                            }
+                        }
+                    ]
+                }
+            }
+
+            let courses = [];
+            if (skills) {
+                const offset = (page - 1) * limitForSkills;
+                esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills });
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateSingleViewData(hit._source, true, currency)
+                        courses.push(data);
+                    }
+                }
+            }
+
+            if (workExp) {
+                const offset = (page - 1) * limitForWorkExp;
+                esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp });
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateSingleViewData(hit._source, true, currency)
+                        courses.push(data);
+                    }
+                }
+            }
+
+            if (!skills && !workExp) {
+                req.query.subType = "Popular"
+                if (!req.query.page) req.query.page = 1;
+                if (!req.query.limit) req.query.limit = 6;
+                courses = await this.getPopularCourses(req, null, true);
+            }
+
+
+            callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } });
+        } catch (error) {
+            console.log("Error occured while fetching recently viewed courses : ", error);
+            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+
         }
     }
 }

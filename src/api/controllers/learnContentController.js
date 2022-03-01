@@ -74,11 +74,9 @@ module.exports = {
                 }
             });
                 break;
-                
-            case "courses-to-get-started":LearnContentService.getPopularCourses(req,(err, data)=>{
+            case "courses-to-get-started": LearnContentService.getPopularCourses(req, (err, data) => {
                 if (data) {
-                    if(process.env.API_CACHE_CONTROL_HEADER)
-                    {
+                    if (process.env.API_CACHE_CONTROL_HEADER) {
                         res.set('Cache-control', process.env.API_CACHE_CONTROL_HEADER)
                     }
                     res.status(200).send(data);
@@ -87,7 +85,7 @@ module.exports = {
                 }
             });
                 break;
-            case "explore-courses-from-top-categories":LearnContentService.exploreCoursesFromTopCatgeories(req, (err, data) => {
+            case "explore-courses-from-top-categories": LearnContentService.exploreCoursesFromTopCatgeories(req, (err, data) => {
                 if (data) {
                     res.status(200).send(data);
                 } else {
@@ -95,6 +93,15 @@ module.exports = {
                 }
             });
 
+                break;
+
+            case "top-picks-for-you": LearnContentService.getTopPicksForYou(req, (err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
                 break;
             default:
                 res.status(200).send({});
