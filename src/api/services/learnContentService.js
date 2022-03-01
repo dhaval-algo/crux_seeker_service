@@ -1849,7 +1849,6 @@ module.exports = class learnContentService {
                 courses = await this.getPopularCourses(req, null, true);
             }
 
-
             callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } });
         } catch (error) {
             console.log("Error occured while fetching recently viewed courses : ", error);
