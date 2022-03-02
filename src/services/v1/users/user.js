@@ -2916,6 +2916,108 @@ const recentlySearchedCourses = async (req, callback) => {
 
 }
 
+
+const addCategoryToRecentlyViewed = async (req, res) => {
+
+    try {
+
+        const { user } = req;
+        const { name, slug } = req.body;
+        const unique_data = { userId: user.userId, slug: slug, name: name };
+
+        //check if course exists
+        const exists = await models.recently_viewed_categories.findOne({ where: unique_data });
+        if (exists) {
+            //if exists change updated at
+            await models.recently_viewed_categories.update({ name: unique_data.name,slug:unique_data.slug }, { where: unique_data });
+        } else {
+
+            const { count, rows } = await models.recently_viewed_categories.findAndCountAll(
+                {
+                    limit: 1,
+                    where: { userId: user.userId },
+                    order: [['createdAt', 'ASC']],
+                    attributes: {
+                        include: ['id']
+                    }
+                });
+
+            if (count > 2) {
+                //remove first entry
+                await models.recently_viewed_categories.destroy(
+                    { where: { id: rows[0].id } }
+                );
+            }
+
+            await models.recently_viewed_categories.create(unique_data);
+
+        }
+
+
+      return  res.status(200).json({
+            success: true,
+            message: "Category added to recently viewed"
+
+        });
+
+    } catch (error) {
+
+        console.log("Error occured while adding category to recently viewed : ", error);
+        res.status(500).json({
+            success: false,
+            "message": "Internal Server Error"
+
+        });
+    }
+}
+
+const peopleAreAlsoViewing = async (req, callback) => {
+
+    try {
+        const userId = req.user.userId;
+        const { page = 1, limit = 6, currency = process.env.DEFAULT_CURRENCY } = req.query;
+        const offset = (page - 1) * limit;
+        const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
+        const categoriesNames = categories.map((category) => category.name);
+        const courses = [];
+        if (categoriesNames.length) {
+            const esQuery = {
+                bool: {
+                    must: [
+                        {
+                            term: {
+                                "status.keyword": "published"
+                            }
+                        },
+                        {
+                            terms: {
+                                "categories.keyword": categoriesNames
+                            }
+                        }
+                    ]
+                }
+            }
+
+            const sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }];
+            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort });
+
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await LearnContentService.generateSingleViewData(hit._source, true, currency)
+                    courses.push(data);
+                }
+            }
+
+        }
+        
+        callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } });
+    } catch (error) {
+
+        console.log("Error occured while fetching people Are Also Viewing : ", error);
+        callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -2960,6 +3062,8 @@ module.exports = {
     recentlyViewedCourses,
     getUserLastSearch,
     recentlySearchedCourses,
+    peopleAreAlsoViewing,
+    addCategoryToRecentlyViewed,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
@@ -2972,10 +3076,18 @@ module.exports = {
         if(!suggestionList[search.type]){
             suggestionList[search.type] = []
         }
-        if( !suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
-            if(suggestionList[search.type].length == process.env.LAST_SEARCH_LIMIT ) {
+        if (!suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
+
+            if (search.type == 'learn-content') {
+                if (suggestionList[search.type].length == (process.env.LAST_COURSE_SEARCH_LIMIT||20)) {
+                    suggestionList[search.type].shift();
+
+                }
+
+            }
+            else if (suggestionList[search.type].length == process.env.LAST_SEARCH_LIMIT) {
                 suggestionList[search.type].shift();
-            }            
+            }
             suggestionList[search.type].push(search);
         } 
 

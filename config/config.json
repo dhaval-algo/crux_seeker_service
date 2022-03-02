@@ -1,7 +1,7 @@
 {
   "development": {
     "username": "postgres",
-    "password": "ajency",
+    "password": "761999",
     "database": "crux_seeker_dev",
     "host": "127.0.0.1",
     "dialect": "postgres",
