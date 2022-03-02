@@ -1322,7 +1322,7 @@ const addCourseToRecentlyViewed = async (req,res) => {
 }
 
 
-const getRecentlyViewedCourses = async (req,res) => {
+const getRecentlyViewedCourses = async (req,res,next,returnData=false) => {
     const { user } = req;
     let { limit = 20, page = 1, order="DESC", currency } = req.query
     
@@ -1376,6 +1376,10 @@ const getRecentlyViewedCourses = async (req,res) => {
         console.error("Failed to fetch recently viewed courses",error);
         message = "Unable to fetch recently viewed courses";
         success = false;
+    }
+
+    if(returnData){
+        return courses;
     }
     
     return res.status(statusCode).json({
@@ -2827,6 +2831,91 @@ const getUserPendingActions = async (req, res) => {
     }
 }
 
+const recentlyViewedCourses = async (req, callback) => {
+
+    try {
+        const courses = await getRecentlyViewedCourses(req,null,null,true);
+        callback(null, { "success": false, message: "list fetched successfully", data: { list:courses ,mlList:[],show:"logic"} });
+    }
+    catch (error) {
+        console.log("Error occured while fetching recently viewed courses : ", error);
+        callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+    }
+
+}
+const getUserLastSearch =async (req,callback) => {
+        
+    const { user} = req;
+    let userId = user.userId
+
+     const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+
+    let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+    if(!suggestionList['learn-path']){
+        suggestionList['learn-path'] = []
+    }
+    if(!suggestionList['learn-content']){
+        suggestionList['learn-content'] = []
+    }
+    if(!suggestionList['provider']){
+        suggestionList['provider'] = []
+    }
+    if(!suggestionList['article']){
+        suggestionList['article'] = []
+    }
+    callback({success:true,data:suggestionList}) 
+
+}
+
+const recentlySearchedCourses = async (req, callback) => {
+
+    try {
+
+        const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+        const offset = (page - 1) * limit;
+        let searchedCourses = [];
+        await getUserLastSearch(req, (result) => {
+            searchedCourses.push(...result.data['learn-content']);
+
+        });
+
+        const searchedCoursesSlugs = searchedCourses.map((course) => course.slug);
+
+        const esQuery = {
+            bool: {
+                must: [
+                    {
+                        term: {
+                            "status.keyword": "published"
+                        }
+                    },
+                    {
+                        terms: {
+                            "slug.keyword": searchedCoursesSlugs
+                        }
+                    }
+                ]
+            }
+        }
+        const courses  =[];
+        const result = await elasticService.search("learn-content",esQuery,{from:offset,size:limit})
+        
+        if (result.hits && result.hits.length) {
+            for (const hit of result.hits) {
+                const data = await LearnContentService.generateSingleViewData(hit._source, true, currency)
+                courses.push(data);
+            }
+        }
+
+        callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: 'logic' } });
+
+    } catch (error) {
+        console.log("Error occured while fetching recently searched courses : ", error);
+        callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+    }
+
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -2868,6 +2957,9 @@ module.exports = {
     updatePhone,
     getUserPendingActions,
     updateEmail,
+    recentlyViewedCourses,
+    getUserLastSearch,
+    recentlySearchedCourses,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
@@ -2898,33 +2990,9 @@ module.exports = {
 
     },
 
-    getUserLastSearch: async (req,callback) => {
-        
-        const { user} = req;
-        let userId = user.userId
-
-         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
-
-        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
-        if(!suggestionList['learn-path']){
-            suggestionList['learn-path'] = []
-        }
-        if(!suggestionList['learn-content']){
-            suggestionList['learn-content'] = []
-        }
-        if(!suggestionList['provider']){
-            suggestionList['provider'] = []
-        }
-        if(!suggestionList['article']){
-            suggestionList['article'] = []
-        }
-        callback({success:true,data:suggestionList}) 
-
-    },
+    
 
     removeUserLastSearch: async (req, callback) => {
-
-
 
         const {search} = req.body
         const { user} = req;

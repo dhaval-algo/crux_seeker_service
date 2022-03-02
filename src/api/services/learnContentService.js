@@ -1851,7 +1851,7 @@ module.exports = class learnContentService {
 
             callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } });
         } catch (error) {
-            console.log("Error occured while fetching recently viewed courses : ", error);
+            console.log("Error occured while fetching top picks for you : ", error);
             callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
 
         }

@@ -103,6 +103,27 @@ module.exports = {
                 }
             });
                 break;
+
+            case "recently-viewed-courses": userService.recentlyViewedCourses(req,(err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                
+                break;
+           
+            case "recently-searched-courses": userService.recentlySearchedCourses(req,(err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+
+
             default:
                 res.status(200).send({});
                 break;
