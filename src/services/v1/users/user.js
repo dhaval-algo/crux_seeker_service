@@ -2861,7 +2861,7 @@ const recentlyViewedCourses = async (req, callback) => {
 
     try {
         const courses = await getRecentlyViewedCourses(req,null,null,true);
-        callback(null, { "success": false, message: "list fetched successfully", data: { list:courses ,mlList:[],show:"logic"} });
+        callback(null, { "success": true, message: "list fetched successfully", data: { list:courses ,mlList:[],show:"logic"} });
     }
     catch (error) {
         console.log("Error occured while fetching recently viewed courses : ", error);
