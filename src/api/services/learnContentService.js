@@ -1711,20 +1711,28 @@ module.exports = class learnContentService {
             };
             const result = await elasticService.search('home-page', query, { _source: "category_recommendations" });
             let categoryRecommendations = [];
+            
             if (result && result.hits && result.hits.length) {
                 categoryRecommendations = result.hits[0]["_source"]["category_recommendations"];
+                
             }
 
             const response = { "success": true, message: "list fetched successfully", data: { list: categoryRecommendations } };
 
-            RedisConnection.set(cacheName, response);
-            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TOP_CATEGORIES || 86400);
+            if(categoryRecommendations.length){
+
+                RedisConnection.set(cacheName, response);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TOP_CATEGORIES || 86400);
+            }
+
+            
+
             callback(null, response);
 
         }
         catch (error) {
-            console.log("Error occured while fetching top categories : ",error)
-            callback(null, { "success": false ,message: "failed to fetch", data: { list: [] } });
+            console.log("Error occured while fetching top categories : ", error)
+            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
 
         }
     }
