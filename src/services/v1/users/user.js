@@ -1592,7 +1592,12 @@ const wishListCourseData = async (req,res) => {
                 order: [["id","DESC"]]
             })
 
-        const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
+        let totalWishedListIds = [];
+        for(let wishlist of totalWishListOfUser){
+            if(wishlist.value != null && wishlist.value != ''){
+                totalWishedListIds.push(wishlist.value);
+            }
+        }
 
         let queryBody = {
             "from":offset,
