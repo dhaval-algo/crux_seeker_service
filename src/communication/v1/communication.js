@@ -120,7 +120,8 @@ module.exports = {
                                 format: 'JSON',
                                 v:1.1,
                                 principalEntityId:process.env.SMS_GUPSHUP_PE_ID,
-                                dltTemplateId: dltTemplateId
+                                dltTemplateId: dltTemplateId,
+                                mask: 'CVIOTP'
                             } 
                             };
                                 request(options, function (error, response, body) {
