@@ -627,6 +627,59 @@ function createTrendingNow() {
     })
 }
 
+function createLearnPath() {
+    return new Promise(async (resolve) => {
+        try {
+            let query = {
+                "bool": {              
+                    "must": [
+                        {term: { "status.keyword": 'approved' }}
+                    ]
+                }
+            };
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
+            const result = await elasticService.search('learn-path', query, payload);
+            let smStream = new SitemapStream({
+                hostname: process.env.FRONTEND_URL,
+            });
+
+             //link for learnpath listing page
+             smStream.write({
+                url: `/learnpath`,
+                changefreq: 'daily',
+                priority: 0.8
+            });
+
+            if (result.hits) {
+                if (result.hits && result.hits.length > 0) {
+                    for (const hit of result.hits) {
+                        smStream.write({
+                            url: `/learnpath/${hit._source.slug}`,
+                            lastmod: hit._source.updated_at,
+                            changefreq: 'daily',
+                            priority: 0.8
+                        });
+                    }
+                }
+
+                smStream.end();
+                // generate a sitemap and add the XML feed to a url which will be used later on.
+                const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
+                //write to aws 
+                let path = 'sitemaps/learn-paths.xml'
+                let contentType = 'text/xml'
+                const res = await uploadFileToS3(path, sitemap, contentType)
+                console.log(sitemap); resolve(sitemap)
+            }
+
+        } catch (error) {
+            console.log(error);
+        }
+
+        resolve(true)
+    })
+}
+
 
 module.exports = {
     createSiteMap: () => {
@@ -641,6 +694,7 @@ module.exports = {
                 await createAdvice()
                 await createRanking()
                 await createTrendingNow()
+                await createLearnPath()
                 resolve(result)
             } catch (error) {
                 console.log(error);
