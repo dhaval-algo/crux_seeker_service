@@ -786,6 +786,7 @@ module.exports = class learnContentService {
 
             if (useCache) {
                 list.forEach((course) => {
+                    console.log("course ",course)
                     let courseSlugs = {
                         course_slug: course.slug,
                         categories: course.categories_list.map(cat => cat.slug),
