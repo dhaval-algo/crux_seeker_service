@@ -1,6 +1,8 @@
 const elasticService = require("./elasticService");
 const axios = require("axios");
 const defaults = require('../../services/v1/defaults/defaults');
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
 
 const whetherShowMLCourses = (recommendationType) => {
     switch (recommendationType) {
@@ -15,71 +17,90 @@ const whetherShowMLCourses = (recommendationType) => {
 }
 
 
-const getSimilarCoursesDataML = async (courseId, page=1,limit=6) => {
+const getSimilarCoursesDataML = async (courseId) => {
     try {
 
         if (!courseId) {
             return;
         }
-       
-        const url = `${process.env.ML_SERVICE_PUBLIC_V1}/get-similar-courses?course_id=${courseId}&page=${page}&limit=${limit}`;
-        const response = await axios.get(url);
-        if (response.status == 200) {
 
-            let scores = {};
-            const course_ids = [];
-            response.data["data"].forEach((course) => {
+        const count = process.env.ML_SIMILAR_COURSE_COUNT || 20;
+        const cacheName = `ml-similar-course-${count}`;
+        const cacheData = await RedisConnection.getValuesSync(cacheName);
+        if (!cacheData.noCacheData) {
 
-                scores[`LRN_CNT_PUB_${course.course_id}`] = course.similarity;
-                course_ids.push(`LRN_CNT_PUB_${course.course_id}`);
+            return cacheData;
 
-            });
+        }
 
-            let esQuery = {
-                "from": 0,
-                "size": limit,
-                "sort": [
-                    {
-                        "_script": {
-                            "order": "desc",
-                            "type": "number",
-                            "script": {
-                                "lang": "painless",
-                                "inline": "return params.scores[doc['_id'].value];",
-                                "params": {
-                                    "scores": scores
+        else {
+
+            const url = `${process.env.ML_SERVICE_PUBLIC_V1}/get-similar-courses?course_id=${courseId}&count=${count}`;
+            const response = await axios.get(url);
+            if (response.status == 200) {
+
+                let scores = {};
+                const course_ids = [];
+                response.data["data"].forEach((course) => {
+
+                    scores[`LRN_CNT_PUB_${course.course_id}`] = course.similarity;
+                    course_ids.push(`LRN_CNT_PUB_${course.course_id}`);
+
+                });
+
+                let esQuery = {
+                    "from": 0,
+                    "size": count,
+                    "sort": [
+                        {
+                            "_script": {
+                                "order": "desc",
+                                "type": "number",
+                                "script": {
+                                    "lang": "painless",
+                                    "inline": "return params.scores[doc['_id'].value];",
+                                    "params": {
+                                        "scores": scores
+                                    }
                                 }
                             }
                         }
-                    }
-                ],
-                "query": {
-                    "bool": {
-                        "must_not": {
-                            "term": {
-                                "_id": `LRN_CNT_PUB_${courseId}`
-                            }
-                        },
-                        "must": [
-                            {
+                    ],
+                    "query": {
+                        "bool": {
+                            "must_not": {
                                 "term": {
-                                    "status.keyword": "published"
+                                    "_id": `LRN_CNT_PUB_${courseId}`
                                 }
                             },
-                            {
-                                "ids": {
-                                    "values": course_ids
+                            "must": [
+                                {
+                                    "term": {
+                                        "status.keyword": "published"
+                                    }
+                                },
+                                {
+                                    "ids": {
+                                        "values": course_ids
+                                    }
                                 }
-                            }
-                        ]
+                            ]
+                        }
                     }
                 }
+                const result = await elasticService.plainSearch("learn-content", esQuery);
+                if (result && result.hits && result.hits.hits && result.hits.hits.length) {
+
+                    const data = { result: result.hits.hits, courseIdSimilarityMap: scores };
+                    RedisConnection.set(cacheName, data);
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
+                    return data;
+
+                }
             }
-            const result = await elasticService.plainSearch("learn-content", esQuery);
-            return { result: result, courseIdSimilarityMap: scores };
         }
 
-        return { result: {}, courseIdSimilarityMap: {} };
+        return { result: [], courseIdSimilarityMap: {} };
 
     } catch (error) {
         console.log("Error occured while fetching data from ML Server: ");
@@ -89,7 +110,7 @@ const getSimilarCoursesDataML = async (courseId, page=1,limit=6) => {
         else {
             console.log(error);
         }
-        return { result: {}, courseIdSimilarityMap: {} };
+        return { result: [], courseIdSimilarityMap: {} };
 
     }
 

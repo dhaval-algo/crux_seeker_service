@@ -1656,36 +1656,21 @@ module.exports = class learnContentService {
         return learn_types_images
     }
 
-    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page, limit) {
+    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page=1,limit=6) {
 
-        const cacheName = `ml-similar-courses-${courseId}-${page}-${limit}-${currency}`
-        let cacheData = await RedisConnection.getValuesSync(cacheName);
-        if (!cacheData.noCacheData) {
-            return cacheData
-        } else {
-            const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId,page, limit);
-
-            let courses = [];
-            if (result.hits) {
-                if (result.hits.hits && result.hits.hits.length > 0) {
-
-                    for (const hit of result.hits.hits) {
-                        let course = await this.generateSingleViewData(hit._source, false, currency);
-                        const { accreditations, ads_keywords, subtitle, prerequisites, target_students, content, meta_information, ...optimisedCourse } = course;
-                        optimisedCourse.similarity = courseIdSimilarityMap[optimisedCourse.id];
-                        courses.push(optimisedCourse);
-                    }
-
-                    if (page == 1) {
-
-                        RedisConnection.set(cacheName, courses);
-                        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
-                    }
-                }
+        const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId);
+        let courses = [];
+        const offset = (page-1) * limit;
+        if (result && result.length) {
+            for (const courseElasticData of result.slice(offset,offset+limit)) {
+                const courseData = await this.generateSingleViewData(courseElasticData._source, false, currency);
+                const { accreditations, ads_keywords, subtitle, prerequisites, target_students, content, meta_information, ...optimisedCourse } = courseData;
+                optimisedCourse.similarity = courseIdSimilarityMap[optimisedCourse.id];
+                courses.push(optimisedCourse);
             }
-
-            return courses;
         }
+        return courses;
+
     }
     async getTopCategories(req, callback) {
         try {
