@@ -488,7 +488,7 @@ const generateMetaInfo = async (page, result, list) => {
     
     switch (page) {
         case 'learn-content':
-            meta_title = `${result.title} | ${result.partner_name} | ${process.env.SITE_URL_FOR_META_DATA}`;
+            meta_title = `${result.title} | ${result.partner_name}`;
             
             meta_information = {
                 meta_title: meta_title,
