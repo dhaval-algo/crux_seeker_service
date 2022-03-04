@@ -1152,6 +1152,7 @@ module.exports = class learnContentService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
+        console.log("result.categories_list ",result.categories_list)
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
