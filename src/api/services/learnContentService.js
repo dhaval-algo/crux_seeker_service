@@ -274,7 +274,6 @@ module.exports = class learnContentService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    console.log("used cache");
                     return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 }
             }
@@ -787,7 +786,6 @@ module.exports = class learnContentService {
 
             if (useCache) {
                 list.forEach((course) => {
-                    console.log("course ",course)
                     let courseSlugs = {
                         course_slug: course.slug,
                         categories: course.categories_list.map(cat => cat.slug),
@@ -1154,7 +1152,6 @@ module.exports = class learnContentService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
-        console.log("result.categories_list ",result.categories_list)
         if(currencies.length == 0){
             currencies = await getCurrencies();
         }
