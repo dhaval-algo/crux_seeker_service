@@ -274,6 +274,7 @@ module.exports = class learnContentService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
+                    console.log("used cache");
                     return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 }
             }
