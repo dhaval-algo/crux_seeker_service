@@ -78,9 +78,10 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
                         }
                     }                    
                 }
+                RedisConnection.set(cacheName, entities);
             }
         }
-        RedisConnection.set(cacheName, entities);
+        
        // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
     }
     if(skipCache !=true) {
@@ -1638,9 +1639,10 @@ module.exports = class learnContentService {
                             }
                         }                    
                     }
+                    RedisConnection.set(cacheName, learn_types_images);
                 }
             }           
-            RedisConnection.set(cacheName, learn_types_images);
+            
            // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
         } 
 
