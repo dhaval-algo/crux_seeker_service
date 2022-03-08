@@ -17,6 +17,8 @@ router.post('/forgot-password', userService.forgotPassword);
 router.post('/reset-password', userService.resetPassword);
 router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
 router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList);
+router.post('/add-goal',authenticateJWT, userService.addGoals);
+router.get('/get-goals',authenticateJWT, userService.getGoals);
 router.post('/add-to-learnpathwishlist',authenticateJWT, userService.addLearnPathToWishList);
 router.post('/add-course-to-recently-viewed',authenticateJWT, userService.addCourseToRecentlyViewed);
 router.post('/fetch-recently-viewed-courses',authenticateJWT, userService.getRecentlyViewedCourses);
