@@ -82,22 +82,18 @@ const storeTopTenGoal = async () => {
 
     if(currentRole.length > 0){
         RedisConnection.set(currentRoleCacheKey, currentRole);
-        RedisConnection.expire(currentRoleCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
     }
 
     if(preferredRole.length > 0){
         RedisConnection.set(preferredRoleCacheKey, preferredRole);
-        RedisConnection.expire(preferredRoleCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
     }
 
     if(industryChoice.length > 0){
         RedisConnection.set(industryChoiceCacheKey, industryChoice);
-        RedisConnection.expire(industryChoiceCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
     }
 
     if(preferredSkill.length > 0){
         RedisConnection.set(preferredSkillCacheKey, preferredSkill);
-        RedisConnection.expire(preferredSkillCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
     }
 }
    
