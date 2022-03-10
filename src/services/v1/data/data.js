@@ -3,6 +3,162 @@ const Op = Sequelize.Op;
 const csv =require("csvtojson/v2");
 const axios = require('axios')
 const models = require("../../../../models");
+const redisConnection = require('../redis');
+const RedisConnection = new redisConnection();
+
+const fetchSuggestGoals = async (req, res, skipCache) => {
+    const {searchType} = req.query
+    let useCache = false
+    let data = []
+    try {
+        if(searchType){
+            if(searchType != 'current_role' && searchType != 'preferred_role' && searchType != 'industry_choice' && searchType != 'preferred_skill'){
+                throw "Invalid Search Query"
+            }
+            if(searchType == "current_role"){
+                const currentRoleCacheKey = "current-role";
+                if(skipCache !=true) {
+                    let cacheData = await RedisConnection.getValuesSync(currentRoleCacheKey);
+                    if(cacheData.noCacheData != true) {
+                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        useCache = true
+                    }            
+                }
+                if(useCache !=true)
+                {
+                    const dataObj =  await models.goal.findAll({
+                        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "currentRole"],         
+                        group: ['currentRole'],
+                        where: {
+                            "currentRole": {
+                              [Op.ne]: ""
+                            }
+                        },
+                        limit:10,
+                        raw:true,
+                        order: Sequelize.literal('count DESC')
+                    })
+                    for(let key of dataObj){
+                        data.push(key["currentRole"])
+                    }
+                    
+                    if(data)
+                    {
+                        RedisConnection.set(currentRoleCacheKey, data);
+                    }
+                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                }
+                
+            }else if(searchType == "preferred_role"){
+                const preferredRoleCacheKey = "preferred-role";
+                if(skipCache !=true) {
+                    let cacheData = await RedisConnection.getValuesSync(preferredRoleCacheKey);
+                    if(cacheData.noCacheData != true) {
+                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        useCache = true
+                    }            
+                }
+                if(useCache !=true)
+                {
+                    const dataObj =  await models.goal.findAll({
+                        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "preferredRole"],         
+                        group: ['preferredRole'],
+                        where: {
+                            "preferredRole": {
+                              [Op.ne]: ""
+                            }
+                        },
+                        limit:10,
+                        raw:true,
+                        order: Sequelize.literal('count DESC')
+                    })
+                    for(let key of dataObj){
+                        data.push(key["preferredRole"])
+                    }
+                    
+                    if(data)
+                    {
+                        RedisConnection.set(preferredRoleCacheKey, data);
+                    }
+                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                }
+
+            }else if(searchType == "industry_choice"){
+                const industryChoiceCacheKey = "industry-choice";
+                if(skipCache !=true) {
+                    let cacheData = await RedisConnection.getValuesSync(industryChoiceCacheKey);
+                    if(cacheData.noCacheData != true) {
+                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        useCache = true
+                    }            
+                }
+                if(useCache !=true)
+                {
+                    const dataObj =  await models.goal.findAll({
+                        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "industryChoice"],         
+                        group: ['industryChoice'],
+                        where: {
+                            "industryChoice": {
+                              [Op.ne]: ""
+                            }
+                        },
+                        limit:10,
+                        raw:true,
+                        order: Sequelize.literal('count DESC')
+                    })
+                    for(let key of dataObj){
+                        data.push(key["industryChoice"])
+                    }
+                    
+                    if(data)
+                    {
+                        RedisConnection.set(industryChoiceCacheKey, data);
+                    }
+                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                }
+
+            }else{
+                const preferredSkillCacheKey = "preferred-skill";
+                if(skipCache !=true) {
+                    let cacheData = await RedisConnection.getValuesSync(preferredSkillCacheKey);
+                    if(cacheData.noCacheData != true) {
+                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        useCache = true
+                    }            
+                }
+                if(useCache !=true)
+                {
+                    const dataObj =  await models.skill.findAll({
+                        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "name"],         
+                        group: ['name'],
+                        where: {
+                            "name": {
+                              [Op.ne]: ""
+                            }
+                        },
+                        limit:10,
+                        raw:true,
+                        order: Sequelize.literal('count DESC')
+                    })
+                    for(let key of dataObj){
+                        data.push(key["name"])
+                    }
+                    
+                    if(data)
+                    {
+                        RedisConnection.set(preferredSkillCacheKey, data);
+                    }
+                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                }
+
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        return res.status(200).send({success: 'success',options:[]})
+    }
+
+}
 
 const fetchSuggestions = async (req,res) => {
     const {searchType, searchQuery } = req.query
@@ -89,4 +245,4 @@ const placesAutoComplete = async (req, res) => {
       })
 }
 
-module.exports = { fetchSuggestions, insertDefaultOption, placesAutoComplete}                  
+module.exports = { fetchSuggestions, fetchSuggestGoals, insertDefaultOption, placesAutoComplete}                  

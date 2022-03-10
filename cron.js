@@ -14,7 +14,6 @@ const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeIma
 const ENABLE_TOP_TEN_CRON = process.env.ENABLE_TOP_TEN_CRON || true
 if(ENABLE_TOP_TEN_CRON){
     cron.schedule(process.env.TOP_TEN_CRON_TIME, async function () {
-        console.log("here");
         try {        
             await storeTopTenGoal()
         } catch (error) {

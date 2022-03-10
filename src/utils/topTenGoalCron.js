@@ -1,9 +1,8 @@
 const models = require("../../models");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
-const { publishToSNS } = require('../services/v1/sns');
 const moment = require("moment");
-const redisConnection = require('../../services/v1/redis');
+const redisConnection = require('../services/v1/redis');
 const RedisConnection = new redisConnection();
 
 
@@ -13,33 +12,93 @@ const storeTopTenGoal = async () => {
     const preferredRoleCacheKey = "preferred-role";
     const industryChoiceCacheKey = "industry-choice";
     const preferredSkillCacheKey = "preferred-skill";
-
-    // const currentRoleObj =  await models.goal.findAll({
-    //     attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], [Sequelize.fn('DISTINCT', Sequelize.col('currentRole')), "currentRole"]],         
-    //     where:{
-    //         count: {
-    //             [Op.gte]: 2
-    //         }
-    //     },
-    //     limit:10,
-    //     raw:true
-    // })
-    const currentRoleObj = await queryInterface.sequelize.query(`SELECt curerntRole FROM goals where `);
+    let currentRole = []
+    let preferredRole = []
+    let industryChoice = []
+    let preferredSkill = []
+    const currentRoleObj =  await models.goal.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "currentRole"],         
+        group: ['currentRole'],
+        where: {
+            "currentRole": {
+              [Op.ne]: ""
+            }
+        },
+        limit:10,
+        raw:true,
+        order: Sequelize.literal('count DESC')
+    })
     for(let key of currentRoleObj){
-        console.log(key);
+        currentRole.push(key["currentRole"])
     }
-    // const result = await elasticService.search('custom_pages', query);
-    // if(result.hits && result.hits.length > 0) {
 
-    //     let data = { content:result.hits[0]._source };
-    //     RedisConnection.set(cacheKey, data);
-    //     RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_CUSTOM_PAGE); 
+    const preferredRoleObj =  await models.goal.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "preferredRole"],         
+        group: ['preferredRole'],
+        where: {
+            "preferredRole": {
+              [Op.ne]: ""
+            }
+        },
+        limit:10,
+        raw:true,
+        order: Sequelize.literal('count DESC')
+    })
+    for(let key of preferredRoleObj){
+        preferredRole.push(key["preferredRole"])
+    }
 
-    //     callback(null, {status: 'success', message: 'Fetched successfully!', data:data});
-    // } else {
-    //     callback(null, {status: 'failed', message: 'No data available!', data: {}});
-    // }
+    const industryChoiceObj =  await models.goal.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "industryChoice"],         
+        group: ['industryChoice'],
+        where: {
+            "industryChoice": {
+              [Op.ne]: ""
+            }
+        },
+        limit:10,
+        raw:true,
+        order: Sequelize.literal('count DESC')
+    })
+    for(let key of industryChoiceObj){
+        industryChoice.push(key["industryChoice"])
+    }
 
+    const preferredSkillObj =  await models.skill.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "name"],         
+        group: ['name'],
+        where: {
+            "name": {
+              [Op.ne]: ""
+            }
+        },
+        limit:10,
+        raw:true,
+        order: Sequelize.literal('count DESC')
+    })
+    for(let key of preferredSkillObj){
+        preferredSkill.push(key["name"])
+    }
+
+    if(currentRole.length > 0){
+        RedisConnection.set(currentRoleCacheKey, currentRole);
+        RedisConnection.expire(currentRoleCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
+    }
+
+    if(preferredRole.length > 0){
+        RedisConnection.set(preferredRoleCacheKey, preferredRole);
+        RedisConnection.expire(preferredRoleCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
+    }
+
+    if(industryChoice.length > 0){
+        RedisConnection.set(industryChoiceCacheKey, industryChoice);
+        RedisConnection.expire(industryChoiceCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
+    }
+
+    if(preferredSkill.length > 0){
+        RedisConnection.set(preferredSkillCacheKey, preferredSkill);
+        RedisConnection.expire(preferredSkillCacheKey, process.env.TOP_TEN_EXPIRE_TIME); 
+    }
 }
    
 module.exports = {
