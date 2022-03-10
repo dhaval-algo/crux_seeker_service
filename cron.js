@@ -6,10 +6,23 @@ const cron = require('node-cron')
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 const { storeActivity, learnpathActivity} = require('./src/utils/activityCron');
+const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics} = require('./src/utils/cacheInvalidationCron');
 
 
 // cron jobs
+const ENABLE_TOP_TEN_CRON = process.env.ENABLE_TOP_TEN_CRON || true
+if(ENABLE_TOP_TEN_CRON){
+    cron.schedule(process.env.TOP_TEN_CRON_TIME, async function () {
+        console.log("here");
+        try {        
+            await storeTopTenGoal()
+        } catch (error) {
+            console.log("Error in storing top ten goals", error);
+        }
+    });
+}
+
 const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
 if(ENABLE_SITEMAP_CRON)
 {
