@@ -170,7 +170,7 @@ module.exports = class categoryService {
         }        
     }
 
-    async getSkills(req, callback, skipCache=true){
+    async getSkills(req, callback, skipCache){
         try{
             let cacheName = `skills`
             let useCache = false
