@@ -1,6 +1,14 @@
 const elasticService = require("./elasticService");
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
+const LearnContentService = require('./learnContentService');
+const learnContentService = new LearnContentService();
+const ProviderService = require('./providerService');
+const providerService = new ProviderService();
+const ArticleService = require('./articleService');
+const articleService = new ArticleService();
+
+
 
 
 const getTrendingNow = async () => {
@@ -43,10 +51,21 @@ const getTrendingNowCategories = async (req, callback) => {
     try {
 
         const trendingNowData = await getTrendingNow();
-        const categories = trendingNowData.map((trendingNow) => {
-            return { description: trendingNow.description, id: trendingNow.category.slug, name: trendingNow.category.name, slug: trendingNow.category.slug };
-        });
-        callback(null, { success: true, message: "list fetched succesfully", data: categories });
+        const categories = [];
+
+        for (const category in trendingNowData) {
+
+            const categoryData = {};
+            categoryData.description = trendingNowData[category].description;
+            categoryData.id = trendingNowData[category].category.id;
+            categoryData.slug = trendingNowData[category].category.slug;
+            categoryData.name = trendingNowData[category].category.name;
+
+            categories.push(categoryData);
+        }
+
+
+        callback(null, { success: true, message: "list fetched successfully", data: categories });
 
     } catch (error) {
 
@@ -63,17 +82,12 @@ const getTrendingNowList = async (req, callback) => {
         const { category, page = 1, limit = 5 } = req.query;
         const offset = (page - 1) * limit;
         const trendingNowData = await getTrendingNow();
-
+        
         let list = [];
+        if (trendingNowData[category]) {
+            list = trendingNowData[category].list;
 
-        for (const trendingNow of trendingNowData) {
-            if (trendingNow.category.name == category || trendingNow.category.slug == category) {
-                list = trendingNow.list;
-                break;
-
-            }
-
-        };
+        }
 
         list = list.slice(offset, offset + limit);
         list = list.map((data) => {
@@ -97,9 +111,79 @@ const getTrendingNowList = async (req, callback) => {
 
 }
 
-module.exports = {
 
+const getTrendingNowComponentData = async (req, callback) => {
+
+    try {
+
+        const { component_slug, category } = req.query;
+        const trendingNowData = await getTrendingNow();
+
+        let component = null;
+        let list = [];
+        if (trendingNowData[category]) {
+            list = trendingNowData[category].list;
+
+        }
+
+        for (const comp of list) {
+            if (comp.slug == component_slug) {
+                component = comp;
+                break;
+            }
+        }
+
+
+        if (component) {
+
+            if (component.type == 'learn_content') {
+                req.query.courseIds = component.learn_contents.join(',');
+                await learnContentService.getLearnContentList(req, (err, result) => {
+
+                    component.learn_contents = result.data;
+
+                }, false);
+
+            }
+
+            else if (component.type == 'institute') {
+                req.query.instituteIds = component.institutes.join(',');
+                await providerService.getProviderList(req, (err, result) => {
+
+                    component.institutes = result.data
+                }, false);
+
+            }
+            else if (component.type == 'article') {
+
+                req.query.articleIds = component.articles.map((id) => `ARTCL_PUB_${id}`);
+                await articleService.getArticleList(req, (err, result) => {
+
+                    component.articles = result.data;
+                });
+            }
+
+            const careerviraAdvices = component.careervira_advices.map((id) => `ARTCL_PUB_${id}`);
+
+            await articleService.getArticleList({query:{articleIds:careerviraAdvices}}, (err, result) => {
+                component.careervira_advices = result.data.list;
+            });
+        }
+
+        callback(null, { success: true, message: "data fetched successfully", data: component?component:{} });
+
+
+    } catch (error) {
+        console.log("error while fetching trending now component data", error);
+        callback(null, { success: false, message: "failed to fetch", data: error.meta });
+    }
+
+}
+
+
+module.exports = {
     getTrendingNowCategories,
-    getTrendingNowList
+    getTrendingNowList,
+    getTrendingNowComponentData
 
 }

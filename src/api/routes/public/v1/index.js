@@ -66,6 +66,7 @@ router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
 router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
 router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
+router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);
 router.get('/author/:slug', ArticleController.getAuthor);
 
 router.post('/contact-us',footerController.sendContactEmail);
