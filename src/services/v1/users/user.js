@@ -1248,7 +1248,7 @@ const getGoals = async (req, res) => {
                 for(let skill of skills){
                     skillList.push(skill.name)
                 }
-                obj["preferredSkills"] = skillList.join(",")
+                obj["preferredSkills"] = skillList
             }
             obj["highestDegree"] = goal.highestDegree
             obj["specialization"] = goal.specialization
@@ -1274,7 +1274,7 @@ const addGoals = async (req, res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills="", highestDegree, specialization, workExperience} = req.body
+        const { lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree, specialization, workExperience} = req.body
         if(!user){
             return res.status(200).json({
                 success: false,
@@ -1298,9 +1298,7 @@ const addGoals = async (req, res) => {
         }
         let preferredSkillList = [];
         if(preferredSkills){
-            preferredSkillList = preferredSkills.split(",").map(function(item) {
-                return item.trim();
-              });;
+            preferredSkillList = preferredSkills;
         }
 
         const goalObj = await models.goal.create(
