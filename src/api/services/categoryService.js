@@ -170,7 +170,7 @@ module.exports = class categoryService {
         }        
     }
 
-    async getSkills(req, callback, skipCache){
+    async getSkills(req, callback, skipCache=true){
         try{
             let cacheName = `skills`
             let useCache = false
@@ -187,6 +187,9 @@ module.exports = class categoryService {
                 let data 
                 if (response.ok) {
                      data = await response.json();
+                     data.map(function(el){
+                         delete el["topics"]
+                     })
                 }
                 
                 if(data)
