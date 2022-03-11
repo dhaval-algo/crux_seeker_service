@@ -82,7 +82,7 @@ const getTrendingNowList = async (req, callback) => {
         const { category, page = 1, limit = 5 } = req.query;
         const offset = (page - 1) * limit;
         const trendingNowData = await getTrendingNow();
-        
+
         let list = [];
         if (trendingNowData[category]) {
             list = trendingNowData[category].list;
@@ -163,14 +163,14 @@ const getTrendingNowComponentData = async (req, callback) => {
                 });
             }
 
-            const careerviraAdvices = component.careervira_advices.map((id) => `ARTCL_PUB_${id}`);
+            const careerviraAdvicesIds = component.careervira_advices.map((id) => `ARTCL_PUB_${id}`);
 
-            await articleService.getArticleList({query:{articleIds:careerviraAdvices}}, (err, result) => {
+            await articleService.getArticleList({ query: { articleIds: careerviraAdvicesIds } }, (err, result) => {
                 component.careervira_advices = result.data.list;
             });
         }
 
-        callback(null, { success: true, message: "data fetched successfully", data: component?component:{} });
+        callback(null, { success: true, message: "data fetched successfully", data: component ? component : {} });
 
 
     } catch (error) {
