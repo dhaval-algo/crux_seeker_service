@@ -325,7 +325,7 @@ const fetchLearnpathEnquiry = async(req, res) => {
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
                     let hit =  result.hits.hits[0]
-                    enquiry.sourceUrl =  process.env.FRONTEND_URL + "/learnpath/" +hit._source.title
+                    enquiry.sourceUrl =  process.env.FRONTEND_URL + "/learnpath/" +hit._source.slug
                     enquiry.learnpathName = hit._source.title
                     enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                     enquiry.images = hit._source.images
