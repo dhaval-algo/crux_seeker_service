@@ -1,5 +1,6 @@
 'use strict';
 require('dotenv').config();
+const { sequelize } = require("../models");
 
 const elasticService = require("../src/api/services/elasticService");
 
@@ -43,12 +44,13 @@ const getUserDetails =  (metaObjectIds, userId) => {
         let fullName, email , phone, highestDegree, student , experience;
 
     try {
-        let userData = await models.user_meta.findAll( { where: {userId, id : metaObjectIds}} )
+        let config = { where: {userId, id : metaObjectIds}, order: sequelize.literal('"key" ASC')}
+        let userData = await models.user_meta.findAll(config)
 
         userData.forEach((each, i) => {
 
             if(each.dataValues.key == "firstName")
-                fullName = each.dataValues.value
+                fullName = each.dataValues.value +" "
             if(each.dataValues.key == "lastName")
                 fullName += each.dataValues.value
             if(each.dataValues.key == "email")
@@ -113,7 +115,7 @@ const exportCourseEnquiries = async () => {
                 .then( async (course) => {
                        let { email , phone, fullName, student, highestDegree, experience} = user
                        let {courseId, courseName, partnerId } = course
-                       await models.enquiry.create({ phone, fullName, email, student, highestDegree,
+                       await models.enquiry.create({ userId, phone, fullName, email, student, highestDegree,
                                         experience, courseName, courseId, partnerId, createdAt  })
                        
                 }).catch(err => console.log(err))
@@ -186,7 +188,7 @@ const exportLearnpathEnquiries = async () => {
             .then( async ( learnpath ) => {
                    let { email , phone, fullName, student, highestDegree, experience} = user
                    let { learnpathId, learnpathName } = learnpath
-                   await models.learnpath_enquiry.create({ phone, fullName, email, learnpathName,
+                   await models.learnpath_enquiry.create({ userId, phone, fullName, email, learnpathName,
                                 learnpathId, student, highestDegree, experience, createdAt})
             }).catch(err => console.log(err))
         })
@@ -205,20 +207,8 @@ const exportLearnpathEnquiries = async () => {
 const execute = async () => {
 
     await exportCourseEnquiries()
-    .then(status => {
-        if(status)
-            console.log("imported course successfullu")
-        else
-            console.log("course: somthing went wrong")
-    })
 
     await exportLearnpathEnquiries()
-    .then(status => {
-        if(status)
-            console.log("imported course successfullu")
-        else
-            console.log("course: somthing went wrong")
-    })
 
 }
 
