@@ -2959,7 +2959,7 @@ const getUserPendingActions = async (req, res) => {
 
         const fields = {
             education: {
-                weightage: 15,
+                weightage: 10,
             },
             profilePicture: {
                 weightage: 10,
@@ -2983,7 +2983,7 @@ const getUserPendingActions = async (req, res) => {
                 weightage: 20,
             },
             workExp: {
-                weightage: 15,
+                weightage: 10,
             }
             // phone: {
             //     weightage: 5,
@@ -3099,6 +3099,21 @@ const getUserPendingActions = async (req, res) => {
             }
         }
         
+        /**
+         * Adding profile progress for profile Actions : 10%
+        */
+        const goalObj = await models.goal.findAll({
+            where:{
+                userId: userId
+            }
+        })
+
+        if(!goalObj.length){
+            response.pendingProfileActions.push('goal') 
+        }else{
+            profileProgress += 10
+        }
+
         response.profileProgress=profileProgress
         res.send({ message: "success", data: response })
     } catch (error) {
