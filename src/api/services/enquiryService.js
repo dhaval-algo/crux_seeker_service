@@ -5,10 +5,9 @@ const communication = require('../../communication/v1/communication');
 const buildEnquiry =  (req) => {
 
     return new Promise( async (resolve, reject) => {
-        let { body: {data} } = req
-        let  { fullName = "", email = "", phone = ""} = data
+        let  { fullName = "", email = "", phone = ""} = req.body
         let enquiry = {}
-        let  { student, highestDegree, experience, enquiryMessage, courseId, courseName } = data
+        let  { student, highestDegree, experience, enquiryMessage, courseId, courseName } = req.body
 
         fullName = fullName.trim()
         email = email.trim()
@@ -34,10 +33,9 @@ const buildEnquiry =  (req) => {
 const buildLearnpathEnquiry =  (req) => {
 
     return new Promise( async (resolve, reject) => {
-        let { body: {data} } = req
-        let  { fullName, email, phone} = data
+        let  { fullName = "", email = "", phone = ""} = req.body
         let enquiry = {}
-        let  { student, highestDegree, experience, enquiryMessage, learnpathId, learnpathName } = data
+        let  { student, highestDegree, experience, enquiryMessage, learnpathId, learnpathName }  = req.body
 
         fullName = fullName.trim()
         email = email.trim()
