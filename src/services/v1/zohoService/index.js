@@ -211,9 +211,8 @@ const prepareLeadData = (enquiry_id) => {
                         let exp = JSON.parse(each.dataValues.value)
                         leadObj.Experience = exp.value || "";
                     }
-                    if(each.dataValues.key == "education"){ console.log( enquiry.userId)
+                    if(each.dataValues.key == "education"){
                         education = JSON.parse(each.dataValues.value)
-                    
                     }
                     if(each.dataValues.key == "gender")
                         leadObj.Gender = each.dataValues.value;
@@ -258,7 +257,6 @@ const prepareLeadData = (enquiry_id) => {
         }
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
-            console.log(data)
             return resolve(data)
         } catch (error) {
             console.log(error);
@@ -371,7 +369,6 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             }
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
-            console.log(data)
             return resolve(data)
         } catch (error) {
             console.log(error);
