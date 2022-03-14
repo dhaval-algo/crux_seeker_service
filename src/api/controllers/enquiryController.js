@@ -139,7 +139,7 @@ const fetchEnquiry = async(req, res) => {
 
 const createEnquiry = async (req, res) => {
 
-    let { courseId } = req.body.data
+    let { courseId } = req.body
 
     try {
 
@@ -326,7 +326,7 @@ const fetchLearnpathEnquiry = async(req, res) => {
                 if(result.hits.hits && result.hits.hits.length > 0){
                     let hit =  result.hits.hits[0]
                     enquiry.sourceUrl =  process.env.FRONTEND_URL + "/learnpath/" +hit._source.title
-                    enquiry.courseName = hit._source.title
+                    enquiry.learnpathName = hit._source.title
                     enquiry.categoryName = hit._source.categories? hit._source.categories.toString():""
                     enquiry.images = hit._source.images
                     let courses = hit._source.courses
