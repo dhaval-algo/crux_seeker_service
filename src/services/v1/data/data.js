@@ -12,7 +12,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
     let data = []
     try {
         if(searchType){
-            if(searchType != 'current_role' && searchType != 'preferred_role' && searchType != 'industry_choice' && searchType != 'preferred_skill'){
+            if(searchType != 'current_role' && searchType != 'preferred_role' && searchType != 'industry_choice' && searchType != 'preferred_skill' && searchType != 'highest_degree' && searchType != 'specialization'){
                 throw "Invalid Search Query"
             }
             if(searchType == "current_role"){
@@ -117,7 +117,76 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
                 }
 
-            }else{
+            }else if(searchType == "highest_degree"){
+                const degreeCacheKey = "degree";
+                if(skipCache !=true) {
+                    let cacheData = await RedisConnection.getValuesSync(degreeCacheKey);
+                    if(cacheData.noCacheData != true) {
+                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        useCache = true
+                    }            
+                }
+                if(useCache !=true)
+                {
+                    const dataObj =  await models.goal.findAll({
+                        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "highestDegree"],         
+                        group: ['highestDegree'],
+                        where: {
+                            "highestDegree": {
+                              [Op.ne]: ""
+                            }
+                        },
+                        limit:10,
+                        raw:true,
+                        order: Sequelize.literal('count DESC')
+                    })
+                    for(let key of dataObj){
+                        data.push(key["highestDegree"])
+                    }
+                    
+                    if(data)
+                    {
+                        RedisConnection.set(degreeCacheKey, data);
+                    }
+                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                }
+
+            }else if(searchType == "specialization"){
+                const specializationCacheKey = "specialization";
+                if(skipCache !=true) {
+                    let cacheData = await RedisConnection.getValuesSync(specializationCacheKey);
+                    if(cacheData.noCacheData != true) {
+                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        useCache = true
+                    }            
+                }
+                if(useCache !=true)
+                {
+                    const dataObj =  await models.goal.findAll({
+                        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "specialization"],         
+                        group: ['specialization'],
+                        where: {
+                            "specialization": {
+                              [Op.ne]: ""
+                            }
+                        },
+                        limit:10,
+                        raw:true,
+                        order: Sequelize.literal('count DESC')
+                    })
+                    for(let key of dataObj){
+                        data.push(key["specialization"])
+                    }
+                    
+                    if(data)
+                    {
+                        RedisConnection.set(specializationCacheKey, data);
+                    }
+                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                }
+
+            }
+            else{
                 const preferredSkillCacheKey = "preferred-skill";
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(preferredSkillCacheKey);

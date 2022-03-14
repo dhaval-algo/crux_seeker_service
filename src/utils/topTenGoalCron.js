@@ -12,10 +12,14 @@ const storeTopTenGoal = async () => {
     const preferredRoleCacheKey = "preferred-role";
     const industryChoiceCacheKey = "industry-choice";
     const preferredSkillCacheKey = "preferred-skill";
+    const degreeCacheKey = "degree";
+    const specializationCacheKey = "specialization";
     let currentRole = []
     let preferredRole = []
     let industryChoice = []
     let preferredSkill = []
+    let degree = []
+    let specialization = []
     const currentRoleObj =  await models.goal.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "currentRole"],         
         group: ['currentRole'],
@@ -80,6 +84,38 @@ const storeTopTenGoal = async () => {
         preferredSkill.push(key["name"])
     }
 
+    const degreeObj =  await models.goal.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "highestDegree"],         
+        group: ['highestDegree'],
+        where: {
+            "highestDegree": {
+              [Op.ne]: ""
+            }
+        },
+        limit:10,
+        raw:true,
+        order: Sequelize.literal('count DESC')
+    })
+    for(let key of degreeObj){
+        degree.push(key["highestDegree"])
+    }
+
+    const specializationObj =  await models.goal.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "specialization"],         
+        group: ['specialization'],
+        where: {
+            "specialization": {
+              [Op.ne]: ""
+            }
+        },
+        limit:10,
+        raw:true,
+        order: Sequelize.literal('count DESC')
+    })
+    for(let key of specializationObj){
+        specialization.push(key["specialization"])
+    }
+
     if(currentRole.length > 0){
         RedisConnection.set(currentRoleCacheKey, currentRole);
     }
@@ -94,6 +130,14 @@ const storeTopTenGoal = async () => {
 
     if(preferredSkill.length > 0){
         RedisConnection.set(preferredSkillCacheKey, preferredSkill);
+    }
+
+    if(degree.length > 0){
+        RedisConnection.set(degreeCacheKey, degree);
+    }
+
+    if(specialization.length > 0){
+        RedisConnection.set(specializationCacheKey, specialization);
     }
 }
    
