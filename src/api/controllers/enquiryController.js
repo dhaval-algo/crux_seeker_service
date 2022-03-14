@@ -183,13 +183,13 @@ const createEnquiry = async (req, res) => {
             {
                 let data = {
                     courseImgUrl: courseImgUrl,
-                    course_name: courseName,
+                    course_name: enquiry.courseName,
                     provider: provider,
-                    full_name: fullName,
-                    email: email,
-                    phone: phone
+                    full_name: enquiry.fullName,
+                    email: enquiry.email,
+                    phone: enquiry.phone
                 }
-                sendEnquiryEmail(correspondence_email, data)
+                enquiryService.sendEnquiryEmail(correspondence_email, data)
             }}
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
