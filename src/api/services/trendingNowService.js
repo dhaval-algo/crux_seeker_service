@@ -100,12 +100,12 @@ const getTrendingNowList = async (req, callback) => {
             }
         });
 
-        callback(null, { success: true, message: "list fetched successfully", data: list });
+        callback(null, { success: true, message: "list fetched successfully", data: {list:list} });
 
 
     } catch (error) {
         console.log("error while fetching trending now list", error);
-        callback(null, { success: false, message: "failed to fetch", data: [] });
+        callback(null, { success: false, message: "failed to fetch", data: {list:[]} });
 
     }
 
