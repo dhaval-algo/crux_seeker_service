@@ -56,8 +56,15 @@ const getUserDetails =  (metaObjectIds, userId) => {
             if(each.dataValues.key == "phone")
                 phone = each.dataValues.value
             if(each.dataValues.key == "experience"){
-                let exp = JSON.parse(each.dataValues.value)
-                experience = exp.value
+                try{
+                    let exp = JSON.parse(each.dataValues.value)
+                    experience = exp.value
+                }
+                catch(err){
+                    experience = each.dataValues.value
+                    console.log("[Its Okay!!]"+err)
+                }
+
             }
             if(each.dataValues.key == "education"){
                 let edu = JSON.parse(each.dataValues.value)
@@ -84,11 +91,10 @@ const exportCourseEnquiries = async () => {
 
     try {
         let enquiries = await models.form_submission.findAll({where:{formType:"enquiry", targetEntityType:"course"}})
-
         enquiries.forEach( async (enquiry) => {
             
             //targetEntityId is basically  courseId
-            let { id, userId, targetEntityId } = enquiry
+            let { id, userId, targetEntityId, createdAt } = enquiry
             
 
             let metaTableEntries= await models.form_submission_values.findAll({where:{ formSubmissionId : id}})
@@ -108,7 +114,7 @@ const exportCourseEnquiries = async () => {
                        let { email , phone, fullName, student, highestDegree, experience} = user
                        let {courseId, courseName, partnerId } = course
                        await models.enquiry.create({ phone, fullName, email, student, highestDegree,
-                                        experience, courseName, courseId, partnerId  })
+                                        experience, courseName, courseId, partnerId, createdAt  })
                        
                 }).catch(err => console.log(err))
             })
@@ -161,7 +167,7 @@ const exportLearnpathEnquiries = async () => {
     enquiries.forEach( async (enquiry) => {
         
         //targetEntityId is basically  learnpathId
-        let { id, userId, targetEntityId } = enquiry
+        let { id, userId, targetEntityId, createdAt } = enquiry
         
 
         let metaTableEntries= await models.form_submission_values.findAll({where:{ formSubmissionId : id}})
@@ -181,7 +187,7 @@ const exportLearnpathEnquiries = async () => {
                    let { email , phone, fullName, student, highestDegree, experience} = user
                    let { learnpathId, learnpathName } = learnpath
                    await models.learnpath_enquiry.create({ phone, fullName, email, learnpathName,
-                                learnpathId, student, highestDegree, experience})
+                                learnpathId, student, highestDegree, experience, createdAt})
             }).catch(err => console.log(err))
         })
         resolve(true)
