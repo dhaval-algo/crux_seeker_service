@@ -35,11 +35,11 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       notEmpty:true,
       validate: {
-        validatePhone(value){
+        /*validatePhone(value){
           const re = /^\+?([0-9]{1,2})\)?[-. ]?([0-9]{5})[-. ]?([0-9]{5})$/;
           if(!re.test(value) )
             throw new Error("invalid phone number")
-        },
+        },*/
         notNull: { msg: "phone cannot be null" },
         notEmpty: { msg: "phone cannot be empty" },
       }
