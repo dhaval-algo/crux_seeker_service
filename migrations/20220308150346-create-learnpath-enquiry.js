@@ -63,7 +63,7 @@ module.exports = {
       allowNull: false,
       type: Sequelize.DATE
     }
-    });
+    }).then(() => queryInterface.addIndex('learnpath_enquiries', ['email']));
   },
   down: (queryInterface, Sequelize) => {
     return queryInterface.dropTable('learnpath_enquiries');
