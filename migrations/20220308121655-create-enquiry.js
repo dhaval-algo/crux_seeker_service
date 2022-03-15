@@ -70,7 +70,7 @@ module.exports = {
       type: Sequelize.DATE
     }
       
-    });
+    }).then(() => queryInterface.addIndex('enquiries', ['email','partnerId']));
   },
   down: (queryInterface, Sequelize) => {
     return queryInterface.dropTable('enquiries');
