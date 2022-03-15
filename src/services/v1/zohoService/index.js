@@ -204,12 +204,15 @@ const prepareLeadData = (enquiry_id) => {
 
                 let user_meta = await models.user_meta.findAll({where: { userId: enquiry.userId}})
                 
-                let education;
+                let education, workExp;
                 user_meta.forEach((each, i) => {
 
                     if(each.dataValues.key == "experience"){
                         let exp = JSON.parse(each.dataValues.value)
                         leadObj.Experience = exp.value || "";
+                    }
+                    if(each.dataValues.key == "workExp"){
+                        workExp = JSON.parse(each.dataValues.value)
                     }
                     if(each.dataValues.key == "education"){
                         education = JSON.parse(each.dataValues.value)
@@ -240,6 +243,11 @@ const prepareLeadData = (enquiry_id) => {
                     if(education.instituteName)
                         leadObj.Institute = education.instituteName.label || ""
             
+                    leadObj.Graduation_Year = education.graduationYear || "";
+                }
+
+                if(workExp && workExp.length > 0 ){
+                    workExp = workExp[0]
                     if(workExp.jobTitle)
                         leadObj.Job_Title = workExp.jobTitle.label || ""
             
@@ -250,9 +258,7 @@ const prepareLeadData = (enquiry_id) => {
                         leadObj.Company = workExp.company.label || ""
             
                     if(workExp.currentCompany)
-                        leadObj.Current_Company = Boolean(workExp.currentCompany) 
-            
-                    leadObj.Graduation_Year = education.graduationYear || "";
+                        leadObj.Current_Company = Boolean(workExp.currentCompany)
                 }
         }
             leadObj = cleanObject(leadObj)
