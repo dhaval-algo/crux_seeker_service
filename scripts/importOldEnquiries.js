@@ -27,7 +27,7 @@ const getCourseDetails =  (courseId) => {
                     courseName: result.hits[0]._source.title, courseId : result.hits[0]._id })
             }
         else{
-            reject(false)
+            reject("[ elasticsearch ] No matching course with courseId "+courseId)
         }
     }
     catch(err){
@@ -56,7 +56,7 @@ const getUserDetails =  (metaObjectIds, userId) => {
             if(each.dataValues.key == "email")
                 email = each.dataValues.value
             if(each.dataValues.key == "phone")
-                phone = each.dataValues.value
+                each.dataValues.value != "" ? phone = each.dataValues.value : phone = "-"
             if(each.dataValues.key == "experience"){
                 try{
                     let exp = JSON.parse(each.dataValues.value)
@@ -146,7 +146,7 @@ const getLearnpathDetails =  (learnpathId) => {
             if( result.hits && result.hits.length > 0 )
                 resolve({ learnpathName: result.hits[0]._source.title, learnpathId : result.hits[0]._id })
             else
-                reject(false)
+                reject("[ elasticsearch ] No matching learnpath with learnpathId "+ learnpathId)
         }
 
         catch(err){
