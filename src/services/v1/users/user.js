@@ -435,18 +435,9 @@ const socialSignIn = async (req, res, next) => {
             return res.status(200).json(providerRes)
         }
         //check if user exists
-        let verificationRes = await userExist(providerRes.data.username, LOGIN_TYPES.LOCAL);
+        let verificationRes = await userExist(providerRes.data.username, provider);
         if (!verificationRes.success) {
-            return res.status(200).json(verificationRes)
-            // const newUserRes = await createUser(providerRes.data);
-            // if (!newUserRes.success) {
-            //     return res.status(500).json({
-            //         'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-            //         'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-            //         success: false
-            //     })
-            // }
-            // verificationRes.data.user = newUserRes.data.user;
+            return res.status(200).json(verificationRes)           
         }
         const payload = {
             requestFieldMetaType: "primary",
@@ -552,7 +543,7 @@ const signInUser = async (resData) => {
     })
 
 }
-const userExist = (username, provider) => {
+const userExist = (email, provider) => {
 
     return new Promise(async (resolve, reject) => {
         
@@ -567,49 +558,16 @@ const userExist = (username, provider) => {
         }
 
         try {
-            let dbCol = 'email';
-            // determine is username is email or phone
-            if (!isEmail(username)) {
-                dbCol = 'phone';
-            }
-
-            //check in db
             let where = {
                 [Op.and]: [
                     {
-                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col(dbCol)),Sequelize.fn('lower', username))                        
-                    },
-                    {
-                        provider: {
-                            [Op.eq]: provider
-                        }
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', username))                        
                     }
                 ]
             }
-            let userLogin = await models.user_login.findOne({ where: where})
+            let user = await models.user.findOne({ where: where})
             
-            if (userLogin != null) {
-                const user = await models.user.findOne({ where: { id: userLogin.userId } });
-
-             //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
-                // if (!user.verified) {
-                   
-                //     return resolve({
-                //         code: DEFAULT_CODES.UNVERIFIED_USER.code,
-                //         message: DEFAULT_CODES.UNVERIFIED_USER.message,
-                //         success: false,
-                //         data: {
-                //             user: {}
-                //         }
-                //     })
-                    // await models.user.update({
-                    //     verified: true,
-                    // }, {
-                    //     where: {
-                    //         id: userLogin.userId
-                    //     }
-                    // });
-                //}
+            if (user != null) {
                 if (user.status == "suspended") {
                    
                     return resolve({
@@ -621,19 +579,25 @@ const userExist = (username, provider) => {
                         }
                     })
                 }
-                const { userId, email = "", password = "", phone = "" } = userLogin;
-                response.success = true;
-                response.code = DEFAULT_CODES.VALID_USER;
-                response.message = DEFAULT_CODES.VALID_USER.message;
-                response.data.user = {
-                    email,
-                    password,
-                    phone,
-                    userId,
-                    userType: user.userType,
-                    verified: provider != LOGIN_TYPES.LOCAL ? true : user.verified
+
+                const user_login = await models.user_login.findOne({ where: { id: user.id, provider: provider} });
+          
+               
+               if(user_login)
+               {
+                    response.success = true;
+                    response.code = DEFAULT_CODES.VALID_USER;
+                    response.message = DEFAULT_CODES.VALID_USER.message;
+                    response.data.user = {
+                        email,
+                        status:user.status,
+                    }
+                    return resolve(response)
                 }
-                return resolve(response)
+                else {
+                    return resolve(response)
+                }
+                
             } else {
                 return resolve(response)
             }
@@ -2853,6 +2817,59 @@ const getUserPendingActions = async (req, res) => {
     }
 }
 
+const isUserEmailExist = async (req, res) => {  
+        
+    let username = req.body.email
+        
+    let response = {
+        code: DEFAULT_CODES.INVALID_USER.code,
+        message: DEFAULT_CODES.INVALID_USER.message,
+        success: false,
+        data: {
+            user: {}
+        }
+    }
+
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', username))                        
+                }
+            ]
+        }
+
+        let user = await models.user.findOne({ where: where})
+            
+        if (user != null) {            
+
+
+            const { email } = user;
+            response.success = true;
+            response.code = DEFAULT_CODES.VALID_USER;
+            response.message = DEFAULT_CODES.VALID_USER.message;
+            response.data.user = {
+                email: user.email,
+                userType: user.userType
+            }
+            res.status(200).send(response)
+        } else {
+            res.status(200).send(response)
+        }
+    } catch (error) {
+        console.log('isUserEmailExist err ',error);
+        response = {
+            code: DEFAULT_CODES.INVALID_USER.code,
+            message: DEFAULT_CODES.INVALID_USER.message,
+            success: false,
+            data: {
+                user: {}
+            }
+        }
+        res.status(200).send(response)
+    }
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -2860,6 +2877,7 @@ module.exports = {
     verifyUserToken,
     socialSignIn,
     signUp,
+    isUserEmailExist,
     resendVerificationLink,
     verifyAccount,
     resetPassword,
