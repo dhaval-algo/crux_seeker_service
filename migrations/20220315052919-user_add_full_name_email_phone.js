@@ -17,13 +17,35 @@ module.exports = {
           type: Sequelize.STRING
         }).
         then(() => queryInterface.addIndex('users', ['email']));
+        
         await queryInterface.addColumn('users', 'phone', {
           type: Sequelize.STRING
         });
+        await queryInterface.addColumn('users', 'gender', {
+          type: Sequelize.ENUM,
+          values: ['MALE', 'FEMALE', 'OTHER']
+        });
+
+        await queryInterface.addColumn('users', 'dob', {
+          type: Sequelize.DATE
+        });
+
+        await queryInterface.addColumn('users', 'city', {
+          type: Sequelize.STRING
+        });
+
+        await queryInterface.addColumn('users', 'country', {
+          type: Sequelize.STRING
+        });
+
         await queryInterface.addColumn('users', 'profilePicture', {
           type: Sequelize.STRING
         });
-        
+
+        await queryInterface.addColumn('users', 'resumeFile', {
+          type: Sequelize.STRING
+        });
+       
         return Promise.resolve();
       } catch (e) {
         return Promise.reject(e);
@@ -31,7 +53,7 @@ module.exports = {
       
   },
 
-  down: (queryInterface, Sequelize) => {
+  down: async (queryInterface, Sequelize) => {
     /*
       Add reverting commands here.
       Return a promise to correctly handle asynchronicity.

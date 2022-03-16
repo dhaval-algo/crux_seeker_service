@@ -54,35 +54,43 @@ const login = async (req, res, next) => {
     try {
         const body = req.body;
         const audience = req.headers.origin;
-        const { username = "", password = "" } = body;
+        const { email = "", password = "" } = body;
         // validate input
-        if (username.trim() == '') {
+        if (email.trim() == '' || !validator.validate(email.trim()) || password.trim() == '') {
             return res.status(200).json({
                 'success': false,
-                'message': 'Username is required',
+                'message': 'Mandatory fields are missing',
                 'data': {}
             });
         }
-
-        if (!validator.validate(username.trim())) {
-            return res.status(200).json({
-                'success': false,
-                'message': 'Please enter the email in the right format',
-                'data': {}
-            });
-        }
-
-        if (password.trim() == '') {
-            return res.status(200).json({
-                'success': false,
-                'message': 'Password is required',
-                'data': {}
-            });
-        }
-        //userSigin Fuction
         
-        const response = await signInUser({ username, password, audience, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).json(response);
+        // check if user exist
+        const verificationRes = await userExist(email, LOGIN_TYPES.LOCAL);
+        if (!verificationRes.success) {
+            return res.status(200).json(verificationRes);
+        }
+           
+        const credVerificationRes = checkPassword(verificationRes.data.user, password);
+        if (!credVerificationRes.success) {
+            return res.status(200).json(credVerificationRes);            
+        }
+        console.log("verificationRes", verificationRes)
+        //create token
+        const payload = {           
+            email,
+            name:  verificationRes.data.user.fullName || "",
+            userId: verificationRes.data.user.userId,
+            provider: LOGIN_TYPES.LOCAL,
+            userType: verificationRes.data.user.userType,
+            isVerified: verificationRes.data.user.verified || false,
+            profilePicture: verificationRes.data.user.profilePicture,
+            audience: req.headers.origin
+            
+        }
+        const tokenRes = await getLoginToken(payload);
+        
+        return res.status(200).json(tokenRes);
+        
 
     } catch (error) {
         console.log(error);
@@ -126,10 +134,18 @@ const sendOtp = async (req, res, next) => {
         if(!response.success){
             return res.status(500).json(response);
         }
-        const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
-        const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
-        let phone = userPhone.value.substring(2, 12);
-        if(userPhone.value.substring(0, 2) != '91'){
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+    
+        let user = await models.user.findOne({ where: where})
+       
+        let phone = user.phone.substring(2, 12);
+        if(user.phone.value.substring(0, 2) != '91'){
             return res.status(500).json({
                 'code': 'SERVER_ERROR',
                 'description': 'Only indian number are allowed'
@@ -191,7 +207,16 @@ const verifyOtp = async (req, res, next) => {
             })
         }
         if(email){
-            let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+            let where = {
+                [Op.and]: [
+                    {
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                    }
+                ]
+            }
+        
+            let email_already_exist = await models.user.findOne({ where: where})
+            
             if(email_already_exist){
                 return res.status(200).json({
                     code: "EMAIL ALREADY EXIST",
@@ -205,10 +230,10 @@ const verifyOtp = async (req, res, next) => {
         const provider = providerObj.provider
         if(!provider || provider == ''){
             provider = LOGIN_TYPES.LOCAL
-        }
-
-        let userObj = await models.user_meta.findOne({where:{userId:userId, key:"email", metaType:"primary"}})
-        const username = userObj.value
+        }        
+    
+        let userObj = await models.user.findOne({where:{id:userId}})
+        const username = userObj.email
         
         const response = await startVerifyOtp({ username, otp, audience, provider: provider, otpType });
         if(!response.success){
@@ -217,9 +242,7 @@ const verifyOtp = async (req, res, next) => {
         if(otpType == OTP_TYPES.PHONEVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
         {
             const response = await verifyPhone( username);
-            const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
-            const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
-            let phone = userPhone.value.substring(2, 12);
+            let phone = userObj.phone.substring(2, 12);
             await sendSMSWelcome(phone)
         }
         if(otpType == OTP_TYPES.EMAILVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
@@ -254,22 +277,14 @@ const verifyOtp = async (req, res, next) => {
             }else{
                 await models.user_meta.update({value:username},{where:{userId:userId, metaType:'primary', key:'oldEmail'}})
             }
-            await models.user_meta.update({
-                value:email
+            await models.user.update({
+                email:email
             }, {
                 where: {
-                    userId:userId,
-                    metaType:'primary', 
-                    key:'email'
+                    id:userId
                 }
             });
-            await models.user_login.update({
-                email: email
-            }, {
-                where: {
-                    userId:userId
-                }
-            });
+            
             // If everything goes fine updating the verified status
             const userEntry = await models.user.findOne({where:{id:userId}})
             if(userEntry){
@@ -284,8 +299,8 @@ const verifyOtp = async (req, res, next) => {
                     )
                 }
             }
-            let data = {old_email:username, new_email:email}
-            sendDataForStrapi(data, "update-email");
+           // let data = {old_email:username, new_email:email}
+            //sendDataForStrapi(data, "update-email");
         }
         return res.status(200).json(response);
     } catch (error) {
@@ -313,84 +328,85 @@ const verifyUserToken = (req, res) => {
 
 const signUp = async (req, res) => {
     const audience = req.headers.origin;
-    let { username = "", password = "", provider = LOGIN_TYPES.LOCAL, email} = req.body;
-    if (username.trim() == '' && provider == LOGIN_TYPES.LOCAL) {
+    // check if input fields are now empty
+    let { fullName = "", password = "", phone ="", email ="" , country=""} = req.body;
+    if (fullName.trim() == '' || password.trim() == '' || phone.trim() == '' || email.trim() == '' || country =="") {
         return res.status(200).json({
             'success': false,
-            'message': 'Email is required',
+            'message': 'Mandatory fields are missing',
             'data': {}
         });
     }
 
-    if (password.trim() == '' &&  provider == LOGIN_TYPES.LOCAL) {
-        return res.status(200).json({
-            'success': false,
-            'message': 'Password is required',
-            'data': {}
-        });
-    }
-
-    if (provider == LOGIN_TYPES.LOCAL) {
-
-        for(let userMeta of req.body.userMeta)
-        {
-            if((userMeta.key=="firstName" || userMeta.key=="lastName" || userMeta.key=="phone") && userMeta.value.trim()== '')
+    //check if email is already exist
+    let where = {
+        [Op.and]: [
             {
-                return res.status(200).json({
-                    'success': false,
-                    'message': 'Mandatory fields are missing',
-                    'data': {}
-                });
+                [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
             }
-        }
+        ]
     }
-    
-    let providerRes= {}
-    //if orivude is socila login veriffy token
-    if(provider !=LOGIN_TYPES.LOCAL){
-        providerRes = await verifySocialToken(req.body)
-        
-        if (!providerRes.success) {
-            return res.status(200).send(providerRes)
-        }
-    }
-    username = username || providerRes.data.email;
 
-    const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
-    if (verificationRes.success || (verificationRes.code ==DEFAULT_CODES.SUSPENDED_USER.code)) {
-        verificationRes.success = false
-        verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
-        verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
-        verificationRes.data = {}
-        return res.status(200).json(verificationRes)
+    let isEmailExist = await models.user.findOne({ where: where})
+
+    if(isEmailExist !=null) {
+        return res.status(200).json({
+            'success': false,
+            'message':DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+            'code':DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+            'data': {}
+        });
+       
     }
-    req.body.tokenPayload = req.user;
-    req.body.audience = audience;
-    req.body.provider = req.body.provider || LOGIN_TYPES.LOCAL
-    
-    let userres = await createUser({...req.body,...verificationRes.data, ...providerRes.data})
- 
-    if (!userres.success) {
-        return res.status(500).send(userres)
+
+    //Create new user 
+    let user = await models.user.create({
+        fullName: fullName,
+        email: email,
+        phone: false,
+        verified: false,
+        phoneVerified:false,
+        status: "active",
+        userType: "registered",
+        country: country
+    });
+
+     //create login for user
+     let user_login=  await models.user_login.create({
+        userId: user.id,
+        provider: LOGIN_TYPES.LOCAL,
+        password: encryptStr(password)
+    });    
+
+     //create token
+     const payload = {           
+        email: user.email || "",
+        name:  user.fullName || "",
+        userId: user.id,
+        provider: LOGIN_TYPES.LOCAL,
+        userType: user.userType,
+        isVerified: false,
+        profilePicture: user.profilePicture,
+        audience: req.headers.origin
+        
     }
-    const tokenRes = await getLoginToken({provider: LOGIN_TYPES.LOCAL, ...userres.data.user, audience: audience || ""});
+    const tokenRes = await getLoginToken(payload);
     tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
     tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
-    userres.data.user.userId
-    delete userres.data.user.id
-    tokenRes.data['user'] = userres.data.user
 
-    if(process.env.PHONEVERIFICATION =='true'&& userres.data.user.country =="India" && userres.data.user.phone.substring(0, 2) =='91' )
+    // send OTP for phone verification
+    if(process.env.PHONEVERIFICATION =='true'&& country =="India" && phone.substring(0, 2) =='91' )
     {
         const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-        const username = userres.data.user.username
-        userId = userres.data.user.userId
-        const response = await generateOtp({ username, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
-        const userMeta = await models.user_meta.findOne({where:{userId:userId, metaType:'primary', key:'phone'}})
-        let phone = userMeta.value.substring(2, 12);
+        userId = user.id
+        const response = await generateOtp({ email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });       
+        let phone = phone.substring(2, 12);
         await sendSMSOTP (phone, response.data.otp);
         tokenRes.data.verifyPhone = true
     }
+
+    // send email varification link
+    await sendVerifcationLink(payload)
     res.status(200).send(tokenRes)
 }
 /* 
@@ -431,33 +447,86 @@ const socialSignIn = async (req, res, next) => {
 
         //verify token 
         const providerRes = await verifySocialToken(req.body)
+        console.log("providerRes", providerRes)
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
-        //check if user exists
-        let verificationRes = await userExist(providerRes.data.username, provider);
-        if (!verificationRes.success) {
-            return res.status(200).json(verificationRes)           
+
+        //check if user with email exists
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', providerRes.data.email))                        
+                }
+            ]
         }
-        const payload = {
-            requestFieldMetaType: "primary",
-            requestFields: ["firstName", "lastName", "profilePicture"],
-            user:verificationRes.data.user
+        let user = await models.user.findOne({ where: where})
+        
+        
+        //check if user with email is suspended
+        if(user && user.status=="suspended")
+        {
+            res.status(200).json({
+                code: DEFAULT_CODES.SUSPENDED_USER.code,
+                message: DEFAULT_CODES.SUSPENDED_USER.message,
+                success: false,
+                data: {
+                    user: {}
+                }
+            })
         }
 
-        let resForm = await fetchFormValues(payload)
+        
+        //check if user with email and requested soacial provider exists
+        let user_login = null
+        if(user !=null)
+        {
+           // console.log("HERE I AM");
+            user_login = await models.user_login.findOne({ where: {userId:user.id, provider:provider}})
 
-        // check if login type present if not create.
-        const userAuth =  await createSocialEntryIfNotExists({...verificationRes.data.user,...providerRes.data},provider)
-        if(!userAuth) {
-            return res.status(500).json({
-                'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-                'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-                success: false
+            if(user_login !=null)
+            {
+                //create login for requested social provider
+                await models.user_login.create({
+                    userId: user.id,
+                    provider: provider,
+                });
+                
+            }
+        }
+        else{
+            //crete new user
+            console.log("NO I AM HERE IN ELSE");
+            user = await models.user.create({
+                fullName: providerRes.data.firstName+' '+ providerRes.data.lastName,
+                email: providerRes.data.email,
+                verified: true,
+                status: "active",
+                userType: "registered"
             });
-        }
+
+             //create login for requested social provider
+             user_login=  await models.user_login.create({
+                userId: user.id,
+                provider: provider,
+            });
+            await sendWelcomeEmail(user)
+        }     
+        //console.log("user====>", user)
+        
         //create token
-        const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data,...resForm.data.requestFieldValues, audience: req.headers.origin, provider: providerRes.data.provider });
+        const payload = {           
+            email: user.email || "",
+            name:  user.fullName || "",
+            userId: user.id,
+            provider: user_login.provider || "",
+            userType: user.userType,
+            isVerified: user.verified || false,
+            profilePicture: user.profilePicture,
+            audience: req.headers.origin
+            
+        }
+        const tokenRes = await getLoginToken(payload);
         
         return res.status(200).json(tokenRes);
 
@@ -470,79 +539,7 @@ const socialSignIn = async (req, res, next) => {
         });
     }
 }
-/* 
-    {
-        code:'',
-        success:true/false,
-        message:'',
-        data:{
-            x_token:""
-        }
-    }
-*/
 
-const signInUser = async (resData) => {
-    const response = {
-        code: DEFAULT_CODES.LOGIN_SUCCESS.code,
-        success: true,
-        message: DEFAULT_CODES.LOGIN_SUCCESS.message,
-        data: {
-        }
-
-    }
-    return new Promise(async (resolve, reject) => {
-        try {
-            // check if valid user
-            /* 
-                {
-                    code:'',
-                    success:true/false,
-                    message:'',
-                    data:{
-                        user: {}
-                    }
-                }
-            */
-            const verificationRes = await userExist(resData.username, LOGIN_TYPES.LOCAL);
-            if (!verificationRes.success) {
-                return resolve(verificationRes)
-            }
-
-
-            //verify credential
-            /* 
-                {
-                    code:'',
-                    success:true/false,
-                    message:'',
-                    data:{
-                        user: {}
-                    }
-                }
-            */
-            const credVerificationRes = checkPassword(verificationRes.data.user, resData.password);
-            if (!credVerificationRes.success) {
-                return resolve(credVerificationRes);
-            }
-            const payload = {
-                requestFieldMetaType: "primary",
-                requestFields: ["firstName", "lastName", "profilePicture"],
-                user:verificationRes.data.user
-            }
-
-            let resForm = await fetchFormValues(payload)
-            const tokenRes = getLoginToken({ ...verificationRes.data.user,...resForm.data.requestFieldValues, audience: resData.audience, provider: resData.provider });
-            return resolve(tokenRes);
-        } catch (error) {
-            console.log(error);
-            response.code = DEFAULT_CODES.SYSTEM_ERROR.code;
-            response.message = DEFAULT_CODES.SYSTEM_ERROR.message;
-            response.success = false;
-            return resolve(response);
-        }
-    })
-
-}
 const userExist = (email, provider) => {
 
     return new Promise(async (resolve, reject) => {
@@ -561,12 +558,12 @@ const userExist = (email, provider) => {
             let where = {
                 [Op.and]: [
                     {
-                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', username))                        
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
                     }
                 ]
             }
             let user = await models.user.findOne({ where: where})
-            
+            //console.log("user", user);
             if (user != null) {
                 if (user.status == "suspended") {
                    
@@ -580,17 +577,25 @@ const userExist = (email, provider) => {
                     })
                 }
 
-                const user_login = await models.user_login.findOne({ where: { id: user.id, provider: provider} });
+                const user_login = await models.user_login.findOne({ where: { userId: user.id, provider: provider} });
           
-               
+                //console.log("user_login", user_login);
                if(user_login)
                {
                     response.success = true;
                     response.code = DEFAULT_CODES.VALID_USER;
                     response.message = DEFAULT_CODES.VALID_USER.message;
-                    response.data.user = {
+                    
+                    response.data.user = {                        
                         email,
+                        fullName:user.fullName,
+                        userId: user.id,
                         status:user.status,
+                        userType: user.userType,
+                        verified: user.verified,
+                        password: user_login.password,
+                        profilePicture: user.profilePicture
+                        
                     }
                     return resolve(response)
                 }
@@ -881,17 +886,11 @@ const validateOtp = async (username, otp, otpType) => {
 
 const resendVerificationLink = async (req, res) => {
     const { user } = req
-    const payload = {
-        requestFieldMetaType: "primary",
-        requestFields: ["firstName", "lastName"],
-        user
-    }
-
-    let resForm = await fetchFormValues(payload)
-
+        
+    let userData = await models.user.findOne({ where: {id:user.userId}})
     let userObj = {
         ...user,
-        ...resForm.data.requestFieldValues,
+        fullName:userData.fullName,
         audience: req.headers.origin
     }
     await sendVerifcationLink(userObj)
@@ -934,15 +933,9 @@ const verifyAccount = async (req, res) => {
                     id: user.userId
                 }
             });
-            const payload = {
-                requestFieldMetaType: "primary",
-                requestFields: ["firstName", "lastName"],
-                user
-            }
-
-            let resForm = await fetchFormValues(payload)
-
-            let newUserObj = { ...user, userType: "registered", verified: true, ...resForm.data.requestFieldValues }
+          
+            let userObj = await models.user.findOne({where:{id: user.userId}})
+            let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userType.fullName }
             await invalidateTokens(newUserObj)
             await sendWelcomeEmail(newUserObj)
             const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
@@ -1136,15 +1129,15 @@ const addCourseToWishList = async (req, res) => {
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
             const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, courseIds: numericIds }
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+            // const data = { email: userinfo.value, courseIds: numericIds }
             await logActvity("COURSE_WISHLIST", userId, courseIds);
-            sendDataForStrapi(data, "profile-add-wishlist");
+            // sendDataForStrapi(data, "profile-add-wishlist");
 
             return res.status(200).json({
                 success: true,
@@ -1209,15 +1202,15 @@ const addLearnPathToWishList = async (req,res) => {
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
             const numericIds = learnpathIds.map((learnpathId) => learnpathId.split("LRN_PTH_").pop())
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, learnpathIds: numericIds }
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+          //  const data = { email: userinfo.value, learnpathIds: numericIds }
             await logActvity("LEARNPATH_WISHLIST", userId, learnpathIds);
-            sendDataForStrapi(data, "profile-add-learnpath-wishlist");
+            // sendDataForStrapi(data, "profile-add-learnpath-wishlist");
 
             return res.status(200).json({
                 success: true,
@@ -1371,9 +1364,9 @@ const removeCourseFromWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
-    sendDataForStrapi(data, "profile-remove-wishlist");
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
+    // sendDataForStrapi(data, "profile-remove-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -1386,9 +1379,9 @@ const removeLearnPathFromWishList = async (req,res) => {
     const { user} = req;
     const {learnpathId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"learnpath_wishlist", value:learnpathId, userId:user.userId}})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
-    sendDataForStrapi(data, "profile-remove-learnpath-wishlist");
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
+    // sendDataForStrapi(data, "profile-remove-learnpath-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -2135,8 +2128,8 @@ const updateEmail =async (req,res) => {
                 data: {}
             })
         }
-        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
-        if(email_already_exist){
+        let email_already_exist = await models.user.findOne({where:{email:email}})
+        if(email_already_exist != null){
             return res.status(200).json({
                 code: "EMAIL ALREADY EXIST",
                 message: "Please enter email which is not already used.",
@@ -2152,8 +2145,8 @@ const updateEmail =async (req,res) => {
             provider = LOGIN_TYPES.LOCAL
         }
 
-        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email',metaType:'primary'}});
-        const oldEmail = oldEmailObj.value;
+        let oldEmailObj = await models.user.findOne({where:{email:email}})
+        const oldEmail = oldEmailObj.email;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
         const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
         if(!response.success){
@@ -2186,32 +2179,23 @@ const uploadProfilePic =async (req,res) => {
     let imageName = `86ab15d2${user.userId}EyroLPIJo${new Date().getTime()}`;
     let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
-    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
-    if(!existImg) {
-        await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
-    } else {
-       // await deleteObject(existImg.value);
-        await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
-    }
+  
+    await models.user.update({profilePicture:profilePicture},{where:{id:user.userId}})
+    
     const profileRes = await calculateProfileCompletion(user)
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, image:s3Path}
-    sendDataForStrapi(data, "update-profile-picture");
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value, image:s3Path}
+    // sendDataForStrapi(data, "update-profile-picture");
     return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
 const removeProfilePic = async (req,res) => {
     const {user} = req
 
-    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
-
-    if(existImg) {
-      //  await deleteObject(existImg.value);
-        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})        
-    }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value}
-    sendDataForStrapi(data, "remove-profile-picture");
+    await models.user.update({profilePicture:null},{where:{id:user.userId}})
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value}
+    // sendDataForStrapi(data, "remove-profile-picture");
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
@@ -2249,33 +2233,20 @@ const uploadResumeFile = async (req,res) =>{
         uploadDate:today,
         size:size
     }
-    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-    if(!existResume) {
-        await models.user_meta.create({value:JSON.stringify(fileValue),key:'resumeFile',metaType:'primary',userId:user.userId})
-    } else {
-        let pathObject = JSON.parse(existResume.value);
-        
-        // await deleteObject(pathObject.filepath);
-        await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-    }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, resume:s3Path}
-    sendDataForStrapi(data, "upload-resume");
+    await models.user.update({resumeFile:resumeFile},{where:{id:user.userId}})
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value, resume:s3Path}
+    // sendDataForStrapi(data, "upload-resume");
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
 const deleteResumeFile = async (req,res) => {
     const {user} = req
     
-    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-
-    if(existResume) {
-      //  await deleteObject(existImg.value);
-        await models.user_meta.destroy({where:{key:'resumeFile',metaType:'primary',userId:user.userId}})
-    }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value}
-    sendDataForStrapi(data, "remove-resume");
+    await models.user.update({resumeFile:null},{where:{id:user.userId}})
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value}
+    // sendDataForStrapi(data, "remove-resume");
     return res.status(200).json({success:true, resumeFile:{}})
 }
 
@@ -2288,9 +2259,9 @@ const uploadPrimarySkills = async (req,res) => {
     } else {
         await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
     }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let learn_profile = {email:userinfo.value, data:data}
-    sendDataForStrapi(learn_profile, "update-learn-profile");
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let learn_profile = {email:userinfo.value, data:data}
+    // sendDataForStrapi(learn_profile, "update-learn-profile");
     return res.status(200).json({success:true,data:data})
 }
 
@@ -2304,9 +2275,9 @@ const uploadSkills = async (req,res) => {
         // await deleteObject(pathObject.filepath);
         await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'skills'}})
     }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let learn_profile = {email:userinfo.value, data:data}
-    sendDataForStrapi(learn_profile, "update-learn-profile");
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let learn_profile = {email:userinfo.value, data:data}
+    // sendDataForStrapi(learn_profile, "update-learn-profile");
     return res.status(200).json({success:true,data:data})
 }
 
@@ -2363,14 +2334,14 @@ const bookmarkArticle = async (req,res) => {
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
             const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
 
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, articleIds: numericIds }
-            sendDataForStrapi(data, "profile-bookmark-article");
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+            // const data = { email: userinfo.value, articleIds: numericIds }
+            // sendDataForStrapi(data, "profile-bookmark-article");
 
             return res.status(200).json({
                 success: true,
@@ -2401,9 +2372,9 @@ const removeBookmarkArticle = async (req,res) => {
     const { user} = req;
     const {articleId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
-    sendDataForStrapi(data, "profile-remove-bookmark-article");
+    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+    // let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
+    // sendDataForStrapi(data, "profile-remove-bookmark-article");
     return res.status(200).json({
         success:true,
         data: {
@@ -2478,15 +2449,14 @@ const fetchbookmarkIds = async (req,res) => {
     })
 }
 
-const verifyPhone = async (username) =>{
+const verifyPhone = async (email) =>{
     return new Promise(async (resolve, reject) => {
-        try{ 
-            const user = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+        try{           
             await models.user.update({
                     phoneVerified: true,
                 }, {
                     where: {
-                        id: user.userId
+                        email: username
                     }
                 });
             return resolve(true)
@@ -2533,40 +2503,20 @@ const sendSMSWelcome = async (phone) =>{
 const updatePhone = async (req,res) => {
     try {
         const { user } = req    
-        const { phone } = req.body  
-   
-        let where = {
-            userId: user.userId,
-            metaType:'primary',
-            key:'phone',
-        }
-        const existPhone = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'phone'}})
-        if(!existPhone){
-            await models.user_meta.create({
-                userId: user.userId,
-                metaType:'primary',
-                key:'phone',
-                value: phone
-            });
-        }else{
-            await models.user_meta.update({
-                value: phone,
-            }, {
-                where: where
-            });
-        }
-        
+        const { phone } = req.body        
+      
         await models.user.update({
+            phone: phone,
             phoneVerified: false,
         }, {
             where: {
                 id: user.userId
             }
-        });
-        
-        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-        let data = {email:userinfo.value, phone:phone}
-        sendDataForStrapi(data, "update-phone")
+        });  
+
+        // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
+        // let data = {email:userinfo.value, phone:phone}
+        // sendDataForStrapi(data, "update-phone")
         return res.status(200).json({
             'success': true,
             'message': 'Phone is updated',
@@ -2584,27 +2534,15 @@ const updatePhone = async (req,res) => {
 const suspendAccount = async (req, res) => {
     const { email } = req.body;
     try {
-        let where = {
-            [Op.and]: [
-                {
-                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
-                }
-            ]
-        }
-        let userLogin = await models.user_login.findOne({ where: where})
-        let user = null
-        if (userLogin != null) {
-            user = await models.user.findOne({ where: { id: userLogin.userId} });
-        }
         let userres = await models.user.update({
             status: "suspended"
         }, {
             where: {
-                id: user.id
+                email: email
             }
         });
                
-        await sendSuspendedEmail(userLogin)
+        await sendSuspendedEmail({email: email})
         //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).send({status: 'success', message: 'successfully supended!'})
 
@@ -2616,31 +2554,17 @@ const suspendAccount = async (req, res) => {
 
 const reactivateAccount = async (req, res) => {
     const { email } = req.body;
-    try {
-        let where = {
-            [Op.and]: [
-                {
-                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
-                }
-            ]
-        }
-        
-        let userLogin = await models.user_login.findOne({ where: where})
-        
-        let user = null
-        if (userLogin != null) {
-            user = await models.user.findOne({ where: { id: userLogin.userId} });
-        }
+    try {      
         
         let userres = await models.user.update({
             status: "active"
         }, {
             where: {
-                id: user.id
+                email: email
             }
         });
                
-        await sendActivatedEmail(userLogin)
+        await sendActivatedEmail({email:email})
         //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
         return res.status(200).send({status: 'success', message: 'successfully activated!'})
 
@@ -2670,7 +2594,7 @@ const getUserPendingActions = async (req, res) => {
             profilePicture: {
                 weightage: 10,
             },
-            firstName: {
+            fullName: {
                 weightage: 4,
             },
             dob: {
@@ -2705,107 +2629,97 @@ const getUserPendingActions = async (req, res) => {
             }
         }
 
-        const userData = await models.user_meta.findAll({
-            attributes: ["key", "value"],
-            where: {
-                metaType: "primary",
-                key: { [Op.in]: Object.keys(fields) },
-                userId: userId
-            }
-        })
-
-        const userVerificationData = await models.user.findAll({
-            attributes: Object.keys(verificationFields),
+        const userData = await models.user.findAll({
             where: {
                 id: userId
             }
         })
         
-        const availableFields = userData.filter((field) => {
-            if (field.value) {
-                try {
-                    // verify whether field.value is an array
-
-                    const obj = JSON.parse(field.value)
-                    if (Array.isArray(obj)) return obj.length != 0
-
-                    //check for empty object
-                    if (JSON.stringify(obj) == "{}") return false
-                    return true
-
-                } catch {
-                    // it is a non empty string 
-                    return true
-                }
-            }
-            else {
-                return false
-            }
-        }).map((field) => field.key)
-
-        
-        let addPersonalDetails = false
-        for (const field in fields) {
-
-            if (availableFields.includes(field)) {
-                profileProgress += fields[field].weightage;
-            }
-            else {
-
-                if (["dob", "firstName", "gender", "city"].includes(field)) {
-                    addPersonalDetails = true
-                }
-                else {
-                    response.pendingProfileActions.push(field)
-                }
-            }
+        if(userData.fullName!= null){
+            profileProgress += fields.fullName.weightage;
         }
-
-        if(addPersonalDetails){
+        else {
             response.pendingProfileActions.push("personalDetails")
         }
 
-        if (userVerificationData.length) {
+        if(userData.dob!= null){
+            profileProgress += fields.dob.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("personalDetails")
+        }
 
-            if (userVerificationData[0]["verified"]) {
-                
-                profileProgress += verificationFields.verified.weightage
-            }
-            else {
-                response.pendingProfileActions.push('email')
-            }
-        
-            
-            if (userVerificationData[0]["phoneVerified"]) {
-                response.verification.phoneVerified = true
-                profileProgress += verificationFields.phoneVerified.weightage
-            }
-            else {
-                const phoneData = await models.user_meta.findAll({
-                    attributes: ["key", "value"],
-                    where: {
-                        metaType: "primary",
-                        key: { [Op.in]: ["phone"] },
-                        userId: userId
-                    }
-                })
+        if(userData.gender!= null){
+            profileProgress += fields.gender.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("personalDetails")
+        }
 
-                if (phoneData.length && phoneData[0].value) {
-                    if (phoneData[0].value.slice(0, 2) != '91') {
-                        response.verification.phoneVerified = true
-                        profileProgress += verificationFields.phoneVerified.weightage
-                    }
-                    else{
-                        response.verification.phoneVerified=false
-                        response.pendingProfileActions.push("phoneVerification")
-                    }
-                }else{
-                    response.pendingProfileActions.push('phone') 
-                }
-            }
+        if(userData.city!= null){
+            profileProgress += fields.city.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("personalDetails")
         }
         
+        const education = await models.user_education.findAll({
+            where: {
+                id: userId
+            }
+        })
+
+        if(education != null){
+            profileProgress += fields.education.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("education")
+        }
+
+        const workExp = await models.user_experience.findAll({
+            where: {
+                id: userId
+            }
+        })
+
+        if(workExp != null){
+            profileProgress += fields.workExp.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("workExp")
+        }
+
+        if (userData.verified) {
+                
+            profileProgress += verificationFields.verified.weightage
+        }
+        else {
+            response.pendingProfileActions.push('email')
+        }
+
+        if (userData.phoneVerified) {
+            response.verification.phoneVerified = true
+            profileProgress += verificationFields.phoneVerified.weightage
+        }
+        else {
+            if (userData.phone !=null) {
+                if (userData.phone.slice(0, 2) != '91') {
+                    response.verification.phoneVerified = true
+                    profileProgress += verificationFields.phoneVerified.weightage
+                }
+                else{
+                    response.verification.phoneVerified=false
+                    response.pendingProfileActions.push("phoneVerification")
+                }
+            }else{
+                response.pendingProfileActions.push('phone') 
+            }
+        }
         response.profileProgress=profileProgress
+        if(response.pendingProfileActions && response.pendingProfileActions.length > 0)
+        {
+            response.pendingProfileActions = response.pendingProfileActions.filter((v, i, a) => a.indexOf(v) === i)
+        }        
         res.send({ message: "success", data: response })
     } catch (error) {
         console.log(error)

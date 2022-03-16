@@ -8,6 +8,14 @@ module.exports = (sequelize, DataTypes) => {
     phoneVerified: DataTypes.BOOLEAN,
     status: DataTypes.STRING,
     userType: DataTypes.STRING,
+    gender: {
+      type: DataTypes.ENUM,
+      values: ['MALE', 'FEMALE', 'OTHER']
+    },
+    dob: DataTypes.DATE,
+    city: DataTypes.STRING,
+    country: DataTypes.STRING,
+    resumeFile: DataTypes.STRING,
     profilePicture: DataTypes.STRING
 
   }, {});
@@ -19,9 +27,10 @@ module.exports = (sequelize, DataTypes) => {
     user.hasMany(models.user_permission, { foreignKey: 'userId' });
     user.hasMany(models.otp, { foreignKey: 'userId' });
     user.hasMany(models.activity_log, { foreignKey: 'userId' });
-    user.hasOne(models.user_detail, { foreignKey: 'userId' });
     user.hasMany(models.user_education, { foreignKey: 'userId' });
     user.hasMany(models.user_experience, { foreignKey: 'userId' });
+    user.hasMany(models.user_skill, { foreignKey: 'userId' });
+    
   };
   return user;
 };

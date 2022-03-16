@@ -593,7 +593,7 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
                 email_data: {
                     verification_link: link,
                     account_email: userObj.email,
-                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                    full_name: userObj.fullName,
                 }
             }
             await communication.sendEmail(emailPayload, useQueue)
@@ -668,7 +668,7 @@ const getLoginToken = async (userObj) => {
             issuer: process.env.HOST,
             expiresIn: parseInt(defaults.getValue('tokenExpiry'))
            // expiresIn: 100
-        }
+        }      
         const payload = {
             user: {
                 email: userObj.email || "",
@@ -803,7 +803,7 @@ const sendResetPasswordLink = (userObj, useQueue) => {
                 email_data: {
                     reset_link: link,
                     account_email: userObj.email,
-                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                    full_name: userObj.fullName,
                 }
             }
             await communication.sendEmail(emailPayload, useQueue)
