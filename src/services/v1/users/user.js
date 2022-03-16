@@ -1316,14 +1316,14 @@ const addGoals = async (req, res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree, specialization, workExperience} = req.body
+        const { lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree="", specialization="", workExperience=0} = req.body
         if(!user){
             return res.status(200).json({
                 success: false,
                 message: "invalid user"
             })
         }
-        if (!lifeStage || !highestDegree || !specialization || !workExperience) {
+        if (!lifeStage) {
             return res.status(200).json({
                 success: false,
                 message: "invalid request sent"
@@ -1380,14 +1380,14 @@ const editGoal = async (req, res) => {
     try {
         const { user } = req;
         const userId = user.userId
-        const { goalId, lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree, specialization, workExperience} = req.body
+        const { goalId, lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree="", specialization="", workExperience=0} = req.body
         if(!user){
             return res.status(200).json({
                 success: false,
                 message: "invalid user"
             })
         }
-        if (!goalId || !lifeStage || !highestDegree || !specialization || !workExperience) {
+        if (!goalId || !lifeStage) {
             return res.status(200).json({
                 success: false,
                 message: "invalid request sent"
