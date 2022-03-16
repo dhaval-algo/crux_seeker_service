@@ -170,7 +170,8 @@ const prepareLeadData = (enquiry_id) => {
             City:'',
             Country:'',
             Current_Company:false,
-            Lead_Origin_or_Source:''
+            Lead_Origin_or_Source:'',
+            Course:''
         }
         try {
             leadObj.Enquiry_id = 'LRN_CNT_ENQ_' + enquiry_id
@@ -178,6 +179,7 @@ const prepareLeadData = (enquiry_id) => {
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
                 leadObj.Lead_Origin_or_Source = formSubRec.otherInfo.sourceUrl
+                leadObj.Course = formSubRec.otherInfo.sourceUrl
             }
             formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
             if(formSubValRec != null) {
@@ -274,7 +276,8 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             City:'',
             Country:'',
             Current_Company:false,
-            Lead_Origin_or_Source:''
+            Lead_Origin_or_Source:'',
+            Course:''
         }
         try {
             leadObj.Enquiry_id = 'LRN_PTH_ENQ_' + enquiry_id
@@ -282,6 +285,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
                 leadObj.Lead_Origin_or_Source = formSubRec.otherInfo.learnpathUrl
+                leadObj.Course = formSubRec.otherInfo.learnpathUrl
             }
             formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
             if(formSubValRec != null) {
