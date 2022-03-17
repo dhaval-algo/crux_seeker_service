@@ -154,6 +154,7 @@ const fetchUserMeta = (ids) => {
 const prepareLeadData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let leadObj = {
+            Enquiry_Unique_ID:"LRN_CNT_ENQ_",
             First_Name:"",
             Last_Name:"",
             Email:"",
@@ -182,11 +183,12 @@ const prepareLeadData = (enquiry_id) => {
 
             let enquiry = await  models.enquiry.findOne({where: {id: enquiry_id}})
             
+            leadObj.Enquiry_Unique_ID += enquiry.id;
             leadObj.Course = enquiry.courseName;
             leadObj.Phone = enquiry.dataValues.phone || "";
 
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
-            leadObj.Last_Name = enquiry.dataValues.fullName.split(" ")[1] || ""
+            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || ""
             leadObj.Email = enquiry.dataValues.email || "";
             leadObj.Student = Boolean(enquiry.dataValues.student) || null;
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
@@ -276,6 +278,7 @@ const prepareLeadData = (enquiry_id) => {
 const prepareLearnPathLeadData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let leadObj = {
+            Enquiry_Unique_ID:"LRN_PTH_ENQ_",
             First_Name:"",
             Last_Name:"",
             Email:"",
@@ -303,11 +306,12 @@ const prepareLearnPathLeadData = (enquiry_id) => {
 
             let enquiry = await  models.learnpath_enquiry.findOne({where: {id: enquiry_id}})
             
+            leadObj.Enquiry_Unique_ID += enquiry.id;
             leadObj.Course = enquiry.learnpathName;
             leadObj.Phone = enquiry.dataValues.phone || "";
 
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
-            leadObj.Last_Name = enquiry.dataValues.fullName.split(" ")[1] || ""
+            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || ""
             leadObj.Email = enquiry.dataValues.email || "";
             leadObj.Student = Boolean(enquiry.dataValues.student) || null;
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
