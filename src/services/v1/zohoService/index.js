@@ -176,7 +176,10 @@ const prepareLeadData = (enquiry_id) => {
             Country:'',
             Current_Company:false,
             Lead_Origin_or_Source:'',
-            Course:''
+            Course:'',
+            Experience_Level:'',
+            Highest_Degree:''
+
         }
 
         try {
@@ -192,17 +195,19 @@ const prepareLeadData = (enquiry_id) => {
             leadObj.Email = enquiry.dataValues.email || "";
             leadObj.Student = Boolean(enquiry.dataValues.student) || null;
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
-            leadObj.Experience = enquiry.dataValues.experience || "";
-            leadObj.Degree = enquiry.dataValues.highestDegree || "";
+            leadObj.Experience_Level = enquiry.dataValues.experience || "";
+            leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
 
+            const query = { "bool": {
+                "must": [{ term: { "_id": enquiry.courseId }}]
+            }};
+            const learnContent = await elasticService.search('learn-content', query)
+
+            if( learnContent.hits && learnContent.hits.length > 0 )
+            leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/course/" + learnContent.hits[0]._source.slug
+
+            /* code to fetch profile data
             if(enquiry.userId != undefined){
-                const query = { "bool": {
-                    "must": [{ term: { "_id": enquiry.courseId }}]
-                }};
-                const learnContent = await elasticService.search('learn-content', query)
-                    
-                if( learnContent.hits && learnContent.hits.length > 0 )
-                leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/course/" + learnContent.hits[0]._source.slug
 
                 let user_meta = await models.user_meta.findAll({where: { userId: enquiry.userId}})
                 
@@ -265,7 +270,7 @@ const prepareLeadData = (enquiry_id) => {
                     if(workExp.currentCompany)
                         leadObj.Current_Company = Boolean(workExp.currentCompany)
                 }
-        }
+        }*/
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
             return resolve(data)
@@ -300,7 +305,9 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             Country:'',
             Current_Company:false,
             Lead_Origin_or_Source:'',
-            Course:''
+            Course:'',
+            Experience_Level:'',
+            Highest_Degree:''
         }
         try {
 
@@ -315,17 +322,19 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             leadObj.Email = enquiry.dataValues.email || "";
             leadObj.Student = Boolean(enquiry.dataValues.student) || null;
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
-            leadObj.Experience = enquiry.dataValues.experience || "";
-            leadObj.Degree = enquiry.dataValues.highestDegree || "";
-            
-            if(enquiry.userId != undefined){
-                const query = { "bool": {
-                    "must": [{ term: { "_id": enquiry.learnpathId }}]
-                }};
-                const learnPath = await elasticService.search('learn-path', query)
-                    
-                if( learnPath.hits && learnPath.hits.length > 0 )
+            leadObj.Experience_Level = enquiry.dataValues.experience || "";
+            leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
+
+            const query = { "bool": {
+                "must": [{ term: { "_id": enquiry.learnpathId }}]
+            }};
+            const learnPath = await elasticService.search('learn-path', query)
+                
+            if( learnPath.hits && learnPath.hits.length > 0 )
                 leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/learnpath/" + learnPath.hits[0]._source.slug
+            
+            /* code for fetching profile data
+            if(enquiry.userId != undefined){
 
                 let user_meta = await models.user_meta.findAll({where: { userId: enquiry.userId}})
                 
@@ -388,7 +397,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
                     if(workExp.currentCompany)
                         leadObj.Current_Company = Boolean(workExp.currentCompany)
                 }
-            }
+            }*/
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
             return resolve(data)
