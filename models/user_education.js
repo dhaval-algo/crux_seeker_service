@@ -1,7 +1,15 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const user_education = sequelize.define('user_education', {
-    userId: DataTypes.INTEGER,
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      notEmpty:true,
+      validate: {
+        notNull:{ msg: "userId cannot be null" },
+        notEmpty: { msg: "userId cannot be empty" }
+      }
+    },
     instituteName: DataTypes.STRING,
     degree: DataTypes.STRING,
     degree: DataTypes.STRING,

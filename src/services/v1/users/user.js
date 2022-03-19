@@ -2265,20 +2265,34 @@ const uploadPrimarySkills = async (req,res) => {
     return res.status(200).json({success:true,data:data})
 }
 
-const uploadSkills = async (req,res) => {
+const addSkills = async (req,res) => {
     const {data} =req.body
     const { user} = req;
-    const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'skills'}})
-    if(!existSkills) {
-        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})        
-    } else {
-        // await deleteObject(pathObject.filepath);
-        await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'skills'}})
+    let responseData = null;
+    try {
+        for (const [key, value] of Object.entries(data)) {
+        
+            const userTopic  = await models.user_topic.create({
+                 userId: user.userId,
+                 topic: key
+             })
+     
+             for(let skill in value)
+             {
+                 console.log("skill", skill)
+                 await models.user_skill.create({
+                     userTopicId:userTopic.id,
+                     skill:skill
+                 })
+             }
+             
+        }
+         return res.status(200).json({success:true,data:data})
+    } catch (error) {
+        console.log("add skill", error)
+        return res.status(200).json({success:false,data:{}, message:"Error updating Skills"})
     }
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let learn_profile = {email:userinfo.value, data:data}
-    // sendDataForStrapi(learn_profile, "update-learn-profile");
-    return res.status(200).json({success:true,data:data})
+    
 }
 
 const fetchUserMetaObjByUserId = async (id) => {
@@ -2784,6 +2798,336 @@ const isUserEmailExist = async (req, res) => {
     }
 }
 
+const getPersonalDetails = async (req, res) => {
+    
+    try {       
+         const user = await models.user.findOne({where:{id:req.user.userId},attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country']})       
+        
+        res.status(200).send({
+            message: "personal details updated successfully",
+            data: user,
+            success: true
+        })
+    } catch (error) {
+        console.log('getPersonalDetails err ',error);
+        res.status(200).send({
+            message: "Error getting personal details",
+            success: false
+        })
+    }
+}
+
+const editPersonalDetails = async (req, res) => {
+    let {fullName, city, dob, gender } = req.body
+    try {        
+        
+        await models.user.update({
+            fullName,
+            city,
+            dob,
+            gender
+        }, {
+            where: {
+                id: req.user.userId
+            }
+        });
+        
+        res.status(200).send({
+            message: "personal details updated successfully",
+            success: true
+        })
+    } catch (error) {
+        console.log('editPersonalDetails err ',error);
+        res.status(200).send({
+            message: "Error updating personal details",
+            success: false
+        })
+    }
+}
+
+const addEducation = async (req, res) => {
+    let {instituteName, degree, specialization, graduationYear, gradeType, grade } = req.body
+    try {        
+        
+        const user_education = await models.user_education.create({
+            userId: req.user.userId,
+            instituteName,
+            degree,
+            specialization,
+            graduationYear,
+            gradeType,
+            grade
+        })
+
+        res.status(200).send({
+            message: "Education added successfully",
+            success: true,
+            data: {
+                id: user_education.id,
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+            }
+        })
+    } catch (error) {
+        console.log('addEducation err ',error);
+        res.status(200).send({
+            message: "Error adding Education",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const editEducation = async (req, res) => {
+    let {id, instituteName, degree, specialization, graduationYear, gradeType, grade } = req.body
+    try {        
+        
+        const user_education = await models.user_education.update(
+            {            
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+            },
+            {
+                where: {id:req.user.userId, id:id}
+            }
+        )
+
+        res.status(200).send({
+            message: "Education updated successfully",
+            success: true,
+            data: {
+                id: user_education.id,
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+            }
+        })
+    } catch (error) {
+        console.log('editEducation err ',error);
+        res.status(200).send({
+            message: "Error adding Education",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const deleteEducation = async (req, res) => {
+    let {id} = req.body
+    try {        
+        
+        await models.user_education.destroy({
+            where: {
+                id:id,
+                userId:req.user.userId
+            }
+        })
+
+        res.status(200).send({
+            message: "Education deleted successfully",
+            success: true            
+        })
+    } catch (error) {
+        console.log('deleteEducation err ',error);
+        res.status(200).send({
+            message: "Error deleting Education",
+            success: false
+        })
+    }
+}
+const getEducations = async (req, res) => {    
+    try {        
+        
+        const user_educations = await models.user_education.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade']
+        })
+
+        res.status(200).send({
+            message: "Education fetched successfully",
+            success: true,
+            data: user_educations             
+        })
+    } catch (error) {
+        console.log('getEducations err ',error);
+        res.status(200).send({
+            message: "Error fetching Education",
+            success: false
+        })
+    }
+}
+
+const addWorkExperience = async (req, res) => {
+    let {jobTitle, industry, company, currentCompany, experience } = req.body
+    try {        
+        
+        const user_Work_experience = await models.user_experience.create({
+            userId: req.user.userId,
+            jobTitle,
+            industry,
+            company,
+            currentCompany,
+            experience
+        })
+
+        res.status(200).send({
+            message: "Work experience added successfully",
+            success: true,
+            data: {
+                id: user_Work_experience.id,
+                jobTitle,
+                industry,
+                company,
+                currentCompany,
+                experience
+            }
+        })
+    } catch (error) {
+        console.log('addWorkExperience err ',error);
+        res.status(200).send({
+            message: "Error adding Work experience",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const editWorkExperience = async (req, res) => {
+    let {id, jobTitle, industry, company, currentCompany, experience  } = req.body
+    try {        
+        
+        const user_experience = await models.user_experience.update(
+            {            
+                jobTitle,
+                industry,
+                company,
+                currentCompany,
+                experience
+            },
+            {
+                where: {id:req.user.userId, id:id}
+            }
+        )
+
+        res.status(200).send({
+            message: "Work experience updated successfully",
+            success: true,
+            data: {
+                id: user_experience.id,
+                jobTitle,
+                industry,
+                company,
+                currentCompany,
+                experience
+            }
+        })
+    } catch (error) {
+        console.log('editWorkExperience err ',error);
+        res.status(200).send({
+            message: "Error adding Work experience",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const deleteWorkExperience = async (req, res) => {
+    let {id} = req.body
+    try {        
+        
+        await models.user_experience.destroy({
+            where: {
+                id:id,
+                userId:req.user.userId
+            }
+        })
+
+        res.status(200).send({
+            message: "Work Experience deleted successfully",
+            success: true            
+        })
+    } catch (error) {
+        console.log('WorkExperience err ',error);
+        res.status(200).send({
+            message: "Error deleting Education",
+            success: false
+        })
+    }
+}
+
+const getWorkExperiences = async (req, res) => {    
+    try {        
+        
+        const user_experiences = await models.user_experience.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+        })
+
+        res.status(200).send({
+            message: "Work Experiences fetched successfully",
+            success: true,
+            data: user_experiences             
+        })
+    } catch (error) {
+        console.log('getWorkExperiences err ',error);
+        res.status(200).send({
+            message: "Error fetching Education",
+            success: false
+        })
+    }
+}
+
+const getUserProfile = async (req, res) => {    
+    try {        
+        
+        const user = await models.user.findOne({
+            where: {
+                id:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_education,
+                    attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade']
+                },
+                {
+                    model: models.user_experience,
+                    attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+                }
+            ],
+            attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
+
+        })
+
+        res.status(200).send({
+            message: "User Profile fetched successfully",
+            success: true,
+            data: user             
+        })
+    } catch (error) {
+        console.log('getUserProfile err ',error);
+        res.status(200).send({
+            message: "Error fetching Education",
+            success: false
+        })
+    }
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -2814,7 +3158,7 @@ module.exports = {
     uploadResumeFile,
     deleteResumeFile,
     removeProfilePic,
-    uploadSkills,
+    addSkills,
     uploadPrimarySkills,
     fetchUserMetaObjByUserId,
     bookmarkArticle,
@@ -2826,6 +3170,18 @@ module.exports = {
     updatePhone,
     getUserPendingActions,
     updateEmail,
+    getPersonalDetails,
+    editPersonalDetails,
+    addEducation,
+    editEducation,
+    deleteEducation,
+    getEducations,
+    addWorkExperience,
+    editWorkExperience,
+    deleteWorkExperience,
+    getWorkExperiences,
+    getUserProfile,
+    
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body

@@ -1,8 +1,27 @@
 'use strict';
 module.exports = (sequelize, DataTypes) => {
   const user = sequelize.define('user', {
-    fullName: DataTypes.STRING,
-    email: DataTypes.STRING,
+    fullName:{
+      type: DataTypes.STRING,
+      allowNull: false,
+      notEmpty:true,
+      validate: {
+        notNull:{ msg: "full name cannot be null" },
+        notEmpty: { msg: "full name cannot be empty" }
+      }
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      isEmail:true,
+      notEmpty:true,
+      validate: {
+          notNull: { msg: "email cannot be null" },
+          isEmail: { msg: "email is invalid"},
+          notEmpty: { msg: "email cannot be empty" }
+      }
+    },
     phone: DataTypes.STRING,
     verified: DataTypes.BOOLEAN,
     phoneVerified: DataTypes.BOOLEAN,
@@ -30,6 +49,7 @@ module.exports = (sequelize, DataTypes) => {
     user.hasMany(models.user_education, { foreignKey: 'userId' });
     user.hasMany(models.user_experience, { foreignKey: 'userId' });
     user.hasMany(models.user_skill, { foreignKey: 'userId' });
+    user.hasMany(models.user_topic, { foreignKey: 'userId' });
     
   };
   return user;

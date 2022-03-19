@@ -1,35 +1,27 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('user_experiences', {
+    return queryInterface.createTable('user_skills', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      userTopicId: {
         type: Sequelize.INTEGER,
         references: {
-          model: 'users',
+          model: 'user_topics',
           key: 'id'
         },
         allowNull: false,
       },
-      jobTitle: {
-        type: Sequelize.STRING
+      skill: {
+        type: Sequelize.STRING,
+        allowNull: false,
       },
-      industry: {
-        type: Sequelize.STRING
-      },
-      company: {
-        type: Sequelize.STRING
-      },
-      currentCompany: {
+      isPrimary: {
         type: Sequelize.BOOLEAN
-      },
-      experience: {
-        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -40,9 +32,9 @@ module.exports = {
         type: Sequelize.DATE
       }
     }).
-    then(() => queryInterface.addIndex('user_experiences', ['userId']));
+    then(() => queryInterface.addIndex('user_skills', ['userTopicId']));
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('user_experiences');
+    return queryInterface.dropTable('user_skills');
   }
 };
