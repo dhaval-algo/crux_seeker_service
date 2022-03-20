@@ -31,6 +31,7 @@ const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
+const crypto = require("crypto")
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
 const learnPathService = require("../../../api/services/learnPathService");
@@ -373,12 +374,15 @@ const signUp = async (req, res) => {
         userType: "registered",
         country: country
     });
-
+     //Hash password
+     const {userSalt, passwordHash} =  await hashPassword (password);
+    
      //create login for user
      let user_login=  await models.user_login.create({
         userId: user.id,
         provider: LOGIN_TYPES.LOCAL,
-        password: encryptStr(password)
+        password: passwordHash,
+        passwordSalt: userSalt
     });    
 
      //create token
@@ -599,7 +603,8 @@ const userExist = (email, provider) => {
                         userType: user.userType,
                         verified: user.verified,
                         password: user_login.password,
-                        profilePicture: user.profilePicture
+                        profilePicture: user.profilePicture,
+                        passwordSalt:user_login.passwordSalt
                         
                     }
                     return resolve(response)
@@ -626,6 +631,14 @@ const userExist = (email, provider) => {
     })
 };
 
+const hashPassword = async (password) => {
+    const userSalt = crypto.randomBytes(16).toString('hex');
+    const finalSalt = process.env.PASSWORD_SALT + userSalt
+    const passwordHash = crypto.pbkdf2Sync(password, finalSalt, 
+       parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+    return {userSalt, passwordHash}
+};
+
 const checkPassword = (userObj, resPwd) => {
     let response = {
         code: DEFAULT_CODES.VALID_PASSWORD.code,
@@ -634,7 +647,11 @@ const checkPassword = (userObj, resPwd) => {
         data: {
         }
     }
-    if (userObj.password && resPwd === decryptStr(userObj.password)) {
+    
+    const finalSalt = process.env.PASSWORD_SALT + userObj.passwordSalt
+    const passwordHash = crypto.pbkdf2Sync(resPwd, finalSalt, 
+       parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+    if (userObj.password && passwordHash == userObj.password) {
         return response
     } else {
         response.success = false;
@@ -1017,9 +1034,10 @@ const resetPassword = async (req,res) => {
         const verifiedToken = await require("../auth/auth").verifyToken(reset_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
-            const encryptedPWD = encryptStr(password);
+            const {passwordHash, userSalt} = hashPassword(password);
             let userres = await models.user_login.update({
-                password: encryptedPWD
+                password: passwordHash,
+                userSalt: userSalt
             }, {
                 where: {
                     userId: user.userId,
