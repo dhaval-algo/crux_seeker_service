@@ -88,9 +88,12 @@ const login = async (req, res, next) => {
             
         }
         const tokenRes = await getLoginToken(payload);
-        
+
+        //Add entry in login activity table 
+        models.user_login_activity.create({userId: verificationRes.data.user.userId, provider: LOGIN_TYPES.LOCAL})
+
         return res.status(200).json(tokenRes);
-        
+       
 
     } catch (error) {
         console.log(error);
@@ -528,6 +531,8 @@ const socialSignIn = async (req, res, next) => {
         }
         const tokenRes = await getLoginToken(payload);
         
+        //Add entry in login activity table 
+        models.user_login_activity.create({userId: user.id, provider: user_login.provider})
         return res.status(200).json(tokenRes);
 
     } catch (error) {

@@ -12,8 +12,8 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-      loginAt: {
-        type: Sequelize.DATE
+      provider: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,

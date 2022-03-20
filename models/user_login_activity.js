@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: { msg: "userTopicId cannot be empty" }
       }
     },
-    loginAt: DataTypes.DATE
+    provider: DataTypes.STRING
   }, {});
   user_login_activity.associate = function(models) {
     // associations can be defined here

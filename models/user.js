@@ -50,6 +50,7 @@ module.exports = (sequelize, DataTypes) => {
     user.hasMany(models.user_experience, { foreignKey: 'userId' });
     user.hasMany(models.user_skill, { foreignKey: 'userId' });
     user.hasMany(models.user_topic, { foreignKey: 'userId' });
+    user.hasMany(models.user_login_activity, { foreignKey: 'userId' });
     
   };
   return user;
