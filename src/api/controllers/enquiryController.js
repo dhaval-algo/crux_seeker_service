@@ -138,7 +138,11 @@ const fetchEnquiry = async(req, res) => {
 
 const createEnquiry = async (req, res) => {
 
-    let { courseId } = req.body
+    let { courseId = "" } = req.body
+    courseId = courseId.split()
+
+    if(courseId == "")
+        return res.status(500).send({error:true, message:"course id cannot be empty"})
 
     try {
 
@@ -155,7 +159,7 @@ const createEnquiry = async (req, res) => {
             courseImgUrl = learncontent.hits[0]._source.images.thumbnail
         }
         else{
-            return res.status(500).send({error:true, message: err.message + 
+            return res.status(500).send({error:true, message:
                 " couldnt able to find course, invalid courseId"})
         }
 
