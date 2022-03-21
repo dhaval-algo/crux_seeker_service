@@ -5,13 +5,14 @@ const communication = require('../../communication/v1/communication');
 const buildEnquiry =  (req) => {
 
     return new Promise( async (resolve, reject) => {
-        let  { fullName = "", email = "", phone = ""} = req.body
+        let  { fullName = "", email = "", phone = "", courseId =""} = req.body
         let enquiry = {}
-        let  { student, highestDegree, experience, enquiryMessage, courseId, courseName } = req.body
+        let  { student, highestDegree, experience, enquiryMessage, courseName } = req.body
 
         fullName = fullName.trim()
         email = email.trim()
         phone = phone.trim()
+        courseId = courseId.trim()
 
         if ( fullName == '' )
             reject({ message: "fullname cannot be empty"})
@@ -19,6 +20,8 @@ const buildEnquiry =  (req) => {
             reject({ message: "email cannot be empty"})
         if ( phone == '' ) 
             reject({ message: "phone cannot be empty"})
+        if ( courseId == '' ) 
+            reject({ message: "course id cannot be empty"})
 
         enquiry = { fullName, email, phone, student, highestDegree, experience, enquiryMessage, courseId, courseName}
             // if logged in
@@ -33,13 +36,14 @@ const buildEnquiry =  (req) => {
 const buildLearnpathEnquiry =  (req) => {
 
     return new Promise( async (resolve, reject) => {
-        let  { fullName = "", email = "", phone = ""} = req.body
+        let  { fullName = "", email = "", phone = "", learnpathId = ""} = req.body
         let enquiry = {}
-        let  { student, highestDegree, experience, enquiryMessage, learnpathId, learnpathName }  = req.body
+        let  { student, highestDegree, experience, enquiryMessage, learnpathName }  = req.body
 
         fullName = fullName.trim()
         email = email.trim()
         phone = phone.trim()
+        learnpathId = learnpathId.trim()
 
         if ( fullName == '' )
             reject({ message: "fullname cannot be empty"})
@@ -47,6 +51,8 @@ const buildLearnpathEnquiry =  (req) => {
             reject({ message: "email cannot be empty"})
         if ( phone == '' ) 
             reject({ message: "phone cannot be empty"})
+        if ( learnpathId == '' ) 
+            reject({ message: "learnpathId cannot be empty"})
 
         enquiry = { fullName, email, phone, student, highestDegree, experience, enquiryMessage, learnpathId, learnpathName}
             // if logged in
