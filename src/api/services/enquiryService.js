@@ -14,11 +14,11 @@ const buildEnquiry =  (req) => {
         phone = phone.trim()
 
         if ( fullName == '' )
-            reject("fullname cannot be empty")
+            reject({ message: "fullname cannot be empty"})
         if ( email == '' ) 
-            reject("email cannot be empty")
+            reject({ message: "email cannot be empty"})
         if ( phone == '' ) 
-            reject("phone cannot be empty")
+            reject({ message: "phone cannot be empty"})
 
         enquiry = { fullName, email, phone, student, highestDegree, experience, enquiryMessage, courseId, courseName}
             // if logged in
@@ -42,11 +42,11 @@ const buildLearnpathEnquiry =  (req) => {
         phone = phone.trim()
 
         if ( fullName == '' )
-            reject("fullname cannot be empty")
+            reject({ message: "fullname cannot be empty"})
         if ( email == '' ) 
-            reject("email cannot be empty")
+            reject({ message: "email cannot be empty"})
         if ( phone == '' ) 
-            reject("phone cannot be empty")
+            reject({ message: "phone cannot be empty"})
 
         enquiry = { fullName, email, phone, student, highestDegree, experience, enquiryMessage, learnpathId, learnpathName}
             // if logged in
