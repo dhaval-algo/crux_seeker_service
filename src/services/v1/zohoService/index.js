@@ -151,7 +151,7 @@ const fetchUserMeta = (ids) => {
 const prepareLeadData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let leadObj = {
-            Enquiry_id:"",
+            // Enquiry_id:"",
             First_Name:"",
             Last_Name:"",
             Email:"",
@@ -174,7 +174,7 @@ const prepareLeadData = (enquiry_id) => {
             Course:''
         }
         try {
-            leadObj.Enquiry_id = 'LRN_CNT_ENQ_' + enquiry_id
+            // leadObj.Enquiry_id = 'LRN_CNT_ENQ_' + enquiry_id
             formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
@@ -257,7 +257,7 @@ const prepareLeadData = (enquiry_id) => {
 const prepareLearnPathLeadData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let leadObj = {
-            Enquiry_id:"",
+            // Enquiry_id:"",
             First_Name:"",
             Last_Name:"",
             Email:"",
@@ -280,7 +280,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             Course:''
         }
         try {
-            leadObj.Enquiry_id = 'LRN_PTH_ENQ_' + enquiry_id
+            // leadObj.Enquiry_id = 'LRN_PTH_ENQ_' + enquiry_id
             formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
