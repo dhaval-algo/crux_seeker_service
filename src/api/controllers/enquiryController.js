@@ -139,7 +139,7 @@ const fetchEnquiry = async(req, res) => {
 const createEnquiry = async (req, res) => {
 
     let { courseId = "" } = req.body
-    courseId = courseId.split()
+    courseId = courseId.trim()
 
     if(courseId == "")
         return res.status(500).send({error:true, message:"course id cannot be empty"})
@@ -206,9 +206,25 @@ const createEnquiry = async (req, res) => {
 
 }
 
-const createLearnpathEnquiry = (req, res) => {
+const createLearnpathEnquiry = async (req, res) => {
 
     try {
+        let { learnpathId = "" } = req.body
+        learnpathId = learnpathId.trim()
+    
+        if(learnpathId == "")
+            return res.status(500).send({error:true, message:"learnpath id cannot be empty"})
+
+        let query = { "bool": {
+            "must": [{ term: { "_id": learnpathId }}]
+        }};
+
+        //fetch partnerId  frm learn-content index
+        const learncontent = await elasticService.search('learn-path', query);
+        if( learncontent.hits.length == 0 )        
+            return res.status(500).send({error:true, message:
+                " couldnt able to find learnpath, invalid learnpath id"})
+
         enquiryService.buildLearnpathEnquiry(req).then( async (enquiry) => {
             const enq = await models.learnpath_enquiry.create(enquiry)
             // emit event to createLead in zoho
