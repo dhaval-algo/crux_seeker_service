@@ -132,7 +132,6 @@ const fetchEnquiry = async(req, res) => {
         })
     }
     catch(err){
-        console.log(err)
         return res.status(500).send({error:true, message: err.message})
     }
 }
@@ -156,7 +155,6 @@ const createEnquiry = async (req, res) => {
             courseImgUrl = learncontent.hits[0]._source.images.thumbnail
         }
         else{
-            console.log(err)
             return res.status(500).send({error:true, message: err.message + 
                 " couldnt able to find course, invalid courseId"})
         }
@@ -194,14 +192,12 @@ const createEnquiry = async (req, res) => {
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
         .catch(err => {
-            console.log(err)
             return res.status(500).send({error:true, message: err.message}) 
         })
 
      
     }
     catch(err){
-        console.log(err)
         return res.status(500).send({error:true, message: err.message})    }
 
 }
@@ -216,10 +212,12 @@ const createLearnpathEnquiry = (req, res) => {
                 eventEmitter.emit('learnpathenquiry',enq.id)
             return res.status(200).send({success:true, message:"learnpath enquiry submitted"})
         })
+        .catch(err => {
+            return res.status(500).send({error:true, message: err.message}) 
+        })
 
     }
     catch(err){
-        console.log(err)
         return res.status(500).send({error:true, message: err.message})
     }
 
@@ -385,7 +383,6 @@ const fetchLearnpathEnquiry = async(req, res) => {
 
     }
     catch(err){
-        console.log(err)
         return res.status(500).send({error:true, message: err.message})
     }
 }
