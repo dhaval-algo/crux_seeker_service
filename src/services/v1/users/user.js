@@ -3,7 +3,6 @@ const {
     decryptStr,
     getOtp,
     verifySocialToken,
-    createUser,
     sendVerifcationLink,
     getLoginToken,
     invalidateTokens,
@@ -1151,16 +1150,8 @@ const addCourseToWishList = async (req, res) => {
             });
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
-            const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
-            // const userinfo = await models.user_meta.findOne({
-            //     attributes: ["value"],
-            //     where: {
-            //         userId: user.userId, metaType: 'primary', key: 'email'
-            //     }
-            // })
-            // const data = { email: userinfo.value, courseIds: numericIds }
+          
             await logActvity("COURSE_WISHLIST", userId, courseIds);
-            // sendDataForStrapi(data, "profile-add-wishlist");
 
             return res.status(200).json({
                 success: true,
@@ -1224,16 +1215,8 @@ const addLearnPathToWishList = async (req,res) => {
             });
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
-            const numericIds = learnpathIds.map((learnpathId) => learnpathId.split("LRN_PTH_").pop())
-            // const userinfo = await models.user_meta.findOne({
-            //     attributes: ["value"],
-            //     where: {
-            //         userId: user.userId, metaType: 'primary', key: 'email'
-            //     }
-            // })
-          //  const data = { email: userinfo.value, learnpathIds: numericIds }
+           
             await logActvity("LEARNPATH_WISHLIST", userId, learnpathIds);
-            // sendDataForStrapi(data, "profile-add-learnpath-wishlist");
 
             return res.status(200).json({
                 success: true,
@@ -1387,9 +1370,6 @@ const removeCourseFromWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
-    // sendDataForStrapi(data, "profile-remove-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -1402,9 +1382,6 @@ const removeLearnPathFromWishList = async (req,res) => {
     const { user} = req;
     const {learnpathId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"learnpath_wishlist", value:learnpathId, userId:user.userId}})
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
-    // sendDataForStrapi(data, "profile-remove-learnpath-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -2206,9 +2183,6 @@ const uploadProfilePic =async (req,res) => {
     await models.user.update({profilePicture:profilePicture},{where:{id:user.userId}})
     
     const profileRes = await calculateProfileCompletion(user)
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value, image:s3Path}
-    // sendDataForStrapi(data, "update-profile-picture");
     return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
@@ -2216,9 +2190,6 @@ const removeProfilePic = async (req,res) => {
     const {user} = req
 
     await models.user.update({profilePicture:null},{where:{id:user.userId}})
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value}
-    // sendDataForStrapi(data, "remove-profile-picture");
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
@@ -2257,9 +2228,6 @@ const uploadResumeFile = async (req,res) =>{
         size:size
     }
     await models.user.update({resumeFile:resumeFile},{where:{id:user.userId}})
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value, resume:s3Path}
-    // sendDataForStrapi(data, "upload-resume");
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
@@ -2267,9 +2235,6 @@ const deleteResumeFile = async (req,res) => {
     const {user} = req
     
     await models.user.update({resumeFile:null},{where:{id:user.userId}})
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value}
-    // sendDataForStrapi(data, "remove-resume");
     return res.status(200).json({success:true, resumeFile:{}})
 }
 
@@ -2282,9 +2247,6 @@ const uploadPrimarySkills = async (req,res) => {
     } else {
         await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
     }
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let learn_profile = {email:userinfo.value, data:data}
-    // sendDataForStrapi(learn_profile, "update-learn-profile");
     return res.status(200).json({success:true,data:data})
 }
 
@@ -2369,17 +2331,6 @@ const bookmarkArticle = async (req,res) => {
             })
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
-            const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
-
-            // const userinfo = await models.user_meta.findOne({
-            //     attributes: ["value"],
-            //     where: {
-            //         userId: user.userId, metaType: 'primary', key: 'email'
-            //     }
-            // })
-            // const data = { email: userinfo.value, articleIds: numericIds }
-            // sendDataForStrapi(data, "profile-bookmark-article");
-
             return res.status(200).json({
                 success: true,
                 data: {
@@ -2409,9 +2360,6 @@ const removeBookmarkArticle = async (req,res) => {
     const { user} = req;
     const {articleId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
-    // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    // let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
-    // sendDataForStrapi(data, "profile-remove-bookmark-article");
     return res.status(200).json({
         success:true,
         data: {
@@ -2549,11 +2497,8 @@ const updatePhone = async (req,res) => {
             where: {
                 id: user.userId
             }
-        });  
+        });
 
-        // const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-        // let data = {email:userinfo.value, phone:phone}
-        // sendDataForStrapi(data, "update-phone")
         return res.status(200).json({
             'success': true,
             'message': 'Phone is updated',
