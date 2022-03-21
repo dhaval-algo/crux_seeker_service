@@ -191,7 +191,7 @@ const prepareLeadData = (enquiry_id) => {
             leadObj.Phone = enquiry.dataValues.phone || "";
 
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
-            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || ""
+            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || "-"
             leadObj.Email = enquiry.dataValues.email || "";
             leadObj.Student = Boolean(enquiry.dataValues.student) || null;
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
@@ -318,7 +318,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             leadObj.Phone = enquiry.dataValues.phone || "";
 
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
-            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || ""
+            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || "-"
             leadObj.Email = enquiry.dataValues.email || "";
             leadObj.Student = Boolean(enquiry.dataValues.student) || null;
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
