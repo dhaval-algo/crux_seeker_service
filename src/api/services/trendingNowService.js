@@ -100,12 +100,12 @@ const getTrendingNowList = async (req, callback) => {
             }
         });
 
-        callback(null, { success: true, message: "list fetched successfully", data: {list:list} });
+        callback(null, { success: true, message: "list fetched successfully", data: { list: list } });
 
 
     } catch (error) {
         console.log("error while fetching trending now list", error);
-        callback(null, { success: false, message: "failed to fetch", data: {list:[]} });
+        callback(null, { success: false, message: "failed to fetch", data: { list: [] } });
 
     }
 
@@ -136,6 +136,8 @@ const getTrendingNowComponentData = async (req, callback) => {
 
         if (component) {
 
+            component.categoryName = trendingNowData[category].category.name;
+            
             if (component.type == 'learn_content') {
                 req.query.courseIds = component.learn_contents.join(',');
                 await learnContentService.getLearnContentList(req, (err, result) => {
@@ -175,7 +177,7 @@ const getTrendingNowComponentData = async (req, callback) => {
 
     } catch (error) {
         console.log("error while fetching trending now component data", error);
-        callback(null, { success: false, message: "failed to fetch", data: error.meta });
+        callback(null, { success: false, message: "failed to fetch", data: error });
     }
 
 }
