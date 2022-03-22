@@ -170,5 +170,39 @@ module.exports = class categoryService {
         }        
     }
 
+    async getSkills(req, callback, skipCache){
+        try{
+            let cacheName = `skills`
+            let useCache = false
+            if(skipCache !=true) {
+                let cacheData = await RedisConnection.getValuesSync(cacheName);
+                if(cacheData.noCacheData != true) {
+                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    useCache = true
+                }            
+            }
+            if(useCache !=true)
+            {
+                let response = await fetch(`${apiBackendUrl}/skills?_limit=-1`);
+                let data 
+                if (response.ok) {
+                     data = await response.json();
+                     data.map(function(el){
+                         delete el["topics"]
+                     })
+                }
+                
+                if(data)
+                {
+                    RedisConnection.set(cacheName, data);
+                }
+                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            }
+        }catch(err){
+            console.log("err", err)
+            callback(null, {status: 'success', message: 'No records found!', data: []});
+        }        
+    }
+
 
 }
