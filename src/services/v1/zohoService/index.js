@@ -5,6 +5,8 @@ const Op = Sequelize.Op;
 
 const models = require("../../../../models");
 const eventEmitter2 = require('../../../utils/subscriber');
+const elasticService = require("../../../../src/api/services/elasticService");
+
 /**
     * { function_description }
     * code to be used from the console or generate via browser
@@ -148,12 +150,16 @@ const fetchUserMeta = (ids) => {
         resolve(formValues)
     })
 }
+
 const prepareLeadData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let leadObj = {
+            Enquiry_Unique_ID:"LRN_CNT_ENQ_",
             First_Name:"",
             Last_Name:"",
             Email:"",
+            Student: null,
+            Enquiry_Message:"",
             Gender:"",
             Phone:"",
             Created_On:moment().format(),
@@ -170,79 +176,101 @@ const prepareLeadData = (enquiry_id) => {
             Country:'',
             Current_Company:false,
             Lead_Origin_or_Source:'',
-            Course:''
+            Course:'',
+            Experience_Level:'',
+            Highest_Degree:''
+
         }
+
         try {
-           formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
-            if(formSubRec.otherInfo) {
-                // const otherObj = JSON.parse(formSubRec.otherInfo)
-                leadObj.Lead_Origin_or_Source = formSubRec.otherInfo.sourceUrl
-                leadObj.Course = formSubRec.otherInfo.sourceUrl
-            }
-            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
-            if(formSubValRec != null) {
-                let metaObj = {} 
-                formSubValRec.map((rec) => {
-                    if(metaObj[rec.objectType]) {
-                        metaObj[rec.objectType].push(rec.objectId)
-                    } else {
-                        metaObj[rec.objectType] = [];
-                        metaObj[rec.objectType].push(rec.objectId)
+
+            let enquiry = await  models.enquiry.findOne({where: {id: enquiry_id}})
+            
+            leadObj.Enquiry_Unique_ID += enquiry.id;
+            leadObj.Course = enquiry.courseName;
+            leadObj.Phone = enquiry.dataValues.phone || "";
+
+            leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
+            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || "-"
+            leadObj.Email = enquiry.dataValues.email || "";
+            leadObj.Student = Boolean(enquiry.dataValues.student) || null;
+            leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
+            leadObj.Experience_Level = enquiry.dataValues.experience || "";
+            leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
+
+            const query = { "bool": {
+                "must": [{ term: { "_id": enquiry.courseId }}]
+            }};
+            const learnContent = await elasticService.search('learn-content', query)
+
+            if( learnContent.hits && learnContent.hits.length > 0 )
+            leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/course/" + learnContent.hits[0]._source.slug
+
+            /* code to fetch profile data
+            if(enquiry.userId != undefined){
+
+                let user_meta = await models.user_meta.findAll({where: { userId: enquiry.userId}})
+                
+                let education, workExp;
+                user_meta.forEach((each, i) => {
+
+                    if(each.dataValues.key == "experience"){
+                        let exp = JSON.parse(each.dataValues.value)
+                        if(leadObj.Experience == "")
+                            leadObj.Experience = exp.value
                     }
+                    if(each.dataValues.key == "workExp"){
+                        workExp = JSON.parse(each.dataValues.value)
+                    }
+                    if(each.dataValues.key == "education"){
+                        education = JSON.parse(each.dataValues.value)
+                    }
+                    if(each.dataValues.key == "gender")
+                        leadObj.Gender = each.dataValues.value;
+
+                    if(each.dataValues.key == "city"){
+                        let city = JSON.parse(each.dataValues.value);
+                        leadObj.City = city.value
+                    }
+
+                    if(each.dataValues.key == "country")
+                        leadObj.Country = each.dataValues.value;
+
                 })
-                let metaObjVal = await getObjectData(metaObj)
-                leadObj.Phone =metaObjVal.phone ? `+${metaObjVal.phone}` :"";
-                leadObj.First_Name = metaObjVal.firstName || "";
-                leadObj.Last_Name = metaObjVal.lastName || "Not given";
-                leadObj.Gender = metaObjVal.gender || "";
-                leadObj.Email = metaObjVal.email || "";
 
-                let educationArr = JSON.parse(metaObjVal.education)
-                let workExpArr = JSON.parse(metaObjVal.workExp)
-                let education = (educationArr && educationArr.length > 0)? educationArr[0] : null
-                let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
-                leadObj.Grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
+                if(education && education.length > 0 ){
+                education = education[0] 
+                leadObj.Grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     // Remove unwanted slash and double quote
         
-                if(education.specialization) {
-                    leadObj.Specialization = education.specialization.label
-                }
-        
-                if(education.degree) {
-                    leadObj.Degree = education.degree.label
-                }
-        
-                if(education.instituteName) {
-                    leadObj.Institute = education.instituteName.label
-                }               
-        
-                if(workExp.jobTitle) {
-                    leadObj.Job_Title = workExp.jobTitle.label
-                }
-        
-                if(workExp.industry) {
-                    leadObj.Company_Industry = workExp.industry.label
-                }
-        
-                if(workExp.company) {
-                    leadObj.Company = workExp.company.label
-                }
-        
-                if(workExp.currentCompany) {
-                    leadObj.Current_Company = Boolean(workExp.currentCompany)
-                }  
-        
-                leadObj.Graduation_Year = education.graduationYear || "";
-                leadObj.Experience = workExp.experience || "";
+                    if(education.specialization) 
+                        leadObj.Specialization = education.specialization.label || ""
+            
+                    if(education.degree)
+                        if(leadObj.Degree == "") 
+                            leadObj.Degree = education.degree.label || ""
+            
+                    if(education.instituteName)
+                        leadObj.Institute = education.instituteName.label || ""
 
-                if(metaObjVal.city) {
-                    leadObj.City = JSON.parse(metaObjVal.city).city
+                    if(education.graduationYear)
+                        leadObj.Graduation_Year = education.graduationYear || "";
                 }
 
-                if(metaObjVal.city) {
-                    leadObj.Country = JSON.parse(metaObjVal.city).country
+                if(workExp && workExp.length > 0 ){
+                    workExp = workExp[0]
+                    if(workExp.jobTitle)
+                        leadObj.Job_Title = workExp.jobTitle.label || ""
+            
+                    if(workExp.industry)
+                        leadObj.Company_Industry = workExp.industry.label || ""
+            
+                    if(workExp.company)
+                        leadObj.Company = workExp.company.label || ""
+            
+                    if(workExp.currentCompany)
+                        leadObj.Current_Company = Boolean(workExp.currentCompany)
                 }
-
-            }
+        }*/
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
             return resolve(data)
@@ -255,9 +283,12 @@ const prepareLeadData = (enquiry_id) => {
 const prepareLearnPathLeadData = (enquiry_id) => {
     return new Promise(async (resolve) => {
         let leadObj = {
+            Enquiry_Unique_ID:"LRN_PTH_ENQ_",
             First_Name:"",
             Last_Name:"",
             Email:"",
+            Student: null,
+            Enquiry_Message:"",
             Gender:"",
             Phone:"",
             Created_On:moment().format(),
@@ -274,73 +305,99 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             Country:'',
             Current_Company:false,
             Lead_Origin_or_Source:'',
-            Course:''
+            Course:'',
+            Experience_Level:'',
+            Highest_Degree:''
         }
         try {
-           formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
-            if(formSubRec.otherInfo) {
-                // const otherObj = JSON.parse(formSubRec.otherInfo)
-                leadObj.Lead_Origin_or_Source = formSubRec.otherInfo.learnpathUrl
-                leadObj.Course = formSubRec.otherInfo.learnpathUrl
-            }
-            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
-            if(formSubValRec != null) {
-                let metaObj = {} 
-                formSubValRec.map((rec) => {
-                    if(metaObj[rec.objectType]) {
-                        metaObj[rec.objectType].push(rec.objectId)
-                    } else {
-                        metaObj[rec.objectType] = [];
-                        metaObj[rec.objectType].push(rec.objectId)
+
+            let enquiry = await  models.learnpath_enquiry.findOne({where: {id: enquiry_id}})
+            
+            leadObj.Enquiry_Unique_ID += enquiry.id;
+            leadObj.Course = enquiry.learnpathName;
+            leadObj.Phone = enquiry.dataValues.phone || "";
+
+            leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
+            leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || "-"
+            leadObj.Email = enquiry.dataValues.email || "";
+            leadObj.Student = Boolean(enquiry.dataValues.student) || null;
+            leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
+            leadObj.Experience_Level = enquiry.dataValues.experience || "";
+            leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
+
+            const query = { "bool": {
+                "must": [{ term: { "_id": enquiry.learnpathId }}]
+            }};
+            const learnPath = await elasticService.search('learn-path', query)
+                
+            if( learnPath.hits && learnPath.hits.length > 0 )
+                leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/learnpath/" + learnPath.hits[0]._source.slug
+            
+            /* code for fetching profile data
+            if(enquiry.userId != undefined){
+
+                let user_meta = await models.user_meta.findAll({where: { userId: enquiry.userId}})
+                
+                let education, workExp;;
+                user_meta.forEach((each, i) => {
+
+                    if(each.dataValues.key == "experience"){
+                        let exp = JSON.parse(each.dataValues.value)
+                        if(leadObj.Experience == "")
+                            leadObj.Experience = exp.value
                     }
+                    if(each.dataValues.key == "workExp"){
+                        workExp = JSON.parse(each.dataValues.value)
+                    }
+                    if(each.dataValues.key == "education")
+                        education = JSON.parse(each.dataValues.value)
+
+                    if(each.dataValues.key == "gender")
+                        leadObj.Gender = each.dataValues.value;
+
+                    if(each.dataValues.key == "city"){
+                        let city = JSON.parse(each.dataValues.value);
+                        leadObj.City = city.value
+                    }
+
+                    if(each.dataValues.key == "country")
+                        leadObj.Country = each.dataValues.value;
+
                 })
-                let metaObjVal = await getObjectData(metaObj)
-                leadObj.Phone =metaObjVal.phone ? `+${metaObjVal.phone}` :"";
-                leadObj.First_Name = metaObjVal.firstName || "";
-                leadObj.Last_Name = metaObjVal.lastName || "Not given";
-                leadObj.Gender = metaObjVal.gender || "";
-                leadObj.Grade = metaObjVal.grade || "";
-                leadObj.Email = metaObjVal.email || "";
-                leadObj.Graduation_Year = metaObjVal.graduationYear || "";
-                leadObj.Experience = metaObjVal.experience || "";
 
-                if(metaObjVal.specialization) {
-                    leadObj.Specialization = JSON.parse(metaObjVal.specialization).label
+                if(education && education.length > 0 ){
+                education = education[0] 
+                leadObj.Grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     // Remove unwanted slash and double quote
+        
+                    if(education.specialization) 
+                        leadObj.Specialization = education.specialization.label || ""
+            
+                    if(education.degree)
+                        if(leadObj.Degree == "") 
+                            leadObj.Degree = education.degree.label || ""
+            
+                    if(education.instituteName)
+                        leadObj.Institute = education.instituteName.label || ""
+            
+                    if(education.graduationYear)
+                        leadObj.Graduation_Year = education.graduationYear || "";
+                    }
+
+                if(workExp && workExp.length > 0 ){
+                    workExp = workExp[0]
+                    if(workExp.jobTitle)
+                        leadObj.Job_Title = workExp.jobTitle.label || ""
+            
+                    if(workExp.industry)
+                        leadObj.Company_Industry = workExp.industry.label || ""
+            
+                    if(workExp.company)
+                        leadObj.Company = workExp.company.label || ""
+            
+                    if(workExp.currentCompany)
+                        leadObj.Current_Company = Boolean(workExp.currentCompany)
                 }
-
-                if(metaObjVal.degree) {
-                    leadObj.Degree = JSON.parse(metaObjVal.degree).label
-                }
-
-                if(metaObjVal.instituteName) {
-                    leadObj.Institute = JSON.parse(metaObjVal.instituteName).label
-                }                
-
-                if(metaObjVal.jobTitle) {
-                    leadObj.Job_Title = JSON.parse(metaObjVal.jobTitle).label
-                }
-
-                if(metaObjVal.industry) {
-                    leadObj.Company_Industry = JSON.parse(metaObjVal.industry).label
-                }
-
-                if(metaObjVal.company) {
-                    leadObj.Company = JSON.parse(metaObjVal.company).label
-                }
-
-                if(metaObjVal.currentCompany) {
-                    leadObj.Current_Company = Boolean(metaObjVal.currentCompany)
-                }
-
-                if(metaObjVal.city) {
-                    leadObj.City = JSON.parse(metaObjVal.city).city
-                }
-
-                if(metaObjVal.city) {
-                    leadObj.Country = JSON.parse(metaObjVal.city).country
-                }
-
-            }
+            }*/
             leadObj = cleanObject(leadObj)
             const data = {data:[leadObj]}
             return resolve(data)
