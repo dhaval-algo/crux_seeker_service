@@ -17,6 +17,7 @@ const footerController = require('../../../controllers/footerController');
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
+const listUsersController = require("../../../controllers/listUsersController")
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
@@ -75,5 +76,6 @@ router.post('/activity-course-viewed',injectTokenPayload, learnContentController
 router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 //learnpath enquiry
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
-
+//listing all users for admin; temporarily added to this path 
+router.post('/listUsers', listUsersController.list)
 module.exports = router;
