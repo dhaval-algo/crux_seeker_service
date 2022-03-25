@@ -78,4 +78,5 @@ router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
 //listing all users for admin; temporarily added to this path 
 router.post('/listUsers', listUsersController.list)
+router.get("/detailedUser/:id", listUsersController.getDetailedUser)
 module.exports = router;
