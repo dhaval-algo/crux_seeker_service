@@ -14,7 +14,16 @@ module.exports = {
         });      
     },
 
-
+    aboutUs(req,res){
+        footerService.aboutUs(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
+    
     sendContactEmail(req,res){
         let requestData = req.body
         footerService.sendContactEmail(requestData, (err, data) => {

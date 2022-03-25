@@ -38,6 +38,7 @@ router.get('/news', newsController.getNewsContent);
 router.get('/news/:slug', newsController.getNewsBySlug);
 
 router.get('/footer', footerController.getFooter);
+router.get('/about-us', footerController.aboutUs);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);

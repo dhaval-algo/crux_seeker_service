@@ -1,8 +1,9 @@
 const communication = require('../../communication/v1/communication');
 const elasticService = require("./elasticService");
 const redisConnection = require('../../services/v1/redis');
-
+const fetch = require("node-fetch");
 const RedisConnection = new redisConnection();
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 module.exports = class FooterService {
     async getFooter(slug, callback,useCache = true){
@@ -49,7 +50,44 @@ module.exports = class FooterService {
         }
 
     }
-  
+
+    async aboutUs(req, callback,useCache = true){
+        const cacheKey = "about-us";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for about us page: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/about-us`);
+        }catch(e){
+            console.log('Error while retriving about us data',e);
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {status: 'failed', message: 'No data available!', data: []});
+        }
+    }
+
     async sendContactEmail(requestData,callback) {
  
         try {
