@@ -2,6 +2,7 @@
 
 const validators = require("../../utils/validators")
 const { sequelize, Sequelize:{ Op } } = require("../../../models")
+const models = require("../../../models")
 
 const buildConfig = (req)=> {
 
@@ -42,6 +43,23 @@ const buildConfig = (req)=> {
         }
 }
 
+const queryUser = (id) =>{
+    return new Promise(async (resolve, reject) => {
+        const personal = await models.user.findOne({ where:{id} })
+        if(personal == null)
+            return reject({error:true, message:"No user with provided id"})
+        const education = await models.user_education.findAll({ where:{userId:id} })
+        const experience = await models.user_experience.findAll({ where:{userId:id} })
+        const goals = await models.goal.findAll({where:{userId:id}})
+        const courseWishlist = await models.user_meta.findAll({where:{userId:id, key:"course_wishlist"}})
+        const learnpathWishlist = await models.user_meta.findAll({where:{userId:id, key:"learnpath_wishlist"}})
+        const courseEnquiries = await models.enquiry.findAll({where:{userId:id}})
+        const learnpathEnquiries = await models.learnpath_enquiry.findAll({where:{userId:id}})
+        return resolve({success:true, user:{personal, education, experience,
+            goals, courseWishlist, learnpathWishlist, courseEnquiries,learnpathEnquiries}})
+    })
+}
 module.exports = {
     buildConfig,
+    queryUser,
 }
