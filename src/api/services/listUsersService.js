@@ -21,7 +21,7 @@ const buildConfig = (req)=> {
             //if not search then filter, but not both at a time 
             else if(filters.length > 0 ){
                 //whitelist: allow only this attributes to filter;
-                const filterList = ["gender", "verified", "city", "country", "status", "phoneVerified","userType",
+                const filterList = ["id","gender", "verified", "city", "country", "status", "phoneVerified","userType",
                                     "updatedAt", "createdAt", "fullName", "email", "phone", "lastLogin"]
         
                 filters.forEach(filter => {
