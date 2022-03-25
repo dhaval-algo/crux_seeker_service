@@ -26,7 +26,7 @@ const buildConfig = (req)=> {
         
                 filters.forEach(filter => {
                     if(filterList.includes(filter.key))
-                        if(filter.key == "createdAt" || filter.key =="updatedAt")
+                        if(filter.key == "createdAt" || filter.key =="updatedAt" || filter.key =="lastLogin")
                             where[filter.key] = {[Op.between]: [filter.lower, filter.upper]}
                         else
                             where[filter.key] = filter.value
