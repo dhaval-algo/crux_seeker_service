@@ -18,6 +18,7 @@ const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
 const listUsersController = require("../../../controllers/listUsersController")
+const listEnquiriesController = require("../../../controllers/listEnquiriesController")
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
@@ -79,4 +80,5 @@ router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLea
 //listing all users for admin; temporarily added to this path 
 router.post('/listUsers', listUsersController.list)
 router.get("/detailedUser/:id", listUsersController.getDetailedUser)
+router.post("/listEnquiries", listEnquiriesController.list)
 module.exports = router;
