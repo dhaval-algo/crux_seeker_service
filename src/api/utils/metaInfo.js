@@ -1,7 +1,5 @@
 const elasticService = require("../services/elasticService");
 
-
-
 // all the meta information constants are defined below 
 
 const EXTRA_KEYWORDS_LEARN_CONTENT_LIST = ["online courses", "learning courses", "paid courses", "degrees", "certifications", "offline courses", "instructor courses", "courses near me", "top courses"];
@@ -31,7 +29,7 @@ const getTrendingNowMetaDescription = (title) => {
 
 const getPartnerMetaTitle = (partnerName)=>{
 
-    return `${partnerName} | Top partners from Careervira | Careervira.com`
+    return `${partnerName} | Top partners from Careervira`
 }
 
 const getLearnContentListMetaInfo = (result) => {
@@ -130,15 +128,9 @@ const getProviderMetaInfo = (result) => {
         location += `, ${result.country}`
     }
 
-    meta_title += ` | ${process.env.SITE_URL_FOR_META_DATA}`;
     if (!result.meta_description) {
-        let overview = result.overview;
-        overview = overview.replace(/<(.|\n)*?>/g, '');
-        overview = overview.replace(/&nbsp;/g, ' ');
-        let index = overview.indexOf(".")
-        overview = overview.substring(0, (index > 0) ? index : 100);
         let course_count = (result.course_count) ? result.course_count : 0
-        meta_description = `${result.name}, ${location} has over ${course_count} courses. ${overview}. `;
+        meta_description = `${result.name}, ${location} has over ${course_count} courses.`;
         let program_names_str = null;
         let study_modes_names_str = null;
         if (result.programs) {

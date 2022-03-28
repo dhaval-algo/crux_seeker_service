@@ -62,15 +62,94 @@ module.exports = {
     },
 
 
-    getRelatedCourses: async (req, res)=>{
-        LearnContentService.getRelatedCourses(req,(err, data)=>{
+    getRecommendedCourses: async (req, res) => {
+        const { type } = req.query;
+
+        switch (type) {
+            case "related-courses": LearnContentService.getRelatedCourses(req, (err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+            case "courses-to-get-started": LearnContentService.getPopularCourses(req, (err, data) => {
+                if (data) {
+                    if (process.env.API_CACHE_CONTROL_HEADER) {
+                        res.set('Cache-control', process.env.API_CACHE_CONTROL_HEADER)
+                    }
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+            case "explore-courses-from-top-categories": LearnContentService.exploreCoursesFromTopCatgeories(req, (err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+
+                break;
+
+            case "top-picks-for-you": LearnContentService.getTopPicksForYou(req, (err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+
+            case "recently-viewed-courses": userService.recentlyViewedCourses(req,(err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                
+                break;
+           
+            case "recently-searched-courses": userService.recentlySearchedCourses(req,(err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+
+            case "people-are-also-viewing": userService.peopleAreAlsoViewing(req,(err, data) => {
+                if (data) {
+                    res.status(200).send(data);
+                } else {
+                    res.status(200).send(err);
+                }
+            });
+                break;
+
+
+            default:
+                res.status(200).send({});
+                break;
+        }
+    },
+
+    getTopCategories : async(req,res)=>{
+
+        LearnContentService.getTopCategories(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
                 res.status(200).send(err);
             }
-        })
+        });
     },
+
     getPopularCourses: async (req, res)=>{
         LearnContentService.getPopularCourses(req,(err, data)=>{
             if (data) {
@@ -82,7 +161,7 @@ module.exports = {
             } else {
                 res.status(200).send(err);
             }
-        })
+        });
     },
 
     getReviews: async (req, res) => {
