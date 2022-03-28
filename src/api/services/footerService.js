@@ -88,6 +88,43 @@ module.exports = class FooterService {
         }
     }
 
+    async leadership(req, callback,useCache = true){
+        const cacheKey = "leadership";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page leadership: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/leadership`);
+        }catch(e){
+            console.log('Error while retriving leadership data',e);
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {status: 'failed', message: 'No data available!', data: []});
+        }
+    }
+
     async sendContactEmail(requestData,callback) {
  
         try {

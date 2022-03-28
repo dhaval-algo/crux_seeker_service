@@ -74,6 +74,47 @@ const  invalidatTopics = async () => {
     }  
 }
 
+const invalidateAboutUs = async () => {
+    let result = null;
+    const cacheKey = "about-us";
+    try{
+        result = await fetch(`${apiBackendUrl}/about-us`);
+    }catch(e){
+        console.log('Error while retriving about us data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    } 
+}
+
+const invalidateLeadership = async () => {
+    let result = null;
+    const cacheKey = "leadership";
+    try{
+        result = await fetch(`${apiBackendUrl}/leadership`);
+    }catch(e){
+        console.log('Error while retriving leadership data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
 
    
 module.exports = {
@@ -83,5 +124,7 @@ module.exports = {
     invalidateCurrencies,
     invalidateFilterConfigs,
     invalidateRankingFilter,
-    invalidatTopics
+    invalidatTopics,
+    invalidateAboutUs,
+    invalidateLeadership,
 }

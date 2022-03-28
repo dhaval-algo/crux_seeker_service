@@ -23,6 +23,16 @@ module.exports = {
             }
         });      
     },
+
+    leadership(req,res){
+        footerService.leadership(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
     
     sendContactEmail(req,res){
         let requestData = req.body
