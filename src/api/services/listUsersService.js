@@ -22,11 +22,11 @@ const buildConfig = (req)=> {
             else if(filters.length > 0 ){
                 //whitelist: allow only this attributes to filter;
                 const filterList = ["id","gender", "verified", "city", "country", "status", "phoneVerified","userType",
-                                    "updatedAt", "createdAt", "fullName", "email", "phone", "lastLogin"]
+                                    "updatedAt", "createdAt", "fullName", "email", "phone", "lastLogin", "dob"]
         
                 filters.forEach(filter => {
                     if(filterList.includes(filter.key))
-                        if(filter.key == "createdAt" || filter.key =="updatedAt" || filter.key =="lastLogin")
+                        if(filter.key == "createdAt" || filter.key =="updatedAt" || filter.key =="lastLogin" || filter.key == "dob")
                             where[filter.key] = {[Op.between]: [filter.lower, filter.upper]}
                         else
                             where[filter.key] = filter.value
