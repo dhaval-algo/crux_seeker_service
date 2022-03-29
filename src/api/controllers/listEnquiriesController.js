@@ -54,8 +54,28 @@ const listLearnpath = async (req, res) =>{
     }
 }
 
+const getDetailedLearnpathEnquiry = async (req, res)=>{
+    try{
+        let {id} = req.params
+        id = parseInt(id)
+
+        if(!isNaN(id)){
+            const enquiry = await models.learnpath_enquiry.findOne({ where:{id} })
+            if(enquiry == null)
+                throw {message:"No learnpath enquiry with provided id"}
+            return res.status(200).send({success:true, enquiry})
+        }
+        else
+            return res.status(500).send({error: true, message: "Invalid learnpath enquiry id"})
+
+    }
+    catch(err){
+        return res.status(500).send({error: true, message: err.message})
+    }
+}
 module.exports = {
     list,
     getDetailedEnquiry,
     listLearnpath,
+    getDetailedLearnpathEnquiry,
 }
