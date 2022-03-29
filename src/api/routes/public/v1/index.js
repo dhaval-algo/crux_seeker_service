@@ -81,4 +81,5 @@ router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLea
 router.post('/listUsers', listUsersController.list)
 router.get("/detailedUser/:id", listUsersController.getDetailedUser)
 router.post("/listEnquiries", listEnquiriesController.list)
+router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)
 module.exports = router;
