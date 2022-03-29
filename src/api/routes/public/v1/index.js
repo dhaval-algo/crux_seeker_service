@@ -83,5 +83,6 @@ router.get("/detailedUser/:id", listUsersController.getDetailedUser)
 router.post("/listEnquiries", listEnquiriesController.list)
 router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)
 router.post("/listLearnpathEnquiries", listEnquiriesController.listLearnpath)
+router.get("/detailedLearnpathEnquiry/:id", listEnquiriesController.getDetailedLearnpathEnquiry)
 
 module.exports = router;
