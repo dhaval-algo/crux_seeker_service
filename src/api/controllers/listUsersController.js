@@ -7,6 +7,8 @@ const list = async (req, res) => {
     
     try{
         let config = buildConfig(req)
+        if(config.err)
+            throw config.err
         const {count , rows } = await models.user.findAndCountAll(config)
         res.status(200).send({success: true, data: rows, count})      
     }

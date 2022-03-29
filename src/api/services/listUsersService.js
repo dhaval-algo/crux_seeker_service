@@ -24,13 +24,16 @@ const buildConfig = (req)=> {
                 const filterList = ["id","gender", "verified", "city", "country", "status", "phoneVerified","userType",
                                     "updatedAt", "createdAt", "fullName", "email", "phone", "lastLogin", "dob"]
         
-                filters.forEach(filter => {
-                    if(filterList.includes(filter.key))
+                for (var filter of filters) {
+                    if(filterList.includes(filter.key)){
                         if(filter.key == "createdAt" || filter.key =="updatedAt" || filter.key =="lastLogin" || filter.key == "dob")
                             where[filter.key] = {[Op.between]: [filter.lower, filter.upper]}
                         else
                             where[filter.key] = filter.value
-                })
+                    }
+                    else
+                        return {err:{message:"Filters: unsupported key "}}
+                }
             }
         
             if(sort != "")
