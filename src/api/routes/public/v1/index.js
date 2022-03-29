@@ -82,4 +82,6 @@ router.post('/listUsers', listUsersController.list)
 router.get("/detailedUser/:id", listUsersController.getDetailedUser)
 router.post("/listEnquiries", listEnquiriesController.list)
 router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)
+router.post("/listLearnpathEnquiries", listEnquiriesController.listLearnpath)
+
 module.exports = router;
