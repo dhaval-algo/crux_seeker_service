@@ -1,7 +1,7 @@
 'use strict';
 
 const models = require("../../../models")
-const { buildConfig, getEnquiry} = require("../../api/services/listEnquiriesService")
+const { buildConfig, buildConfigLearnpath} = require("../../api/services/listEnquiriesService")
 
 const list = async (req, res) =>{
     try{
@@ -38,7 +38,24 @@ const getDetailedEnquiry = async (req, res)=>{
         return res.status(500).send({error: true, message: err.message})
     }
 }
+
+const listLearnpath = async (req, res) =>{
+    try{
+        let config = buildConfigLearnpath(req)
+        if(config.err)
+            throw config.err
+        const {count , rows } = await models.learnpath_enquiry.findAndCountAll(config)
+        res.status(200).send({success: true, data: rows, count})      
+    }
+
+    catch(err){
+        console.log(err)
+        return res.status(500).send({error: true, message: err.message})
+    }
+}
+
 module.exports = {
     list,
     getDetailedEnquiry,
+    listLearnpath,
 }
