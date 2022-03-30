@@ -4,6 +4,11 @@ const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const learnContentService = require("../api/services/learnContentService");
 let LearnContentService = new learnContentService();
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
+const redisConnection = require('../services/v1/redis');
+const RedisConnection = new redisConnection();
+
 
 const {
     getCurrencies,
