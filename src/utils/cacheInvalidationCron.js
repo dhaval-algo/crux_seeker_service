@@ -116,6 +116,48 @@ const invalidateLeadership = async () => {
     }  
 }
 
+const invalidateTeam = async () => {
+    let result = null;
+    const cacheKey = "team";
+    try{
+        result = await fetch(`${apiBackendUrl}/team`);
+    }catch(e){
+        console.log('Error while retriving team data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }
+}
+
+const invalidateCareer = async () => {
+    let result = null;
+    const cacheKey = "career";
+    try{
+        result = await fetch(`${apiBackendUrl}/career`);
+    }catch(e){
+        console.log('Error while retriving career data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
+
    
 module.exports = {
     invalidateCategoryTree,
@@ -127,4 +169,6 @@ module.exports = {
     invalidatTopics,
     invalidateAboutUs,
     invalidateLeadership,
+    invalidateTeam,
+    invalidateCareer
 }

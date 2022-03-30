@@ -125,6 +125,80 @@ module.exports = class FooterService {
         }
     }
 
+    async team(req, callback,useCache = false){
+        const cacheKey = "team";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page team: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/team`);
+        }catch(e){
+            console.log('Error while retriving team data',e);
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {status: 'failed', message: 'No data available!', data: []});
+        }
+    }
+
+    async career(req, callback,useCache = true){
+        const cacheKey = "career";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page career: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/career`);
+        }catch(e){
+            console.log('Error while retriving career data',e);
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {status: 'failed', message: 'No data available!', data: []});
+        }
+    }
+
     async sendContactEmail(requestData,callback) {
  
         try {

@@ -33,6 +33,26 @@ module.exports = {
             }
         });      
     },
+
+    team(req,res){
+        footerService.team(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
+
+    career(req,res){
+        footerService.career(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
     
     sendContactEmail(req,res){
         let requestData = req.body
