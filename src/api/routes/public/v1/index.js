@@ -42,6 +42,8 @@ router.get('/about-us', footerController.aboutUs);
 router.get('/leadership', footerController.leadership);
 router.get('/team', footerController.team);
 router.get('/career', footerController.career);
+router.get('/terms-and-conditions', footerController.termandcondition);
+router.get('/privacy-policy', footerController.privacypolicy);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);

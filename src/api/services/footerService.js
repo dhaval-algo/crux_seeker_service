@@ -199,6 +199,80 @@ module.exports = class FooterService {
         }
     }
 
+    async termandcondition(req, callback,useCache = true){
+        const cacheKey = "term-and-condition";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page termandcondition: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/terms-and-conditions`);
+        }catch(e){
+            console.log('Error while retriving terms-and-conditions data',e);
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {status: 'failed', message: 'No data available!', data: []});
+        }
+    }
+
+    async privacypolicy(req, callback,useCache = true){
+        const cacheKey = "privacy-policy";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    //console.log("cache found for footer: returning data");
+                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page privacypolicy: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/privacy-policy`);
+        }catch(e){
+            console.log('Error while retriving privacy-policy data',e);
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {status: 'failed', message: 'No data available!', data: []});
+        }
+    }
+
     async sendContactEmail(requestData,callback) {
  
         try {

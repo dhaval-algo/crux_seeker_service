@@ -163,6 +163,49 @@ const invalidateCareer = async () => {
     }  
 }
 
+const invalidateTNM = async () => {
+    let result = null;
+    const cacheKey = "term-and-condition";
+    try{
+        result = await fetch(`${apiBackendUrl}/terms-and-conditions`);
+    }catch(e){
+        console.log('Error while retriving terms-and-conditions data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
+
+const invalidatePP = async () => {
+    let result = null;
+    const cacheKey = "privacy-policy";
+    try{
+        result = await fetch(`${apiBackendUrl}/privacy-policy`);
+    }catch(e){
+        console.log('Error while retriving privacy-policy data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
+
+
    
 module.exports = {
     invalidateCategoryTree,
@@ -175,5 +218,7 @@ module.exports = {
     invalidateAboutUs,
     invalidateLeadership,
     invalidateTeam,
-    invalidateCareer
+    invalidateCareer,
+    invalidateTNM,
+    invalidatePP
 }

@@ -53,6 +53,26 @@ module.exports = {
             }
         });      
     },
+
+    termandcondition(req,res){
+        footerService.termandcondition(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
+
+    privacypolicy(req,res){
+        footerService.privacypolicy(req, (err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
     
     sendContactEmail(req,res){
         let requestData = req.body
