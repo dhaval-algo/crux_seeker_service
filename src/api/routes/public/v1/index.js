@@ -61,6 +61,7 @@ router.get('/topics', categoryController.getTopics);
 
 router.get('/search/:keyword', searchController.getSearchResult);
 
+router.get('/count-page',sectionController.countPage)
 router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
