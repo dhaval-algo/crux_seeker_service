@@ -3,7 +3,6 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const userService = require("../../services/v1/users/user");
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
 const models = require("../../../models");
 const { 
