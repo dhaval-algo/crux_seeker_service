@@ -74,6 +74,14 @@ const  invalidatTopics = async () => {
     }  
 }
 
+const invalidatSkills = async () => {
+    try {
+        await CategoryService.getSkills({query:{}}, (err, data) => {}, true);
+    } catch (error) {
+        console.log("Skills cache invalidation Error",error)
+    }  
+}
+
 
    
 module.exports = {
@@ -83,5 +91,6 @@ module.exports = {
     invalidateCurrencies,
     invalidateFilterConfigs,
     invalidateRankingFilter,
-    invalidatTopics
+    invalidatTopics,
+    invalidatSkills
 }
