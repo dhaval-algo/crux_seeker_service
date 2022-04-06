@@ -1,5 +1,5 @@
-const learnContentService = require("../services/learnContentService");
-let LearnContentService = new learnContentService();
+const recommendationService = require("../services/recommendationService");
+let RecommendationService = new recommendationService();
 const userService = require("../../services/v1/users/user");
 
 module.exports = {   
@@ -7,7 +7,7 @@ module.exports = {
         const { type } = req.query;
 
         switch (type) {
-            case "related-courses": LearnContentService.getRelatedCourses(req, (err, data) => {
+            case "related-courses": RecommendationService.getRelatedCourses(req, (err, data) => {
                 if (data) {
                     res.status(200).send(data);
                 } else {
@@ -15,7 +15,7 @@ module.exports = {
                 }
             });
                 break;
-            case "courses-to-get-started": LearnContentService.getPopularCourses(req, (err, data) => {
+            case "courses-to-get-started": RecommendationService.getPopularCourses(req, (err, data) => {
                 if (data) {
                     if (process.env.API_CACHE_CONTROL_HEADER) {
                         res.set('Cache-control', process.env.API_CACHE_CONTROL_HEADER)
@@ -26,7 +26,7 @@ module.exports = {
                 }
             });
                 break;
-            case "explore-courses-from-top-categories": LearnContentService.exploreCoursesFromTopCatgeories(req, (err, data) => {
+            case "explore-courses-from-top-categories": RecommendationService.exploreCoursesFromTopCatgeories(req, (err, data) => {
                 if (data) {
                     res.status(200).send(data);
                 } else {
@@ -36,7 +36,7 @@ module.exports = {
 
                 break;
 
-            case "top-picks-for-you": LearnContentService.getTopPicksForYou(req, (err, data) => {
+            case "top-picks-for-you": RecommendationService.getTopPicksForYou(req, (err, data) => {
                 if (data) {
                     res.status(200).send(data);
                 } else {
