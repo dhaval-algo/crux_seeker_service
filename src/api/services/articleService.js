@@ -1,6 +1,7 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const models = require("../../../models");
+const helperService = require("../../utils/helper");
 
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
