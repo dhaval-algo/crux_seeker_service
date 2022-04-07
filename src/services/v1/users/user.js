@@ -3275,13 +3275,20 @@ const addCategoryToRecentlyViewed = async (req, res) => {
     }
 }
 
-const addArticleToRecentlyViewed = async (req) => {
+const addArticleToRecentlyViewed = async (req, res) => {
     try {
 
         const { user } = req;
-        const { articleId} = req.body;
-        const unique_data = { userId: user.userId, articleId:articleId };
-        const SAVE_RECENTLY_VIEWED_ARTICLE_COUNT  = process.env.SAVE_RECENTLY_VIEWED_ARTICLE_COUNT || 20;
+        const { articleId } = req.body;
+        if (!articleId) {
+            return res.status(400).json({
+                success: false,
+                "message": "article id is mandatory"
+
+            });
+        }
+        const unique_data = { userId: user.userId, articleId: articleId };
+        const SAVE_RECENTLY_VIEWED_ARTICLE_COUNT = process.env.SAVE_RECENTLY_VIEWED_ARTICLE_COUNT || 20;
 
         //check if article exists for the user
         const exists = await models.recently_viewed_articles.findOne({ where: unique_data });
@@ -3310,8 +3317,6 @@ const addArticleToRecentlyViewed = async (req) => {
             await models.recently_viewed_articles.create(unique_data);
 
         }
-
-
         return res.status(200).json({
             success: true,
             message: "Article added to recently viewed"
