@@ -179,6 +179,149 @@ const learnpathActivity = async () => {
     }
 }
 
+const articleActivity = async () => {
+    let activity_types = {}
+    let activity_count = []
+    const activities =  await models.activity.findAll({
+        attributes: ["id","type"],        
+        raw:true
+    })
+    
+    for (activity_type of activities)
+    {
+        activity_types[activity_type.id] = activity_type.type
+    }
+    
+    // All time counts for logged in user 
+    const activity_logs_all =  await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true
+    })
+    
+    const activity_log_x_days = await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            }
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    }) 
+    
+    for (let activity of activity_logs_all)
+    {
+        if(!activity_count[activity.resource])
+        {
+            activity_count[activity.resource] = {}
+            activity_count[activity.resource].all_time = {
+                article_views:0,
+                article_wishlists:0
+            }
+            activity_count[activity.resource].last_x_days = {
+                article_views:0,
+                article_wishlists:0
+            }
+        }
+        
+        switch (activity_types[activity.activityId]) {
+            case "ARTICLE_VIEW": 
+                activity_count[activity.resource].all_time.article_views= Number(activity.count)              
+                break;
+            case "ARTICLE_WISHLIST":
+                activity_count[activity.resource].all_time.article_wishlists= Number(activity.count)              
+                break;
+            default:
+                break;
+        }  
+    }
+
+    for (let activity of activity_log_x_days)
+    {
+        switch (activity_types[activity.activityId]) {
+            case "ARTICLE_VIEW": 
+                activity_count[activity.resource].last_x_days.article_views= Number(activity.count)
+                break;
+            case "ARTICLE_WISHLIST":
+                activity_count[activity.resource].last_x_days.article_wishlists= Number(activity.count)
+                break;
+            default:
+                break;
+        } 
+    }
+
+    // All time counts for non-logged in user 
+    const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true
+    })
+
+    const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            }
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+
+    for (let activity of activity_logs_loggedout_all)
+    {
+        if(!activity_count[activity.resource])
+        {
+            activity_count[activity.resource] = {}
+            activity_count[activity.resource].all_time = {
+                article_views:0,
+                article_wishlists:0
+            }
+
+            activity_count[activity.resource].last_x_days = {
+                article_views:0,
+                article_wishlists:0
+            }
+        }
+
+        switch (activity_types[activity.activityId]) {
+            case "ARTICLE_VIEW": 
+                activity_count[activity.resource].all_time.article_views += Number(activity.count)             
+                break;
+            case "ARTICLE_WISHLIST":
+                activity_count[activity.resource].all_time.article_wishlists += Number(activity.count)
+                break;
+            default:
+                break;
+        }   
+    }
+
+    for (let activity of activity_logs_loggedout_x_days)
+    {
+        switch (activity_types[activity.activityId]) {
+            case "ARTICLE_VIEW": 
+                activity_count[activity.resource].last_x_days.article_views += Number(activity.count)
+                break;
+            case "ARTICLE_WISHLIST":
+                activity_count[activity.resource].last_x_days.article_wishlists += Number(activity.count)
+                break;
+            default:
+                break;
+        }
+        
+    }
+
+    for ( const [key, value] of Object.entries(activity_count))
+    {
+        let payload = {
+            article_id:key,
+            activity_count:value,
+        }
+        publishToSNS(process.env.ARTICLE_ACTIVITY_TOPIC_ARN, payload, "ARTICLE_ACTIVITY_COUNT")
+    }
+}
+
 const storeActivity = async () => {
     let activity_types = {}
     let activity_count = []
@@ -363,5 +506,6 @@ const storeActivity = async () => {
    
 module.exports = {
     storeActivity,
-    learnpathActivity
+    learnpathActivity,
+    articleActivity
 }

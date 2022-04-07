@@ -375,6 +375,18 @@ module.exports = class articleService {
 
     }
 
+    async addActivity(req, callback){
+        try {
+             const {user} = req;
+             const {articleId} = req.body	
+             const activity_log =  await helperService.logActvity("ARTICLE_VIEW",(user)? user.userId : null, articleId);
+             callback(null, {status: 'success', message: 'Added successfully!', data: null});
+        } catch (error) {
+            console.log("Article view activity error",  error)
+            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+        }
+    }
+
     async getArticle( slug, req, callback){
         const query = { "bool": {
             "must": [
@@ -386,6 +398,8 @@ module.exports = class articleService {
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            req.body = {activityId: data.id}
+            this.addActivity(req, (err, data) => {})
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
         }        

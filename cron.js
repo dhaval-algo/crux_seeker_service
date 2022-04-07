@@ -5,7 +5,7 @@ const cron = require('node-cron')
 
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
-const { storeActivity, learnpathActivity} = require('./src/utils/activityCron');
+const { storeActivity, learnpathActivity, articleActivity} = require('./src/utils/activityCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics} = require('./src/utils/cacheInvalidationCron');
 
 
@@ -38,6 +38,7 @@ if(ENABLE_ACTVITY_LOG_CRON)
         try {        
             await storeActivity()
             await learnpathActivity()
+            await articleActivity()
         } catch (error) {
             console.log("Error in cron", error);
         }
