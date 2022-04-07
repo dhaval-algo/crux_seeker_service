@@ -1,6 +1,6 @@
 const authenticate  = require("./authenticate");
 
-const recommendationTypes = ["top-picks-for-you","recently-viewed-courses","recently-searched-courses","people-are-also-viewing"];
+const recommendationTypes = ["top-picks-for-you","recently-viewed-courses","recently-searched-courses","people-are-also-viewing","recently-viewed-articles"];
 
 module.exports =  async (req, res, next) =>{
 

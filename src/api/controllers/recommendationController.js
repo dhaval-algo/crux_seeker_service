@@ -72,7 +72,22 @@ module.exports = {
                 }
             });
                 break;
+            default:
+                res.status(200).send({});
+                break;
+        }
+    },
+    getRecommendedArticles : async(req,res)=>{
 
+        const { type } = req.query;
+
+        switch (type) {
+ 
+            case "recently-viewed-articles": {
+                const response = await RecommendationService.getRecentlyViewedArticles(req);
+                res.status(200).send(response);
+            }
+            break;
 
             default:
                 res.status(200).send({});

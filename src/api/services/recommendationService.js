@@ -6,14 +6,17 @@ const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
+const ArticleService = require("./articleService");
+const articleService = new ArticleService();
+
 
 module.exports = class recommendationService {
 
     async getRelatedCourses(req, callback) {
         try {
-            const  courseId =  req.query.courseId.toString();
-            const {currency,page=1,limit=6} = req.query;
-            const offset = (page-1) * limit;
+            const courseId = req.query.courseId.toString();
+            const { currency, page = 1, limit = 6 } = req.query;
+            const offset = (page - 1) * limit;
 
             //fields to fetch 
             let fields = [
@@ -67,17 +70,17 @@ module.exports = class recommendationService {
             })
 
             let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
-            
+
             let courses = [];
             if (result && result.hits.length > 0) {
                 for (let hit of result.hits) {
                     let course = await LearnContentService.generateSingleViewData(hit._source, false, currency);
-                    const {ads_keywords,subtitle,prerequisites,target_students,content,...optimisedCourse} = course;
+                    const { ads_keywords, subtitle, prerequisites, target_students, content, ...optimisedCourse } = course;
                     courses.push(optimisedCourse);
                 }
             }
-           
-            const mlCourses = await this.getSimilarCoursesML(courseId,currency,page,limit);
+
+            const mlCourses = await this.getSimilarCoursesML(courseId, currency, page, limit);
             let show = null;
             if (mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
                 show = 'ml';
@@ -85,7 +88,7 @@ module.exports = class recommendationService {
             else {
                 show = 'logic';
             }
-            const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
+            const response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: mlCourses, show: show } };
             callback(null, response);
         } catch (error) {
             console.log("Error while processing data for related courses", error);
@@ -95,101 +98,102 @@ module.exports = class recommendationService {
 
     async getPopularCourses(req, callback, returnData) {
         let { subType } = req.query; // Populer, Trending,Free
-        let { category, sub_category, topic, currency=process.env.DEFAULT_CURRENCY, page = 1, limit =20} = req.query;       
-        
-        const offset= (page -1) * limit
-        
+        let { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 20 } = req.query;
+
+        const offset = (page - 1) * limit
+
         let courses = [];
         try {
             let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
-            if(cachedData.noCacheData != true) {
+            if (cachedData.noCacheData != true) {
                 courses = cachedData;
             } else {
-            
-            let esQuery = {
-                "bool": {
-                    "filter": [
-                        { "term": { "status.keyword": "published" } }
-                    ]
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": decodeURIComponent(category)
+                            }
+                        }
+                    );
+                }
+                if (sub_category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "sub_categories.keyword": decodeURIComponent(sub_category)
+                            }
+                        }
+                    );
+                }
+                if (topic) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "topics.keyword": decodeURIComponent(topic)
+                            }
+                        }
+                    );
+                }
+
+                if (subType && subType == "Free") {
+                    esQuery.bool.filter.push(
+                        { "term": { "pricing_type.keyword": "Free" } }
+                    );
+                    esQuery.bool.filter.push(
+                        { "term": { "display_price": true } }
+                    );
+                }
+                let sort = null
+                switch (subType) {
+                    case "Trending":
+                        sort = [{ "activity_count.last_x_days.course_views": "desc" }, { "ratings": "desc" }]
+                        break;
+                    default:
+                        sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }]
+                        break;
+                }
+
+                let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort });
+
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await LearnContentService.generateSingleViewData(hit._source, true, currency)
+                        courses.push(data);
+                    }
+                    RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
                 }
             }
-            if(category){
-                esQuery.bool.filter.push(
-                    {"term": {
-                            "categories.keyword": decodeURIComponent(category)
-                        }
-                    }
-                );
-            }
-            if(sub_category){
-                esQuery.bool.filter.push(
-                    {"term": {
-                            "sub_categories.keyword":  decodeURIComponent(sub_category)
-                        }
-                    }
-                );
-            }
-            if(topic){
-                esQuery.bool.filter.push(
-                    {"term": {
-                            "topics.keyword":  decodeURIComponent(topic)
-                        }
-                    }
-                );
-            } 
-            
-            if(subType && subType =="Free"){
-                esQuery.bool.filter.push(
-                    { "term": { "pricing_type.keyword": "Free" } }
-                );
-                 esQuery.bool.filter.push(
-                    { "term": { "display_price": true } }
-                );
-            }
-            let sort = null
-            switch (subType) {                
-                case "Trending":
-                    sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
-                    break; 
-                default:
-                    sort = [{ "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" }]
-                    break;
-            }
-            
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort});
-                
-            if(result.hits){
-                for(const hit of result.hits){
-                    var data = await LearnContentService.generateSingleViewData(hit._source,true,currency)
-                    courses.push(data);
-                }
-                RedisConnection.set(cacheKey, courses,process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
-            }
-        }
-            let response = { success: true, message: "list fetched successfully", data:{ list: courses,mlList:[],show:"logic" } };
-            if(returnData)
-            {
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };
+            if (returnData) {
                 return courses;
             }
-            else
-            {
+            else {
                 callback(null, response);
             }
-            
+
         } catch (error) {
             console.log("Error while processing data for popular courses", error);
             callback(error, null);
         }
     }
 
-    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page=1,limit=6) {
+    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6) {
 
         const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId);
         let courses = [];
-        const offset = (page-1) * limit;
+        const offset = (page - 1) * limit;
         if (result && result.length) {
-            for (const courseElasticData of result.slice(offset,offset+limit)) {
+            for (const courseElasticData of result.slice(offset, offset + limit)) {
                 const courseData = await this.generateSingleViewData(courseElasticData._source, false, currency);
                 const { accreditations, ads_keywords, subtitle, prerequisites, target_students, content, meta_information, ...optimisedCourse } = courseData;
                 optimisedCourse.similarity = courseIdSimilarityMap[optimisedCourse.id];
@@ -205,11 +209,11 @@ module.exports = class recommendationService {
         try {
             req.query.subType = "Popular"
             const data = await this.getPopularCourses(req, null, true);
-            callback(null, { "success": true ,message: "list fetched successfully", data: { list: data,mlList:[],show:"logic" } });
+            callback(null, { "success": true, message: "list fetched successfully", data: { list: data, mlList: [], show: "logic" } });
 
         } catch (error) {
-            console.log("Error occured while fetching top courses : ",error)
-            callback(null, { "success": false ,message: "failed to fetch", data: { list: [] } });
+            console.log("Error occured while fetching top courses : ", error)
+            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
         }
     }
 
@@ -327,6 +331,47 @@ module.exports = class recommendationService {
             console.log("Error occured while fetching top picks for you : ", error);
             callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
 
+        }
+    }
+
+
+
+    async getRecentlyViewedArticles(req) {
+
+        try {
+            const { user } = req;
+            let { limit = 5, page = 1, order = "DESC" } = req.query
+
+            order = order.toUpperCase();
+            const query = {
+                limit: limit,
+                offset: (page - 1) * limit,
+                where: { userId: user.userId },
+                order: [['updatedAt', order == "DESC" ? order : "ASC"]],
+                attributes: { include: ['id'] }
+            }
+
+            const articlesData = await models.recently_viewed_articles.findAll(query);
+            const articleIds = articlesData.map((article) => article.articleId);
+
+            const esQuery = {
+                "ids": {
+                    "values": articleIds
+                }
+            };
+            const articles = [];
+            const result = await elasticService.search('article', esQuery);
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await articleService.generateSingleViewData(hit._source,true,req);
+                    articles.push(data);
+                }
+            }
+
+            return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+
+        } catch (error) {
+            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
         }
     }
 }
