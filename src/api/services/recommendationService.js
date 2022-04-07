@@ -9,7 +9,7 @@ let LearnContentService = new learnContentService();
 
 module.exports = class recommendationService {
 
-    async getRelatedCourses(req, callback) {
+    async getRelatedCourses(req) {
         try {
             const  courseId =  req.query.courseId.toString();
             const {currency,page=1,limit=6} = req.query;
@@ -86,10 +86,13 @@ module.exports = class recommendationService {
                 show = 'logic';
             }
             const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
-            callback(null, response);
+            
+            return response
         } catch (error) {
             console.log("Error while processing data for related courses", error);
-            callback(error, null);
+            const response = { success: false, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
+            
+            return response
         }
     }
 
