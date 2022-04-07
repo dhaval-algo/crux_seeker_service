@@ -399,7 +399,7 @@ module.exports = class articleService {
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
-            req.body = {activityId: data.id}
+            req.body = {articleId: data.id}
             this.addActivity(req, (err, data) => {})
         }else{
             callback({status: 'failed', message: 'Not found!'}, null);
