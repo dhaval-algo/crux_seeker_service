@@ -3275,6 +3275,63 @@ const addCategoryToRecentlyViewed = async (req, res) => {
     }
 }
 
+const addArticleToRecentlyViewed = async (req) => {
+    try {
+
+        const { user } = req;
+        const { articleId} = req.body;
+        const unique_data = { userId: user.userId, articleId:articleId };
+        const SAVE_RECENTLY_VIEWED_ARTICLE_COUNT  = process.env.SAVE_RECENTLY_VIEWED_ARTICLE_COUNT || 20;
+
+        //check if article exists for the user
+        const exists = await models.recently_viewed_articles.findOne({ where: unique_data });
+        if (exists) {
+            //if exists change updated at
+            await models.recently_viewed_articles.update({ userId: unique_data.userId, articleId: unique_data.articleId }, { where: unique_data });
+        } else {
+
+            const { count, rows } = await models.recently_viewed_articles.findAndCountAll(
+                {
+                    limit: 1,
+                    where: { userId: user.userId },
+                    order: [['createdAt', 'ASC']],
+                    attributes: {
+                        include: ['id']
+                    }
+                });
+
+            if (count >= SAVE_RECENTLY_VIEWED_ARTICLE_COUNT) {
+                //remove first entry
+                await models.recently_viewed_articles.destroy(
+                    { where: { id: rows[0].id } }
+                );
+            }
+
+            await models.recently_viewed_articles.create(unique_data);
+
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Article added to recently viewed"
+
+        });
+
+    } catch (error) {
+
+        console.log("Error occured while adding article to recently viewed : ", error);
+        res.status(500).json({
+            success: false,
+            "message": "Internal Server Error"
+
+        });
+    }
+}
+
+
+
+
 const peopleAreAlsoViewing = async (req, callback) => {
 
     try {
@@ -3372,6 +3429,7 @@ module.exports = {
     recentlySearchedCourses,
     peopleAreAlsoViewing,
     addCategoryToRecentlyViewed,
+    addArticleToRecentlyViewed ,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
