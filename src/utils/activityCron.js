@@ -37,7 +37,7 @@ const learnpathActivity = async () => {
     
     for (let activity of activity_logs_all)
     {
-        if(!activity_count[activity.resource])
+        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -112,7 +112,7 @@ const learnpathActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(!activity_count[activity.resource])
+        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -168,15 +168,17 @@ const learnpathActivity = async () => {
         }
         
     }
-
-    for ( const [key, value] of Object.entries(activity_count))
-    {
-        let payload = {
-            learn_path_id:key,
-            activity_count:value,
+    if(activity_count.length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            let payload = {
+                learn_path_id:key,
+                activity_count:value,
+            }
+            publishToSNS(process.env.LEARN_PATH_ACTIVITY_TOPIC_ARN, payload, "LEARNPATH_ACTIVITY_COUNT")
         }
-        publishToSNS(process.env.LEARN_PATH_ACTIVITY_TOPIC_ARN, payload, "LEARNPATH_ACTIVITY_COUNT")
     }
+    
 }
 
 const articleActivity = async () => {
@@ -212,7 +214,7 @@ const articleActivity = async () => {
     
     for (let activity of activity_logs_all)
     {
-        if(!activity_count[activity.resource])
+        if(!activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -271,7 +273,7 @@ const articleActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(!activity_count[activity.resource])
+        if(!activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -311,14 +313,15 @@ const articleActivity = async () => {
         }
         
     }
-
-    for ( const [key, value] of Object.entries(activity_count))
-    {
-        let payload = {
-            article_id:key,
-            activity_count:value,
+    if(activity_count.length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            let payload = {
+                article_id:key,
+                activity_count:value,
+            }
+            publishToSNS(process.env.ARTICLE_ACTIVITY_TOPIC_ARN, payload, "ARTICLE_ACTIVITY_COUNT")
         }
-        publishToSNS(process.env.ARTICLE_ACTIVITY_TOPIC_ARN, payload, "ARTICLE_ACTIVITY_COUNT")
     }
 }
 
@@ -344,7 +347,7 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_all)
     {
-        if(!activity_count[activity.resource])
+        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -389,7 +392,7 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(!activity_count[activity.resource])
+        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -491,17 +494,16 @@ const storeActivity = async () => {
         }
         
     }
-
-    for ( const [key, value] of Object.entries(activity_count))
-    {
-        let payload = {
-            learn_content_id:key,
-            activity_count:value,
-        }  
-       
-        publishToSNS(process.env.LEARN_CONTENT_ACTIVITY_TOPIC_ARN, payload, "COURSE_ACTIVITY_COUNT")
+    if(activity_count.length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            let payload = {
+                learn_content_id:key,
+                activity_count:value,
+            }  
+            publishToSNS(process.env.LEARN_CONTENT_ACTIVITY_TOPIC_ARN, payload, "COURSE_ACTIVITY_COUNT")
+        }
     }
-    
 }
    
 module.exports = {
