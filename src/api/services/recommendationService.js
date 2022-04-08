@@ -432,7 +432,7 @@ module.exports = class recommendationService {
     async getPeopleAreAlsoViewingArticles(req) {
         try {
             const userId = req.user.userId;
-            const { page = 1, limit = 6, currency = process.env.DEFAULT_CURRENCY } = req.query;
+            const { page = 1, limit = 6 } = req.query;
             const offset = (page - 1) * limit;
             const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
             const categoriesNames = categories.map((category) => category.name);
@@ -456,7 +456,7 @@ module.exports = class recommendationService {
                 }
     
                 const sort = [{ "activity_count.all_time.article_views": "desc" }];
-                const result = await elasticService.search("article", esQuery, { from: offset, size: limit });
+                const result = await elasticService.search("article", esQuery, { from: offset, size: limit ,sortObject:sort});
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
                         const data = await articleService.generateSingleViewData(hit._source, true, req)
