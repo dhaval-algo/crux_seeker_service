@@ -89,6 +89,12 @@ module.exports = {
             }
             break;
 
+            case "recently-searched-articles": {
+                const response = await RecommendationService.getRecentlySearchedArticles(req);
+                res.status(200).send(response);
+            }
+            break;
+
             default:
                 res.status(200).send({});
                 break;

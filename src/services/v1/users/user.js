@@ -3449,8 +3449,8 @@ module.exports = {
         }
         if (!suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
 
-            if (search.type == 'learn-content') {
-                if (suggestionList[search.type].length == (process.env.LAST_COURSE_SEARCH_LIMIT||20)) {
+            if (search.type == 'learn-content'|| search.type == 'article') {
+                if (suggestionList[search.type].length == (process.env.LAST_COURSE_ARTICLE_SEARCH_LIMIT||20)) {
                     suggestionList[search.type].shift();
 
                 }

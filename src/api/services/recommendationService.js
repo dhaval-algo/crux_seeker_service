@@ -8,7 +8,7 @@ const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 const ArticleService = require("./articleService");
 const articleService = new ArticleService();
-
+const userService = require('../../services/v1/users/user');
 
 module.exports = class recommendationService {
 
@@ -340,7 +340,7 @@ module.exports = class recommendationService {
 
         try {
             const { user } = req;
-            let { limit = 5, page = 1, order = "DESC" } = req.query
+            const { limit = 5, page = 1, order = "DESC" } = req.query;
 
             order = order.toUpperCase();
             const query = {
@@ -363,7 +363,7 @@ module.exports = class recommendationService {
             const result = await elasticService.search('article', esQuery);
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
-                    const data = await articleService.generateSingleViewData(hit._source,true,req);
+                    const data = await articleService.generateSingleViewData(hit._source, true, req);
                     articles.push(data);
                 }
             }
@@ -371,7 +371,61 @@ module.exports = class recommendationService {
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
 
         } catch (error) {
-            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+            console.log("Error occured while fetching recently viewed articles",error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
+    }
+
+
+    async getRecentlySearchedArticles(req) {
+
+        try {
+            
+            const { limit = 5, page = 1} = req.query;
+            const offset = (page-1)*limit;
+
+            const searchedArticles = [];
+            await userService.getUserLastSearch(req, (result) => {
+                searchedArticles.push(...result.data['article']);
+
+            });
+
+            const articlesSlugs = searchedArticles.map((article)=>article.slug);
+
+            const esQuery = {
+                bool: {
+                    must: [
+                        {
+                            term: {
+                                "status.keyword": "published"
+                            }
+                        },
+                        {
+                            terms: {
+                                "slug.keyword": articlesSlugs
+                            }
+                        }
+                    ]
+                }
+            }
+            const articles =[];
+            const result = await elasticService.search("article",esQuery,{from:offset,size:limit});
+            
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await articleService.generateSingleViewData(hit._source, true, req)
+                    articles.push(data);
+                }
+            }
+
+
+            return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+
+        } catch (error) {
+            console.log("Error occured while fetching recently searched articles",error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
+
     }
 }
