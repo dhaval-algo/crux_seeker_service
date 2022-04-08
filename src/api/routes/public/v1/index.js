@@ -53,6 +53,7 @@ router.get('/partners/:slug', partnerController.getSinglePartner);
 
 router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
+router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', searchController.getSearchResult);
 
