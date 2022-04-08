@@ -37,59 +37,63 @@ const learnpathActivity = async () => {
     
     for (let activity of activity_logs_all)
     {
-        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
-        {
-            activity_count[activity.resource] = {}
-            activity_count[activity.resource].all_time = {
-                learnpath_views:0,
-                learnpath_wishlists:0,
-                learnpath_enquiries:0,
-                learnpath_purchase:0
+        if(activity.resource){
+            if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    learnpath_views:0,
+                    learnpath_wishlists:0,
+                    learnpath_enquiries:0,
+                    learnpath_purchase:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    learnpath_views:0,
+                    learnpath_wishlists:0,
+                    learnpath_enquiries:0,
+                    learnpath_purchase:0
+                }
             }
-            activity_count[activity.resource].last_x_days = {
-                learnpath_views:0,
-                learnpath_wishlists:0,
-                learnpath_enquiries:0,
-                learnpath_purchase:0
+            
+            switch (activity_types[activity.activityId]) {
+                case "LEARNPATH_VIEW": 
+                    activity_count[activity.resource].all_time.learnpath_views= Number(activity.count)              
+                    break;
+                case "LEARNPATH_WISHLIST":
+                    activity_count[activity.resource].all_time.learnpath_wishlists= Number(activity.count)              
+                    break;
+                case "LEARNPATH_ENQUIRED":
+                    activity_count[activity.resource].all_time.learnpath_enquiries= Number(activity.count)
+                    break;                
+                case "LEARNPATH_PURCHASED":
+                    activity_count[activity.resource].all_time.learnpath_purchase= Number(activity.count)
+                    break;
+                default:
+                    break;
             }
-        }
-        
-        switch (activity_types[activity.activityId]) {
-            case "LEARNPATH_VIEW": 
-                activity_count[activity.resource].all_time.learnpath_views= Number(activity.count)              
-                break;
-            case "LEARNPATH_WISHLIST":
-                activity_count[activity.resource].all_time.learnpath_wishlists= Number(activity.count)              
-                break;
-            case "LEARNPATH_ENQUIRED":
-                activity_count[activity.resource].all_time.learnpath_enquiries= Number(activity.count)
-                break;                
-            case "LEARNPATH_PURCHASED":
-                activity_count[activity.resource].all_time.learnpath_purchase= Number(activity.count)
-                break;
-            default:
-                break;
         }  
     }
 
     for (let activity of activity_log_x_days)
     {
-        switch (activity_types[activity.activityId]) {
-            case "LEARNPATH_VIEW": 
-                activity_count[activity.resource].last_x_days.learnpath_views= Number(activity.count)
-                break;
-            case "LEARNPATH_WISHLIST":
-                activity_count[activity.resource].last_x_days.learnpath_wishlists= Number(activity.count)
-                break;
-            case "LEARNPATH_ENQUIRED":
-                activity_count[activity.resource].last_x_days.learnpath_enquiries= Number(activity.count)
-                break;                
-            case "LEARNPATH_PURCHASED":
-                activity_count[activity.resource].last_x_days.learnpath_purchase= Number(activity.count)
-                break;
-            default:
-                break;
-        } 
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "LEARNPATH_VIEW": 
+                    activity_count[activity.resource].last_x_days.learnpath_views= Number(activity.count)
+                    break;
+                case "LEARNPATH_WISHLIST":
+                    activity_count[activity.resource].last_x_days.learnpath_wishlists= Number(activity.count)
+                    break;
+                case "LEARNPATH_ENQUIRED":
+                    activity_count[activity.resource].last_x_days.learnpath_enquiries= Number(activity.count)
+                    break;                
+                case "LEARNPATH_PURCHASED":
+                    activity_count[activity.resource].last_x_days.learnpath_purchase= Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     // All time counts for non-logged in user 
@@ -112,61 +116,64 @@ const learnpathActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
-        {
-            activity_count[activity.resource] = {}
-            activity_count[activity.resource].all_time = {
-                learnpath_views:0,
-                learnpath_wishlists:0,
-                learnpath_enquiries:0,
-                learnpath_purchase:0
+        if(activity.resource){
+            if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    learnpath_views:0,
+                    learnpath_wishlists:0,
+                    learnpath_enquiries:0,
+                    learnpath_purchase:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    learnpath_views:0,
+                    learnpath_wishlists:0,
+                    learnpath_enquiries:0,
+                    learnpath_purchase:0
+                }
             }
 
-            activity_count[activity.resource].last_x_days = {
-                learnpath_views:0,
-                learnpath_wishlists:0,
-                learnpath_enquiries:0,
-                learnpath_purchase:0
+            switch (activity_types[activity.activityId]) {
+                case "LEARNPATH_VIEW": 
+                    activity_count[activity.resource].all_time.learnpath_views += Number(activity.count)             
+                    break;
+                case "LEARNPATH_WISHLIST":
+                    activity_count[activity.resource].all_time.learnpath_wishlists += Number(activity.count)
+                    break;
+                case "LEARNPATH_ENQUIRED":
+                    activity_count[activity.resource].all_time.learnpath_enquiries += Number(activity.count)
+                    break;                
+                case "LEARNPATH_PURCHASED":
+                    activity_count[activity.resource].all_time.learnpath_purchase += Number(activity.count)
+                    break;
+                default:
+                    break;
             }
-        }
-
-        switch (activity_types[activity.activityId]) {
-            case "LEARNPATH_VIEW": 
-                activity_count[activity.resource].all_time.learnpath_views += Number(activity.count)             
-                break;
-            case "LEARNPATH_WISHLIST":
-                activity_count[activity.resource].all_time.learnpath_wishlists += Number(activity.count)
-                break;
-            case "LEARNPATH_ENQUIRED":
-                activity_count[activity.resource].all_time.learnpath_enquiries += Number(activity.count)
-                break;                
-            case "LEARNPATH_PURCHASED":
-                activity_count[activity.resource].all_time.learnpath_purchase += Number(activity.count)
-                break;
-            default:
-                break;
         }   
     }
 
     for (let activity of activity_logs_loggedout_x_days)
-    {
-        switch (activity_types[activity.activityId]) {
-            case "LEARNPATH_VIEW": 
-                activity_count[activity.resource].last_x_days.learnpath_views += Number(activity.count)
-                break;
-            case "LEARNPATH_WISHLIST":
-                activity_count[activity.resource].last_x_days.learnpath_wishlists += Number(activity.count)
-                break;
-            case "LEARNPATH_ENQUIRED":
-                activity_count[activity.resource].last_x_days.learnpath_enquiries += Number(activity.count)
-                break;                
-            case "LEARNPATH_PURCHASED":
-                activity_count[activity.resource].last_x_days.learnpath_purchase += Number(activity.count)
-                break;
-            default:
-                break;
-        }
-        
+    {  
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "LEARNPATH_VIEW": 
+                    activity_count[activity.resource].last_x_days.learnpath_views += Number(activity.count)
+                    break;
+                case "LEARNPATH_WISHLIST":
+                    activity_count[activity.resource].last_x_days.learnpath_wishlists += Number(activity.count)
+                    break;
+                case "LEARNPATH_ENQUIRED":
+                    activity_count[activity.resource].last_x_days.learnpath_enquiries += Number(activity.count)
+                    break;                
+                case "LEARNPATH_PURCHASED":
+                    activity_count[activity.resource].last_x_days.learnpath_purchase += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }    
     }
     if(activity_count.length){
         for ( const [key, value] of Object.entries(activity_count))
@@ -214,43 +221,47 @@ const articleActivity = async () => {
     
     for (let activity of activity_logs_all)
     {
-        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
-        {
-            activity_count[activity.resource] = {}
-            activity_count[activity.resource].all_time = {
-                article_views:0,
-                article_wishlists:0
+        if(activity.resource){
+            if(!activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    article_views:0,
+                    article_wishlists:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    article_views:0,
+                    article_wishlists:0
+                }
             }
-            activity_count[activity.resource].last_x_days = {
-                article_views:0,
-                article_wishlists:0
+            
+            switch (activity_types[activity.activityId]) {
+                case "ARTICLE_VIEW": 
+                    activity_count[activity.resource].all_time.article_views= Number(activity.count)              
+                    break;
+                case "ARTICLE_WISHLIST":
+                    activity_count[activity.resource].all_time.article_wishlists= Number(activity.count)              
+                    break;
+                default:
+                    break;
             }
-        }
-        
-        switch (activity_types[activity.activityId]) {
-            case "ARTICLE_VIEW": 
-                activity_count[activity.resource].all_time.article_views= Number(activity.count)              
-                break;
-            case "ARTICLE_WISHLIST":
-                activity_count[activity.resource].all_time.article_wishlists= Number(activity.count)              
-                break;
-            default:
-                break;
         }  
     }
 
     for (let activity of activity_log_x_days)
     {
-        switch (activity_types[activity.activityId]) {
-            case "ARTICLE_VIEW": 
-                activity_count[activity.resource].last_x_days.article_views= Number(activity.count)
-                break;
-            case "ARTICLE_WISHLIST":
-                activity_count[activity.resource].last_x_days.article_wishlists= Number(activity.count)
-                break;
-            default:
-                break;
-        } 
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "ARTICLE_VIEW": 
+                    activity_count[activity.resource].last_x_days.article_views= Number(activity.count)
+                    break;
+                case "ARTICLE_WISHLIST":
+                    activity_count[activity.resource].last_x_days.article_wishlists= Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     // All time counts for non-logged in user 
@@ -273,45 +284,48 @@ const articleActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
-        {
-            activity_count[activity.resource] = {}
-            activity_count[activity.resource].all_time = {
-                article_views:0,
-                article_wishlists:0
+        if(activity.resource){
+            if(!activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    article_views:0,
+                    article_wishlists:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    article_views:0,
+                    article_wishlists:0
+                }
             }
 
-            activity_count[activity.resource].last_x_days = {
-                article_views:0,
-                article_wishlists:0
+            switch (activity_types[activity.activityId]) {
+                case "ARTICLE_VIEW": 
+                    activity_count[activity.resource].all_time.article_views += Number(activity.count)             
+                    break;
+                case "ARTICLE_WISHLIST":
+                    activity_count[activity.resource].all_time.article_wishlists += Number(activity.count)
+                    break;
+                default:
+                    break;
             }
-        }
-
-        switch (activity_types[activity.activityId]) {
-            case "ARTICLE_VIEW": 
-                activity_count[activity.resource].all_time.article_views += Number(activity.count)             
-                break;
-            case "ARTICLE_WISHLIST":
-                activity_count[activity.resource].all_time.article_wishlists += Number(activity.count)
-                break;
-            default:
-                break;
         }   
     }
 
     for (let activity of activity_logs_loggedout_x_days)
     {
-        switch (activity_types[activity.activityId]) {
-            case "ARTICLE_VIEW": 
-                activity_count[activity.resource].last_x_days.article_views += Number(activity.count)
-                break;
-            case "ARTICLE_WISHLIST":
-                activity_count[activity.resource].last_x_days.article_wishlists += Number(activity.count)
-                break;
-            default:
-                break;
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "ARTICLE_VIEW": 
+                    activity_count[activity.resource].last_x_days.article_views += Number(activity.count)
+                    break;
+                case "ARTICLE_WISHLIST":
+                    activity_count[activity.resource].last_x_days.article_wishlists += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
         }
-        
     }
     if(activity_count.length){
         for ( const [key, value] of Object.entries(activity_count))
@@ -347,40 +361,41 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_all)
     {
-        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
-        {
-            activity_count[activity.resource] = {}
-            activity_count[activity.resource].all_time = {
-                course_views:0,
-                course_wishlists:0,
-                course_enquiries:0,
-                course_purchase:0
+        if(activity.resource){
+            if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    course_views:0,
+                    course_wishlists:0,
+                    course_enquiries:0,
+                    course_purchase:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    course_views:0,
+                    course_wishlists:0,
+                    course_enquiries:0,
+                    course_purchase:0
+                }
             }
-            activity_count[activity.resource].last_x_days = {
-                course_views:0,
-                course_wishlists:0,
-                course_enquiries:0,
-                course_purchase:0
-            }
-        }
 
-        switch (activity_types[activity.activityId]) {
-            case "COURSE_VIEW": 
-                activity_count[activity.resource].all_time.course_views= Number(activity.count)              
-                break;
-            case "COURSE_WISHLIST":
-                activity_count[activity.resource].all_time.course_wishlists= Number(activity.count)              
-                break;
-            case "COURSE_ENQUIRED":
-                activity_count[activity.resource].all_time.course_enquiries= Number(activity.count)
-                break;                
-            case "COURSE_PURCHASED":
-                activity_count[activity.resource].all_time.course_purchase= Number(activity.count)
-                break;
-            default:
-                break;
-        }
-       
+            switch (activity_types[activity.activityId]) {
+                case "COURSE_VIEW": 
+                    activity_count[activity.resource].all_time.course_views= Number(activity.count)              
+                    break;
+                case "COURSE_WISHLIST":
+                    activity_count[activity.resource].all_time.course_wishlists= Number(activity.count)              
+                    break;
+                case "COURSE_ENQUIRED":
+                    activity_count[activity.resource].all_time.course_enquiries= Number(activity.count)
+                    break;                
+                case "COURSE_PURCHASED":
+                    activity_count[activity.resource].all_time.course_purchase= Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }   
     }
 
     // All time counts for non-logged in user 
@@ -392,41 +407,42 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
-        {
-            activity_count[activity.resource] = {}
-            activity_count[activity.resource].all_time = {
-                course_views:0,
-                course_wishlists:0,
-                course_enquiries:0,
-                course_purchase:0
+        if(activity.resource){
+            if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    course_views:0,
+                    course_wishlists:0,
+                    course_enquiries:0,
+                    course_purchase:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    course_views:0,
+                    course_wishlists:0,
+                    course_enquiries:0,
+                    course_purchase:0
+                }
             }
 
-            activity_count[activity.resource].last_x_days = {
-                course_views:0,
-                course_wishlists:0,
-                course_enquiries:0,
-                course_purchase:0
+            switch (activity_types[activity.activityId]) {
+                case "COURSE_VIEW": 
+                    activity_count[activity.resource].all_time.course_views += Number(activity.count)             
+                    break;
+                case "COURSE_WISHLIST":
+                    activity_count[activity.resource].all_time.course_wishlists += Number(activity.count)
+                    break;
+                case "COURSE_ENQUIRED":
+                    activity_count[activity.resource].all_time.course_enquiries += Number(activity.count)
+                    break;                
+                case "COURSE_PURCHASED":
+                    activity_count[activity.resource].all_time.course_purchase += Number(activity.count)
+                    break;
+                default:
+                    break;
             }
         }
-
-        switch (activity_types[activity.activityId]) {
-            case "COURSE_VIEW": 
-                activity_count[activity.resource].all_time.course_views += Number(activity.count)             
-                break;
-            case "COURSE_WISHLIST":
-                activity_count[activity.resource].all_time.course_wishlists += Number(activity.count)
-                break;
-            case "COURSE_ENQUIRED":
-                activity_count[activity.resource].all_time.course_enquiries += Number(activity.count)
-                break;                
-            case "COURSE_PURCHASED":
-                activity_count[activity.resource].all_time.course_purchase += Number(activity.count)
-                break;
-            default:
-                break;
-        }
-       
     }
     
     // Last X days counts for logged in user 
@@ -443,23 +459,24 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs)
     {
-        switch (activity_types[activity.activityId]) {
-            case "COURSE_VIEW": 
-                activity_count[activity.resource].last_x_days.course_views= Number(activity.count)
-                break;
-            case "COURSE_WISHLIST":
-                activity_count[activity.resource].last_x_days.course_wishlists= Number(activity.count)
-                break;
-            case "COURSE_ENQUIRED":
-                activity_count[activity.resource].last_x_days.course_enquiries= Number(activity.count)
-                break;                
-            case "COURSE_PURCHASED":
-                activity_count[activity.resource].last_x_days.course_purchase= Number(activity.count)
-                break;
-            default:
-                break;
-        }
-        
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "COURSE_VIEW": 
+                    activity_count[activity.resource].last_x_days.course_views= Number(activity.count)
+                    break;
+                case "COURSE_WISHLIST":
+                    activity_count[activity.resource].last_x_days.course_wishlists= Number(activity.count)
+                    break;
+                case "COURSE_ENQUIRED":
+                    activity_count[activity.resource].last_x_days.course_enquiries= Number(activity.count)
+                    break;                
+                case "COURSE_PURCHASED":
+                    activity_count[activity.resource].last_x_days.course_purchase= Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }    
     }
 
     // Last X days counts for non-logged in user 
@@ -476,23 +493,24 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_loggedout)
     {
-        switch (activity_types[activity.activityId]) {
-            case "COURSE_VIEW": 
-                activity_count[activity.resource].last_x_days.course_views += Number(activity.count)
-                break;
-            case "COURSE_WISHLIST":
-                activity_count[activity.resource].last_x_days.course_wishlists += Number(activity.count)
-                break;
-            case "COURSE_ENQUIRED":
-                activity_count[activity.resource].last_x_days.course_enquiries += Number(activity.count)
-                break;                
-            case "COURSE_PURCHASED":
-                activity_count[activity.resource].last_x_days.course_purchase += Number(activity.count)
-                break;
-            default:
-                break;
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "COURSE_VIEW": 
+                    activity_count[activity.resource].last_x_days.course_views += Number(activity.count)
+                    break;
+                case "COURSE_WISHLIST":
+                    activity_count[activity.resource].last_x_days.course_wishlists += Number(activity.count)
+                    break;
+                case "COURSE_ENQUIRED":
+                    activity_count[activity.resource].last_x_days.course_enquiries += Number(activity.count)
+                    break;                
+                case "COURSE_PURCHASED":
+                    activity_count[activity.resource].last_x_days.course_purchase += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
         }
-        
     }
     if(activity_count.length){
         for ( const [key, value] of Object.entries(activity_count))
