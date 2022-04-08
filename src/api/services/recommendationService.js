@@ -371,7 +371,7 @@ module.exports = class recommendationService {
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
 
         } catch (error) {
-            console.log("Error occured while fetching recently viewed articles",error);
+            console.log("Error occured while fetching recently viewed articles", error);
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
     }
@@ -380,9 +380,9 @@ module.exports = class recommendationService {
     async getRecentlySearchedArticles(req) {
 
         try {
-            
-            const { limit = 5, page = 1} = req.query;
-            const offset = (page-1)*limit;
+
+            const { limit = 5, page = 1 } = req.query;
+            const offset = (page - 1) * limit;
 
             const searchedArticles = [];
             await userService.getUserLastSearch(req, (result) => {
@@ -390,7 +390,7 @@ module.exports = class recommendationService {
 
             });
 
-            const articlesSlugs = searchedArticles.map((article)=>article.slug);
+            const articlesSlugs = searchedArticles.map((article) => article.slug);
 
             const esQuery = {
                 bool: {
@@ -408,9 +408,9 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-            const articles =[];
-            const result = await elasticService.search("article",esQuery,{from:offset,size:limit});
-            
+            const articles = [];
+            const result = await elasticService.search("article", esQuery, { from: offset, size: limit });
+
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
                     const data = await articleService.generateSingleViewData(hit._source, true, req)
@@ -422,10 +422,55 @@ module.exports = class recommendationService {
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
 
         } catch (error) {
-            console.log("Error occured while fetching recently searched articles",error);
-            return { "success": false, message: "failed to fetch", data: { list: [] } };
+            console.log("Error occured while fetching recently searched articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] }};
 
         }
 
+    }
+
+    async getPeopleAreAlsoViewingArticles(req) {
+        try {
+            const userId = req.user.userId;
+            const { page = 1, limit = 6, currency = process.env.DEFAULT_CURRENCY } = req.query;
+            const offset = (page - 1) * limit;
+            const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
+            const categoriesNames = categories.map((category) => category.name);
+            const articles = [];
+            if (categoriesNames.length) {
+                const esQuery = {
+                    bool: {
+                        must: [
+                            {
+                                term: {
+                                    "status.keyword": "published"
+                                }
+                            },
+                            {
+                                terms: {
+                                    "categories.keyword": categoriesNames
+                                }
+                            }
+                        ]
+                    }
+                }
+    
+                const sort = [{ "activity_count.all_time.article_views": "desc" }];
+                const result = await elasticService.search("article", esQuery, { from: offset, size: limit });
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        articles.push(data);
+                    }
+                }
+    
+            }
+
+            return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+        } catch (error) {
+
+            console.log("Error occured while fetching people are also viewing articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+        }
     }
 }

@@ -95,6 +95,14 @@ module.exports = {
             }
             break;
 
+
+            case "people-are-also-viewing":{
+                const response = await RecommendationService.getPeopleAreAlsoViewingArticles(req);
+                res.status(200).send(response);
+            }
+
+            break;
+
             default:
                 res.status(200).send({});
                 break;
