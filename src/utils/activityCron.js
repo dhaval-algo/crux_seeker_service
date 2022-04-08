@@ -37,7 +37,7 @@ const learnpathActivity = async () => {
     
     for (let activity of activity_logs_all)
     {
-        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
+        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -112,7 +112,7 @@ const learnpathActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
+        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_PTH"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -214,7 +214,7 @@ const articleActivity = async () => {
     
     for (let activity of activity_logs_all)
     {
-        if(!activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
+        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -273,7 +273,7 @@ const articleActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(!activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
+        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("ARTCL_PUB"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -347,7 +347,7 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_all)
     {
-        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
+        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
@@ -392,7 +392,7 @@ const storeActivity = async () => {
 
     for (let activity of activity_logs_loggedout_all)
     {
-        if(!activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
+        if(activity.resource && !activity_count[activity.resource] && activity.resource.startsWith("LRN_CNT"))
         {
             activity_count[activity.resource] = {}
             activity_count[activity.resource].all_time = {
