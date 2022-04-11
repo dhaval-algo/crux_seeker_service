@@ -103,5 +103,15 @@ module.exports = {
                 res.status(200).send({});
                 break;
         }
-    }
+    },
+
+    getFeaturedArticles: async (req, res) =>{
+        const response = await RecommendationService.getFeaturedArticles(req)                     
+                res.status(200).send(response);  
+    },
+
+    getArticleAdvice: async (req, res) =>{
+        const response = await RecommendationService.getArticleAdvice(req)                     
+                res.status(200).send(response);  
+    },
 };

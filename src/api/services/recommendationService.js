@@ -1,5 +1,6 @@
 const elasticService = require("./elasticService");
 const models = require("../../../models");
+const fetch = require("node-fetch");
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
@@ -9,6 +10,7 @@ let LearnContentService = new learnContentService();
 const ArticleService = require("./articleService");
 const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 module.exports = class recommendationService {
 
@@ -473,6 +475,363 @@ module.exports = class recommendationService {
         } catch (error) {
 
             console.log("Error occured while fetching people are also viewing articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+        }
+    }
+
+    async getFeaturedArticles (req) {
+        try {
+            let {pageType} = req.query;        
+            let { category, sub_category, topic} = req.query; 
+            let featured_articles = []
+            let articles = []
+            let maxArticles = 2;
+            let cacheKey = `Featured_Articles-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                articles = cachedData;
+                return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+            }
+
+            // fetch featured article if manually added from strapi
+            switch (pageType) {
+                case "homePage":
+                case "AdvicePage":              
+                        const query = {
+                        "match_all": {}
+                        };                
+                    const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
+                    if (result.hits && result.hits.length) {
+                    featured_articles =result.hits[0]._source.featured_articles                
+                    }
+                    break;
+                case "categoryPage":
+                    let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
+                    if (categoryResponse.ok) {
+                        let json = await categoryResponse.json();
+                        
+                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
+                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
+                        }
+                    }
+                    break
+                case "subCategoryPage":
+                    let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
+                    if (subCategoryResponse.ok) {
+                        let json = await subCategoryResponse.json();                    
+                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
+                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
+                        }
+                    }
+                    break
+                case "topicPage":
+                    let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
+                    if (topicResponse.ok) {
+                        let json = await topicResponse.json();
+                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
+                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
+                        }
+                    }
+                    break
+                case "learnPathPage":
+                    let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
+                    if (learnPathResponse.ok) {
+                        let json = await learnPathResponse.json();
+                    
+                        if(json && json.featured_articles && json.featured_articles.length > 0){
+                            json.featured_articles.map(article => featured_articles.push(article.id))                        
+                        }
+                    }
+                    break
+                default:
+                    break;
+            }                    
+        
+            // If article is less than 2 fetch from elasticsearch 
+            
+            if(featured_articles && featured_articles.length > 0)
+            {
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must = [
+                    {
+                    "ids": {
+                        "values": featured_articles
+                    }
+                    }
+                ]
+
+                let result = await elasticService.search("article", esQuery, {});
+
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        articles.push(data);
+                    }
+                }
+            }
+
+        if(articles && articles.length < maxArticles)
+        {      
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+
+                if(articles.length >  0){
+                    esQuery.bool.must_not = [
+                        {
+                        "ids": {
+                            "values": featured_articles
+                        }
+                        }
+                    ]
+                }
+
+                if (category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": decodeURIComponent(category)
+                            }
+                        }
+                    );
+                }
+                if (sub_category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "article_sub_categories.keyword": decodeURIComponent(sub_category)
+                            }
+                        }
+                    );
+                }
+                if (topic) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "article_topics.keyword": decodeURIComponent(topic)
+                            }
+                        }
+                    );
+                }
+
+                if(pageType == "learnPathPage")
+                {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "section_name.keyword":"Learn Path"
+                            }
+                        }
+                    );
+                }
+            
+                let sort = [{ "activity_count.last_x_days.article_views": "desc" }]                
+
+                let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort });
+            
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        articles.push(data);
+                    }
+                }
+            }
+            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_FEATURED_ARTICLES || 60 * 15);
+            return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+        } catch (error) {
+            console.log("Error occured while fetching featured articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+        }
+    }
+
+
+    async getArticleAdvice (req) {
+        try {
+            let {pageType} = req.query;        
+            let { category, sub_category, topic} = req.query; 
+            let article_advice = []
+            let articles = []
+            let maxArticles = 8;
+            let cacheKey = `Article_Advice-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                articles = cachedData;
+                return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+            }
+
+            // fetch featured article if manually added from strapi
+            switch (pageType) {               
+                case "categoryPage":
+                    let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
+                    if (categoryResponse.ok) {
+                        let json = await categoryResponse.json();
+                        
+                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
+                            json[0].article_advice.map(article => article_advice.push(article.id))                        
+                        }
+                    }
+                    break
+                case "subCategoryPage":
+                    let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
+                    if (subCategoryResponse.ok) {
+                        let json = await subCategoryResponse.json();                    
+                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
+                            json[0].article_advice.map(article => article_advice.push(article.id))                        
+                        }
+                    }
+                    break
+                case "topicPage":
+                    let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
+                    if (topicResponse.ok) {
+                        let json = await topicResponse.json();
+                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
+                            json[0].article_advice.map(article => article_advice.push(article.id))                        
+                        }
+                    }
+                    break
+                case "learnPathPage":
+                    let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
+                    if (learnPathResponse.ok) {
+                        let json = await learnPathResponse.json();
+                    
+                        if(json && json.careervira_advice && json.careervira_advice.length > 0){
+                            json.careervira_advice.map(article => article_advice.push(article.id))                        
+                        }
+                    }
+                    break
+                default:
+                    break;
+            }                    
+        
+            // If article is less than 2 fetch from elasticsearch 
+            
+            if(article_advice && article_advice.length > 0)
+            {
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must = [
+                    {
+                    "ids": {
+                        "values": article_advice
+                    }
+                    }
+                ]
+
+                let result = await elasticService.search("article", esQuery, {});
+
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        articles.push(data);
+                    }
+                }
+            }
+
+        if(articles && articles.length < maxArticles)
+        {      
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+
+                if(articles.length >  0){
+                    esQuery.bool.must_not = [
+                        {
+                        "ids": {
+                            "values": article_advice
+                        }
+                        }
+                    ]
+                }
+
+                if (category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": decodeURIComponent(category)
+                            }
+                        }
+                    );
+                }
+                if (sub_category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "article_sub_categories.keyword": decodeURIComponent(sub_category)
+                            }
+                        }
+                    );
+                }
+                if (topic) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "article_topics.keyword": decodeURIComponent(topic)
+                            }
+                        }
+                    );
+                }
+
+                if(pageType == "learnPathPage")
+                {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "section_name.keyword":"Learn Path"
+                            }
+                        }
+                    );
+                }
+
+                let fetaured_articles = this.getFeaturedArticles(req)
+                if(fetaured_articles.data && fetaured_articles.data.list && fetaured_articles.data.list.length > 0)
+                {
+                    fetaured_articles = fetaured_articles.map(article => article_advice.push(article.id))
+                    esQuery.bool.must_not = [
+                        {
+                        "ids": {
+                            "values": fetaured_articles
+                        }
+                        }
+                    ]
+                }
+                let sort = [{ "activity_count.last_x_days.article_views": "desc" }]                
+
+                let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort });
+            
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        articles.push(data);
+                    }
+                }
+            }
+            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_FEATURED_ARTICLES || 60 * 15);
+            return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+        } catch (error) {
+            console.log("Error occured while fetching featured articles", error);
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
     }
