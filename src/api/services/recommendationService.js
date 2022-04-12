@@ -1,7 +1,6 @@
 const elasticService = require("./elasticService");
 const models = require("../../../models");
 const fetch = require("node-fetch");
-
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
@@ -11,7 +10,126 @@ const ArticleService = require("./articleService");
 const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
 const apiBackendUrl = process.env.API_BACKEND_URL;
+const pluralize = require('pluralize')
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options"]
+const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners"]
 
+const getCurrencies = async (useCache = true) => {
+
+    let cacheKey = "get-currencies-backend";
+    if(useCache){
+        let cachedData = await RedisConnection.getValuesSync(cacheKey);
+        if(cachedData.noCacheData != true) {
+           return cachedData;
+        }
+    }
+
+    let response = await fetch(`${process.env.API_BACKEND_URL}/currencies`);
+    if (response.ok) {
+        let json = await response.json();
+        if(json && json.length){
+            RedisConnection.set(cacheKey, json);
+            return json;
+        }else{
+            return [];
+        }    
+    } else {
+        return [];
+    }
+};
+
+const getBaseCurrency = (result) => {
+    return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
+};
+
+const roundOff = (number, precision) => {
+    return Math.round((number + Number.EPSILON) * Math.pow(10, precision)) / Math.pow(10, precision);
+}
+
+const getCurrencyAmount = (amount, currencies, baseCurrency, userCurrency) => {
+    if(amount == 0){
+        return 0;
+    }
+    if(!amount){
+        return null;
+    }
+    if(!userCurrency){
+        userCurrency = process.env.DEFAULT_CURRENCY;
+    }
+    if(baseCurrency == userCurrency){
+        return Math.round(amount);
+    }
+    let currency_b = currencies.find(o => o.iso_code === baseCurrency);
+    if(!currency_b){
+        currency_b = currencies.find(o => o.iso_code === process.env.DEFAULT_CURRENCY);
+    }
+    let currency_u = currencies.find(o => o.iso_code === userCurrency);
+    if(baseCurrency == 'USD'){
+        amount = currency_u.conversion_rate*amount;
+    }else if(userCurrency == 'USD'){
+        amount = amount/currency_b.conversion_rate;
+    }else {
+        const baseAmount = currency_u.conversion_rate*amount;
+        amount = baseAmount/currency_b.conversion_rate;
+    }
+    return Math.round(amount);
+};
+
+const getDurationText = (duration, duration_unit) => {
+    if(!duration){
+        return null;
+    }
+    if(duration == 0){
+        return null;
+    }
+    let duration_text = "";
+    if(duration_unit){
+        duration_unit = duration_unit.toLowerCase();
+        duration_text += duration;
+        if(parseInt(duration) <= 1){
+            duration_unit = pluralize.singular(duration_unit);
+        }
+        duration_text += " "+duration_unit;
+    }else{
+        duration_text = calculateDuration(duration); 
+    }
+    return duration_text;
+}
+
+const calculateDuration = (total_duration_in_hrs) => {
+    const hourse_in_day = 8;
+    const days_in_week = 5;
+    let duration = null;
+        if(total_duration_in_hrs){
+            let totalDuration = null;
+            let durationUnit = null;
+            if(total_duration_in_hrs < (hourse_in_day*days_in_week)){
+                totalDuration = total_duration_in_hrs;
+                durationUnit = (totalDuration > 1) ? 'hours': 'hour';
+                return `${totalDuration} ${durationUnit}`;
+            }
+
+            const week = Math.floor((hourse_in_day*days_in_week)/7);
+            if(week < 4){
+                totalDuration = week;
+                durationUnit = (week > 1) ? 'weeks': 'week';
+                return `${totalDuration} ${durationUnit}`;
+            }
+
+            const month = Math.floor(week/4);
+            if(month < 12){
+                totalDuration = month;
+                durationUnit = (month > 1) ? 'months': 'month';
+                return `${totalDuration} ${durationUnit}`;
+            }
+
+            const year = Math.floor(month/12);
+            totalDuration = year;
+            durationUnit = (year > 1) ? 'years': 'year';
+            return `${totalDuration} ${durationUnit}`;
+        }
+        return duration;
+};
 module.exports = class recommendationService {
 
     async getRelatedCourses(req) {
@@ -71,14 +189,13 @@ module.exports = class recommendationService {
                 }
             })
 
-            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
 
             let courses = [];
             if (result && result.hits.length > 0) {
                 for (let hit of result.hits) {
-                    let course = await LearnContentService.generateSingleViewData(hit._source, false, currency);
-                    const { ads_keywords, subtitle, prerequisites, target_students, content, ...optimisedCourse } = course;
-                    courses.push(optimisedCourse);
+                    let course = await this.generateCourseFinalResponse(hit._source, currency);
+                    courses.push(course);
                 }
             }
 
@@ -168,11 +285,11 @@ module.exports = class recommendationService {
                         break;
                 }
 
-                let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort });
+                let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
 
                 if (result.hits) {
                     for (const hit of result.hits) {
-                        var data = await LearnContentService.generateSingleViewData(hit._source, true, currency)
+                        var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
                     }
                     RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
@@ -199,10 +316,9 @@ module.exports = class recommendationService {
         const offset = (page - 1) * limit;
         if (result && result.length) {
             for (const courseElasticData of result.slice(offset, offset + limit)) {
-                const courseData = await this.generateSingleViewData(courseElasticData._source, false, currency);
-                const { accreditations, ads_keywords, subtitle, prerequisites, target_students, content, meta_information, ...optimisedCourse } = courseData;
-                optimisedCourse.similarity = courseIdSimilarityMap[optimisedCourse.id];
-                courses.push(optimisedCourse);
+                const courseData = await this.generateCourseFinalResponse(courseElasticData._source, currency);                
+                optimisedCourse.similarity = courseIdSimilarityMap[courseData.id];
+                courses.push(courseData);
             }
         }
         return courses;
@@ -303,10 +419,10 @@ module.exports = class recommendationService {
             if (skills) {
                 const offset = (page - 1) * limitForSkills;
                 esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
-                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills });
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills ,_source: courseFields});
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await LearnContentService.generateSingleViewData(hit._source, true, currency)
+                        const data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
                     }
                 }
@@ -315,10 +431,10 @@ module.exports = class recommendationService {
             if (workExp) {
                 const offset = (page - 1) * limitForWorkExp;
                 esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
-                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp });
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp ,_source: courseFields});
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await LearnContentService.generateSingleViewData(hit._source, true, currency)
+                        const data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
                     }
                 }
@@ -500,7 +616,7 @@ module.exports = class recommendationService {
                         const query = {
                         "match_all": {}
                         };                
-                    const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
+                    const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000,_source:["featured_articles"]})
                     if (result.hits && result.hits.length) {
                     featured_articles =result.hits[0]._source.featured_articles                
                     }
@@ -569,11 +685,11 @@ module.exports = class recommendationService {
                     }
                 ]
 
-                let result = await elasticService.search("article", esQuery, {});
+                let result = await elasticService.search("article", esQuery, {_source: articleFields});
 
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        const data = await this.generateArticleFinalResponse(hit._source)
                         articles.push(data);
                     }
                 }
@@ -643,11 +759,11 @@ module.exports = class recommendationService {
             
                 let sort = [{ "activity_count.last_x_days.article_views": "desc" }]                
 
-                let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort });
+                let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort , _source: articleFields});
             
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        const data = await this.generateArticleFinalResponse(hit._source)
                         articles.push(data);
                     }
                 }
@@ -739,11 +855,11 @@ module.exports = class recommendationService {
                     }
                 ]
 
-                let result = await elasticService.search("article", esQuery, {});
+                let result = await elasticService.search("article", esQuery, {_source: articleFields});
 
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await articleService.generateSingleViewData(hit._source, true, req)
+                        const data = await this.generateArticleFinalResponse(hit._source)
                         articles.push(data);
                     }
                 }
@@ -767,14 +883,12 @@ module.exports = class recommendationService {
                 }
 
                 let fetaured_articles = await this.getFeaturedArticles(req)
-                console.log("fetaured_articles", fetaured_articles)
                 if(fetaured_articles.data && fetaured_articles.data.list && fetaured_articles.data.list.length > 0)
                 {
                     fetaured_articles.data.list.map(article => exclude_articles.push(article.id))
                     
                 }
-
-                console.log("fetaured_articles", exclude_articles)
+                
                 esQuery.bool.must_not = [
                     {
                     "ids": {
@@ -828,11 +942,11 @@ module.exports = class recommendationService {
                         }
                     );                                   
 
-                    let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort });
+                    let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort ,_source: articleFields});
                 
                     if (result.hits && result.hits.length) {
                         for (const hit of result.hits) {
-                            const data = await articleService.generateSingleViewData(hit._source, true, req)
+                            const data = await this.generateArticleFinalResponse(hit._source)
                             articles.push(data);
                         }
                     }
@@ -851,7 +965,7 @@ module.exports = class recommendationService {
                     let sectoinResult = await elasticService.search("section", sectionQuery, {});
                     if (sectoinResult.hits && sectoinResult.hits.length) {
                         for (const hit of sectoinResult.hits) {
-                            const data = await articleService.generateSingleViewData(hit._source, true, req)
+                            const data = await this.generateArticleFinalResponse(hit._source)
                             sections.push(hit._source.default_display_label);
                         }
                     }
@@ -883,11 +997,11 @@ module.exports = class recommendationService {
                                 }
                             }
                         );
-                        let result = await elasticService.search("article", esQuery, { from: 0, size: value , sortObject: sort });
+                        let result = await elasticService.search("article", esQuery, { from: 0, size: value , sortObject: sort ,_source: articleFields});
                 
                         if (result.hits && result.hits.length) {
                             for (const hit of result.hits) {
-                                const data = await articleService.generateSingleViewData(hit._source, true, req)
+                                const data = await this.generateArticleFinalResponse(hit._source)
                                 articles.push(data);
                             }
                         }
@@ -901,6 +1015,203 @@ module.exports = class recommendationService {
         } catch (error) {
             console.log("Error occured while fetching featured articles", error);
             return { "success": false, message: "failed to fetch", data: { list: [] } };
+        }
+    }
+
+    async generateCourseFinalResponse(result, currency=process.env.DEFAULT_CURRENCY){
+        let currencies = await getCurrencies();
+        const baseCurrency = getBaseCurrency(result);
+        let partnerPrice = roundOff(result.finalPrice, 2);   //final price in ES
+        let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
+        let conversionRate = roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
+        let tax = 0.0;
+        let canBuy = false;
+        if(result.learn_content_pricing_currency && result.learn_content_pricing_currency.iso_code === "INR" && result.pricing_type !="Free") {
+            canBuy = true;
+            tax = roundOff(0.18 * partnerPrice, 2);
+        }
+        let data = {
+            canBuy: canBuy,
+            title: result.title,
+            slug: result.slug,
+            id: `LRN_CNT_PUB_${result.id}`,
+            provider: {
+                name: result.provider_name,
+                currency: result.provider_currency,
+                slug: result.provider_slug
+            },
+            partner: {
+                name: result.partner_name,
+                slug: result.partner_slug,
+                partner_url: result.partner_url,
+                currency: result.partner_currency
+            },
+            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
+            cover_image: (result.images)? result.images :null,
+            course_details: {
+                //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
+                duration: getDurationText(result.total_duration, result.total_duration_unit),
+                total_duration_unit: result.total_duration_unit,  
+                level: (result.level) ? result.level : null,
+                medium: (result.medium) ? result.medium : null,
+                pricing: {                    
+                    display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
+                    pricing_type: result.pricing_type,
+                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
+                    base_currency: baseCurrency,
+                    user_currency: currency,
+                    regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
+                    sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
+                    offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
+                    schedule_of_sale_price: result.schedule_of_sale_price,
+                    free_condition_description: result.free_condition_description,
+                    conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
+                    pricing_additional_details: result.pricing_additional_details,
+                    course_financing_options: result.course_financing_options,
+                    partnerPrice: partnerPrice,
+                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
+                    partnerRegularPrice: roundOff(result.regular_price, 2),
+                    partnerSalePrice: roundOff(result.sale_price, 2),
+                    conversionRate: conversionRate,
+                    tax: tax
+                },          
+            },
+            provider_course_url: result.provider_course_url,
+            ratings: {
+                total_review_count: result.reviews ? result.reviews.length : 0,
+                average_rating: 0,
+                average_rating_actual: 0,
+                rating_distribution: []
+            }
+           
+        };     
+        
+        if(data.course_details.medium == 'Others'){
+            data.course_details.medium = null;
+        }       
+        
+        if(data.course_details.pricing.pricing_type == 'Others'){
+            data.course_details.pricing.pricing_type = null;
+        }      
+     
+        if(result.partner_currency){
+            data.provider.currency = result.partner_currency.iso_code;
+        }
+
+        return data;
+    }
+
+    async getAuthor(id){
+        let author = null;
+        const query = { "bool": {
+            "must": [
+              {term: { "user_id": id }}
+            ]
+        }};
+        const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug']});
+        if(result.hits && result.hits.length > 0){
+            author = await this.generateAuthorData(result.hits[0]._source);
+        }
+        return author;     
+    }
+
+    async generateAuthorData(result){
+        let data = {          
+            firstname: result.first_name,
+            lastname: result.last_name,
+            slug: result.slug,
+           
+        };
+        return data;
+    }
+
+    async generateArticleFinalResponse(result){
+        try{
+            let author = null
+            if(result.created_by_role=='author')
+            {            
+                let auth = await this.getAuthor(result.author_id);         
+                if(auth){
+                    author = [{                        
+                        firstname: auth.firstname.trim(),
+                        lastname: auth.lastname ? auth.lastname.trim():"",                      
+                        slug: auth.slug,
+                    }];
+                }else{
+                    author = [{
+                        firstname: result.author_first_name.trim(),
+                        lastname: result.last_name ? result.author_last_name.trim():"",
+                        slug: result.author_slug
+                    }];
+                }
+            }
+            else
+            {
+                author = []
+            }
+            
+
+            if(result.co_authors && result.co_authors.length > 0)
+            {
+                for( let co_author of result.co_authors)
+                {
+                    author.push({                       
+                        firstname:co_author.first_name.trim(),
+                        lastname: co_author.last_name ? co_author.last_name.trim():"",
+                        slug: co_author.slug,
+                    });
+                }
+            }
+
+            if(result.partners && result.partners.length > 0 )
+            {
+                const partnerQuery = { 
+                    "bool": {
+                        "should": [
+                        {
+                            "match": {
+                            "id": {"boost": 2, "query": result.partners[0] }
+                            
+                            }
+                            
+                        },
+                        {
+                            "terms": {
+                            "id": result.partners 
+                            }
+                        }
+                        ]
+                    }
+                };
+                const partnerResult = await elasticService.search('partner', partnerQuery, {_source: ['name','slug']}, null);
+                let partners = []
+                if(partnerResult.total && partnerResult.total.value > 0){
+                    for(let hit of partnerResult.hits){
+                        partners.push({
+                            name: hit._source.name.trim(),
+                            slug: hit._source.slug,
+                        })
+                    }
+                }
+                result.partners = partners
+            }                
+
+            let data = {
+                title: result.title,
+                premium: (result.premium)? result.premium:false,
+                slug: result.slug,
+                id: `ARTCL_PUB_${result.id}`,          
+                cover_image: (result.cover_image)? result.cover_image : null,
+                short_description: result.short_description,
+                author: (author)? author: [],
+                partners: (result.partners)? result.partners : [],
+                created_by_role: (result.created_by_role)? result.created_by_role:'author',            
+                published_date: result.published_date
+            };
+            return data;
+        }
+        catch(err){
+            console.log("ERROR: ",err)
         }
     }
 }
