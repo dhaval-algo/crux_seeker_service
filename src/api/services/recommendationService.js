@@ -504,6 +504,7 @@ module.exports = class recommendationService {
                     if (result.hits && result.hits.length) {
                     featured_articles =result.hits[0]._source.featured_articles                
                     }
+                    maxArticles = 1
                     break;
                 case "categoryPage":
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
@@ -542,12 +543,13 @@ module.exports = class recommendationService {
                             json.featured_articles.map(article => featured_articles.push(article.id))                        
                         }
                     }
+                    maxArticles = 1
                     break
                 default:
                     break;
             }                    
         
-            // If article is less than 2 fetch from elasticsearch 
+            
             
             if(featured_articles && featured_articles.length > 0)
             {
@@ -577,8 +579,9 @@ module.exports = class recommendationService {
                 }
             }
 
-        if(articles && articles.length < maxArticles)
-        {      
+            // If articles are less than maxArticles fetch from elasticsearch with logic
+            if(articles && articles.length < maxArticles)
+            {      
 
                 let esQuery = {
                     "bool": {
@@ -588,6 +591,7 @@ module.exports = class recommendationService {
                     }
                 }
 
+                //Exclude articles which are manually added
                 if(articles.length >  0){
                     esQuery.bool.must_not = [
                         {
@@ -671,7 +675,7 @@ module.exports = class recommendationService {
                 return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
             }
 
-            // fetch featured article if manually added from strapi
+            // fetch  article advice if manually added from strapi
             switch (pageType) {               
                 case "categoryPage":
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
@@ -715,7 +719,7 @@ module.exports = class recommendationService {
                     break;
             }                    
         
-            // If article is less than 2 fetch from elasticsearch 
+            
             
             if(article_advice && article_advice.length > 0)
             {
@@ -745,9 +749,9 @@ module.exports = class recommendationService {
                 }
             }
 
-        if(articles && articles.length < maxArticles)
-        {      
-
+            // If articles are less than maxArticles fetch from elasticsearch with logic
+            if(articles && articles.length < maxArticles)
+            {
                 let esQuery = {
                     "bool": {
                         "filter": [
@@ -756,16 +760,30 @@ module.exports = class recommendationService {
                     }
                 }
 
+                // exclude manually added articles and featured articles
+                let exclude_articles = []
                 if(articles.length >  0){
-                    esQuery.bool.must_not = [
-                        {
-                        "ids": {
-                            "values": article_advice
-                        }
-                        }
-                    ]
+                    exclude_articles =  article_advice
                 }
 
+                let fetaured_articles = await this.getFeaturedArticles(req)
+                console.log("fetaured_articles", fetaured_articles)
+                if(fetaured_articles.data && fetaured_articles.data.list && fetaured_articles.data.list.length > 0)
+                {
+                    fetaured_articles.data.list.map(article => exclude_articles.push(article.id))
+                    
+                }
+
+                console.log("fetaured_articles", exclude_articles)
+                esQuery.bool.must_not = [
+                    {
+                    "ids": {
+                        "values": exclude_articles
+                    }
+                    }
+                ]
+
+                // filter for category 
                 if (category) {
                     esQuery.bool.filter.push(
                         {
@@ -775,6 +793,8 @@ module.exports = class recommendationService {
                         }
                     );
                 }
+
+                // filter for subcategory 
                 if (sub_category) {
                     esQuery.bool.filter.push(
                         {
@@ -784,6 +804,8 @@ module.exports = class recommendationService {
                         }
                     );
                 }
+
+                // filter for topic 
                 if (topic) {
                     esQuery.bool.filter.push(
                         {
@@ -793,6 +815,8 @@ module.exports = class recommendationService {
                         }
                     );
                 }
+               
+                let sort = [{ "activity_count.last_x_days.article_views": "desc" }]
 
                 if(pageType == "learnPathPage")
                 {
@@ -802,33 +826,77 @@ module.exports = class recommendationService {
                                 "section_name.keyword":"Learn Path"
                             }
                         }
-                    );
-                }
+                    );                                   
 
-                let fetaured_articles = this.getFeaturedArticles(req)
-                if(fetaured_articles.data && fetaured_articles.data.list && fetaured_articles.data.list.length > 0)
-                {
-                    fetaured_articles = fetaured_articles.map(article => article_advice.push(article.id))
-                    esQuery.bool.must_not = [
-                        {
-                        "ids": {
-                            "values": fetaured_articles
+                    let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort });
+                
+                    if (result.hits && result.hits.length) {
+                        for (const hit of result.hits) {
+                            const data = await articleService.generateSingleViewData(hit._source, true, req)
+                            articles.push(data);
                         }
-                        }
-                    ]
-                }
-                let sort = [{ "activity_count.last_x_days.article_views": "desc" }]                
-
-                let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort });
-            
-                if (result.hits && result.hits.length) {
-                    for (const hit of result.hits) {
-                        const data = await articleService.generateSingleViewData(hit._source, true, req)
-                        articles.push(data);
                     }
                 }
+                else
+                {
+                    // Fecth sections
+                    let sectionQuery = {
+                        "bool": {
+                            "filter": [
+                                { "term": { "featured": true } }
+                            ]
+                        }
+                    }
+                    let sections = []
+                    let sectoinResult = await elasticService.search("section", sectionQuery, {});
+                    if (sectoinResult.hits && sectoinResult.hits.length) {
+                        for (const hit of sectoinResult.hits) {
+                            const data = await articleService.generateSingleViewData(hit._source, true, req)
+                            sections.push(hit._source.default_display_label);
+                        }
+                    }
+                    
+                    //calculate articles per section
+                    let remaining_articles = maxArticles - articles.length
+                    let article_per_section = [];
+                    
+                    let count = 0;
+                    while(count <= remaining_articles)
+                    {
+                        for(let section  of sections )
+                        {
+                            if(count <remaining_articles)
+                            {
+                                (article_per_section[section])?  article_per_section[section]+= 1 : article_per_section[section] = 1;
+                            }
+                            count++;                         
+                        }
+                    }
+
+                    let sectioncount = 0;
+                    for (const [key, value] of Object.entries(article_per_section)) {
+                        if(sectioncount > 0)  esQuery.bool.filter.pop();
+                        esQuery.bool.filter.push(
+                            {
+                                "term": {
+                                    "section_name.keyword":key
+                                }
+                            }
+                        );
+                        let result = await elasticService.search("article", esQuery, { from: 0, size: value , sortObject: sort });
+                
+                        if (result.hits && result.hits.length) {
+                            for (const hit of result.hits) {
+                                const data = await articleService.generateSingleViewData(hit._source, true, req)
+                                articles.push(data);
+                            }
+                        }
+                        sectioncount++;
+                    }
+                    
+                }
             }
-            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_FEATURED_ARTICLES || 60 * 15);
+            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_ADVICE || 60 * 15);
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
         } catch (error) {
             console.log("Error occured while fetching featured articles", error);
