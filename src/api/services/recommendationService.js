@@ -4,8 +4,6 @@ const fetch = require("node-fetch");
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
-const learnContentService = require("./learnContentService");
-let LearnContentService = new learnContentService();
 const ArticleService = require("./articleService");
 const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
@@ -962,7 +960,7 @@ module.exports = class recommendationService {
                         }
                     }
                     let sections = []
-                    let sectoinResult = await elasticService.search("section", sectionQuery, {});
+                    let sectoinResult = await elasticService.search("section", sectionQuery, {_source:["default_display_label"]});
                     if (sectoinResult.hits && sectoinResult.hits.length) {
                         for (const hit of sectoinResult.hits) {
                             const data = await this.generateArticleFinalResponse(hit._source)
