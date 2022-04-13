@@ -10,6 +10,102 @@ const ArticleService = require("./articleService");
 const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
 
+
+
+const getTopPicksForYouArticlesProfile = async (req) => {
+
+    const userId = req.user.userId;
+    const { page = 1, limit = 6, section } = req.query;
+    const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);
+    const articles = [];
+    let limitForSkills = 0;
+    let limitForWorkExp = 0;
+
+    if (skillsKeywords.length && workExpKeywords.length) {
+        limitForSkills = Math.floor(limit / 2);
+        limitForWorkExp = limit - limitForSkills;
+    }
+    else if (skillsKeywords.length) {
+        limitForSkills = limit;
+    }
+    else if (workExpKeywords.length) {
+        limitForWorkExp = limit;
+    }
+
+    const esQuery = {
+        bool: {
+            must: [
+
+                {
+                    term: {
+                        "status.keyword": "published"
+                    }
+                },
+                {
+                    term: {
+                        "section_name.keyword": section
+                    }
+                },
+
+
+            ],
+            should: [
+                {
+                    query_string: {
+                        default_field: "title"
+                    }
+                }
+            ]
+        }
+    }
+
+    if (skillsKeywords.length) {
+        const offset = (page - 1) * limitForSkills;
+        esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
+        const result = await elasticService.search("article", esQuery, { from: offset, size: limitForSkills });
+        if (result.hits && result.hits.length) {
+            for (const hit of result.hits) {
+                const data = await articleService.generateSingleViewData(hit._source, true, req)
+                articles.push(data);
+            }
+        }
+    }
+
+    if (workExpKeywords.length) {
+        const offset = (page - 1) * limitForWorkExp;
+        esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
+        const result = await elasticService.search("article", esQuery, { from: offset, size: limitForWorkExp });
+        if (result.hits && result.hits.length) {
+            for (const hit of result.hits) {
+                const data = await articleService.generateSingleViewData(hit._source, true, req)
+                articles.push(data);
+            }
+        }
+    }
+
+    return articles;
+
+}
+
+
+const getTopPicksForYouArticlesGoal = async (req) => {
+
+    const userId = req.user.userId;
+    const { page = 1, limit = 6, section } = req.query;
+    const goalsKeywords = userService.getKeywordsFromUsersGoal(userId);
+    return goalsKeywords;
+
+
+
+
+
+
+
+
+
+}
+
+
 module.exports = class recommendationService {
 
     async getRelatedCourses(req, callback) {
@@ -223,55 +319,19 @@ module.exports = class recommendationService {
         try {
             const userId = req.user.userId;
             const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
-
-            let skills = null;
-            const topSkills = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'primarySkills' } });
-
-            if (topSkills && topSkills.value && topSkills.value != "{}") {
-                skills = JSON.parse(topSkills.value);
-            }
-            else {
-                const additionalSkills = await models.user_meta.findOne({ where: { userId: userId, metaType: 'primary', key: 'skills' } })
-                if (additionalSkills && additionalSkills.value && additionalSkills.value != "{}") skills = JSON.parse(additionalSkills.value);
-            }
-
-            let workExp = null;
-            const workExperience = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'workExp' } });
-
-            let skillsKeywords = [];
-            let workExpKeywords = [];
-
-            if (skills) {
-                for (const key in skills) {
-                    skillsKeywords.push(key);
-                    skillsKeywords.push(...skills[key]);
-                }
-            }
-
-            if (workExperience && workExperience.value && workExperience.value != "[]") {
-                workExp = JSON.parse(workExperience.value);
-                workExp.forEach((workExp) => {
-                    if (workExp.jobTitle) {
-                        workExpKeywords.push(workExp.jobTitle.label);
-                    }
-
-                    if (workExp.industry) {
-                        workExpKeywords.push(workExp.industry.label);
-                    }
-                });
-            }
+            const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);
 
             let limitForSkills = 0;
             let limitForWorkExp = 0;
 
-            if (skills && workExp) {
+            if (skillsKeywords.length && workExpKeywords.length) {
                 limitForSkills = Math.floor(limit / 2);
                 limitForWorkExp = limit - limitForSkills;
             }
-            else if (skills) {
+            else if (skillsKeywords.length) {
                 limitForSkills = limit;
             }
-            else if (workExp) {
+            else if (workExpKeywords.length) {
                 limitForWorkExp = limit;
             }
 
@@ -295,7 +355,7 @@ module.exports = class recommendationService {
             }
 
             let courses = [];
-            if (skills) {
+            if (skillsKeywords.length) {
                 const offset = (page - 1) * limitForSkills;
                 esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
                 const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills });
@@ -307,7 +367,7 @@ module.exports = class recommendationService {
                 }
             }
 
-            if (workExp) {
+            if (workExpKeywords.length) {
                 const offset = (page - 1) * limitForWorkExp;
                 esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
                 const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp });
@@ -319,7 +379,7 @@ module.exports = class recommendationService {
                 }
             }
 
-            if (!skills && !workExp) {
+            if (!skillsKeywords.length && !workExpKeywords.length) {
                 req.query.subType = "Popular"
                 if (!req.query.page) req.query.page = 1;
                 if (!req.query.limit) req.query.limit = 6;
@@ -423,7 +483,7 @@ module.exports = class recommendationService {
 
         } catch (error) {
             console.log("Error occured while fetching recently searched articles", error);
-            return { "success": false, message: "failed to fetch", data: { list: [] }};
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
 
         }
 
@@ -454,16 +514,16 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-    
+
                 const sort = [{ "activity_count.all_time.article_views": "desc" }];
-                const result = await elasticService.search("article", esQuery, { from: offset, size: limit ,sortObject:sort});
+                const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort });
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
                         const data = await articleService.generateSingleViewData(hit._source, true, req)
                         articles.push(data);
                     }
                 }
-    
+
             }
 
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
@@ -473,4 +533,33 @@ module.exports = class recommendationService {
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
     }
+
+
+    async getTopPicksForYouArticles(req) {
+
+        try {
+
+            const { profileType } = req.query;
+
+            let articles = [];
+            if (profileType == 'profile') {
+
+                articles = await getTopPicksForYouArticlesProfile(req);
+
+            } else {
+
+                articles = await getTopPicksForYouArticlesGoal(req);
+            }
+
+            return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+
+        } catch (error) {
+
+            console.log("Error occured while fetching top picks for you articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
+
+    }
+
 }

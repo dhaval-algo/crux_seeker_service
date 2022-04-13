@@ -103,6 +103,12 @@ module.exports = {
 
             break;
 
+            case "top-picks-for-you":{
+                const response = await RecommendationService.getTopPicksForYouArticles(req);
+                res.status(200).send(response);
+            }
+            break;
+
             default:
                 res.status(200).send({});
                 break;
