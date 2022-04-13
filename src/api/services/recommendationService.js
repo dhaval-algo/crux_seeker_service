@@ -11,7 +11,6 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners"]
-
 const getCurrencies = async (useCache = true) => {
 
     let cacheKey = "get-currencies-backend";
@@ -638,8 +637,81 @@ module.exports = class recommendationService {
 
         const userId = req.user.userId;
         const { page = 1, limit = 6, section } = req.query;
-        const goalsKeywords = userService.getKeywordsFromUsersGoal(userId);
-        return goalsKeywords;
+        const offset = (page - 1) * limit;
+        const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+        const articles = [];
+        const esQuery = {
+            bool: {
+                should: [
+                    {
+                        bool: {
+                            must: [
+                                {
+                                    query_string: {
+                                        fields: [
+                                            "title^4",
+                                            "short_description^3",
+                                            "article_topics^2",
+                                            "categories"
+                                        ],
+                                        query: highPriorityKeywords.join(" OR ").replace("/", "\\/")
+                                    }
+                                },
+                                {
+                                    term: {
+                                        "section_name.keyword": section
+                                    }
+                                },
+                                {
+                                    term: {
+                                        "status.keyword": "published"
+                                    }
+                                }
+                            ],
+                            boost: 1000
+                        }
+                    },
+                    {
+                        bool: {
+                            must: [
+                                {
+                                    query_string: {
+                                        fields: [
+                                            "title^4",
+                                            "short_description^3",
+                                            "article_topics^2",
+                                            "categories"
+
+                                        ],
+                                        query: lowPriorityKeywords.join(" OR ").replace("/", "\\/")
+                                    }
+                                },
+                                {
+                                    term: {
+                                        "section_name.keyword": section
+                                    }
+                                },
+                                {
+                                    term: {
+                                        "status.keyword": "published"
+                                    }
+                                }
+                            ],
+                            boost: 10
+                        }
+                    }
+                ]
+            }
+        }
+        const result = await elasticService.search("article", esQuery, { from: offset, size: limit });
+        
+        if (result.hits && result.hits.length) {
+            for (const hit of result.hits) {
+                const data = await this.generateArticleFinalResponse(hit._source);
+                articles.push(data);
+            }
+        }
+        return articles;
 
 
     }
@@ -1206,10 +1278,10 @@ module.exports = class recommendationService {
             let author = null
             if(result.created_by_role=='author')
             {            
-                let auth = await this.getAuthor(result.author_id);         
+                let auth = await this.getAuthor(result.author_id);       
                 if(auth){
                     author = [{                        
-                        firstname: auth.firstname.trim(),
+                        firstname: auth.firstname? auth.firstname.trim():"",
                         lastname: auth.lastname ? auth.lastname.trim():"",                      
                         slug: auth.slug,
                     }];
