@@ -1408,7 +1408,7 @@ module.exports = class recommendationService {
             }
     
             for (var i=0; i < courseIds.length; i++) {
-                for(course of unsortedCourses){
+                for(let course of unsortedCourses){
                     if (course.id === courseIds[i]) {
                         courses[i] = course;
                     }
