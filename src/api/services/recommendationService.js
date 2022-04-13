@@ -1221,7 +1221,7 @@ module.exports = class recommendationService {
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
         if (cachedData.noCacheData != true) {
-            return { success: true, message: "list fetched successfully", data:{ list: cachedData } };
+            return { "success": true, message: "list fetched successfully", data: { list: cachedData, mlList: [], show: "logic" } }
         }
         
         let offset= (page -1) * limit
@@ -1288,7 +1288,7 @@ module.exports = class recommendationService {
                 }
             }
             RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
-            let response = { success: true, message: "list fetched successfully", data:{ list: learnpaths } };
+            let response = { "success": true, message: "list fetched successfully", data: { list: learnpaths, mlList: [], show: "logic" } };
             
             return response;
            
