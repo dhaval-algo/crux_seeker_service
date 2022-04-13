@@ -3433,20 +3433,24 @@ const getUserProfileKeywords = async (userId) => {
 }
 
 const getKeywordsFromUsersGoal = async (userId) => {
-    const keywords = [];
+    const highPriorityKeywords = [];
+    const lowPriorityKeywords = [];
     const goals = await models.goal.findAll({ where: { userId: userId } });
     for(const goal of goals){
 
-        keywords.push(goal.currentRole);
-        keywords.push(goal.preferredRole);
-        keywords.push(goal.industryChoice);
+        highPriorityKeywords.push(goal.currentRole);
+        highPriorityKeywords.push(goal.preferredRole);
+        highPriorityKeywords.push(goal.industryChoice);
+
+        if(goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
+        if(goal.specialization) lowPriorityKeywords.push(goal.specialization);
 
       const goalSkills =  await models.skill.findAll({ where: { goalId: goal.id} });
-      goalSkills.forEach((goalSkill)=>keywords.push(goalSkill.name));
+      goalSkills.forEach((goalSkill)=>highPriorityKeywords.push(goalSkill.name));
 
     };
 
-    return keywords;
+    return {highPriorityKeywords:highPriorityKeywords,lowPriorityKeywords:lowPriorityKeywords};
 
 
 }
