@@ -1402,7 +1402,7 @@ module.exports = class recommendationService {
     
             if(result.hits){
                 for(const hit of result.hits){
-                    let data = await this.generateCourseFinalResponse(hit._source,true,currency)
+                    let data = await this.generateCourseFinalResponse(hit._source, currency)
                     unsortedCourses.push(data);
                 }
             }
