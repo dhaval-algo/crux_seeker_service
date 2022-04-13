@@ -7,13 +7,9 @@ module.exports = {
         const { type } = req.query;
 
         switch (type) {
-            case "related-courses": RecommendationService.getRelatedCourses(req, (err, data) => {
-                if (data) {
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
+            case "related-courses":             
+                const response = await RecommendationService.getRelatedCourses(req)                     
+                res.status(200).send(response);             
                 break;
             case "courses-to-get-started": RecommendationService.getPopularCourses(req, (err, data) => {
                 if (data) {
@@ -107,5 +103,15 @@ module.exports = {
                 res.status(200).send({});
                 break;
         }
-    }
+    },
+
+    getFeaturedArticles: async (req, res) =>{
+        const response = await RecommendationService.getFeaturedArticles(req)                     
+                res.status(200).send(response);  
+    },
+
+    getArticleAdvice: async (req, res) =>{
+        const response = await RecommendationService.getArticleAdvice(req)                     
+                res.status(200).send(response);  
+    },
 };
