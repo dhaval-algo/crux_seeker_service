@@ -5,68 +5,39 @@ const userService = require("../../services/v1/users/user");
 module.exports = {   
     getRecommendedCourses: async (req, res) => {
         const { type } = req.query;
-
+        let response
         switch (type) {
             case "related-courses":             
-                const response = await RecommendationService.getRelatedCourses(req)                     
+                response = await RecommendationService.getRelatedCourses(req)                     
                 res.status(200).send(response);             
                 break;
-            case "courses-to-get-started": RecommendationService.getPopularCourses(req, (err, data) => {
-                if (data) {
-                    if (process.env.API_CACHE_CONTROL_HEADER) {
-                        res.set('Cache-control', process.env.API_CACHE_CONTROL_HEADER)
-                    }
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
+            case "courses-to-get-started": 
+                response = await RecommendationService.getPopularCourses(req)
+                res.status(200).send(response); 
                 break;
-            case "explore-courses-from-top-categories": RecommendationService.exploreCoursesFromTopCatgeories(req, (err, data) => {
-                if (data) {
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
-
+            case "explore-courses-from-top-categories": 
+                response = await  RecommendationService.exploreCoursesFromTopCatgeories(req);
+                res.status(200).send(response); 
                 break;
 
-            case "top-picks-for-you": RecommendationService.getTopPicksForYou(req, (err, data) => {
-                if (data) {
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
+            case "top-picks-for-you":  
+                response = await RecommendationService.getTopPicksForYou(req);
+                res.status(200).send(response); 
                 break;
 
-            case "recently-viewed-courses": userService.recentlyViewedCourses(req,(err, data) => {
-                if (data) {
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
-                
+            case "recently-viewed-courses":             
+                response = await RecommendationService.getRecentlyViewedCourses(req)                     
+                res.status(200).send(response);             
                 break;
            
-            case "recently-searched-courses": userService.recentlySearchedCourses(req,(err, data) => {
-                if (data) {
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
+            case "recently-searched-courses": 
+                response = await RecommendationService.recentlySearchedCourses(req)
+                res.status(200).send(response);
                 break;
 
-            case "people-are-also-viewing": userService.peopleAreAlsoViewing(req,(err, data) => {
-                if (data) {
-                    res.status(200).send(data);
-                } else {
-                    res.status(200).send(err);
-                }
-            });
+            case "people-are-also-viewing": 
+                response = await RecommendationService.peopleAreAlsoViewing(req);
+                res.status(200).send(response);
                 break;
             default:
                 res.status(200).send({});

@@ -216,7 +216,7 @@ module.exports = class recommendationService {
         }
     }
 
-    async getPopularCourses(req, callback, returnData) {
+    async getPopularCourses(req) {
         let { subType } = req.query; // Populer, Trending,Free
         let { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 20 } = req.query;
 
@@ -293,17 +293,14 @@ module.exports = class recommendationService {
                     RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
                 }
             }
-            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };
-            if (returnData) {
-                return courses;
-            }
-            else {
-                callback(null, response);
-            }
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            return response;
+           
 
         } catch (error) {
             console.log("Error while processing data for popular courses", error);
-            callback(error, null);
+            let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
+            return response;
         }
     }
 
@@ -323,16 +320,16 @@ module.exports = class recommendationService {
 
     }
 
-    async exploreCoursesFromTopCatgeories(req, callback) {
+    async exploreCoursesFromTopCatgeories(req) {
 
         try {
             req.query.subType = "Popular"
-            const data = await this.getPopularCourses(req, null, true);
-            callback(null, { "success": true, message: "list fetched successfully", data: { list: data, mlList: [], show: "logic" } });
+            const response = await this.getPopularCourses(req);
+            return response
 
         } catch (error) {
             console.log("Error occured while fetching top courses : ", error)
-            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
     }
 
@@ -442,13 +439,13 @@ module.exports = class recommendationService {
                 req.query.subType = "Popular"
                 if (!req.query.page) req.query.page = 1;
                 if (!req.query.limit) req.query.limit = 6;
-                courses = await this.getPopularCourses(req, null, true);
+                reposnse = await this.getPopularCourses(req);
+                return reposnse
             }
-
-            callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } });
+            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
         } catch (error) {
             console.log("Error occured while fetching top picks for you : ", error);
-            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+            return{ "success": false, message: "failed to fetch", data: { list: [] } }
 
         }
     }
@@ -1373,4 +1370,176 @@ module.exports = class recommendationService {
 
         return data;
     }
+
+    async getRecentlyViewedCourses (req) {
+        const { user } = req;
+        let { limit = 20, page = 1, order="DESC", currency } = req.query
+        
+        order = order.toUpperCase();
+        const query = {
+            limit: limit,
+            offset: (page -1) * limit,
+            where: {userId: user.userId},   
+            order: [['updatedAt', order == "DESC" ? order : "ASC"]],
+            attributes: { include: ['id'] }
+        }
+    
+        let courses = [];
+        let courseIds = [];
+        try {
+            let unsortedCourses = [];
+            courseIds = await models.recently_viewed_course.findAll(query);
+            courseIds = courseIds.map((course)=> course.courseId);
+    
+            let esQuery = {
+                "ids": {
+                    "values": courseIds
+                }
+            };    
+           
+    
+            const result = await elasticService.search('learn-content', esQuery, {form: 0, size: 20,_source:courseFields});
+    
+            if(result.hits){
+                for(const hit of result.hits){
+                    let data = await this.generateCourseFinalResponse(hit._source,true,currency)
+                    unsortedCourses.push(data);
+                }
+            }
+    
+            for (var i=0; i < courseIds.length; i++) {
+                for(course of unsortedCourses){
+                    if (course.id === courseIds[i]) {
+                        courses[i] = course;
+                    }
+                }
+            }
+            const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:[],show:'logic'} };
+            return response
+        } catch(error){
+            //statusCode = 200; //should send a valid status code here
+            console.error("Failed to fetch recently viewed courses",error);
+            const response = { success: false, message: "Failed to fetched", data:{list:[]} };
+            return response
+        } 
+       
+    }
+    async getUserLastSearch  (req) {
+        
+        const { user} = req;
+        let userId = user.userId
+    
+         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+    
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+        if(!suggestionList['learn-path']){
+            suggestionList['learn-path'] = []
+        }
+        if(!suggestionList['learn-content']){
+            suggestionList['learn-content'] = []
+        }
+        if(!suggestionList['provider']){
+            suggestionList['provider'] = []
+        }
+        if(!suggestionList['article']){
+            suggestionList['article'] = []
+        }
+
+        return suggestionList
+    
+    }
+    async recentlySearchedCourses (req) {
+
+        try {
+    
+            const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+            const offset = (page - 1) * limit;
+            let searchedCourses = [];
+            let suggestionList = await this.getUserLastSearch(req)            
+            searchedCourses.push(...suggestionList['learn-content']);    
+            const searchedCoursesSlugs = searchedCourses.map((course) => course.slug);
+    
+            const esQuery = {
+                bool: {
+                    must: [
+                        {
+                            term: {
+                                "status.keyword": "published"
+                            }
+                        },
+                        {
+                            terms: {
+                                "slug.keyword": searchedCoursesSlugs
+                            }
+                        }
+                    ]
+                }
+            }
+            const courses  =[];
+            const result = await elasticService.search("learn-content",esQuery,{from:offset,size:limit, _source: courseFields})
+            
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await this.generateCourseFinalResponse(hit._source,  currency)
+                    courses.push(data);
+                }
+            }
+    
+            return{ "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: 'logic' } }
+    
+        } catch (error) {
+            console.log("Error occured while fetching recently searched courses : ", error);
+            return{ "success": false, message: "failed to fetch", data: { list: [] } };
+        }
+    
+    }
+
+
+    async peopleAreAlsoViewing (req)  {
+
+        try {
+            const userId = req.user.userId;
+            const { page = 1, limit = 6, currency = process.env.DEFAULT_CURRENCY } = req.query;
+            const offset = (page - 1) * limit;
+            const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
+            const categoriesNames = categories.map((category) => category.name);
+            const courses = [];
+            if (categoriesNames.length) {
+                const esQuery = {
+                    bool: {
+                        must: [
+                            {
+                                term: {
+                                    "status.keyword": "published"
+                                }
+                            },
+                            {
+                                terms: {
+                                    "categories.keyword": categoriesNames
+                                }
+                            }
+                        ]
+                    }
+                }
+    
+                const sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }];
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source:courseFields });
+    
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateCourseFinalResponse(hit._source, currency)
+                        courses.push(data);
+                    }
+                }
+    
+            }
+            
+            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
+        } catch (error) {
+    
+            console.log("Error occured while fetching people Are Also Viewing : ", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } }
+        }
+    }
+    
 }
