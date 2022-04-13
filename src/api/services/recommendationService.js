@@ -11,7 +11,7 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners"]
-
+const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","display_price","courses"]
 const getCurrencies = async (useCache = true) => {
 
     let cacheKey = "get-currencies-backend";
@@ -1211,5 +1211,166 @@ module.exports = class recommendationService {
         catch(err){
             console.log("ERROR: ",err)
         }
+    }
+
+    async getPopularLearnPaths(req){
+        let { subType } = req.params; // Populer, Trending,Free
+        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;  
+
+        let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+
+        if (cachedData.noCacheData != true) {
+            return { success: true, message: "list fetched successfully", data:{ list: cachedData } };
+        }
+        
+        let offset= (page -1) * limit
+        
+        let learnpaths = [];
+        try {
+            
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "approved" } }
+                    ]
+                }
+            }
+            if(category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if(sub_category){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "sub_categories.keyword":  decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if(topic){
+                esQuery.bool.filter.push(
+                    {"term": {
+                            "topics.keyword":  decodeURIComponent(topic)
+                        }
+                    }
+                );
+            } 
+            
+            if(subType && subType =="Free"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Free" } }
+                );
+                 esQuery.bool.filter.push(
+                    { "term": { "display_price": true } }
+                );
+            }
+            let sort = null
+            switch (subType) {                
+                case "Trending":
+                    sort = [{ "activity_count.last_x_days.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    break; 
+                default:
+                    sort = [{ "activity_count.all_time.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    break;
+            }
+            
+            let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort, _source :learnPathFields});
+              
+            if(result.hits){
+                for(const hit of result.hits){
+                    var data = await this.generateLearnPathFinalResponse(hit._source,currency)
+                    learnpaths.push(data);
+                }
+            }
+            RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            let response = { success: true, message: "list fetched successfully", data:{ list: learnpaths } };
+            
+            return response;
+           
+            
+        } catch (error) {
+            console.log("Error while processing data for popular learnpaths", error);
+            let response = { success: false, message: "failed to fetch", data:{ list:[] } };
+            
+            return response;
+        }
+    }
+
+
+    async generateLearnPathFinalResponse(result, currency = process.env.DEFAULT_CURRENCY) {
+        let currencies = await getCurrencies();
+        let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
+        let data = {
+            id: `LRN_PTH_${result.id}`,
+            title: result.title,
+            slug: result.slug,
+            description: result.description,
+            cover_images: result.images,
+            levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],          
+            pricing: {
+                regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),
+                sale_price: getCurrencyAmount(result.sale_price, currencies, result.currency, currency),
+                display_price: result.display_price,
+                pricing_type: result.pricing_type,
+                currency: currency,
+                offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
+            },
+            ratings: {
+                total_review_count: result.reviews ? result.reviews.length : 0,
+                average_rating: 0,
+                average_rating_actual: 0,
+                rating_distribution: []
+            },           
+            duration: {
+                total_duration: result.total_duration,
+                total_duration_unit: result.total_duration_unit,
+            },
+            course_count: result.courses.length
+        }       
+
+        //TODO this logic is copied from course service
+        //but this aggreation logic should be put in elastic search add added in the reviews_extended object for both course and learn-path.
+        if (result.reviews && result.reviews.length > 0) {
+            let totalRating = 0;
+            let ratings = {};
+            for (let review of result.reviews) {
+                totalRating += review.rating;
+                let rating_round = Math.floor(review.rating);
+                if (ratings[rating_round]) {
+                    ratings[rating_round] += 1;
+                } else {
+                    ratings[rating_round] = 1;
+                }
+            }
+
+            const average_rating = totalRating / result.reviews.length;
+            data.ratings.average_rating = round(average_rating, 0.5);
+            data.ratings.average_rating_actual = average_rating.toFixed(1);
+            let rating_distribution = [];
+
+            //add missing ratings
+            for (let i = 0; i < 5; i++) {
+                if (!ratings[i + 1]) {
+                    ratings[i + 1] = 0;
+                }
+            }
+            Object.keys(ratings)
+                .sort()
+                .forEach(function (v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
+                });
+            data.ratings.rating_distribution = rating_distribution.reverse();
+        }
+
+
+        return data;
     }
 }

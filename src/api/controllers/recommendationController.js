@@ -114,4 +114,20 @@ module.exports = {
         const response = await RecommendationService.getArticleAdvice(req)                     
                 res.status(200).send(response);  
     },
+
+    getRecommendedLearnPaths: async (req, res) => {
+        const { type } = req.query;
+
+        switch (type) {
+           
+            case "learn-paths-to-get-started": 
+                const response = await RecommendationService.getPopularLearnPaths(req);
+                res.status(200).send(response);  
+                break;
+           
+            default:
+                res.status(200).send({});
+                break;
+        }
+    },
 };
