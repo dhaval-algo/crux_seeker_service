@@ -3384,6 +3384,78 @@ const peopleAreAlsoViewing = async (req, callback) => {
     }
 }
 
+
+
+const getUserProfileKeywords = async (userId) => {
+    
+    let skills = null;
+    const skillsKeywords = [];
+    const workExpKeywords = [];
+
+    const topSkills = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'primarySkills' } });
+
+    if (topSkills && topSkills.value && topSkills.value != "{}") {
+        skills = JSON.parse(topSkills.value);
+    }
+    else {
+        const additionalSkills = await models.user_meta.findOne({ where: { userId: userId, metaType: 'primary', key: 'skills' } })
+        if (additionalSkills && additionalSkills.value && additionalSkills.value != "{}") skills = JSON.parse(additionalSkills.value);
+    }
+
+    let workExp = null;
+    const workExperience = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'workExp' } });
+
+    
+
+    if (skills) {
+        for (const key in skills) {
+            skillsKeywords.push(key);
+            skillsKeywords.push(...skills[key]);
+        }
+    }
+
+    if (workExperience && workExperience.value && workExperience.value != "[]") {
+        workExp = JSON.parse(workExperience.value);
+        workExp.forEach((workExp) => {
+            if (workExp.jobTitle) {
+                workExpKeywords.push(workExp.jobTitle.label);
+            }
+
+            if (workExp.industry) {
+                workExpKeywords.push(workExp.industry.label);
+            }
+        });
+    }
+
+
+    return {skillsKeywords:skillsKeywords,workExpKeywords:workExpKeywords};
+
+}
+
+const getKeywordsFromUsersGoal = async (userId) => {
+    const highPriorityKeywords = [];
+    const lowPriorityKeywords = [];
+    const goals = await models.goal.findAll({ where: { userId: userId } });
+    for(const goal of goals){
+
+        highPriorityKeywords.push(goal.currentRole);
+        highPriorityKeywords.push(goal.preferredRole);
+        highPriorityKeywords.push(goal.industryChoice);
+
+        if(goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
+        if(goal.specialization) lowPriorityKeywords.push(goal.specialization);
+
+      const goalSkills =  await models.skill.findAll({ where: { goalId: goal.id} });
+      goalSkills.forEach((goalSkill)=>highPriorityKeywords.push(goalSkill.name));
+
+    };
+
+    return {highPriorityKeywords:highPriorityKeywords,lowPriorityKeywords:lowPriorityKeywords};
+
+
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -3435,6 +3507,8 @@ module.exports = {
     peopleAreAlsoViewing,
     addCategoryToRecentlyViewed,
     addArticleToRecentlyViewed ,
+    getUserProfileKeywords,
+    getKeywordsFromUsersGoal ,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
