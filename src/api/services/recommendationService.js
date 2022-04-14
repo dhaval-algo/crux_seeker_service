@@ -1362,4 +1362,88 @@ module.exports = class recommendationService {
             console.log("ERROR: ",err)
         }
     }
+
+    async getPopularArticles(req) {
+        const { subType, category, sub_category, topic, section, page = 1, limit = 6 } = req.query;
+        const offset = (page - 1) * limit
+
+        const articles = [];
+        try {
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ]
+                }
+            }
+            if (category) {
+                esQuery.bool.filter.push(
+                    {
+                        "term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if (sub_category) {
+                esQuery.bool.filter.push(
+                    {
+                        "term": {
+                            "article_sub_categories.keyword": decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if (topic) {
+                esQuery.bool.filter.push(
+                    {
+                        "term": {
+                            "article_topics.keyword": decodeURIComponent(topic)
+                        }
+                    }
+                );
+            }
+
+            if (section) {
+                esQuery.bool.filter.push(
+                    { "term": { "section_name.keyword": section } }
+                );
+
+            }
+            let sort = null
+
+            switch (subType) {
+                case "Trending":
+                    sort = [{ "activity_count.last_x_days.article_views": "desc" }];
+
+                    break;
+
+                case "Recently-Added":
+                    sort = [{ "published_date": { "order": "desc" } }];
+                    break;
+                default:
+                    sort = [{ "activity_count.all_time.article_views": "desc" }]
+                    break;
+            }
+
+            const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });
+            if (result.hits) {
+                for (const hit of result.hits) {
+                    const data = await this.generateArticleFinalResponse(hit._source);
+                    articles.push(data);
+                }
+
+            }
+
+            return { success: true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+
+
+        } catch (error) {
+            console.log("Error while processing data for popular articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
+
+    }
+
 }

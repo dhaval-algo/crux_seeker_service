@@ -105,6 +105,12 @@ module.exports = {
             }
             break;
 
+            case "popular-articles":{
+                const response = await RecommendationService.getPopularArticles(req);
+                res.status(200).send(response);
+            }
+            break;
+
             default:
                 res.status(200).send({});
                 break;
