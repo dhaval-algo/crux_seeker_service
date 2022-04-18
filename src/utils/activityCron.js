@@ -8,7 +8,10 @@ const learnpathActivity = async () => {
     let activity_types = {}
     let activity_count = []
     const activities =  await models.activity.findAll({
-        attributes: ["id","type"],        
+        attributes: ["id","type"],
+        where:{
+            "type": ["LEARNPATH_VIEW","LEARNPATH_WISHLIST","LEARNPATH_ENQUIRED","LEARNPATH_PURCHASED"]
+        } ,  
         raw:true
     })
     
@@ -192,7 +195,10 @@ const articleActivity = async () => {
     let activity_types = {}
     let activity_count = []
     const activities =  await models.activity.findAll({
-        attributes: ["id","type"],        
+        attributes: ["id","type"],     
+        where:{
+            "type": ["ARTICLE_VIEW","ARTICLE_WISHLIST"]
+        },   
         raw:true
     })
     
@@ -343,7 +349,10 @@ const storeActivity = async () => {
     let activity_types = {}
     let activity_count = []
     const activities =  await models.activity.findAll({
-        attributes: ["id","type"],        
+        attributes: ["id","type"],     
+        where:{
+            "type": ["COURSE_VIEW","COURSE_WISHLIST","COURSE_ENQUIRED","COURSE_PURCHASED"]
+        } ,  
         raw:true
     })
     
