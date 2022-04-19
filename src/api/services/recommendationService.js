@@ -421,8 +421,6 @@ module.exports = class recommendationService {
         try {
             const { user } = req;
             const { limit = 5, page = 1, order = "DESC" } = req.query;
-
-            order = order.toUpperCase();
             const query = {
                 limit: limit,
                 offset: (page - 1) * limit,

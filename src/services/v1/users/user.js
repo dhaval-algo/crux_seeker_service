@@ -3436,22 +3436,23 @@ const getKeywordsFromUsersGoal = async (userId) => {
     const highPriorityKeywords = [];
     const lowPriorityKeywords = [];
     const goals = await models.goal.findAll({ where: { userId: userId } });
-    for(const goal of goals){
+    for (const goal of goals) {
 
-        highPriorityKeywords.push(goal.currentRole);
-        highPriorityKeywords.push(goal.preferredRole);
-        highPriorityKeywords.push(goal.industryChoice);
+        if (goal.currentRole) highPriorityKeywords.push(goal.currentRole);
+        if (goal.preferredRole) highPriorityKeywords.push(goal.preferredRole);
+        if (goal.industryChoice) highPriorityKeywords.push(goal.industryChoice);
 
-        if(goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
-        if(goal.specialization) lowPriorityKeywords.push(goal.specialization);
+        if (goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
+        if (goal.specialization) lowPriorityKeywords.push(goal.specialization);
 
-      const goalSkills =  await models.skill.findAll({ where: { goalId: goal.id} });
-      goalSkills.forEach((goalSkill)=>highPriorityKeywords.push(goalSkill.name));
+        const goalSkills = await models.skill.findAll({ where: { goalId: goal.id } });
+        goalSkills.forEach((goalSkill) => {
+            if (goalSkill.name) highPriorityKeywords.push(goalSkill.name)
+        });
 
     };
 
-    return {highPriorityKeywords:highPriorityKeywords,lowPriorityKeywords:lowPriorityKeywords};
-
+    return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
 
 }
 
