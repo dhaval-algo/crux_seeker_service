@@ -81,7 +81,14 @@ module.exports = {
                 res.status(200).send(response);
             }
             break;
-
+            case "related-articles":             
+                response = await RecommendationService.getRelatedArticle(req)
+                res.status(200).send(response);             
+                break;
+            case "recommendation-for-article":             
+                response = await RecommendationService.getRecommendationForArticle(req) 
+                res.status(200).send(response);             
+                break;
             default:
                 res.status(200).send({});
                 break;

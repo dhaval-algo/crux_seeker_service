@@ -1773,4 +1773,196 @@ module.exports = class recommendationService {
             return { "success": false, message: "failed to fetch", data: { list: [] } }
         }
     }
+
+
+    async getRelatedArticle(req) {
+        try {
+            const articleId = req.query.articleId.toString();
+            const { page = 1, limit = 6 } = req.query;
+            const offset = (page - 1) * limit;
+            let articles = [];
+            let cacheKey = `Recommendation-For-Article-${articleId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                articles = cachedData;
+            } else {
+                //priority 1 category list
+                let priorityList1 = ['article_skills.keyword', 'article_topics.keyword', 'article_sub_categories.keyword'];
+                let priorityList2 = ['author_id', 'partners','section_name','article_job_roles'];
+
+                const relationData = {
+                    index: "article",
+                    id: articleId
+                }
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ],
+                        must_not: {
+                            term: {
+                                "_id": articleId
+                            }
+                        }
+                    }
+                }
+
+                function buildQueryTerms(key, i) {
+                    let termQuery = { "terms": {} };
+                    termQuery.terms[key] = { ...relationData, "path": key };
+                    termQuery.terms.boost = 5 - (i * 0.1);
+                    return termQuery;
+                }
+
+                esQuery.bool.should = [{
+                    bool: {
+                        boost: 1000,
+                        should: priorityList1.map(buildQueryTerms)
+                    }
+                }];
+
+                esQuery.bool.should.push({
+                    bool: {
+                        boost: 10,
+                        should: priorityList2.map(buildQueryTerms)
+                    }
+                })
+                
+                let result = await elasticService.search("article", esQuery, { from: offset, size: limit ,_source: articleFields});
+
+                
+                if (result && result.hits.length > 0) {
+                    for (let hit of result.hits) {
+                        let article = await this.generateArticleFinalResponse(hit._source);
+                        articles.push(article);
+                    }
+                }
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RELATED_ARTICLE || 60 * 15);
+            }
+           
+            const response = { success: true, message: "list fetched successfully", data:{list:articles,mlList:[],show:'logic'} };
+            
+            return response
+        } catch (error) {
+            console.log("Error while processing data for related article", error);
+            const response = { success: false, message: "list fetched successfully", data:{list:[]} };
+            
+            return response
+        }
+    }
+
+
+    async getRecommendationForArticle(req) {
+        const { page = 1, limit = 6 } = req.query;
+        const offset = (page - 1) * limit
+        const articleId = req.query.articleId.toString();
+        let categories = null
+        let section  = null
+        let articles = [];
+        try {
+            let cacheKey = `Recommendation-For-Article-${articleId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            
+            if (cachedData.noCacheData != true) {
+                articles = cachedData;
+            } else {
+
+                //Find out the category and section of the article
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must = [
+                    {
+                    "ids": {
+                        "values": [articleId]
+                    }
+                    }
+                ]
+                
+                let currentArticleData = await elasticService.search("article", esQuery, {_source: ['section_name','category']});
+                
+
+                if (currentArticleData.hits) {
+                    for (const hit of currentArticleData.hits) {
+                        if(hit._source.categories && hit._source.categories.length > 0)
+                        {
+                            categories = hit._source.categories
+                        }
+                        section = hit._source.section_name                   
+                    }
+
+                }
+
+                esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (categories) {
+                    esQuery.bool.filter.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories
+                            }
+                        }
+                    );
+                }
+                else
+                {
+                    esQuery.bool.filter.push(
+                        { "term": { "section_name.keyword": section } }
+                    );
+                }
+
+                let exclude_articles = [ articleId]
+                let related_article_req = {query:articleId}
+                let related_article = await this.getRelatedArticle(related_article_req)
+                if(related_article.data && related_article.data.list && related_article.data.list.length > 0)
+                {
+                    related_article.data.list.map(article => exclude_articles.push(article.id))
+                    
+                }
+                
+                esQuery.bool.must_not = [
+                    {
+                    "ids": {
+                        "values": exclude_articles
+                    }
+                    }
+                ]
+
+            
+                let  sort = [{ "activity_count.all_time.article_views": "desc" }]
+                    
+
+                const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateArticleFinalResponse(hit._source);
+                        articles.push(data);
+                    }
+
+                }
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RECOMMENDATION_FOR_ARTICLE || 60 * 15);
+            }
+
+            return { success: true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+
+
+        } catch (error) {
+            console.log("Error while processing data for popular articles", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
+
+    }
+
+    
 }
