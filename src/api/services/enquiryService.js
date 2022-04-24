@@ -75,7 +75,7 @@ const sendEnquiryEmail = async (email, data) =>{
 
     emailPayload = {
         fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
-        toemail:  emprocess.env.TO_EMAIL_ENQUIRY_ADMINS,
+        toemail:  process.env.TO_EMAIL_ENQUIRY_ADMINS,
         email_type: "enquiry_email_to_admins",
         email_data: data 
     }
