@@ -143,6 +143,27 @@ module.exports = {
          
     },
 
+    enquiryEmailToAdmins: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/enquiryEmailToAdmins.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({
+            courseImgUrl:messagData.courseImgUrl,
+            course_name:messagData.course_name,
+            provider:messagData.provider,
+            full_name:messagData.full_name,
+            email:messagData.email,
+            phone:messagData.phone,
+            city:messagData.city
+        });
+         
+        let templateData = {subject:'New Enquiry',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
     resetEmailToOld: function(messagData){
         let templatesPath = path.join(__dirname, './templates/reset-email-to-old.hbs');
 

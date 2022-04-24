@@ -1,0 +1,47 @@
+{{> emailHeader }}
+<div class="main " style="margin:  auto;font-size: 10px; max-width: 750px;color: #2b2b2b; width:100%;padding-top: 30px; ">
+        <div class="template-card" style="max-width: 367px; width:100%; margin: auto; ">
+            <div style="padding: 0 6px;">               
+                <p style="margin: 24px 0;">Dear Admin,</p>
+                <p style="margin-bottom: 24px;">There is a new enquiry.</p>
+            </div>
+            
+                <div class="courses-list" style="padding: 0 6px;display: flex; background:#f8f8f8">
+                    <div class="image-block" style="width:200px;height:100px;background:#f8f8f8"> <img src="{{ courseImgUrl }}" style="width:200px;height:100px;border-radius: 4px;"></div>
+                    <div class="content-block" style="width:60%;background:#f8f8f8;padding-left:15px;">
+                        <h3 style="font-size: 12px;"> {{ course_name }}</h3>
+                        <p style="color:#2b2b2b;font-size:12px;letter-spacing:0.3px;font-weight:500;margin-bottom:5px"> {{ provider }} </p>
+                    </div>
+            </div>            
+            <div style="margin-bottom: 25px; padding: 0 6px;padding-top: 25px;background:#f8f8f8">
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;font-weight: 500;color: #2b2b2b;display: inline-block;width: 49%;"> User Details:</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Name: {{ full_name }}</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Email: {{ email }}</div>
+                </div>
+                {{#if phone}}
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Phone: {{ phone }}</div>
+                </div>
+                {{/if}}
+                {{#if city}}
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> City: {{ city }}</div>
+                </div>
+                {{/if}}
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> &nbsp;</div>
+                </div>
+            </div>
+            <div style="padding: 0 6px;">                
+                <p>
+                    Thank you, <br>Careervira Team
+                </p>
+            </div>
+        </div>
+    </div>
+{{> emailFooter }}
