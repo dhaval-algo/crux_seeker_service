@@ -1,5 +1,6 @@
 const Sentry = require("@sentry/node");
 const Tracing = require("@sentry/tracing");
+const { v4: uuidv4 } = require('uuid');
 
 const initialize = (app) => {
 
@@ -32,6 +33,11 @@ const initialize = (app) => {
           err = err.filter(e =>{ return e != undefined } )
             //for printing error in console, only when environment is set to 'development' and 'staging' 
           const logInDevStag = (process.env.SENTRY_ENVIRONMENT == 'development' || process.env.SENTRY_ENVIRONMENT == 'staging')      
+          let transaction = Sentry.getCurrentHub().getScope().getTransaction()
+    
+          // finish the backend (sentry) transaction  if exits
+          if(transaction)
+            transaction.finish()        
       
           err.forEach(data => {
             //if error is simple message (string)
@@ -54,6 +60,44 @@ const initialize = (app) => {
           
         }
       }
+
+    app.all("*", (req, res, next) => {
+
+        //start backend transaction (for every request)
+    var transaction = Sentry.startTransaction({
+        op: req.url,
+        name: req.url +" ( backend )"
+    });
+
+    Sentry.configureScope(scope => {
+        scope.setSpan(transaction);
+    });
+
+    //get the headers from frontend
+    let traceId = req.header('CV-Trace-ID'),
+    parentId = req.header("CV-Span-ID")
+
+    if (traceId) {
+        Sentry.configureScope(scope => {
+            // assign traceId
+            scope.setTag("traceId", traceId);
+        });
+    }
+    if (parentId) {
+        Sentry.configureScope(scope => {
+            // assign parentId (spanId of previous span) from previous trasaction
+            scope.setTag("parentId", parentId);
+        });
+    }
+        //generate random string to use as spanId
+    const spanId = uuidv4()
+
+    Sentry.configureScope(scope => {
+        scope.setTag("spanId", spanId);
+    });
+
+    next();
+    })
 }
 
 module.exports = {
