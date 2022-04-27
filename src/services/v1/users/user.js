@@ -361,9 +361,10 @@ const signUp = async (req, res) => {
         if(verificationRes.code != DEFAULT_CODES.SUSPENDED_USER.code && provider != LOGIN_TYPES.LOCAL)
         {
             const tokenRes = await getLoginToken({provider: LOGIN_TYPES.LOCAL, ...verificationRes.data.user, audience: audience || ""});
-            tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
-            tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message           
-            tokenRes.data['user'] = verificationRes.data.user
+            tokenRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code
+            tokenRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message  
+            delete verificationRes.data.user.password         
+           // tokenRes.data['user'] = verificationRes.data.user
             return res.status(200).json(verificationRes)
         }
         verificationRes.success = false
