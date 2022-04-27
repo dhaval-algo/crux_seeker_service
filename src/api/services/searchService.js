@@ -5,67 +5,77 @@ const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 
 const entityQueryMapping = {
-    'learn-content': {label: 'Course', status: 'published', fields: ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'], source_fields: ['title']},
-    'learn-path': {label: 'Learn Path', status: 'approved', fields: ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'], source_fields: ['title']},
-    'provider': {label: 'Institute', status: 'approved', fields: ['name^2','programs'], source_fields: ['name','slug']},
-    'article': {label: 'Article', status: 'published', fields: ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
+    'learn-content': { label: 'Course', status: 'published', prefix_field: "title", fuzziness_fields: [ "title^8","skills^7","topics^6","what_will_learn^5","categories^5","sub_categories^4","provider_name^3","level^2","medium"], fields: ["title^10", "skills^9", "topics^8", "what_will_learn^7", "categories^6", "sub_categories^5", "provider_name^4","description^3","level^2","medium"], source_fields: ['title']},
+    'learn-path': { label: 'Learn Path', status: 'approved', prefix_field: "title", fuzziness_fields: ["title^13.5","courses.title^12","topics^10","categories^8","sub_categories^6"], fields: ["title^13.5","courses.title^12","topics^10","categories^8","sub_categories^6","description^4"], source_fields: ['title'] },
+    'provider': { label: 'Institute', status: 'approved', prefix_field: "name", fuzziness_fields: ["name^7"], fields: ['name^7'], source_fields: ['name', 'slug'] },
+    'article': { label: 'Article', status: 'published', prefix_field: "title", fuzziness_fields: ["title^14","article_skills^13","article_topics^12","categories^10","article_sub_categories^8"], fields: ["title^14.5","article_skills^13","article_topics^12","categories^10","article_sub_categories^8","content^4"], source_fields: ['title', 'slug', 'section_name', 'section_slug'] }
 };
 
 const MAX_PER_ENTITY = 20;
 const MAX_RESULT = 30;
 
 const generateEntityQuery = (entity, keyword) => {
-    let entityConfig = entityQueryMapping[entity];
-    let entity_query = {
-        "bool": {
-          "must": [
-            {
-              "term": {
-                "status.keyword": entityConfig.status
-              }
-            },
-            /* {
-              "multi_match": {
-                "query": `${decodeURIComponent(keyword)}`,
-                "fields": entityConfig.fields
-              }
-            }, */
-           {
-                "bool": {
-                "should": [
-                  {
-                      "query_string" : {
-                          "query" : `*${decodeURIComponent(keyword).replace("+","//+").trim()}*`,
-                          "fields" : entityConfig.fields,
-                          "analyze_wildcard" : true,
-                          "allow_leading_wildcard": true
-                      }
-                  },
-                  {
-                      "multi_match": {
-                              "fields": entityConfig.fields,
-                              "query": decodeURIComponent(keyword).trim(),
-                              "fuzziness": "AUTO",
-                              "prefix_length": 0
-                          
-                      }
-                  }           
-                ]
-              }
-            },
-            {
-              "term": {
-                "_index": entity
-              }
-            }
-          ]
+    const entityConfig = entityQueryMapping[entity];
+    const entity_query = {
+        bool: {
+            must: [
+                {
+                    term: {
+                        "status.keyword": entityConfig.status
+                    }
+                },
+                {
+                    term: {
+                        _index: entity
+                    }
+                }
+                
+            ],
+            should: [
+                {
+                    multi_match: {
+                        query: decodeURIComponent(keyword).trim(),
+                        type: "bool_prefix",
+                        boost: 50,
+                        fields: [
+                            entityConfig.prefix_field
+                        ]
+                    }
+                },
+                {
+                    match_phrase_prefix: {
+                        [entityConfig.prefix_field]: {
+                            query: decodeURIComponent(keyword).trim(),
+                            boost: 30
+                        }
+                    }
+                },
+                {
+                    multi_match: {
+                        fields: entityConfig.fields,
+                        query: decodeURIComponent(keyword).trim(),
+                        boost: 35
+                    }
+                },
+                {
+                    multi_match: {
+                        fields: entityConfig.fuzziness_fields,
+                        query: decodeURIComponent(keyword).trim(),
+                        fuzziness: "AUTO",
+                        prefix_length: 0,
+                        boost: 5
+                    }
+                }
+            ]
+
         }
-      };
-      return entity_query;
+    };
+    return entity_query;
 };
 
 module.exports = class searchService {
     async getSearchResult(req, callback){
+        try{
         const keyword = decodeURIComponent(req.params.keyword);
         const entity = req.query.entity;
         const queryEntities = [];
@@ -124,81 +134,12 @@ module.exports = class searchService {
             callback(null, {status: 'success', message: 'No records found!', data: data});
         } 
         
-        
-        /* let allHits = [];
-        let query = null;
-        let data = {
-            result: [],
-            totalCount: 0,
-            viewAll: false
-        };
+     
 
-        if(entity){
-            let entityConfig = entityQueryMapping[entity];
-            query = {
-                "query_string" : {
-                    "query" : `*${decodeURIComponent(keyword)}*`,
-                    "fields" : entityConfig.fields,
-                    "analyze_wildcard" : true,
-                    "allow_leading_wildcard": true
-                }
-            };
-            const result = await elasticService.search(entity, query);
-            if(result.total && result.total.value > 0){ 
-                allHits = [...allHits, ...result.hits];
-            }
-        }else{
-            for (const [key, value] of Object.entries(entityQueryMapping)) {
-                let entityConfig = entityQueryMapping[key];
-                query = {
-                    "bool": {
-                        "must": [
-                            {
-                                "term": {
-                                  "status.keyword": entityConfig.status
-                                }
-                              },
-                          {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(keyword)}*`,
-                        "fields" : entityConfig.fields,
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
-                }
-            ]
-        }
-                };
-                const result = await elasticService.search(key, query);
-                if(result.total && result.total.value > 0){ 
-                    allHits = [...allHits, ...result.hits];
-                }
-            }
-        }
-        if(allHits.length > 0){            
-
-            for(const hit of allHits){
-                let data_source = hit._index;
-                
-                let entityConfig = entityQueryMapping[data_source];
-                if(hit._source.status !== entityConfig.status){
-                    console.log("skipping <> ", hit._source.status);
-                    //continue;
-                }
-                let cardData = await this.getCardData(data_source, hit._source);
-                
-                if(data.result.length < MAX_PER_ENTITY){
-                    data.result.push(cardData);
-                }                    
-                data.totalCount++;
-                if(data.totalCount > MAX_PER_ENTITY){
-                    data.viewAll = true;
-                }  
-            }            
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
-        }else{
-            callback(null, {status: 'success', message: 'No records found!', data: data});
-        }  */
+    }catch(error){
+        callback(null, {status: 'success', message: 'No records found!', data:{}});
+    }
+         
     }
 
 
