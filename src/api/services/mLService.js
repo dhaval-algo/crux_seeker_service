@@ -25,7 +25,7 @@ const getSimilarCoursesDataML = async (courseId) => {
         }
 
         const count = process.env.ML_SIMILAR_COURSE_COUNT || 20;
-        const cacheName = `ml-similar-course-${count}`;
+        const cacheName = `ml-similar-course-${courseId}-${count}`;
         const cacheData = await RedisConnection.getValuesSync(cacheName);
         if (!cacheData.noCacheData) {
 

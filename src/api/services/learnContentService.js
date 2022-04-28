@@ -3,7 +3,6 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const userService = require("../../services/v1/users/user");
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
 const models = require("../../../models");
 const { 
@@ -80,9 +79,10 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
                         }
                     }                    
                 }
+                RedisConnection.set(cacheName, entities);
             }
         }
-        RedisConnection.set(cacheName, entities);
+        
        // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
     }
     if(skipCache !=true) {
@@ -340,6 +340,9 @@ module.exports = class learnContentService {
             for(let i=0; i<slugs.length; i++){
                 query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                if(!slug_data){
+                    return callback(null, {status: 404, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+                }
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
                 var slug_description = slug_data.description;
@@ -1647,9 +1650,10 @@ module.exports = class learnContentService {
                             }
                         }                    
                     }
+                    RedisConnection.set(cacheName, learn_types_images);
                 }
             }           
-            RedisConnection.set(cacheName, learn_types_images);
+            
            // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
         } 
 
