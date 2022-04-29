@@ -104,7 +104,10 @@ module.exports = class categoryService {
             if(useCache !=true)
             {
                 let data = await getCategoryTree(parsed);
-                RedisConnection.set(cacheName, data);
+                if(data)
+                {
+                    RedisConnection.set(cacheName, data);
+                }
                 return data;
             }            
         }catch(err){
