@@ -16,6 +16,7 @@ const footerController = require('../../../controllers/footerController');
 
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
+const enquiryController = require("../../../controllers/enquiryController")
 const recommendationMiddleware = require("../../../../services/v1/middleware/recommendation");
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
@@ -72,5 +73,9 @@ router.post('/contact-us',footerController.sendContactEmail);
 router.post('/feedback',footerController.sendFeedbackEmail)
 
 router.post('/activity-course-viewed',injectTokenPayload, learnContentController.addActivity);
+// course enquiry;
+router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
+//learnpath enquiry
+router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
 
 module.exports = router;
