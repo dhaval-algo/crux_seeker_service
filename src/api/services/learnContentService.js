@@ -241,7 +241,7 @@ module.exports = class learnContentService {
         try{
 
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = "ratings:desc";
+        let defaultSort = "activity_count.last_x_days.course_views:desc";
         let useCache = false;
         let cacheName = "";
         if(
