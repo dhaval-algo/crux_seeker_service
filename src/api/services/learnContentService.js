@@ -829,8 +829,34 @@ module.exports = class learnContentService {
         {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
-                const data = await this.generateSingleViewData(course, false, req.query.currency);
+                let data = await this.generateSingleViewData(course, false, req.query.currency);
                 courseId = data.id
+
+                // if enquiry is 'On', then check course end date,
+                if(data.enquiry){
+                    const today = new Date()
+                    data.enquiry = false
+                    let { course_details :{course_end_date}, additional_batches } = data
+
+                    // if batch (any) end date is not passed then keep enquiry 'On'
+                    if( additional_batches.length > 0){
+                        for(let batch of additional_batches){
+
+                            if(today < new Date(batch.enrollment_end_date)){
+                                data.enquiry = true;
+                                break;
+                            }
+                        }
+                    }
+                    // if course end date is not passed then keep enquiry 'On'
+                    if(course_end_date != null && data.enquiry != true){
+                        if( today < new Date(course_end_date) )
+                            data.enquiry = true;
+                    }
+
+
+                }
+
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
@@ -1517,6 +1543,8 @@ module.exports = class learnContentService {
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
+        if(result.enquiry)
+            data.enquiry = result.enquiry
 
         let listData = {
             title: data.title,
