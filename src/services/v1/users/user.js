@@ -358,6 +358,14 @@ const signUp = async (req, res) => {
 
     const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
     if (verificationRes.success || (verificationRes.code ==DEFAULT_CODES.SUSPENDED_USER.code)) {
+        if(verificationRes.code != DEFAULT_CODES.SUSPENDED_USER.code && provider != LOGIN_TYPES.LOCAL)
+        {
+            const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data, audience: req.headers.origin, provider: providerRes.data.provider });
+            tokenRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code
+            tokenRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message  
+            delete verificationRes.data.user.password
+            return res.status(200).json(tokenRes)
+        }
         verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
         verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;

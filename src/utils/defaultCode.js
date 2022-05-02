@@ -99,6 +99,10 @@ const DEFAULT_CODES =
         code:"ENQUIRY_PROFILE_SUCCESS",
         message:"Successfully updated profile"
     },
+    LINKEDIN_EMAIL_ERROR: {
+        code: "LINKEDIN_EMAIL_ERROR",
+        message: 'Email must be linked to your Linkedin profile.'
+    },
     ENQUIRY_VALIDATION_MESSAGES: {
         DOB_REQUIRED: "This is a required field",
         DOB_FORMAT: "Please enter the right format",

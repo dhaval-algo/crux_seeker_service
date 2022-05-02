@@ -107,8 +107,8 @@ const verifyLinkedInToken = async (resData) => {
             }
             if (!userEmailRes.data.elements.length) {
                 return resolve({
-                    code: DEFAULT_CODES.SYSTEM_ERROR.code,
-                    message: DEFAULT_CODES.SYSTEM_ERROR.message,
+                    code: DEFAULT_CODES.LINKEDIN_EMAIL_ERROR.code,
+                    message: DEFAULT_CODES.LINKEDIN_EMAIL_ERROR.message,
                     success: false,
                     data: { provider: resData.provider }
                 })
