@@ -544,7 +544,12 @@ const createToken = async (userObj, tokenType) => {
         }
         const payload = {
             user: {
-                email: userObj.email || "",
+                /**
+                 * This information is disabled because of Information Disclosure vulnerability. 
+                 * To sign a JWT token only userId is enough, other information is included to share information.
+                 * Ref : https://auth0.com/learn/json-web-tokens/
+                 */
+                // email: userObj.email || "",
                 userId: userObj.userId
             }
         }
@@ -671,13 +676,18 @@ const getLoginToken = async (userObj) => {
         }
         const payload = {
             user: {
-                email: userObj.email || "",
-                name:  userObj.name || userObj.firstName || "",
-                userId: userObj.userId,
-                provider: userObj.provider || "",
-                userType: userObj.userType,
-                isVerified: userObj.isVerified || userObj.verified || false,
-                profilePicture: userObj.profilePicture
+                /**
+                 * This information is disabled because of Information Disclosure vulnerability. 
+                 * To sign a JWT token only userId is enough, other information is included to share information.
+                 * Ref : https://auth0.com/learn/json-web-tokens/
+                 */
+                // email: userObj.email || "",
+                // name:  userObj.name || userObj.firstName || "",
+                userId: userObj.userId
+                // provider: userObj.provider || "",
+                // userType: userObj.userType,
+                // isVerified: userObj.isVerified || userObj.verified || false,
+                // profilePicture: userObj.profilePicture
             }
         }
         const token = signToken(payload, signOptions);
