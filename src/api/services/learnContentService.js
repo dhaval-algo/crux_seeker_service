@@ -241,7 +241,7 @@ module.exports = class learnContentService {
         try{
 
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = "activity_count.last_x_days.course_views:desc";
+        let defaultSort = ["activity_count.last_x_days.course_views:desc","ratings:desc"]
         let useCache = false;
         let cacheName = "";
         if(
@@ -271,7 +271,7 @@ module.exports = class learnContentService {
                 cacheName = "listing-search_"+apiCurrency;                
             }
 
-            cacheName += `_${defaultSort}`;
+            cacheName += `_${defaultSort[0]+defaultSort[1]}`;
 
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -308,15 +308,17 @@ module.exports = class learnContentService {
         }
 
         if(req.query['sort']){
-            
+            queryPayload.sort = []
             const keywordFields = ['title'];
             let sort = req.query['sort'];
-            let splitSort = sort.split(":");
-            if(keywordFields.includes(splitSort[0])){
-                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
-            }
-            queryPayload.sort = [sort];
+            for(let field of sort){
             
+                let splitSort = field.split(":");
+                if(keywordFields.includes(splitSort[0])){
+                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                }
+            queryPayload.sort.push(field)
+        }
         }
 
         if(req.query['courseIds']){
