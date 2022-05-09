@@ -1,7 +1,7 @@
 const  express = require("express");
 const forms = require("../../../services/v1/forms/forms");
 const injectTokenPayload = require("../../../services/v1/middleware/injectTokenPayload");
-const rateLimiter = require('../../../services/v1/middleware/rateLimiter')
+const {rateLimiter} = require('../../../services/v1/middleware/rateLimiter')
 
 const router = express.Router()
 

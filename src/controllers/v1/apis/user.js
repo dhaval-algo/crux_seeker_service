@@ -2,7 +2,7 @@ const express = require('express');
 const authenticateJWT = require('../../../services/v1/middleware/authenticate');
 const authenticateAdminJWT = require('../../../services/v1/middleware/authenticateAdmin');
 const injectTokenPayload = require('../../../services/v1/middleware/injectTokenPayload');
-const rateLimiter = require('../../../services/v1/middleware/rateLimiter')
+const { rateLimiter, forgotPasswordLimiter } = require('../../../services/v1/middleware/rateLimiter')
 
 const { createSiteMap } = require('../../../services/v1/sitemap');
 const userService = require('../../../services/v1/users/user');
@@ -15,7 +15,7 @@ router.post('/social-signin', userService.socialSignIn);
 router.post('/sign-up',rateLimiter, injectTokenPayload, userService.signUp);
 router.post('/resend-verification-link',authenticateJWT, userService.resendVerificationLink);
 router.post('/verify-account', userService.verifyAccount);
-router.post('/forgot-password', rateLimiter, userService.forgotPassword);
+router.post('/forgot-password', forgotPasswordLimiter, userService.forgotPassword);
 router.post('/reset-password', rateLimiter, userService.resetPassword);
 router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
 router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList);
