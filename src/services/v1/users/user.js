@@ -358,6 +358,14 @@ const signUp = async (req, res) => {
 
     const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
     if (verificationRes.success || (verificationRes.code ==DEFAULT_CODES.SUSPENDED_USER.code)) {
+        if(verificationRes.code != DEFAULT_CODES.SUSPENDED_USER.code && provider != LOGIN_TYPES.LOCAL)
+        {
+            const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data, audience: req.headers.origin, provider: providerRes.data.provider });
+            tokenRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code
+            tokenRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message  
+            delete verificationRes.data.user.password
+            return res.status(200).json(tokenRes)
+        }
         verificationRes.success = false
         verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
         verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
@@ -1200,6 +1208,264 @@ const addCourseToWishList = async (req, res) => {
 
     } catch (error) {
       
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const getGoals = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        if(!user){
+            return res.status(200).json({
+                success: false,
+                message: "invalid user"
+            })
+        }
+        
+        let goalList = [];
+        const goalObj = await models.goal.findAll({where : {
+            userId: userId
+        }
+        })
+        /**
+         * Life Stage Options : [career_change, new_career, upskill]
+         */
+        for(let goal of goalObj){
+            let obj = {};
+            obj["id"] = goal.id
+            obj["lifeStage"] = goal.lifeStage
+            if(goal.lifeStage == "career_change"){
+                obj["currentRole"] = goal.currentRole
+                obj["preferredRole"] = goal.preferredRole
+                obj["industryChoice"] = goal.industryChoice
+            }else if(goal.lifeStage == "new_career"){
+                obj["industryChoice"] = goal.industryChoice
+                obj["preferredRole"] = goal.preferredRole
+            }else{
+                obj["currentRole"] = goal.currentRole
+                const skills = await models.skill.findAll({ where:{
+                    goalId: goal.id
+                }
+                });
+                let skillList = []
+                for(let skill of skills){
+                    skillList.push(skill.name)
+                }
+                obj["preferredSkills"] = skillList
+            }
+            obj["highestDegree"] = goal.highestDegree
+            obj["specialization"] = goal.specialization
+            obj["workExperience"] = goal.workExperience
+            goalList.push(obj);
+        }
+
+        return res.status(200).json({
+            success: true,
+            result: goalList
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const removeGoal = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { goalId } = req.body
+        if(!user){
+            return res.status(200).json({
+                success: false,
+                message: "invalid user"
+            })
+        }
+        if (!goalId) {
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+        
+        const goalObj = await models.goal.findOne({ where: {id: goalId, userId: userId}})
+        if(goalObj){
+            await models.skill.destroy({where: {goalId: goalId}})
+            await models.goal.destroy({where:{id: goalId}})
+        }else{
+            return res.status(200).json({
+                success: false,
+                message: "Invalid Request"
+            })
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Goal is Removed"
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const addGoals = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree="", specialization="", workExperience=0} = req.body
+        if(!user){
+            return res.status(200).json({
+                success: false,
+                message: "invalid user"
+            })
+        }
+        if (!lifeStage) {
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+        /**
+         * Life Stage Options : [career_change, new_career, upskill]
+         */
+        if(lifeStage != 'career_change' && lifeStage != 'new_career' && lifeStage != 'upskill'){
+            return res.status(200).json({
+                success: false,
+                message: "Please choose valid options."
+            })
+        }
+        let preferredSkillList = [];
+        if(preferredSkills){
+            preferredSkillList = preferredSkills;
+        }
+
+        const goalObj = await models.goal.create(
+            {
+                userId:userId, 
+                lifeStage:lifeStage, 
+                currentRole: currentRole, 
+                preferredRole: preferredRole, 
+                industryChoice: industryChoice,
+                highestDegree: highestDegree, 
+                specialization: specialization, 
+                workExperience: workExperience
+            }
+        )
+        
+        if(preferredSkillList.length > 0){
+            for(let name of preferredSkillList){
+                await models.skill.create({goalId: goalObj.id, name:name});
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Data is successfully saved."
+        })
+        
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const editGoal = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const { goalId, lifeStage, currentRole = "", preferredRole = "", industryChoice = "",preferredSkills=[], highestDegree="", specialization="", workExperience=0} = req.body
+        if(!user){
+            return res.status(200).json({
+                success: false,
+                message: "invalid user"
+            })
+        }
+        if (!goalId || !lifeStage) {
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+        /**
+         * Life Stage Options : [career_change, new_career, upskill]
+         */
+        if(lifeStage != 'career_change' && lifeStage != 'new_career' && lifeStage != 'upskill'){
+            return res.status(200).json({
+                success: false,
+                message: "Please choose valid options."
+            })
+        }
+        let preferredSkillList = [];
+        if(preferredSkills){
+            preferredSkillList = preferredSkills;
+        }
+
+        const goalObj = await models.goal.findOne({where:{userId:userId, id:goalId}})
+        let newgoalObj
+        if(goalObj){
+            newgoalObj = await models.goal.update({
+                lifeStage:lifeStage, 
+                currentRole: currentRole, 
+                preferredRole: preferredRole, 
+                industryChoice: industryChoice,
+                highestDegree: highestDegree, 
+                specialization: specialization, 
+                workExperience: workExperience
+            }, {
+                where:{
+                    userId:userId,
+                    id: goalId
+                }
+            })
+            await models.skill.destroy({where:{goalId: goalId}})
+            if(preferredSkillList.length > 0){
+                for(let name of preferredSkillList){
+                    await models.skill.create({goalId: goalId, name:name});
+                }
+            }
+        }else{
+            newgoalObj = await models.goal.create(
+                {
+                    userId:userId, 
+                    lifeStage:lifeStage, 
+                    currentRole: currentRole, 
+                    preferredRole: preferredRole, 
+                    industryChoice: industryChoice,
+                    highestDegree: highestDegree, 
+                    specialization: specialization, 
+                    workExperience: workExperience
+                }
+            )
+            
+            if(preferredSkillList.length > 0){
+                for(let name of preferredSkillList){
+                    await models.skill.create({goalId: newgoalObj.id, name:name});
+                }
+            }
+        }
+        
+        return res.status(200).json({
+            success: true,
+            message: "Data is successfully edited",
+            data: newgoalObj
+        })
+        
+    } catch (error) {
         console.log(error)
         return res.status(500).json({
             success: false,
@@ -2710,7 +2976,7 @@ const getUserPendingActions = async (req, res) => {
 
         const fields = {
             education: {
-                weightage: 15,
+                weightage: 10,
             },
             profilePicture: {
                 weightage: 10,
@@ -2734,7 +3000,7 @@ const getUserPendingActions = async (req, res) => {
                 weightage: 20,
             },
             workExp: {
-                weightage: 15,
+                weightage: 10,
             }
             // phone: {
             //     weightage: 5,
@@ -2850,6 +3116,21 @@ const getUserPendingActions = async (req, res) => {
             }
         }
         
+        /**
+         * Adding profile progress for profile Actions : 10%
+        */
+        const goalObj = await models.goal.findAll({
+            where:{
+                userId: userId
+            }
+        })
+
+        if(!goalObj.length){
+            response.pendingProfileActions.push('goal') 
+        }else{
+            profileProgress += 10
+        }
+
         response.profileProgress=profileProgress
         res.send({ message: "success", data: response })
     } catch (error) {
@@ -3063,6 +3344,10 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
+    addGoals,
+    getGoals,
+    removeGoal,
+    editGoal,
     addLearnPathToWishList,
     addCourseToRecentlyViewed,
     getRecentlyViewedCourses,
