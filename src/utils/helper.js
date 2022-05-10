@@ -674,6 +674,15 @@ const getLoginToken = async (userObj) => {
             expiresIn: parseInt(defaults.getValue('tokenExpiry'))
            // expiresIn: 100
         }
+        const response_obj = {
+            email: userObj.email || "",
+            name:  userObj.name || userObj.firstName || "",
+            userId: userObj.userId,
+            provider: userObj.provider || "",
+            userType: userObj.userType,
+            isVerified: userObj.isVerified || userObj.verified || false,
+            profilePicture: userObj.profilePicture
+        }
         const payload = {
             user: {
                 /**
@@ -715,7 +724,7 @@ const getLoginToken = async (userObj) => {
             success: true,
             data: {
                 x_token: token,
-                user:payload.user
+                user:response_obj
             }
         }
 
