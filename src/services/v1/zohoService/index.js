@@ -203,7 +203,7 @@ const prepareLeadData = (enquiry_id) => {
             const learnContent = await elasticService.search('learn-content', query)
 
             if( learnContent.hits && learnContent.hits.length > 0 ){
-                leadObj.Lead_Source =  process.env.FRONTEND_URL+ "/course/" + learnContent.hits[0]._source.slug
+                leadObj.Lead_Source =  process.env.FRONTEND_URL+ "course/" + learnContent.hits[0]._source.slug
                 leadObj.Course = leadObj.Lead_Source
             }
 
@@ -332,7 +332,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             const learnPath = await elasticService.search('learn-path', query)
                 
             if( learnPath.hits && learnPath.hits.length > 0 )
-                leadObj.Lead_Source =  process.env.FRONTEND_URL+ "/learnpath/" + learnPath.hits[0]._source.slug
+                leadObj.Lead_Source =  process.env.FRONTEND_URL+ "learnpath/" + learnPath.hits[0]._source.slug
             
             /* code for fetching profile data
             if(enquiry.userId != undefined){
