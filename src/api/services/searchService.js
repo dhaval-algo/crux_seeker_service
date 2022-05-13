@@ -245,7 +245,35 @@ module.exports = class searchService {
 
         return data;
     }
-    
 
 
+    async getSearchKeyword(req, callback){
+        const word = decodeURIComponent(req.params.word);
+        let  suggest = {
+            "keyword_suggest": {
+              "prefix": word,        
+              "completion": {         
+                  "field": "word",
+                  "size": MAX_PER_ENTITY  ,
+                  "skip_duplicates" :true,
+                  "fuzzy": {
+                      "fuzziness": "auto"
+                    }
+              }
+            }
+        }
+        const result = await elasticService.search("search_keyword_suggestion", null, {},null,suggest);
+        let data = []
+        if(result && result.keyword_suggest.length > 0){            
+            for(const keyword_suggest of result.keyword_suggest){
+                for(const option of keyword_suggest.options){
+                    data.push(option.text);  
+                }
+            }
+
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
+        }else{
+            callback(null, {status: 'success', message: 'No records found!', data: data});
+        }
+    }
 }

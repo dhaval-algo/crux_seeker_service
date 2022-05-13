@@ -29,7 +29,7 @@ const elasticClient = () => {
 
 module.exports = {
 
-  search: async (index, query, payload={}, fields = null) => {
+  search: async (index, query, payload={}, fields = null,suggest = null) => {
     if(index === "learn-content") index += LEARN_CONTENT_VERSION;
     const client = elasticClient();
     let finalQuery = {
@@ -38,6 +38,16 @@ module.exports = {
         query: query
       }
     };
+
+    if(suggest)
+    {
+      finalQuery = {
+        index: index,
+        body: {
+          suggest: suggest
+        }
+      };
+    }
 
     if(fields) {
       finalQuery.body._source = fields;
@@ -78,7 +88,12 @@ module.exports = {
     const result = await client.search(finalQuery);
     if(result && result.body){
         //return result.body.hits.hits;
-        return result.body.hits;
+        if(suggest)
+        {
+          return result.body.suggest;
+        }else{
+          return result.body.hits;
+        }
     }else{
         return [];
     } 
