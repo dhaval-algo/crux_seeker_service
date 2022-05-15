@@ -510,7 +510,10 @@ module.exports = class learnContentService {
 
             switch(filter.filter_type){
                 case "Checkboxes":
-                    aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                    if(filter.elastic_data_type == 'boolean')
+                        aggs_object.aggs['filtered'] = { terms: { field: filter.elastic_attribute_name }}
+                    else
+                        aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
                     break;
                 case "RangeOptions":
                     aggs_object.aggs['filtered'] = {
@@ -605,6 +608,9 @@ module.exports = class learnContentService {
                 
                         if(filter.elastic_attribute_name == "learn_type")
                         {   option.image  = learn_types_images[item.key] }
+
+                        if(filter.elastic_attribute_name == "job_assistance")
+                            item.key == 1 ? option.label = "Yes" : option.label = "No"
 
                         return option;
                     });
