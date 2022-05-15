@@ -39,6 +39,14 @@ module.exports = {
                 response = await RecommendationService.peopleAreAlsoViewing(req);
                 res.status(200).send(response);
                 break;
+            case "enquiry-based-recommendation": 
+                response = await RecommendationService.enquiryBasedRecommendation(req);
+                res.status(200).send(response);
+                break;
+            case "wishlist-based-recommendation": 
+                response = await RecommendationService.wishlistBasedRecommendation(req);
+                res.status(200).send(response);
+                break;
             default:
                 res.status(200).send({});
                 break;
@@ -89,6 +97,10 @@ module.exports = {
                 response = await RecommendationService.getRecommendationForArticle(req) 
                 res.status(200).send(response);             
                 break;
+            case "recommendation-articles-for-courses":             
+                response = await RecommendationService.getRecommendationArticlesforCourse(req) 
+                res.status(200).send(response);             
+                break;
             default:
                 res.status(200).send({});
                 break;
@@ -113,6 +125,11 @@ module.exports = {
             case "learn-paths-to-get-started": 
                 const response = await RecommendationService.getPopularLearnPaths(req);
                 res.status(200).send(response);  
+                break;
+            case "related-learning-path-for-course": {
+                const response = await RecommendationService.getRelatedLearningPathForCourse(req);
+                res.status(200).send(response);  
+            }
                 break;
            
             default:

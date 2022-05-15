@@ -1446,6 +1446,151 @@ module.exports = class recommendationService {
             return response;
         }
     }
+    
+    async getRelatedLearningPathForCourse(req){      
+        const { page = 1, limit = 5 } = req.query;
+        const offset = (page - 1) * limit
+        const courseId = req.query.courseId.toString();
+        let topics = null
+        let sub_categories = null
+        let categories = null
+        let skills  = null
+        let learnpaths = [];
+        try {
+            let cacheKey = `Related-LearnPaths-For-Course-${courseId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            
+            if (cachedData.noCacheData != true) {
+                learnpaths = cachedData;
+            } else {
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must = [
+                    {
+                    "ids": {
+                        "values": [courseId]
+                    }
+                    }
+                ]
+                
+                let courseData = await elasticService.search("learn-content", esQuery, {_source: ['topics','sub_categories','categories','skills']});
+                
+
+                if (courseData.hits) {
+                    for (const hit of courseData.hits) {
+                        if(hit._source.categories && hit._source.categories.length > 0)
+                        {
+                            categories = hit._source.categories
+                        }
+                        if(hit._source.sub_categories && hit._source.sub_categories.length > 0)
+                        {
+                            sub_categories = hit._source.sub_categories
+                        }
+                        if(hit._source.topics && hit._source.topics.length > 0)
+                        {
+                            topics = hit._source.topics
+                        }
+                        if(hit._source.skills && hit._source.skills.length > 0)
+                        {
+                            skills = hit._source.skills
+                        }                                           
+                    }
+
+                }
+                esQuery = {}
+                esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "approved" } }
+                        ],
+                        "should":[
+                        {
+                            "terms": {
+                                "courses.id.keyword": [courseId],
+                                "boost":2
+                            }
+                        }
+                        ]
+                    }
+                }
+                if (topics) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "topics.keyword": topics,
+                                "boost":5
+                            }
+                        }
+                    );
+                }
+                if (sub_categories) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "sub_categories.keyword": sub_categories,
+                                boost:4
+                            }
+                        }
+                    );
+                }
+                if (categories) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories,
+                                boost:3
+                            }
+                        }
+                    );
+                }
+                if (skills) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "title.keyword": skills,
+                                boost:3
+                            }
+                        }
+                    );
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "description.keyword": skills,
+                                boost:3
+                            }
+                        }
+                    );
+                }
+            
+                let  sort = [{ "activity_count.all_time.learnpath_views": "desc" }]
+                console.log(esQuery)   
+                
+                let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort, _source :learnPathFields});
+
+                if(result.hits){
+                    for(const hit of result.hits){
+                        var data = await this.generateLearnPathFinalResponse(hit._source,currency)
+                        learnpaths.push(data);
+                    }
+                }
+                RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            }
+
+            return { success: true, message: "list fetched successfully", data: { list: learnpaths, mlList: [], show: "logic" } };
+
+
+        } catch (error) {
+            console.log("Error while processing data for related learnpath for course", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
+    }
 
     async getPopularArticles(req) {
         const { subType, category, sub_category, topic, section, page = 1, limit = 6 } = req.query;
@@ -1774,6 +1919,329 @@ module.exports = class recommendationService {
         }
     }
 
+    async enquiryBasedRecommendation (req)  {
+
+        try {
+            const userId = req.user.userId;
+            if(!userId){
+                return { "success": false, message: "Only authenticated users allowed.", data: { list: [] } }
+            }
+            const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
+            const offset = (page - 1) * limit;
+            const courseValues = await models.form_submission.findAll({ where: { userId: userId, targetEntityType:"course",formType:"enquiry" } });
+            const courseIds = courseValues.map((course) => course.targetEntityId)
+            // Course Ids -> Now it is used for getting topics out of them.
+
+            let topics = []
+            let sub_categories = []
+            let categories = []
+            let skills  = []
+            let partners  = []    
+            let providers  = []    
+            let courses = [];
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ]
+                }
+            }
+            esQuery.bool.must = [
+                {
+                "ids": {
+                    "values": courseIds
+                }
+                }
+            ]
+            
+            let courseData = await elasticService.search("learn-content", esQuery, {_source: ['topics','sub_categories','categories','skills','partner_name', 'provider_name']});
+
+            if (courseData.hits) {
+                for (const hit of courseData.hits) {
+                    if(hit._source.categories && hit._source.categories.length > 0)
+                    {
+                        categories = categories.concat(hit._source.categories)
+                    }
+                    if(hit._source.sub_categories && hit._source.sub_categories.length > 0)
+                    {
+                        sub_categories = sub_categories.concat(hit._source.sub_categories)
+                    }
+                    if(hit._source.topics && hit._source.topics.length > 0)
+                    {
+                        topics = topics.concat(hit._source.topics)
+                    }
+                    if(hit._source.skills && hit._source.skills.length > 0)
+                    {
+                        skills = skills.concat(hit._source.skills)
+                    }
+                    if(hit._source.partner_name)
+                    {
+                        partners.push(hit._source.partner_name)
+                    }
+                    if(hit._source.provider_name)
+                    {
+                        providers.push(hit._source.provider_name)
+                    }                            
+                }
+            }
+            esQuery = {}
+            esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ],
+                    "should":[],
+                    "must_not":[
+                        {
+                            "ids": {
+                                "values": courseIds
+                            }
+                        }
+                    ]
+                }
+            }
+            if (topics) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "topics.keyword": topics,
+                            "boost":6
+                        }
+                    }
+                );
+            }
+            if (sub_categories) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "sub_categories.keyword": sub_categories,
+                            boost:5
+                        }
+                    }
+                );
+            }
+            if (categories) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "categories.keyword": categories,
+                            boost:4
+                        }
+                    }
+                );
+            }
+            if (skills) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "skills.keyword": skills,
+                            boost:3
+                        }
+                    }
+                );
+            }
+            if (partners) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "partner_name.keyword": partners,
+                            boost:2
+                        }
+                    }
+                );
+            }
+
+            if (providers) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "provider_name.keyword": providers,
+                            boost:1
+                        }
+                    }
+                );
+            }
+        
+            let  sort = [{ "activity_count.all_time.course_views": "desc" }]
+            console.log(esQuery)   
+            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await this.generateCourseFinalResponse(hit._source, currency)
+                    courses.push(data);
+                }
+            }
+
+            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
+        } catch (error) {
+    
+            console.log("Error occured while fetching enquiry based recommendation : ", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } }
+        }
+    }
+
+    async wishlistBasedRecommendation (req)  {
+
+        try {
+            const userId = req.user.userId;
+            if(!userId){
+                return { "success": false, message: "Only authenticated users allowed.", data: { list: [] } }
+            }
+            const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
+            const offset = (page - 1) * limit;
+            const courseValues = await models.user_meta.findAll({ where: { userId: userId,key:"course_wishlist"} });
+            const courseIds = courseValues.map((course) => course.value)
+            // Course Ids -> Now it is used for getting topics out of them.
+
+            let topics = []
+            let sub_categories = []
+            let categories = []
+            let skills  = []
+            let partners  = []    
+            let providers  = []    
+            let courses = [];
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ]
+                }
+            }
+            esQuery.bool.must = [
+                {
+                "ids": {
+                    "values": courseIds
+                }
+                }
+            ]
+            
+            let courseData = await elasticService.search("learn-content", esQuery, {_source: ['topics','sub_categories','categories','skills','partner_name', 'provider_name']});
+
+            if (courseData.hits) {
+                for (const hit of courseData.hits) {
+                    if(hit._source.categories && hit._source.categories.length > 0)
+                    {
+                        categories = categories.concat(hit._source.categories)
+                    }
+                    if(hit._source.sub_categories && hit._source.sub_categories.length > 0)
+                    {
+                        sub_categories = sub_categories.concat(hit._source.sub_categories)
+                    }
+                    if(hit._source.topics && hit._source.topics.length > 0)
+                    {
+                        topics = topics.concat(hit._source.topics)
+                    }
+                    if(hit._source.skills && hit._source.skills.length > 0)
+                    {
+                        skills = skills.concat(hit._source.skills)
+                    }
+                    if(hit._source.partner_name)
+                    {
+                        partners.push(hit._source.partner_name)
+                    }
+                    if(hit._source.provider_name)
+                    {
+                        providers.push(hit._source.provider_name)
+                    }                            
+                }
+            }
+            esQuery = {}
+            esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } }
+                    ],
+                    "should":[],
+                    "must_not":[
+                        {
+                            "ids": {
+                                "values": courseIds
+                            }
+                        }
+                    ]
+                }
+            }
+            if (topics) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "topics.keyword": topics,
+                            "boost":6
+                        }
+                    }
+                );
+            }
+            if (sub_categories) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "sub_categories.keyword": sub_categories,
+                            boost:5
+                        }
+                    }
+                );
+            }
+            if (categories) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "categories.keyword": categories,
+                            boost:4
+                        }
+                    }
+                );
+            }
+            if (skills) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "skills.keyword": skills,
+                            boost:3
+                        }
+                    }
+                );
+            }
+            if (partners) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "partner_name.keyword": partners,
+                            boost:2
+                        }
+                    }
+                );
+            }
+
+            if (providers) {
+                esQuery.bool.should.push(
+                    {
+                        "terms": {
+                            "provider_name.keyword": providers,
+                            boost:1
+                        }
+                    }
+                );
+            }
+        
+            let  sort = [{ "activity_count.all_time.course_views": "desc" }]
+            console.log(esQuery)   
+            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await this.generateCourseFinalResponse(hit._source, currency)
+                    courses.push(data);
+                }
+            }
+
+            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
+        } catch (error) {
+    
+            console.log("Error occured while fetching enquiry based recommendation : ", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } }
+        }
+    }
 
     async getRelatedArticle(req) {
         try {
@@ -1962,6 +2430,151 @@ module.exports = class recommendationService {
 
         }
 
+    }
+
+    async getRecommendationArticlesforCourse(req) {
+        const { page = 1, limit = 5 } = req.query;
+        const offset = (page - 1) * limit
+        const courseId = req.query.courseId.toString();
+        let topics = null
+        let sub_categories = null
+        let categories = null
+        let skills  = null
+        let partners  = null    
+        let articles = [];
+        try {
+            let cacheKey = `Related-Articles-For-Course-${courseId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            
+            if (cachedData.noCacheData != true) {
+                articles = cachedData;
+            } else {
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must = [
+                    {
+                    "ids": {
+                        "values": [courseId]
+                    }
+                    }
+                ]
+                
+                let courseData = await elasticService.search("learn-content", esQuery, {_source: ['topics','sub_categories','categories','skills','partner_id']});
+                
+
+                if (courseData.hits) {
+                    for (const hit of courseData.hits) {
+                        if(hit._source.categories && hit._source.categories.length > 0)
+                        {
+                            categories = hit._source.categories
+                        }
+                        if(hit._source.sub_categories && hit._source.sub_categories.length > 0)
+                        {
+                            sub_categories = hit._source.sub_categories
+                        }
+                        if(hit._source.topics && hit._source.topics.length > 0)
+                        {
+                            topics = hit._source.topics
+                        }
+                        if(hit._source.skills && hit._source.skills.length > 0)
+                        {
+                            skills = hit._source.skills
+                        }
+                        if(hit._source.partner_id)
+                        {
+                            partners = hit._source.partner_id
+                        }
+                                           
+                    }
+
+                }
+                esQuery = {}
+                esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ],
+                        "should":[]
+                    }
+                }
+                if (topics) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "article_topics.keyword": topics,
+                                "boost":5
+                            }
+                        }
+                    );
+                }
+                if (sub_categories) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "article_sub_categories.keyword": sub_categories,
+                                boost:4
+                            }
+                        }
+                    );
+                }
+                if (categories) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories,
+                                boost:3
+                            }
+                        }
+                    );
+                }
+                if (skills) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "article_skills.keyword": skills,
+                                boost:2
+                            }
+                        }
+                    );
+                }
+                if (partners) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "partners.keyword": [partners],
+                                boost:1
+                            }
+                        }
+                    );
+                }
+            
+                let  sort = [{ "activity_count.all_time.article_views": "desc" }]
+                console.log(esQuery)   
+                const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateArticleFinalResponse(hit._source);
+                        articles.push(data);
+                    }
+
+                }
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RECOMMENDATION_FOR_ARTICLE || 60 * 15);
+            }
+
+            return { success: true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
+
+
+        } catch (error) {
+            console.log("Error while processing data for related articles for course", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
     }
 
     
