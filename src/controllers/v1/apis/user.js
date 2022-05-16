@@ -4,7 +4,9 @@ const authenticateAdminJWT = require('../../../services/v1/middleware/authentica
 const injectTokenPayload = require('../../../services/v1/middleware/injectTokenPayload');
 const { createSiteMap } = require('../../../services/v1/sitemap');
 const userService = require('../../../services/v1/users/user');
+const enquiryController = require('../../../api/controllers/enquiryController');
 let router = express.Router();
+
 router.post('/sign-in', userService.login);
 router.post('/send-otp', userService.sendOtp);
 router.post('/verify-otp',authenticateJWT, userService.verifyOtp);
@@ -17,6 +19,10 @@ router.post('/forgot-password', userService.forgotPassword);
 router.post('/reset-password', userService.resetPassword);
 router.get('/get-profile-progress',authenticateJWT, userService.getProfileProgress);
 router.post('/add-to-wishlist',authenticateJWT, userService.addCourseToWishList);
+router.post('/add-goal',authenticateJWT, userService.addGoals);
+router.get('/get-goals',authenticateJWT, userService.getGoals);
+router.post('/remove-goal',authenticateJWT, userService.removeGoal);
+router.post('/edit-goal',authenticateJWT, userService.editGoal);
 router.post('/add-to-learnpathwishlist',authenticateJWT, userService.addLearnPathToWishList);
 router.post('/add-course-to-recently-viewed',authenticateJWT, userService.addCourseToRecentlyViewed);
 router.post('/fetch-recently-viewed-courses',authenticateJWT, userService.getRecentlyViewedCourses);
@@ -49,7 +55,9 @@ router.get('/create-sitemap', async (req,res) => {
     res.setHeader('Content-Type', 'text/json')
     return res.status(200).send(res1)
 })
-
+// new get enquiry endpoints, one for course and second for learnpath enquiry
+router.get('/enquiry',authenticateJWT, enquiryController.fetchEnquiry)
+router.get('/learnpath-enquiry',authenticateJWT, enquiryController.fetchLearnpathEnquiry)
 
 //require.post()
 module.exports = router;            
