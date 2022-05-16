@@ -1448,7 +1448,7 @@ module.exports = class recommendationService {
     }
     
     async getRelatedLearningPathForCourse(req){      
-        const { page = 1, limit = 5 } = req.query;
+        const { page = 1, limit = 5, currency} = req.query;
         const offset = (page - 1) * limit
         const courseId = req.query.courseId.toString();
         let topics = null
