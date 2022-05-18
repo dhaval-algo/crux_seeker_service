@@ -1158,17 +1158,19 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
+            //temp patch for moving scatter fields of provider in to single object
+        if(result.providers_list == undefined){
+            let provider = {name: result.provider_name, slug: result.provider_slug,
+                        currency: result.provider_currency, url:result.provider_course_url}
+            result.providers_list = [provider]
+        }
         let data = {
             canBuy: canBuy,
             title: result.title,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
             subtitle: result.subtitle,
-            provider: {
-                name: result.provider_name,
-                currency: result.provider_currency,
-                slug: result.provider_slug
-            },
+            providers: result.providers_list,
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
@@ -1245,7 +1247,6 @@ module.exports = class learnContentService {
                     time_zone_name: result.course_batch_time_zone_name || null
                 }
             },
-            provider_course_url: result.provider_course_url,
             reviews: [],
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
@@ -1468,9 +1469,6 @@ module.exports = class learnContentService {
             }
         } 
 
-        if(result.partner_currency){
-            data.provider.currency = result.partner_currency.iso_code;
-        }
 
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
@@ -1480,13 +1478,12 @@ module.exports = class learnContentService {
             title: data.title,
             slug: data.slug,
             id: data.id,
-            provider: data.provider,
+            providers: data.providers,
             partner: data.partner,
             cover_image: data.cover_image,
             currency: data.currency,
             description: data.description,
             course_details: data.course_details,
-            provider_course_url: data.provider_course_url,
             ratings: data.ratings,
             categories_list: data.categories_list,
             sub_categories_list : data.sub_categories_list,
