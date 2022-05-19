@@ -58,6 +58,7 @@ router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', searchController.getSearchResult);
 router.get('/suggest-search-keyword/:word', searchController.getSearchKeyword);
+router.get('/search-with-suggest/:word', searchController.getSearchWithSuggestion);
 
 router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)

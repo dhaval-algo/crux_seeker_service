@@ -276,4 +276,80 @@ module.exports = class searchService {
             callback(null, {status: 'success', message: 'No records found!', data: data});
         }
     }
+
+    async getSearchWithSuggestion(req, callback){
+        const keyword = decodeURIComponent(req.params.word);
+        const entity = req.query.entity;
+        const queryEntities = [];
+        let sourceFields = [];
+        
+        let query = { 
+                    "bool": {
+                        "should": []
+                    }
+                };
+        
+        for (const [key, value] of Object.entries(entityQueryMapping)) {
+            queryEntities.push(key);
+            sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
+            const entityQuery = generateEntityQuery(key, keyword);
+            query.bool.should.push(entityQuery);
+
+        }            
+
+        let  suggest = {
+            "keyword_suggest": {
+              "prefix": keyword,        
+              "completion": {         
+                  "field": "word",
+                  "size": MAX_PER_ENTITY  ,
+                  "skip_duplicates" :true,
+                  "fuzzy": {
+                      "fuzziness": "auto"
+                    }
+              }
+            }
+        }
+       
+       // const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
+        let [result, result2] = await Promise.all([elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT}), elasticService.search("search_keyword_suggestion", null, {},null,suggest)]);
+        
+        console.log("result", result)
+        console.log("result2", result2)
+        let data = {
+            result: [],
+            keywords : [],
+            totalCount: 0,
+            viewAll: false
+        };
+        if(result.total && result.total.value > 0){            
+
+            for(const hit of result.hits){
+                let data_source = hit._index;
+                let cardData = await this.getCardData(data_source, hit._source);
+                
+                if(data.result.length < MAX_PER_ENTITY){
+                    data.result.push(cardData);
+                }                    
+                data.totalCount++;
+                if(data.totalCount > MAX_PER_ENTITY){
+                    data.viewAll = true;
+                }  
+            }
+        }
+
+        
+        if(result2 && result2.keyword_suggest.length > 0){            
+            for(const keyword_suggest of result2.keyword_suggest){
+                for(const option of keyword_suggest.options){
+                    data.keywords.push(option.text);  
+                }
+            }
+        }
+        if(data.totalCount > 0 || data.keywords.length > 0){
+            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
+        }else{
+            callback(null, {status: 'success', message: 'No records found!', data: data});
+        }
+    }
 }
