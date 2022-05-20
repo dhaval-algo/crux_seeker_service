@@ -9,6 +9,11 @@ module.exports = {
             } else {
                 res.status(200).send(err);
             }
-        });    
+        });
     },
+
+    getHomePageTopCategories: async(req, res) => {
+        let result = await HomePageService.getHomePageTopCategories(req);
+        res.status(200).send(result);
+    }
 }

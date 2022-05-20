@@ -272,4 +272,15 @@ module.exports = {
             }
         });        
     },
+
+    getLearnContentLearntypes: async(req, res) => {
+        let result = await LearnContentService.getLearnContentLearntypes(req);
+        res.status(200).send(result);
+    },
+    
+    getLearnContentTopics: async(req, res) => {
+        let result = await LearnContentService.getLearnContentTopics(req);
+        res.status(200).send(result);
+    }
+    
 };

@@ -78,4 +78,13 @@ router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 //learnpath enquiry
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
 
+//Home page API
+router.get('/homepage-top-categories', homeController.getHomePageTopCategories)
+
+//Category page API
+router.get('/learn-content-learn-types', learnContentController.getLearnContentLearntypes)
+router.get('/learn-content-topics', learnContentController.getLearnContentTopics)
+
+
+
 module.exports = router;

@@ -2,7 +2,7 @@ const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const sectionService = require('./sectionService');
 const models = require("../../../models");
-const {generateMetaInfo} = require('../utils/general');
+const {generateMetaInfo,paginate} = require('../utils/general');
 
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
@@ -400,6 +400,45 @@ module.exports = class homePageService {
     } catch (error) {
       console.log(error);
       return callback(null, { success: true, data: data })
+    }
+  }
+
+  async getHomePageTopCategories(req) {
+    let {page =1, limit= 5} = req.query
+    
+    let data = {};
+    try {
+      const query = {
+        "match_all": {}
+      };
+      const payload = {
+        "size":1
+      };
+           
+      let cacheData = await RedisConnection.getValuesSync('home-page-top-categories'); 
+      let  result = cacheData;             
+
+      if(cacheData.noCacheData) 
+      {
+        result = await elasticService.search('home-page', query,payload,["top_categories"]);
+        await RedisConnection.set('home-page-top-categories', result);
+        RedisConnection.expire('home-page-top-categories', process.env.CACHE_EXPIRE_HOME_PAGE);
+      }
+     
+      if (result.hits && result.hits.length) {
+        data = {
+          total: result.hits[0]._source.top_categories.length,
+          page,
+          limit,
+          categories: await paginate(result.hits[0]._source.top_categories, page, limit)
+        }
+        return { success: true, data }
+      }
+      return { success: false, data:null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in home page", error);
+      return { success: false, data:null }
     }
   }
 }
