@@ -18,8 +18,9 @@ const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
 const recommendationMiddleware = require("../../../../services/v1/middleware/recommendation");
+const sessionKPIController = require("../../../controllers/sessionController")
 
-router.get('/learn-content/', learnContentController.getLearnContentList);
+router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
 router.get('/learn-content-filters/', learnContentController.getLearnContentFilters);
 router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
@@ -77,5 +78,6 @@ router.post('/activity-course-viewed',injectTokenPayload, learnContentController
 router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 //learnpath enquiry
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
+router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 
 module.exports = router;

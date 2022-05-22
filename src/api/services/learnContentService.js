@@ -34,6 +34,7 @@ const allowZeroCountFields = ['level','categories','sub_categories'];
 const helperService = require("../../utils/helper");
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
+const {saveSessionKPIs} = require("../../utils/sessionActivity");
 
 const getBaseCurrency = (result) => {
     return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
@@ -234,6 +235,27 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
+const saveLearnContentListSessionKPIs = (user, page_details) => {
+    console.log("saveLearnContentListSessionKPIs CAlled",user,page_details)
+    if (user && (user.userId || user.segmentId) && page_details && page_details.pageType && page_details.label) {
+        let kpiKey = null;
+        const userId = user.userId ? user.userId : user.segmentId;
+        switch (page_details.pageType) {
+
+            case "category": kpiKey = "categories"; break;
+            case "sub_category": kpiKey = "subCategories"; break;
+            case "topic": kpiKey = "topics"; break;
+
+        }
+
+        if (kpiKey) {
+
+            saveSessionKPIs(userId, { [kpiKey]: [page_details.label] });
+        }
+
+    }
+}
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
@@ -276,6 +298,7 @@ module.exports = class learnContentService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
+                    saveLearnContentListSessionKPIs(req.user , cacheData.page_details);
                     return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 }
             }
@@ -745,6 +768,7 @@ module.exports = class learnContentService {
 
 
             callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            saveLearnContentListSessionKPIs(req.user , data.page_details);
 
             if (useCache) {
                 list.forEach((course) => {
@@ -780,8 +804,13 @@ module.exports = class learnContentService {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             courseId = cacheData.id
             if(cacheData.noCacheData != true) {
+
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 useCache = true
+                if (req.user && (req.user.userId || req.user.segmentId)) {
+                    const userId = req.user.userId ? req.user.userId : req.user.segmentId;
+                    saveSessionKPIs(userId, { courses: [cacheData] });
+                }
             }            
         }
               
@@ -796,7 +825,12 @@ module.exports = class learnContentService {
                     callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_COURSE);                   
-                }) 
+                })
+
+                if (req.user && (req.user.userId || req.user.segmentId)) {
+                    const userId = req.user.userId ? req.user.userId : req.user.segmentId;
+                    saveSessionKPIs(userId, { courses: [data] });
+                }
                 
             }else{
                 callback({status: 'failed', message: 'Not found!'}, null);
