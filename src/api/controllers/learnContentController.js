@@ -4,13 +4,41 @@ const paymentService = new (require("../services/PaymentService"));
 const userService = require("../../services/v1/users/user");
 const axios = require("axios");
 const { helperService, logActvity} = require("../../utils/helper");
+const {formatResponseField } = require("../utils/general");
 
 module.exports = {
 
     getLearnContentList: async (req, res) => {
         LearnContentService.getLearnContentList(req, (err, data) => {
             if (data) {
-                res.status(200).send(data);
+                let finalData = {}
+                if(req.query['fields']){
+                    
+                    fields = req.query['fields'].split(",");
+                    if(fields.includes("learn_types") || fields.includes("topics"))
+                    {
+                        for (let filter of data.data.filters)
+                        {
+                            if(fields.includes("learn_types")  && filter.field =="learn_type")
+                            {
+                                data.data["learn_types"] = filter.options.map(item => {return {label:item.label, image:item.image}})
+                            }
+
+                            if(fields.includes("topics") && filter.field =="topics")
+                            {
+                                data.data["topics"] = filter.options.map(item => item.label)
+                            }
+                        }
+                    
+                    }
+                    finalData =  formatResponseField(req.query['fields'], data.data )
+                    res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
+                }
+                else
+                {
+                    res.status(200).send(data);
+                }
+
             } else {
                 res.status(200).send(err);
             }
@@ -44,7 +72,16 @@ module.exports = {
         const slug = req.params.slug;
         LearnContentService.getLearnContent(req, (err, data) => {
             if (data) {
-                res.status(200).send(data);
+                let finalData = {}
+                if(req.query['fields']){                    
+                    finalData =  formatResponseField(req.query['fields'], data.data )                    
+                    res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
+                }
+                else
+                {
+                    res.status(200).send(data);
+                }
+
             } else {
                 res.status(200).send(err);
             }

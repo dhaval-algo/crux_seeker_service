@@ -730,8 +730,9 @@ module.exports = class learnContentService {
                 label: slugLabel || null,
                 description: slug_description || null,
                 logo : slug_logo,
-                faq : slug_faq
+                course_count: result.hits.length
             }
+            data.faq = slug_faq
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
                 try {
                     data.article_advice = []
