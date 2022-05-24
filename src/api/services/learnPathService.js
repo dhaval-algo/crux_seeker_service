@@ -652,7 +652,8 @@ module.exports = class learnPathService {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
             },
-            courses: result.courses
+            courses: result.courses,
+            skills: (result.skills) ? result.skills :null
         }
 
         if (!isList) {
