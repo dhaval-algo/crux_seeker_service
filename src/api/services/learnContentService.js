@@ -235,15 +235,14 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
-const saveLearnContentListSessionKPIs = (user, page_details) => {
-    console.log("saveLearnContentListSessionKPIs CAlled",user,page_details)
-    if (user && (user.userId || user.segmentId) && page_details && page_details.pageType && page_details.label) {
+const saveLearnContentListSessionKPIs = (req, page_details) => {
+    if (((req.user && req.user.userId) || req.segmentId) && page_details && page_details.pageType && page_details.label) {
         let kpiKey = null;
-        const userId = user.userId ? user.userId : user.segmentId;
+        const userId = (req.user && req.user.userId) ?req.user.userId : req.segmentId;
         switch (page_details.pageType) {
 
             case "category": kpiKey = "categories"; break;
-            case "sub_category": kpiKey = "subCategories"; break;
+            case "sub_category": kpiKey = "sub_categories"; break;
             case "topic": kpiKey = "topics"; break;
 
         }
@@ -768,7 +767,7 @@ module.exports = class learnContentService {
 
 
             callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
-            saveLearnContentListSessionKPIs(req.user , data.page_details);
+            saveLearnContentListSessionKPIs(req , data.page_details);
 
             if (useCache) {
                 list.forEach((course) => {
@@ -796,6 +795,8 @@ module.exports = class learnContentService {
     }
 
     async getLearnContent(req, callback, skipCache){
+
+        console.log("getLearnContent CALLED")
         const slug = req.params.slug;
         let courseId = null
         let cacheName = `single-course-${slug}_${req.query.currency}`
@@ -807,8 +808,8 @@ module.exports = class learnContentService {
 
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 useCache = true
-                if (req.user && (req.user.userId || req.user.segmentId)) {
-                    const userId = req.user.userId ? req.user.userId : req.user.segmentId;
+                if ((req.user && req.user.userId) || req.segmentId) {
+                    const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
                     saveSessionKPIs(userId, { courses: [cacheData] });
                 }
             }            
@@ -827,8 +828,8 @@ module.exports = class learnContentService {
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_COURSE);                   
                 })
 
-                if (req.user && (req.user.userId || req.user.segmentId)) {
-                    const userId = req.user.userId ? req.user.userId : req.user.segmentId;
+                if ((req.user && req.user.userId) || req.segmentId) {
+                    const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
                     saveSessionKPIs(userId, { courses: [data] });
                 }
                 

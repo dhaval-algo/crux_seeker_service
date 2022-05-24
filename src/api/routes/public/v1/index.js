@@ -57,7 +57,7 @@ router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
 router.get('/skills', categoryController.getSkills);
 
-router.get('/search/:keyword', searchController.getSearchResult);
+router.get('/search/:keyword', injectTokenPayload,searchController.getSearchResult);
 
 router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)

@@ -22,12 +22,8 @@ module.exports = async (req, res, next) => {
     } else {
 
         const segmentId = req.headers.segmentId;
-        if (!req.user) {
-            req.user = {};
-        }
-
-        req.user.segmentId = 'seg_uid_123456';
-        //req.user.userId = segmentId;
+        req.segmentId = 'seg_uid_123456';
+        //req.segmentId = segmentId;
     }
     next();
 }

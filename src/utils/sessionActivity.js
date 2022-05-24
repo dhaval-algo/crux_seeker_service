@@ -2,12 +2,12 @@ const RedisConnection = require("../services/v1/redis");
 const redisConnection = new RedisConnection();
 const elasticService = require("../api/services/elasticService");
 
-const kpiKeys = ['topics', 'categories', 'subCategories', 'skills'];
+const kpiKeys = ['topics', 'categories', 'sub_categories', 'skills'];
 const sessionKPIsCount = {
 
     'topics': process.env.TOPICS_SESSION_KPIS_COUNT || 6,
     'categories': process.env.CATEGORIES_SESSION_KPIS_COUNT || 3,
-    'subCategories': process.env.SUB_CATEGORIES_SESSION_KPIS_COUNT || 6,
+    'sub_categories': process.env.SUB_CATEGORIES_SESSION_KPIS_COUNT || 6,
     'skills': process.env.SKILLS_SESSION_KPIS_COUNT || 10
 }
 
@@ -127,7 +127,7 @@ const saveSessionKPIs = async (userId, newSessionKPIs) => {
                 const course = hit._source;
                 if (course.topics) newSessionKPIs.topics.push(...course.topics);
                 if (course.categories) newSessionKPIs.categories.push(...course.categories);
-                if (course.sub_categories) newSessionKPIs.subCategories.push(...course.sub_categories);
+                if (course.sub_categories) newSessionKPIs.sub_categories.push(...course.sub_categories);
                 if (course.skills) newSessionKPIs.skills.push(...course.skills);
 
             }
@@ -142,7 +142,7 @@ const saveSessionKPIs = async (userId, newSessionKPIs) => {
             newSessionKPIs.topics.push(...topics);
         }
         if (course.categories && course.categories.length) newSessionKPIs.categories.push(...course.categories);
-        if (course.sub_categories && course.sub_categories.length) newSessionKPIs.subCategories.push(...course.sub_categories);
+        if (course.sub_categories && course.sub_categories.length) newSessionKPIs.sub_categories.push(...course.sub_categories);
         if (course.skill_tags && course.skill_tags.length) newSessionKPIs.skills.push(...course.skill_tags);
     }
 
