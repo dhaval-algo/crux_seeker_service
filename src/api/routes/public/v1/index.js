@@ -85,6 +85,12 @@ router.get('/homepage-top-categories', homeController.getHomePageTopCategories)
 router.get('/learn-content-learn-types', learnContentController.getLearnContentLearntypes)
 router.get('/learn-content-topics', learnContentController.getLearnContentTopics)
 
+//Learn Path API
+router.get('/learn-path-learn-types', learnPathController.getLearnPathLearntypes)
+router.get('/learn-path-topics', learnPathController.getLearnPathTopics)
+
+
+
 
 
 module.exports = router;

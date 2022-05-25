@@ -1917,7 +1917,6 @@ module.exports = class learnContentService {
             if(cacheData.noCacheData) 
             {
                 result = await elasticService.searchWithAggregate('learn-content', query, payload);
-                console.dir(result, {depth:null})
                 await RedisConnection.set(cacheName, result);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24);
             }

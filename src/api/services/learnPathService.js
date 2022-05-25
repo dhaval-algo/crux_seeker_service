@@ -24,7 +24,8 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     getCurrencies,
-    getCurrencyAmount
+    getCurrencyAmount,
+    paginate
 } = require('../utils/general');
 
 const round = (value, step) => {
@@ -1025,6 +1026,178 @@ module.exports = class learnPathService {
         } catch (error) {
             console.log("Error while processing data for popular learnpaths", error);
             callback(error, null);
+        }
+    }
+
+    async getLearnPathLearntypes(req) {
+        let {page =1, limit= 5, category, sub_category, topic} = req.query
+        let cacheName = 'learn-path-learn-types'
+        let data = {};
+        try {
+
+            let query = {
+             "match_all": {}
+            };
+
+            if(category)
+            {
+                query = {
+                    "term": {
+                        "categories.keyword": {
+                            "value": decodeURIComponent(category)
+                        }
+                    }
+                };
+
+                cacheName = cacheName + category
+            }
+
+            if(sub_category)
+            {
+                query = {
+                    "term": {
+                        "sub_categories.keyword": {
+                            "value": decodeURIComponent(sub_category)
+                        }
+                    }
+                };
+                cacheName = cacheName + sub_category
+            }
+
+            if(topic)
+            {
+                query = {
+                    "term": {
+                        "topics.keyword": {
+                            "value": decodeURIComponent(topic)
+                        }
+                    }
+                };
+                cacheName = cacheName + topic
+            }
+            
+
+            const aggs = {
+                "learn_type_count": {
+                    "terms": {
+                    "field": "learn_type.default_display_label.keyword"
+                    }
+                }
+            }
+
+            const payload = {
+                "size":0,
+                aggs
+            };
+                
+            let cacheData = await RedisConnection.getValuesSync(cacheName); 
+            let  result = cacheData;             
+
+            if(cacheData.noCacheData) 
+            {
+                result = await elasticService.searchWithAggregate('learn-path', query, payload);
+                await RedisConnection.set(cacheName, result);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24);
+            }
+
+            let learn_types = []
+            let learn_types_images = await LearnContentService.getLearnTypeImages();
+
+            if (result.aggregations && result.aggregations.learn_type_count.buckets.length >0) {
+                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key]}))
+                
+                data = {
+                    total: learn_types.length,
+                    page,
+                    limit,
+                    learn_types: await paginate(learn_types, page, limit)
+                }
+                return { success: true, data }
+            }
+            return { success: false, data:null }
+
+        } catch (error) {
+            console.log("Error fetching top categories in home page", error);
+            return { success: false, data:null }
+        }
+    }
+
+    async getLearnPathTopics(req) {
+        let {page =1, limit= 5, category, sub_category} = req.query
+        let cacheName = 'learn-path-topics'
+        let data = {};
+        try {
+
+            let query = {
+             "match_all": {}
+            };
+
+            if(category)
+            {
+                query = {
+                    "term": {
+                        "categories.keyword": {
+                            "value": decodeURIComponent(category)
+                        }
+                    }
+                };
+
+                cacheName = cacheName + category
+            }
+
+            if(sub_category)
+            {
+                query = {
+                    "term": {
+                        "sub_categories.keyword": {
+                            "value": decodeURIComponent(sub_category)
+                        }
+                    }
+                };
+                cacheName = cacheName + sub_category
+            }
+
+            const aggs = {
+                "topics_count": {
+                    "terms": {
+                    "field": "topics.keyword"
+                    }
+                }
+            }
+
+            const payload = {
+                "size":0,
+                aggs
+            };
+                
+            let cacheData = await RedisConnection.getValuesSync(cacheName); 
+            let  result = cacheData;             
+
+            if(cacheData.noCacheData) 
+            {
+                result = await elasticService.searchWithAggregate('learn-path', query, payload);
+                await RedisConnection.set(cacheName, result);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24);
+            }
+
+            let topics = []
+           
+            if (result.aggregations && result.aggregations.topics_count.buckets.length >0) {
+                result.aggregations.topics_count.buckets.map(item => topics.push( item.key))
+                
+                data = {
+                    total: topics.length,
+                    page,
+                    limit,
+                    topics: await paginate(topics, page, limit)
+                }
+                return { success: true, data }
+            }
+            return { success: false, data:null }
+
+        } catch (error) {
+            console.log("Error fetching top categories in home page", error);
+            return { success: false, data:null }
         }
     }
 

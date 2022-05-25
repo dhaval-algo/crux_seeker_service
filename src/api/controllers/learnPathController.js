@@ -103,4 +103,15 @@ module.exports = {
         }
     })
     },
+
+    getLearnPathLearntypes: async(req, res) => {
+        let result = await LearnPathService.getLearnPathLearntypes(req);
+        res.status(200).send(result);
+    },
+    
+    getLearnPathTopics: async(req, res) => {
+        let result = await LearnPathService.getLearnPathTopics(req);
+        res.status(200).send(result);
+    },
+  
 }
