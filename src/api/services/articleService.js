@@ -443,6 +443,17 @@ module.exports = class articleService {
         {
             author = []
         }
+
+        //temp fix
+        author = [{
+            id: 1,
+            username: "-",
+            firstname: "-",
+            lastname: "-",
+            designation: "-",
+            bio: "-",
+            slug: "-"
+        }];
         
 
         if(result.co_authors && result.co_authors.length > 0)
