@@ -445,22 +445,6 @@ module.exports = class articleService {
         {
             author = []
         }
-
-        //temp fix
-        if(author.length < 1)
-        {
-        author = [{
-            id: 1,
-            username: "-",
-            firstname: "-",
-            lastname: "-",
-            designation: "-",
-            bio: "-",
-            slug: "-"
-        }];
-        }
-        
-
         if(result.co_authors && result.co_authors.length > 0)
         {
             for( let co_author of result.co_authors)
