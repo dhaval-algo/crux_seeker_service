@@ -22,8 +22,7 @@ module.exports = async (req, res, next) => {
     } else {
 
         const segmentId = req.headers.segmentId;
-        req.segmentId = 'seg_uid_123456';
-        //req.segmentId = segmentId;
+        req.segmentId = segmentId;
     }
     next();
 }

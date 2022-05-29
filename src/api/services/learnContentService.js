@@ -795,8 +795,6 @@ module.exports = class learnContentService {
     }
 
     async getLearnContent(req, callback, skipCache){
-
-        console.log("getLearnContent CALLED")
         const slug = req.params.slug;
         let courseId = null
         let cacheName = `single-course-${slug}_${req.query.currency}`

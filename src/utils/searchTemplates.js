@@ -2,10 +2,10 @@ const { getAllTimeSessionKPIs, getRecentSessionKPIs } = require("../utils/sessio
 
 
 const entityQueryMapping = {
-    'learn-content': { label: 'Course', status: 'published', prefix_field: "title", fuzziness_fields: ["title^16", "skills^4", "topics^3", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], fields: ["title^18", "skills^4", "topics^4", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], source_fields: ['title'], kpis: ["topics", "skills", "categories", "sub_categories"] },
-    'learn-path': { label: 'Learn Path', status: 'approved', prefix_field: "title", fuzziness_fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6"], fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6", "description^4"], source_fields: ['title'] },
-    'provider': { label: 'Institute', status: 'approved', prefix_field: "name", fuzziness_fields: ["name^7"], fields: ['name^7'], source_fields: ['name', 'slug'] },
-    'article': { label: 'Article', status: 'published', prefix_field: "title", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"], source_fields: ['title', 'slug', 'section_name', 'section_slug'] }
+    'learn-content': { status: 'published', prefix_field: "title", fuzziness_fields: ["title^16", "skills^4", "topics^3", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], fields: ["title^18", "skills^4", "topics^4", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"],kpis: ["topics", "skills", "categories", "sub_categories"] },
+    'learn-path': { status: 'approved', prefix_field: "title", fuzziness_fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6"], fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6", "description^4"] },
+    'provider': { status: 'approved', prefix_field: "name", fuzziness_fields: ["name^7"], fields: ['name^7'] },
+    'article': { status: 'published', prefix_field: "title", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"] }
 };
 
 

@@ -92,7 +92,7 @@ const computeAllTimeSessionKPIs = async (userId, newSessionKPIs) => {
     for (const kpiKey of kpiKeys) {
 
         const topKPIs = Object.keys(sessionKPIs[kpiKey]).sort((a, b) => sessionKPIs[kpiKey][b] - sessionKPIs[kpiKey][a]);
-        sessionKPIs.topKPIs[kpiKey] = topKPIs.slice(0,2);
+        sessionKPIs.topKPIs[kpiKey] = topKPIs.slice(0, 2);
 
     }
 

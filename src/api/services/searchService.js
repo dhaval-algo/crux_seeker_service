@@ -1,41 +1,56 @@
 const elasticService = require("./elasticService");
 const searchTemplates = require("../../utils/searchTemplates");
 
-
-const MAX_COURSES = 10;
-const MAX_LEARN_PATHS = 6;
-const MAX_ARTICLES = 4;
-const MAX_PROVIDERS = 3;
 const MAX_PER_ENTITY = 23;
+
+const entitySearchParams = {
+    "learn-content": { searchTemplate: searchTemplates.getCourseSearchTemplate, maxResults: 15, defaultResults: 10, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
+    "learn-path": { searchTemplate: searchTemplates.getLearnPathSearchTemplate, maxResults: 12, defaultResults: 6, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
+    "article": { searchTemplate: searchTemplates.getArticleSearchTemplate, maxResults: 10, defaultResults: 4, sourceFields: ['title', 'slug', 'section_name', 'section_slug'] },
+    "provider": { searchTemplate: searchTemplates.getProviderSearchTemplate, maxResults: 10, defaultResults: 3, sourceFields: ['name', 'slug'] }
+}
 
 module.exports = class searchService {
     async getSearchResult(req, callback){
         try{
-        const query = decodeURIComponent(req.params.keyword).trim();
-        const userId = (req.user && req.user.userId)?req.user.userId:req.segmentId;
-        const entity = req.query.entity;
-        const result = [];
-        
-        if(!entity || (entity == 'all')){
-            const courseSearchTemplate = await searchTemplates.getCourseSearchTemplate(query,userId);
-            const learnPathSearchTemplate = searchTemplates.getLearnPathSearchTemplate(query);
-            const articleSearchTemplate = searchTemplates.getArticleSearchTemplate(query);
-            const providerSearchTemplate = searchTemplates.getProviderSearchTemplate(query);
+            const query = decodeURIComponent(req.params.keyword).trim();
+            const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+            const entity = req.query.entity;
+            const result = [];
 
-            const courses = await elasticService.search('learn-content', courseSearchTemplate, {from: 0, size: MAX_COURSES},['title','slug','reviews','provider_name','average_rating']);
-            const learnPaths = await elasticService.search('learn-path', learnPathSearchTemplate, {from: 0, size: MAX_LEARN_PATHS},['title','slug','reviews','provider_name','average_rating']);
-            const articles = await elasticService.search('article', articleSearchTemplate, {from: 0, size: MAX_ARTICLES},['title','slug','section_name','section_slug']);
-            const providers = await elasticService.search('provider', providerSearchTemplate, {from: 0, size: MAX_PROVIDERS},['name','slug']);
-            
-            if(courses && courses.total && courses.total.value) result.push(...courses.hits);
-            if(learnPaths && learnPaths.total && learnPaths.total.value) result.push(...learnPaths.hits);
-            if(articles && articles.total && articles.total.value) result.push(...articles.hits);
-            if(providers && providers.total && providers.total.value) result.push(...providers.hits);
-                      
-        }else{
+            if (!entity || (entity == 'all')) {
+                const searchResultPromises = [];
+                for (const entity in entitySearchParams) {
 
-     
-        }
+                    if (entity == 'learn-content') {
+                        const courseSearchTemplate = await entitySearchParams[entity].searchTemplate(query, userId);
+                        const promise = elasticService.search(entity, courseSearchTemplate, { from: 0, size: entitySearchParams[entity].defaultResults }, entitySearchParams[entity].sourceFields);
+                        searchResultPromises.push(promise);
+                    } else {
+                        const promise = elasticService.search(entity, entitySearchParams[entity].searchTemplate(query), { from: 0, size: entitySearchParams[entity].defaultResults }, entitySearchParams[entity].sourceFields);
+                        searchResultPromises.push(promise);
+                    }
+                }
+
+                const searchResults = await Promise.all(searchResultPromises);
+                for (const searchResult of searchResults) {
+                    if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+                }
+
+            } else {
+
+                let searchResult = null;
+                if (entity == 'learn-content') {
+                    const courseSearchTemplate = await entitySearchParams[entity].searchTemplate(query, userId);
+                    searchResult = await elasticService.search(entity, courseSearchTemplate, { from: 0, size: entitySearchParams[entity].maxResults }, entitySearchParams[entity].sourceFields);
+
+                } else {
+                    searchResult = await elasticService.search(entity, entitySearchParams[entity].searchTemplate(query), { from: 0, size: entitySearchParams[entity].maxResults }, entitySearchParams[entity].sourceFields);
+                }
+
+                if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+
+            }
 
         let data = {
             result: [],
