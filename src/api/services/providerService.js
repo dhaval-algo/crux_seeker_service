@@ -503,6 +503,9 @@ module.exports = class providerService {
             course_count: (result.course_count) ? result.course_count : 0,
             featured_ranks: [],
             placements: {},
+            gallery: (result.gallery) ? result.gallery : null,
+            facilities: (result.facilities) ? result.facilities : null,
+            highlights: (result.highlights) ? result.highlights : null,
         };
 
         if(!isList){
