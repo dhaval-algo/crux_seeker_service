@@ -413,32 +413,7 @@ module.exports = class learnContentService {
                     query.bool.must.push(filter_object);
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                 }
-            }
-            if(req.query['f'].includes("Price Type:"))
-            {
-                query.bool.must.push(  {          
-                    "bool": {
-                      "must_not": [
-                        {"term": {
-                          "display_price": {
-                            "value": "false"
-                          }
-                        }}
-                      ]
-                    }
-                 });
-                esFilters["display_price"] =  {          
-                    "bool": {
-                      "must_not": [
-                        {"term": {
-                          "display_price": {
-                            "value": "false"
-                          }
-                        }}
-                      ]
-                    }
-                 };
-            }
+            }            
         }
 
         if(req.query['rf']){
@@ -513,22 +488,7 @@ module.exports = class learnContentService {
                 exemted_filters = all_filters;
             }
 
-            exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
-
-            if(filter.elastic_attribute_name == "pricing_type")
-            {
-                exemted_filters.push(  {          
-                    "bool": {
-                      "must_not": [
-                        {"term": {
-                          "display_price": {
-                            "value": "false"
-                          }
-                        }}
-                      ]
-                    }
-                 });
-            }
+            exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);          
 
             exemted_filters.push(published_filter);
 
@@ -991,9 +951,7 @@ module.exports = class learnContentService {
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
-                 esQuery.bool.filter.push(
-                    { "term": { "display_price": true } }
-                );
+                
             }
             let sort = null
             switch (subType) {                
