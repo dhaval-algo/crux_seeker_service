@@ -1,6 +1,7 @@
 const recommendationService = require("../services/recommendationService");
 let RecommendationService = new recommendationService();
 const userService = require("../../services/v1/users/user");
+const {formatResponseField } = require("../utils/general");
 
 module.exports = {   
     getRecommendedCourses: async (req, res) => {
@@ -8,133 +9,163 @@ module.exports = {
         let response
         switch (type) {
             case "related-courses":             
-                response = await RecommendationService.getRelatedCourses(req)                     
-                res.status(200).send(response);             
+                response = await RecommendationService.getRelatedCourses(req);          
                 break;
+
             case "courses-to-get-started": 
-                response = await RecommendationService.getPopularCourses(req)
-                res.status(200).send(response); 
+                response = await RecommendationService.getPopularCourses(req);
                 break;
+
             case "explore-courses-from-top-categories": 
                 response = await  RecommendationService.exploreCoursesFromTopCatgeories(req);
-                res.status(200).send(response); 
                 break;
 
             case "top-picks-for-you":  
                 response = await RecommendationService.getTopPicksForYou(req);
-                res.status(200).send(response); 
                 break;
 
             case "recently-viewed-courses":             
-                response = await RecommendationService.getRecentlyViewedCourses(req)                     
-                res.status(200).send(response);             
+                response = await RecommendationService.getRecentlyViewedCourses(req);
                 break;
            
             case "recently-searched-courses": 
-                response = await RecommendationService.recentlySearchedCourses(req)
-                res.status(200).send(response);
+                response = await RecommendationService.recentlySearchedCourses(req)                
                 break;
 
             case "people-are-also-viewing": 
                 response = await RecommendationService.peopleAreAlsoViewing(req);
-                res.status(200).send(response);
                 break;
+
             case "enquiry-based-recommendation": 
                 response = await RecommendationService.enquiryBasedRecommendation(req);
-                res.status(200).send(response);
                 break;
+
             case "wishlist-based-recommendation": 
                 response = await RecommendationService.wishlistBasedRecommendation(req);
-                res.status(200).send(response);
                 break;
+
             default:
-                res.status(200).send({});
-                break;
+                res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
+                break;           
+        }
+
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
         }
     },
     getRecommendedArticles : async(req,res)=>{
 
         const { type } = req.query;
-
+        let response
         switch (type) {
  
             case "recently-viewed-articles": {
-                const response = await RecommendationService.getRecentlyViewedArticles(req);
-                res.status(200).send(response);
+                response = await RecommendationService.getRecentlyViewedArticles(req);
             }
             break;
 
             case "recently-searched-articles": {
-                const response = await RecommendationService.getRecentlySearchedArticles(req);
-                res.status(200).send(response);
+                response = await RecommendationService.getRecentlySearchedArticles(req);
             }
             break;
 
-
             case "people-are-also-viewing":{
-                const response = await RecommendationService.getPeopleAreAlsoViewingArticles(req);
-                res.status(200).send(response);
+                response = await RecommendationService.getPeopleAreAlsoViewingArticles(req);
             }
 
             break;
 
             case "top-picks-for-you":{
-                const response = await RecommendationService.getTopPicksForYouArticles(req);
-                res.status(200).send(response);
+                response = await RecommendationService.getTopPicksForYouArticles(req);
             }
             break;
 
             case "popular-articles":{
-                const response = await RecommendationService.getPopularArticles(req);
-                res.status(200).send(response);
+                response = await RecommendationService.getPopularArticles(req);
             }
             break;
             case "related-articles":             
                 response = await RecommendationService.getRelatedArticle(req)
-                res.status(200).send(response);             
                 break;
             case "recommendation-for-article":             
-                response = await RecommendationService.getRecommendationForArticle(req) 
-                res.status(200).send(response);             
+                response = await RecommendationService.getRecommendationForArticle(req)
                 break;
             case "recommendation-articles-for-courses":             
-                response = await RecommendationService.getRecommendationArticlesforCourse(req) 
-                res.status(200).send(response);             
+                response = await RecommendationService.getRecommendationArticlesforCourse(req)
                 break;
-            default:
-                res.status(200).send({});
-                break;
+                default:
+                    res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
+                    break;           
+        }
+
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
         }
     },
 
     getFeaturedArticles: async (req, res) =>{
-        const response = await RecommendationService.getFeaturedArticles(req)                     
-                res.status(200).send(response);  
+        const response = await RecommendationService.getFeaturedArticles(req) 
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
+        }
     },
 
     getArticleAdvice: async (req, res) =>{
-        const response = await RecommendationService.getArticleAdvice(req)                     
-                res.status(200).send(response);  
+        const response = await RecommendationService.getArticleAdvice(req)  
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
+        }
     },
 
     getRecommendedLearnPaths: async (req, res) => {
         const { type } = req.query;
-
+        let response
         switch (type) {
            
             case "learn-paths-to-get-started": 
-                const response = await RecommendationService.getPopularLearnPaths(req);
-                res.status(200).send(response);  
+                response = await RecommendationService.getPopularLearnPaths(req);
                 break;
-            case "related-learning-path-for-course": {
-                const response = await RecommendationService.getRelatedLearningPathForCourse(req);
-                res.status(200).send(response);  
-            }
+            case "related-learning-path-for-course": 
+                response = await RecommendationService.getRelatedLearningPathForCourse(req);
                 break;
            
             default:
-                res.status(200).send({});
-                break;
+                res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
+                break;           
+        }
+    
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
         }
     },
 };
