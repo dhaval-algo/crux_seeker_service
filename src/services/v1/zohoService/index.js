@@ -175,7 +175,7 @@ const prepareLeadData = (enquiry_id) => {
             City:'',
             Country:'',
             Current_Company:false,
-            Lead_Origin_or_Source:'',
+            Lead_Source:'',
             Course:'',
             Experience_Level:'',
             Highest_Degree:''
@@ -187,7 +187,6 @@ const prepareLeadData = (enquiry_id) => {
             let enquiry = await  models.enquiry.findOne({where: {id: enquiry_id}})
             
             leadObj.Enquiry_Unique_ID += enquiry.id;
-            leadObj.Course = enquiry.courseName;
             leadObj.Phone = enquiry.dataValues.phone || "";
 
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
@@ -203,8 +202,11 @@ const prepareLeadData = (enquiry_id) => {
             }};
             const learnContent = await elasticService.search('learn-content', query)
 
-            if( learnContent.hits && learnContent.hits.length > 0 )
-            leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/course/" + learnContent.hits[0]._source.slug
+            if( learnContent.hits && learnContent.hits.length > 0 ){
+                leadObj.Lead_Source =  process.env.FRONTEND_URL+ "course/" + learnContent.hits[0]._source.slug
+                leadObj.Course = leadObj.Lead_Source
+            }
+
 
             /* code to fetch profile data
             if(enquiry.userId != undefined){
@@ -304,7 +306,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             City:'',
             Country:'',
             Current_Company:false,
-            Lead_Origin_or_Source:'',
+            Lead_Source:'',
             Course:'',
             Experience_Level:'',
             Highest_Degree:''
@@ -314,7 +316,6 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             let enquiry = await  models.learnpath_enquiry.findOne({where: {id: enquiry_id}})
             
             leadObj.Enquiry_Unique_ID += enquiry.id;
-            leadObj.Course = enquiry.learnpathName;
             leadObj.Phone = enquiry.dataValues.phone || "";
 
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
@@ -331,7 +332,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             const learnPath = await elasticService.search('learn-path', query)
                 
             if( learnPath.hits && learnPath.hits.length > 0 )
-                leadObj.Lead_Origin_or_Source =  process.env.FRONTEND_URL+ "/learnpath/" + learnPath.hits[0]._source.slug
+                leadObj.Lead_Source =  process.env.FRONTEND_URL+ "learnpath/" + learnPath.hits[0]._source.slug
             
             /* code for fetching profile data
             if(enquiry.userId != undefined){

@@ -4,7 +4,7 @@ const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
 const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
-
+const models = require("../../../models");
 const { 
     getFilterConfigs, 
     parseQueryFilters,
@@ -22,6 +22,7 @@ const RedisConnection = new redisConnection();
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const articleService = require("./articleService");
+const mLService = require("./mLService");
 let ArticleService = new articleService();
 
 let slugMapping = [];
@@ -78,9 +79,10 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
                         }
                     }                    
                 }
+                RedisConnection.set(cacheName, entities);
             }
         }
-        RedisConnection.set(cacheName, entities);
+        
        // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG); 
     }
     if(skipCache !=true) {
@@ -338,6 +340,9 @@ module.exports = class learnContentService {
             for(let i=0; i<slugs.length; i++){
                 query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
+                if(!slug_data){
+                    return callback(null, {status: 404, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+                }
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
                 var slug_description = slug_data.description;
@@ -408,32 +413,7 @@ module.exports = class learnContentService {
                     query.bool.must.push(filter_object);
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                 }
-            }
-            if(req.query['f'].includes("Price Type:"))
-            {
-                query.bool.must.push(  {          
-                    "bool": {
-                      "must_not": [
-                        {"term": {
-                          "display_price": {
-                            "value": "false"
-                          }
-                        }}
-                      ]
-                    }
-                 });
-                esFilters["display_price"] =  {          
-                    "bool": {
-                      "must_not": [
-                        {"term": {
-                          "display_price": {
-                            "value": "false"
-                          }
-                        }}
-                      ]
-                    }
-                 };
-            }
+            }            
         }
 
         if(req.query['rf']){
@@ -508,22 +488,7 @@ module.exports = class learnContentService {
                 exemted_filters = all_filters;
             }
 
-            exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);
-
-            if(filter.elastic_attribute_name == "pricing_type")
-            {
-                exemted_filters.push(  {          
-                    "bool": {
-                      "must_not": [
-                        {"term": {
-                          "display_price": {
-                            "value": "false"
-                          }
-                        }}
-                      ]
-                    }
-                 });
-            }
+            exemted_filters = Object.keys(exemted_filters).map(key=>exemted_filters[key]);          
 
             exemted_filters.push(published_filter);
 
@@ -853,11 +818,10 @@ module.exports = class learnContentService {
     }
 
     async getRelatedCourses(req, callback) {
-        const { courseId } = req.params;
-        const { currency } = req.query;
-        const MAX_RESULTS = 6;
-
         try {
+            const  courseId =  req.query.courseId.toString();
+            const {currency,page=1,limit=6} = req.query;
+            const offset = (page-1) * limit;
 
             //fields to fetch 
             let fields = [
@@ -910,7 +874,7 @@ module.exports = class learnContentService {
                 }
             })
 
-            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: MAX_RESULTS });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit });
             
             let courses = [];
             if (result && result.hits.length > 0) {
@@ -920,8 +884,16 @@ module.exports = class learnContentService {
                     courses.push(optimisedCourse);
                 }
             }
-
-            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+           
+            const mlCourses = await this.getSimilarCoursesML(courseId,currency,page,limit);
+            let show = null;
+            if (mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
+                show = 'ml';
+            }
+            else {
+                show = 'logic';
+            }
+            const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
             callback(null, response);
         } catch (error) {
             console.log("Error while processing data for related courses", error);
@@ -930,14 +902,14 @@ module.exports = class learnContentService {
     }
 
     async getPopularCourses(req, callback, returnData) {
-        let { type } = req.params; // Populer, Trending,Free
-        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        let { subType } = req.query; // Populer, Trending,Free
+        let { category, sub_category, topic, currency=process.env.DEFAULT_CURRENCY, page = 1, limit =20} = req.query;       
         
-        let offset= (page -1) * limit
+        const offset= (page -1) * limit
         
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${type}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if(cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -975,16 +947,14 @@ module.exports = class learnContentService {
                 );
             } 
             
-            if(type && type =="Free"){
+            if(subType && subType =="Free"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
-                 esQuery.bool.filter.push(
-                    { "term": { "display_price": true } }
-                );
+                
             }
             let sort = null
-            switch (type) {                
+            switch (subType) {                
                 case "Trending":
                     sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
                     break; 
@@ -1003,7 +973,7 @@ module.exports = class learnContentService {
                 RedisConnection.set(cacheKey, courses,process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
             }
         }
-            let response = { success: true, message: "list fetched successfully", data:{ list: courses } };
+            let response = { success: true, message: "list fetched successfully", data:{ list: courses,mlList:[],show:"logic" } };
             if(returnData)
             {
                 return courses;
@@ -1638,12 +1608,210 @@ module.exports = class learnContentService {
                             }
                         }                    
                     }
+                    RedisConnection.set(cacheName, learn_types_images);
                 }
             }           
-            RedisConnection.set(cacheName, learn_types_images);
+            
            // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LEARN_TYPE_IMAGE);             
         } 
 
         return learn_types_images
+    }
+
+    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page=1,limit=6) {
+
+        const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId);
+        let courses = [];
+        const offset = (page-1) * limit;
+        if (result && result.length) {
+            for (const courseElasticData of result.slice(offset,offset+limit)) {
+                const courseData = await this.generateSingleViewData(courseElasticData._source, false, currency);
+                const { accreditations, ads_keywords, subtitle, prerequisites, target_students, content, meta_information, ...optimisedCourse } = courseData;
+                optimisedCourse.similarity = courseIdSimilarityMap[optimisedCourse.id];
+                courses.push(optimisedCourse);
+            }
+        }
+        return courses;
+
+    }
+    async getTopCategories(req, callback) {
+        try {
+
+            const cacheName = "top-categories";
+            const cacheData = await RedisConnection.getValuesSync(cacheName);
+            if (!cacheData.noCacheData) {
+                return callback(null, cacheData);
+            }
+
+            const query = {
+                bool: {
+                    "must": [
+                        {
+                            "ids": {
+                                "values": [
+                                    "HOME_2"
+                                ]
+                            }
+                        }
+                    ]
+                }
+            };
+            const result = await elasticService.search('home-page', query, { _source: "category_recommendations" });
+            let categoryRecommendations = [];
+            
+            if (result && result.hits && result.hits.length) {
+                categoryRecommendations = result.hits[0]["_source"]["category_recommendations"];
+                
+            }
+
+            const response = { "success": true, message: "list fetched successfully", data: { list: categoryRecommendations } };
+
+            if(categoryRecommendations.length){
+
+                RedisConnection.set(cacheName, response);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TOP_CATEGORIES || 86400);
+            }
+
+            
+
+            callback(null, response);
+
+        }
+        catch (error) {
+            console.log("Error occured while fetching top categories : ", error)
+            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+
+        }
+    }
+
+
+    async exploreCoursesFromTopCatgeories(req, callback) {
+
+        try {
+            req.query.subType = "Popular"
+            const data = await this.getPopularCourses(req, null, true);
+            callback(null, { "success": true ,message: "list fetched successfully", data: { list: data,mlList:[],show:"logic" } });
+
+        } catch (error) {
+            console.log("Error occured while fetching top courses : ",error)
+            callback(null, { "success": false ,message: "failed to fetch", data: { list: [] } });
+        }
+    }
+
+
+    async getTopPicksForYou(req, callback) {
+
+        try {
+            const userId = req.user.userId;
+            const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+
+            let skills = null;
+            const topSkills = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'primarySkills' } });
+
+            if (topSkills && topSkills.value && topSkills.value != "{}") {
+                skills = JSON.parse(topSkills.value);
+            }
+            else {
+                const additionalSkills = await models.user_meta.findOne({ where: { userId: userId, metaType: 'primary', key: 'skills' } })
+                if (additionalSkills && additionalSkills.value && additionalSkills.value != "{}") skills = JSON.parse(additionalSkills.value);
+            }
+
+            let workExp = null;
+            const workExperience = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'workExp' } });
+
+            let skillsKeywords = [];
+            let workExpKeywords = [];
+
+            if (skills) {
+                for (const key in skills) {
+                    skillsKeywords.push(key);
+                    skillsKeywords.push(...skills[key]);
+                }
+            }
+
+            if (workExperience && workExperience.value && workExperience.value != "[]") {
+                workExp = JSON.parse(workExperience.value);
+                workExp.forEach((workExp) => {
+                    if (workExp.jobTitle) {
+                        workExpKeywords.push(workExp.jobTitle.label);
+                    }
+
+                    if (workExp.industry) {
+                        workExpKeywords.push(workExp.industry.label);
+                    }
+                });
+            }
+
+            let limitForSkills = 0;
+            let limitForWorkExp = 0;
+
+            if (skills && workExp) {
+                limitForSkills = Math.floor(limit / 2);
+                limitForWorkExp = limit - limitForSkills;
+            }
+            else if (skills) {
+                limitForSkills = limit;
+            }
+            else if (workExp) {
+                limitForWorkExp = limit;
+            }
+
+            const esQuery = {
+                bool: {
+                    must: [
+                        {
+                            term: {
+                                "status.keyword": "published"
+                            }
+                        }
+                    ],
+                    should: [
+                        {
+                            query_string: {
+                                default_field: "title"
+                            }
+                        }
+                    ]
+                }
+            }
+
+            let courses = [];
+            if (skills) {
+                const offset = (page - 1) * limitForSkills;
+                esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills });
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateSingleViewData(hit._source, true, currency)
+                        courses.push(data);
+                    }
+                }
+            }
+
+            if (workExp) {
+                const offset = (page - 1) * limitForWorkExp;
+                esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp });
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateSingleViewData(hit._source, true, currency)
+                        courses.push(data);
+                    }
+                }
+            }
+
+            if (!skills && !workExp) {
+                req.query.subType = "Popular"
+                if (!req.query.page) req.query.page = 1;
+                if (!req.query.limit) req.query.limit = 6;
+                courses = await this.getPopularCourses(req, null, true);
+            }
+
+            callback(null, { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } });
+        } catch (error) {
+            console.log("Error occured while fetching top picks for you : ", error);
+            callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
+
+        }
     }
 }

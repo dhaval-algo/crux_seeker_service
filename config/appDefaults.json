@@ -11,7 +11,8 @@
     "otpInvalidTries": 3,
     "verificationUrl":"http://localhost:3000/verify-account",
     "resetPasswordUrl":"http://localhost:3000/reset-password",
-    "redirectUrl":"/"
+    "redirectUrl":"/",
+    "ml_related_courses":60
   },
   "production": {
     "tokenExpiry": 518400,
@@ -25,7 +26,8 @@
     "otpInvalidTries": 3,
     "verificationUrl":"https://careervira.com/verify-account",
     "resetPasswordUrl":"https://careervira.com/reset-password",
-    "redirectUrl":"/"
+    "redirectUrl":"/",
+    "ml_related_courses":60
   },
   "staging": {
     "tokenExpiry": 518400,
@@ -39,6 +41,7 @@
     "otpInvalidTries": 3,
     "verificationUrl":"https://crux.ajency.in/verify-account",
     "resetPasswordUrl":"https://crux.ajency.in/reset-password",
-    "redirectUrl":"/"
+    "redirectUrl":"/",
+    "ml_related_courses":60
   }
 }
