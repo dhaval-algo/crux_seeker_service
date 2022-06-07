@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+const geoIpController = require('../../../controllers/geoIpControlller');
 const learnContentController = require('../../../controllers/learnContentController');
 const providerController = require('../../../controllers/providerController');
 const categoryController = require('../../../controllers/categoryController');
@@ -77,5 +78,5 @@ router.post('/activity-course-viewed',injectTokenPayload, learnContentController
 router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 //learnpath enquiry
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
-
+router.get('/getIpDetails', geoIpController.getIpDetails )
 module.exports = router;
