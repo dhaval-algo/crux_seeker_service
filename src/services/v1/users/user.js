@@ -1558,6 +1558,215 @@ const addLearnPathToWishList = async (req,res) => {
     }
 }
 
+const addCourseToShare = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const courseIdsFromClient = validators.validateAddWishlistParams(req.body)
+        if (!courseIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'course_share',
+                value: courseIdsFromClient
+            }
+        });
+        let courseIds = []
+        existingIds = existingIds.map((course) => course.value)
+        courseIdsFromClient.forEach((courseId) => {
+            if (!existingIds.includes(courseId)) courseIds.push(courseId)
+        });
+
+        if (courseIds.length) {
+            const dataToSave = courseIds.map((courseId) => {
+                return {
+                    key: "course_share",
+                    value: courseId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            // const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+            // const data = { email: userinfo.value, courseIds: numericIds }
+            await logActvity("COURSE_SHARE", userId, courseIds);
+            // sendDataForStrapi(data, "profile-add-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+
+const addLearnPathToShare = async (req,res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const learnPathIdsFromClient = validators.validateLearnPathAddWishlist(req.body)
+        if (!learnPathIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'learnpath_share',
+                value: learnPathIdsFromClient
+            }
+        });
+        let learnpathIds = []
+        existingIds = existingIds.map((learnpath) => learnpath.value)
+        learnPathIdsFromClient.forEach((learnpathId) => {
+            if (!existingIds.includes(learnpathId)) learnpathIds.push(learnpathId)
+        });
+
+        if (learnpathIds.length) {
+            const dataToSave = learnpathIds.map((learnpathId) => {
+                return {
+                    key: "learnpath_share",
+                    value: learnpathId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            // const numericIds = learnpathIds.map((learnpathId) => learnpathId.split("LRN_PTH_").pop())
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+            // const data = { email: userinfo.value, learnpathIds: numericIds }
+            await logActvity("LEARNPATH_SHARE", userId, learnpathIds);
+            // sendDataForStrapi(data, "profile-add-learnpath-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const addArticleToShare = async (req,res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const articleIdsFromClient = validators.validateAddArticleParams(req.body)
+        if (!articleIdsFromClient) {
+            return res.status(200).send({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'article_share',
+                value: articleIdsFromClient
+            }
+        });
+        let articleIds = []
+        existingIds = existingIds.map((article) => article.value)
+        articleIdsFromClient.forEach((articleId) => {
+            if (!existingIds.includes(articleId)) articleIds.push(articleId)
+        });
+
+        if (articleIds.length) {
+
+            const dataToSave = articleIds.map((articleId) => {
+                return {
+                    key: "article_share",
+                    value: articleId,
+                    userId: userId
+                }
+            })
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            await logActvity("ARTICLE_SHARE", userId, articleIds);
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+    } catch (error) {
+
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+
+        })
+    }
+}
+
 
 const addCourseToRecentlyViewed = async (req,res) => {
 
@@ -3501,6 +3710,9 @@ module.exports = {
     removeLearnPathFromWishList,
     fetchWishListIds,
     fetchLearnPathWishListIds,
+    addCourseToShare,
+    addLearnPathToShare,
+    addArticleToShare,
     wishListCourseData,
     wishListLearnPathData,
     getEnquiryList,
