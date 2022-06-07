@@ -202,6 +202,14 @@ const invalidatePP = async () => {
         }
 
         RedisConnection.set(cacheKey, res);
+    }
+}
+
+const invalidatSkills = async () => {
+    try {
+        await CategoryService.getSkills({query:{}}, (err, data) => {}, true);
+    } catch (error) {
+        console.log("Skills cache invalidation Error",error)
     }  
 }
 
@@ -220,5 +228,6 @@ module.exports = {
     invalidateTeam,
     invalidateCareer,
     invalidateTNM,
-    invalidatePP
+    invalidatePP,
+    invalidatSkills
 }

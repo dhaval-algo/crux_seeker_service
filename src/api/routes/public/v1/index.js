@@ -16,7 +16,8 @@ const footerController = require('../../../controllers/footerController');
 
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
-
+const enquiryController = require("../../../controllers/enquiryController")
+const recommendationMiddleware = require("../../../../services/v1/middleware/recommendation");
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
@@ -29,10 +30,11 @@ router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
 router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
-router.get('/related-courses/:courseId', learnContentController.getRelatedCourses);
+router.get('/recommended-courses/',recommendationMiddleware, learnContentController.getRecommendedCourses);
 router.get('/popular-courses/:type', learnContentController.getPopularCourses);
 router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths);
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
+router.get('/get-top-categories/', learnContentController.getTopCategories);
 
 router.get('/news', newsController.getNewsContent);
 router.get('/news/:slug', newsController.getNewsBySlug);
@@ -58,6 +60,7 @@ router.get('/partners/:slug', partnerController.getSinglePartner);
 
 router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
+router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', searchController.getSearchResult);
 
@@ -77,5 +80,9 @@ router.post('/contact-us',footerController.sendContactEmail);
 router.post('/feedback',footerController.sendFeedbackEmail)
 
 router.post('/activity-course-viewed',injectTokenPayload, learnContentController.addActivity);
+// course enquiry;
+router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
+//learnpath enquiry
+router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
 
 module.exports = router;

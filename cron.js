@@ -6,10 +6,22 @@ const cron = require('node-cron')
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 const { storeActivity, learnpathActivity} = require('./src/utils/activityCron');
-const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam, invalidateCareer, invalidatePP, invalidateTNM} = require('./src/utils/cacheInvalidationCron');
+const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam, invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills} = require('./src/utils/cacheInvalidationCron');
+const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 
 
 // cron jobs
+const ENABLE_TOP_TEN_CRON = process.env.ENABLE_TOP_TEN_CRON || true
+if(ENABLE_TOP_TEN_CRON){
+    cron.schedule(process.env.TOP_TEN_CRON_TIME, async function () {
+        try {        
+            await storeTopTenGoal()
+        } catch (error) {
+            console.log("Error in storing top ten goals", error);
+        }
+    });
+}
+
 const ENABLE_SITEMAP_CRON = process.env.ENABLE_SITEMAP_CRON || false;
 if(ENABLE_SITEMAP_CRON)
 {
@@ -63,7 +75,7 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidateCareer()
             await invalidatePP()
             await invalidateTNM()
-
+            await invalidatSkills()
         } catch (error) {
             console.log("Error in cron", error);
         }
