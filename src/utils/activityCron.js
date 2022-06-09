@@ -6,7 +6,7 @@ const moment = require("moment");
 
 const learnpathActivity = async () => {
     let activity_types = {}
-    let activity_count = []
+    let activity_count = {}
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],
         where:{
@@ -178,7 +178,7 @@ const learnpathActivity = async () => {
             }
         }    
     }
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
             let payload = {
@@ -193,7 +193,7 @@ const learnpathActivity = async () => {
 
 const articleActivity = async () => {
     let activity_types = {}
-    let activity_count = []
+    let activity_count = {}
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],     
         where:{
@@ -333,7 +333,7 @@ const articleActivity = async () => {
             }
         }
     }
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
             let payload = {
@@ -347,7 +347,7 @@ const articleActivity = async () => {
 
 const storeActivity = async () => {
     let activity_types = {}
-    let activity_count = []
+    let activity_count = {}
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],     
         where:{
@@ -521,7 +521,7 @@ const storeActivity = async () => {
             }
         }
     }
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
             let payload = {
