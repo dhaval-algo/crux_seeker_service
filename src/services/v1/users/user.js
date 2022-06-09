@@ -2901,8 +2901,8 @@ const bookmarkArticle = async (req,res) => {
                 }
             })
             const data = { email: userinfo.value, articleIds: numericIds }
+            await logActvity("ARTICLE_WISHLIST", userId, articleIds);
             sendDataForStrapi(data, "profile-bookmark-article");
-
             return res.status(200).json({
                 success: true,
                 data: {
