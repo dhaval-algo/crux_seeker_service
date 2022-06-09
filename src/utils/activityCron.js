@@ -13,7 +13,7 @@ const learnPathWeightDistribution = {
 
 const learnpathActivity = async () => {
     let activity_types = {}
-    let activity_count = []
+    let activity_count = {}
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],
         where:{
@@ -206,21 +206,21 @@ const learnpathActivity = async () => {
         }    
     }
     
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
-            value[key].all_time.all_time_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value[key].all_time.learnpath_views + 
-                                                                        learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value[key].all_time.learnpath_wishlists +
-                                                                        learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value[key].all_time.learnpath_enquiries + 
-                                                                        learnPathWeightDistribution["LEARNPATH_SHARE"]*value[key].all_time.learnpath_share;
-            value[key].last_x_days.trending_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value[key].last_x_days.learnpath_views + 
-                                                                        learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value[key].last_x_days.learnpath_wishlists +
-                                                                        learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value[key].last_x_days.learnpath_enquiries + 
-                                                                        learnPathWeightDistribution["LEARNPATH_SHARE"]*value[key].last_x_days.learnpath_share;
+            value.all_time.all_time_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.all_time.learnpath_views + 
+                                                                        learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.all_time.learnpath_wishlists +
+                                                                        learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.all_time.learnpath_enquiries + 
+                                                                        learnPathWeightDistribution["LEARNPATH_SHARE"]*value.all_time.learnpath_share;
+            value.last_x_days.trending_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.last_x_days.learnpath_views + 
+                                                                        learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.last_x_days.learnpath_wishlists +
+                                                                        learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.last_x_days.learnpath_enquiries + 
+                                                                        learnPathWeightDistribution["LEARNPATH_SHARE"]*value.last_x_days.learnpath_share;
         }
     }
     
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
             let payload = {
@@ -241,7 +241,7 @@ const articleWeightDistribution = {
 
 const articleActivity = async () => {
     let activity_types = {}
-    let activity_count = []
+    let activity_count = {}
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],     
         where:{
@@ -401,7 +401,18 @@ const articleActivity = async () => {
             }
         }
     }
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            value.all_time.all_time_score = articleWeightDistribution["ARTICLE_VIEW"]*value.all_time.article_views + 
+                                                                        articleWeightDistribution["ARTICLE_WISHLIST"]*value.all_time.article_wishlists +
+                                                                        articleWeightDistribution["ARTICLE_SHARE"]*value.all_time.article_share;
+            value.last_x_days.trending_score = articleWeightDistribution["ARTICLE_VIEW"]*value.last_x_days.article_views + 
+                                                                        articleWeightDistribution["ARTICLE_WISHLIST"]*value.last_x_days.article_wishlists +
+                                                                        articleWeightDistribution["ARTICLE_SHARE"]*value.last_x_days.article_share;
+        }
+    }
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
             let payload = {
@@ -616,7 +627,20 @@ const storeActivity = async () => {
             }
         }
     }
-    if(activity_count.length){
+    if(Object.keys(activity_count).length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            value.all_time.all_time_score = learnContentWeightDistribution["COURSE_VIEW"]*value.all_time.course_views + 
+                                                                        learnContentWeightDistribution["COURSE_WISHLIST"]*value.all_time.course_wishlists +
+                                                                        learnContentWeightDistribution["COURSE_ENQUIRED"]*value.all_time.course_enquiries + 
+                                                                        learnContentWeightDistribution["COURSE_SHARE"]*value.all_time.course_share;
+            value.last_x_days.trending_score = learnContentWeightDistribution["COURSE_VIEW"]*value.last_x_days.course_views + 
+                                                                        learnContentWeightDistribution["COURSE_WISHLIST"]*value.last_x_days.course_wishlists +
+                                                                        learnContentWeightDistribution["COURSE_ENQUIRED"]*value.last_x_days.course_enquiries + 
+                                                                        learnContentWeightDistribution["COURSE_SHARE"]*value.last_x_days.course_share;
+        }
+    }
+    if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
             let payload = {
