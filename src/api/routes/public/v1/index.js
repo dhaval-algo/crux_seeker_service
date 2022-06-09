@@ -80,6 +80,8 @@ router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLea
 
 //Home page API
 router.get('/homepage-top-categories', homeController.getHomePageTopCategories)
+router.get('/homepage-top-partners', homeController.getHomePageTopPartners)
+router.get('/homepage-top-institutes', homeController.getHomePageTopInstitutes)
 
 //Category page API
 router.get('/learn-content-learn-types', learnContentController.getLearnContentLearntypes)
