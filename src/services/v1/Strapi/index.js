@@ -190,7 +190,6 @@ const createRecordInStrapi = async (enquiryId) => {
 
     /* Create recorde in strapi enquiry collection*/
     axios.post(request_url, data).then((response) => {        
-        console.log(response.data);
         return
     }).catch(e => {
         console.log(e);
@@ -203,7 +202,6 @@ const createRecordInStrapiforLearnPath = async (enquiryId) => {
     const data = await prepareStrapiDataforLearnPath(enquiryId)
 
     axios.post(request_url, data).then((response) => {        
-        console.log(response.data);
         return
     }).catch(e => {
         console.log(e);
