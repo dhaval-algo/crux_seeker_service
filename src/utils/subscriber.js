@@ -11,12 +11,12 @@ eventEmitter.on('error', () => {
 
 eventEmitter.on('enquiry_placed', (enquiryId) => {
     createLead(enquiryId)
-    createRecordInStrapi(enquiryId)
+    //createRecordInStrapi(enquiryId)
 })
 
 eventEmitter.on('learnpathenquiry', (enquiryId) => {
     createLearnPathLead(enquiryId)
-    createRecordInStrapiforLearnPath(enquiryId)
+    //createRecordInStrapiforLearnPath(enquiryId)
 })
 
 module.exports = eventEmitter

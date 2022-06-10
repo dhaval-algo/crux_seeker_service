@@ -1,0 +1,4 @@
+This folder is meant for the scripts which may be one time run for like
+importOldEnquiries.js which imports old data to newly define tables etc or
+regularly  automated scripts like cron.js. In future, this folder will updated
+with such scripts 
