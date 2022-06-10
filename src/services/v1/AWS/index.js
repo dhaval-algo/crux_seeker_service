@@ -58,14 +58,14 @@ const uploadImageToS3 = (path, image) => {
 }
 
 
-const uploadResumeToS3 = (path, image) => {
+const uploadResumeToS3 = (path, file) => {
   return new Promise( resolve => {
-      let imageUrl = `${S3Url}/${path}`;
+      let fileUrl = `${S3Url}/${path}`;
       let upload = new AWS.S3.ManagedUpload({
           params: {
             Bucket: AWS_IMAGE_BUCKET,
             Key: path,
-            Body: image,
+            Body: file,
             ACL: "public-read"
           }
         });
@@ -73,8 +73,7 @@ const uploadResumeToS3 = (path, image) => {
 
         promise.then(
           function(data) {
-          //   alert("imageUrl uploaded photo.");
-            resolve(imageUrl);
+            resolve(fileUrl);
           },
           function(err) {resolve(err.message);
           }
