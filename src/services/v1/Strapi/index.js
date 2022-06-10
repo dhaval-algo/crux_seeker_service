@@ -207,12 +207,49 @@ const prepareStrapiData = (enquiry_id) => {
             send_communication_emails:null,
             correspondence_email:null,
             provider:null,
-            partner_status:null
+            partner_status:null,
+            course_id:'',
+            full_name:'',
+            highest_degree:'',
+            student: null,
+            enquiry_message:"",
+            enquiry_id:"LRN_CNT_ENQ_"
+
 
         }
         try {
+            let enquiry = await  models.enquiry.findOne({where: {id: enquiry_id}})
+            
+            strapiObj.enquiry_id += enquiry.dataValues.id;
+            strapiObj.course_name = enquiry.dataValues.courseName;
+            strapiObj.course_id = enquiry.dataValues.courseId;
+            strapiObj.partner_id = enquiry.dataValues.partnerId
+            strapiObj.phone = enquiry.dataValues.phone || "";
+
+            strapiObj.full_name = enquiry.dataValues.fullName || ""
+            strapiObj.first_name = enquiry.dataValues.fullName.split(" ")[0] || ""
+            strapiObj.last_name = enquiry.dataValues.fullName.split(strapiObj.first_name)[1] || "-"
+            strapiObj.email = enquiry.dataValues.email || "";
+            strapiObj.student = Boolean(enquiry.dataValues.student) || null;
+            strapiObj.enquiry_message = enquiry.dataValues.enquiryMessage || "";
+            strapiObj.experience = enquiry.dataValues.experience || "";
+            strapiObj.highest_degree = enquiry.dataValues.highestDegree || "";
+            strapiObj.enquiry_on = "learn_content";
+            strapiObj.enquiry_submitted_on = enquiry.dataValues.createdAt;
+            
+            const query = { "bool": {
+                "must": [{ term: { "_id": enquiry.courseId }}]
+            }};
+            
+            const learnContent = await elasticService.search('learn-content', query)
+
+            if( learnContent.hits && learnContent.hits.length > 0 ){
+                strapiObj.source_url =  process.env.FRONTEND_URL+ "course/" + learnContent.hits[0]._source.slug
+                strapiObj.course_category = learnContent.hits[0]._source.categories.join()
+            }
+
             // strapiObj.enquiry_id = 'LRN_CNT_ENQ_' + enquiry_id
-            formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
+            /*formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
             if(formSubRec.otherInfo) {
                 // const otherObj = JSON.parse(formSubRec.otherInfo)
                 strapiObj.source_url = formSubRec.otherInfo.sourceUrl
@@ -226,8 +263,8 @@ const prepareStrapiData = (enquiry_id) => {
             } else if(formSubRec.targetEntityType == "provider") {
                 strapiObj.enquiry_on = "provider";
             }
-            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
-            if(formSubValRec != null) {
+            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})*/
+            /*if(formSubValRec != null) {
                 let metaObj = {} 
                 formSubValRec.map((rec) => {
                     if(metaObj[rec.objectType]) {
@@ -253,9 +290,9 @@ const prepareStrapiData = (enquiry_id) => {
                 let education = educationArr[0]
                 let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
                 strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
-                strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+                /*strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
 
-                if(education.specialization) {
+                /*if(education.specialization) {
                     strapiObj.specialization = education.specialization.label
                 }
 
@@ -327,6 +364,7 @@ const prepareStrapiData = (enquiry_id) => {
                 }               
 
             }
+            */
             strapiObj = cleanObject(strapiObj)
             return resolve(strapiObj)
         } catch (error) {
@@ -367,9 +405,42 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
             learning_path:null,
             categories_list:null,
             user_id:null,
-            userId:null
+            userId:null,
+            full_name:'',
+            highest_degree:'',
+            student: null,
+            enquiry_message:"",
+            enquiry_id:"LRN_PTH_ENQ_",
         }
         try {
+            let enquiry = await  models.learnpath_enquiry.findOne({where: {id: enquiry_id}})
+            
+            strapiObj.enquiry_id += enquiry.dataValues.id;
+            strapiObj.learn_path_name = enquiry.dataValues.learnpathName;
+            strapiObj.learn_path_id = enquiry.dataValues.learnpathId;
+            strapiObj.phone = enquiry.dataValues.phone || "";
+
+            strapiObj.full_name = enquiry.dataValues.fullName || ""
+            strapiObj.first_name = enquiry.dataValues.fullName.split(" ")[0] || ""
+            strapiObj.last_name = enquiry.dataValues.fullName.split(strapiObj.first_name)[1] || "-"
+            strapiObj.email = enquiry.dataValues.email || "";
+            strapiObj.student = Boolean(enquiry.dataValues.student) || null;
+            strapiObj.enquiry_message = enquiry.dataValues.enquiryMessage || "";
+            strapiObj.experience = enquiry.dataValues.experience || "";
+            strapiObj.highest_degree = enquiry.dataValues.highestDegree || "";
+            strapiObj.enquiry_on = "learn_path";
+            strapiObj.enquiry_submitted_on = enquiry.dataValues.createdAt;
+
+            const query = { "bool": {
+                "must": [{ term: { "_id": enquiry.learnpathId }}]
+            }};
+            const learnPath = await elasticService.search('learn-path', query)
+                
+            if( learnPath.hits && learnPath.hits.length > 0 ){
+                strapiObj.learn_path_category = learnPath.hits[0]._source.categories.join()
+                strapiObj.learn_path_url =  process.env.FRONTEND_URL+ "learnpath/" + learnPath.hits[0]._source.slug
+            }
+                /*
             // strapiObj.enquiry_id = 'LRN_PTH_ENQ_'+enquiry_id
             formSubRec = await  models.form_submission.findOne({where: {id: enquiry_id}})
             if(formSubRec.otherInfo) {
@@ -383,8 +454,8 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
                 strapiObj.learning_path = formSubRec.targetEntityId.replace(/[^0-9]+/, '');
                 strapiObj.enquiry_on = "learn_path";
             }
-            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})
-            if(formSubValRec != null) {
+            formSubValRec = await models.form_submission_values.findAll({where: {formSubmissionId: enquiry_id}})*/
+            /*if(formSubValRec != null) {
                 let metaObj = {} 
                 formSubValRec.map((rec) => {
                     if(metaObj[rec.objectType]) {
@@ -407,9 +478,9 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
                 let education = educationArr[0]
                 let workExp = (workExpArr && workExpArr.length > 0)? workExpArr[0] : null
                 strapiObj.grade = (education.grade)? education.grade.replace(/"/g,"").replace(/\\/g, '') :  "";     /*Remove unwanted slash and double quotes*/
-                strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
+                /*strapiObj.grade_type = (education.gradeType)? education.gradeType.replace(/"/g,"").replace(/\\/g, '') :  ""; /*Remove unwanted slash and double quotes*/
 
-                if(education.specialization) {
+                /*if(education.specialization) {
                     strapiObj.specialization = education.specialization.label
                 }
 
@@ -464,7 +535,7 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
                     }
                 }
 
-            }
+            }*/
             strapiObj = cleanObject(strapiObj)
             return resolve(strapiObj)
         } catch (error) {
@@ -476,15 +547,16 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
 const createRecordInStrapi = async (enquiryId) => {
     let request_url = `${process.env.API_BACKEND_URL}/enquiries`
     const data = await prepareStrapiData(enquiryId)
-    let userRes ={}
+    /*let userRes ={}
     if(data.userId){
         userRes = await createLoggedUserMeta(data.userId)
         delete data.userId;
         data.enquiry_owner = userRes
-    }
+    }*/
 
-    sendDataForStrapi(data, "update-profile-enquiries");
+    //sendDataForStrapi(data, "update-profile-enquiries");
     /*Send email for partner*/
+    /*
     if(data.send_communication_emails && data.partner_status =="Active")
     {
         let emailPayload = {
@@ -504,10 +576,11 @@ const createRecordInStrapi = async (enquiryId) => {
         
         communication.sendEmail(emailPayload, false)
     }
+    */
 
     /* Create recorde in strapi enquiry collection*/
     axios.post(request_url, data).then((response) => {        
-       // console.log(response.data);
+        console.log(response.data);
         return
     }).catch(e => {
         console.log(e);
@@ -518,14 +591,14 @@ const createRecordInStrapi = async (enquiryId) => {
 const createRecordInStrapiforLearnPath = async (enquiryId) => {
     let request_url = `${process.env.API_BACKEND_URL}/learn-path-enquiries`
     const data = await prepareStrapiDataforLearnPath(enquiryId)
-    let userRes ={}
+    /*let userRes ={}
     if(data.userId){
         userRes = await createLoggedUserMeta(data.userId)
         delete data.userId;
         data.enquiry_owner = userRes
     }
 
-    sendDataForStrapi(data, "update-learnpath-profile-enquiries");
+    sendDataForStrapi(data, "update-learnpath-profile-enquiries");*/
     axios.post(request_url, data).then((response) => {        
         console.log(response.data);
         return
