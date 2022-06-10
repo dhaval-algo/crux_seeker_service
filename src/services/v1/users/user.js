@@ -1190,7 +1190,7 @@ const addCourseToWishList = async (req, res) => {
             const data = { email: userinfo.value, courseIds: numericIds }
             await logActvity("COURSE_WISHLIST", userId, courseIds);
             sendDataForStrapi(data, "profile-add-wishlist");
-            saveSessionKPIs(userId,{courseIds:courseIds});
+            saveSessionKPIs(userId,{courseIds:courseIds},'wishlist');
 
             return res.status(200).json({
                 success: true,

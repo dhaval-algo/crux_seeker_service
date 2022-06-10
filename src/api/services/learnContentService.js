@@ -249,7 +249,7 @@ const saveLearnContentListSessionKPIs = (req, page_details) => {
 
         if (kpiKey) {
 
-            saveSessionKPIs(userId, { [kpiKey]: [page_details.label] });
+            saveSessionKPIs(userId, { [kpiKey]: [page_details.label] },'click');
         }
 
     }
@@ -808,7 +808,7 @@ module.exports = class learnContentService {
                 useCache = true
                 if ((req.user && req.user.userId) || req.segmentId) {
                     const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
-                    saveSessionKPIs(userId, { courses: [cacheData] });
+                    saveSessionKPIs(userId, { courses: [cacheData] },'click');
                 }
             }            
         }
@@ -828,7 +828,7 @@ module.exports = class learnContentService {
 
                 if ((req.user && req.user.userId) || req.segmentId) {
                     const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
-                    saveSessionKPIs(userId, { courses: [data] });
+                    saveSessionKPIs(userId, { courses: [data] },'click');
                 }
                 
             }else{

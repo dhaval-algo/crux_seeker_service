@@ -11,6 +11,12 @@ const sessionKPIsCount = {
     'skills': process.env.SKILLS_SESSION_KPIS_COUNT || 10
 }
 
+const actionWeight = {
+    click: 1 || process.env.SESSION_KPI_CLICK_WEIGHT,
+    wishlist: 1.5 || process.env.SESSION_KPI_WISHLIST_WEIGHT,
+    enquiry: 2 || process.env.SESSION_KPI_ENQUIRY_WEIGHT
+}
+
 const getRecentSessionKPIs = async (userId) => {
 
     const cacheName = `recent-session-kpis-${userId}`;
@@ -69,7 +75,7 @@ const computeRecentSessionKPIs = async (userId, newSessionKPIs) => {
 
 }
 
-const computeAllTimeSessionKPIs = async (userId, newSessionKPIs) => {
+const computeAllTimeSessionKPIs = async (userId, newSessionKPIs, action) => {
 
     const sessionKPIs = await getAllTimeSessionKPIs(userId);
     for (const kpiKey of kpiKeys) {
@@ -79,8 +85,8 @@ const computeAllTimeSessionKPIs = async (userId, newSessionKPIs) => {
 
         for (newKPI of newSessionKPIs[kpiKey]) {
 
-            if (newKPI in sessionKPIs[kpiKey]) sessionKPIs[kpiKey][newKPI] += 1;
-            else sessionKPIs[kpiKey][newKPI] = 1;
+            if (newKPI in sessionKPIs[kpiKey]) sessionKPIs[kpiKey][newKPI] += actionWeight[action];
+            else sessionKPIs[kpiKey][newKPI] = actionWeight[action];
         }
 
 
@@ -103,7 +109,7 @@ const computeAllTimeSessionKPIs = async (userId, newSessionKPIs) => {
 
 
 
-const saveSessionKPIs = async (userId, newSessionKPIs) => {
+const saveSessionKPIs = async (userId, newSessionKPIs, action) => {
     const { courses = [], courseIds = [] } = newSessionKPIs;
     const recentSessionKPIsCachename = `recent-session-kpis-${userId}`;
     const allTimeSessionKPIsCachename = `all-time-session-kpis-${userId}`;
@@ -150,7 +156,7 @@ const saveSessionKPIs = async (userId, newSessionKPIs) => {
     redisConnection.set(recentSessionKPIsCachename, recentSessionKPIs);
     redisConnection.expire(recentSessionKPIsCachename, process.env.CACHE_EXPIRE_RECENT_SESSION_KPIS || 1800);
 
-    const allTimeSessionKPIs = await computeAllTimeSessionKPIs(userId, newSessionKPIs);
+    const allTimeSessionKPIs = await computeAllTimeSessionKPIs(userId, newSessionKPIs, action);
     redisConnection.set(allTimeSessionKPIsCachename, allTimeSessionKPIs);
     redisConnection.expire(allTimeSessionKPIsCachename, process.env.CACHE_EXPIRE_ALL_TIME_SESSION_KPIS || 2628000);
 
