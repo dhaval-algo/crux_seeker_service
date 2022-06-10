@@ -8,7 +8,7 @@ const learnPathWeightDistribution = {
     "LEARNPATH_VIEW":0.5,
     "LEARNPATH_WISHLIST": 0.166,
     "LEARNPATH_ENQUIRED": 0.166,
-    "LEARNPATH_SHARE": 0.166,
+    "LEARNPATH_SHARE": 0.166
 }
 
 const learnpathActivity = async () => {
@@ -57,7 +57,7 @@ const learnpathActivity = async () => {
                     learnpath_enquiries:0,
                     learnpath_purchase:0,
                     learnpath_share:0,
-                    all_time_score:0
+                    popularity_score:0
                 }
                 activity_count[activity.resource].last_x_days = {
                     learnpath_views:0,
@@ -146,7 +146,7 @@ const learnpathActivity = async () => {
                     learnpath_enquiries:0,
                     learnpath_purchase:0,
                     learnpath_share:0,
-                    all_time_score:0
+                    popularity_score:0
                 }
 
                 activity_count[activity.resource].last_x_days = {
@@ -209,7 +209,7 @@ const learnpathActivity = async () => {
     if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
-            value.all_time.all_time_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.all_time.learnpath_views + 
+            value.all_time.popularity_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.all_time.learnpath_views + 
                                                                         learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.all_time.learnpath_wishlists +
                                                                         learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.all_time.learnpath_enquiries + 
                                                                         learnPathWeightDistribution["LEARNPATH_SHARE"]*value.all_time.learnpath_share;
@@ -283,7 +283,7 @@ const articleActivity = async () => {
                     article_views:0,
                     article_wishlists:0,
                     article_share:0,
-                    all_time_score:0
+                    popularity_score:0
                 }
                 activity_count[activity.resource].last_x_days = {
                     article_views:0,
@@ -356,7 +356,7 @@ const articleActivity = async () => {
                     article_views:0,
                     article_wishlists:0,
                     article_share:0,
-                    all_time_score:0
+                    popularity_score:0
                 }
 
                 activity_count[activity.resource].last_x_days = {
@@ -404,7 +404,7 @@ const articleActivity = async () => {
     if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
-            value.all_time.all_time_score = articleWeightDistribution["ARTICLE_VIEW"]*value.all_time.article_views + 
+            value.all_time.popularity_score = articleWeightDistribution["ARTICLE_VIEW"]*value.all_time.article_views + 
                                                                         articleWeightDistribution["ARTICLE_WISHLIST"]*value.all_time.article_wishlists +
                                                                         articleWeightDistribution["ARTICLE_SHARE"]*value.all_time.article_share;
             value.last_x_days.trending_score = articleWeightDistribution["ARTICLE_VIEW"]*value.last_x_days.article_views + 
@@ -428,7 +428,7 @@ const learnContentWeightDistribution = {
     "COURSE_VIEW":0.5,
     "COURSE_WISHLIST": 0.166,
     "COURSE_ENQUIRED": 0.166,
-    "COURSE_SHARE": 0.166,
+    "COURSE_SHARE": 0.166
 }
 
 const storeActivity = async () => {
@@ -466,7 +466,7 @@ const storeActivity = async () => {
                     course_enquiries:0,
                     course_purchase:0,
                     course_share:0,
-                    all_time_score:0
+                    popularity_score:0
                 }
                 activity_count[activity.resource].last_x_days = {
                     course_views:0,
@@ -519,7 +519,7 @@ const storeActivity = async () => {
                     course_enquiries:0,
                     course_purchase:0,
                     course_share:0,
-                    all_time_score:0
+                    popularity_score:0
                 }
 
                 activity_count[activity.resource].last_x_days = {
@@ -630,7 +630,7 @@ const storeActivity = async () => {
     if(Object.keys(activity_count).length){
         for ( const [key, value] of Object.entries(activity_count))
         {
-            value.all_time.all_time_score = learnContentWeightDistribution["COURSE_VIEW"]*value.all_time.course_views + 
+            value.all_time.popularity_score = learnContentWeightDistribution["COURSE_VIEW"]*value.all_time.course_views + 
                                                                         learnContentWeightDistribution["COURSE_WISHLIST"]*value.all_time.course_wishlists +
                                                                         learnContentWeightDistribution["COURSE_ENQUIRED"]*value.all_time.course_enquiries + 
                                                                         learnContentWeightDistribution["COURSE_SHARE"]*value.all_time.course_share;
