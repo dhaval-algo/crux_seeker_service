@@ -195,7 +195,7 @@ const createEnquiry = async (req, res) => {
                     experience: enquiry.experience,
                     enquiryMessage: enquiry.enquiryMessage,
                 }
-                enquiryService.sendEnquiryEmail("vinesh@ajency.in", data)
+                enquiryService.sendEnquiryEmail(correspondence_email, data)
             }}
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
