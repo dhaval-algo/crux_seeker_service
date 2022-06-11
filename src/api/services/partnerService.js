@@ -310,7 +310,15 @@ module.exports = class partnerService {
             user_last_name: result.user_last_name,
             user_email: result.user_email,
             user_id: result.user_id,
-            category_tree: await getCategoryTree(result.name)
+            category_tree: await getCategoryTree(result.name),
+            gallery: (result.gallery)? result.gallery : null,
+            vision: (result.vision)? result.vision : null,
+            mission: (result.mission)? result.mission : null,
+            partner_universities: (result.partner_universities)? result.partner_universities : null,
+            accreditations: (result.accreditations)? result.accreditations : null,
+            report: (result.report)? result.report : null,
+            highlights: (result.highlights)? result.highlights : null,
+            facts: (result.facts)? result.facts : null
         };
         if(!isList){
             result.courses  =  courses;

@@ -608,6 +608,72 @@ const compareRule = async (rule,engineEvent,facts) =>{
     })
 }
 
+const paginate = async (array, page_number, page_size) => {
+    return array.slice((page_number - 1) * page_size, page_number * page_size);
+  }
+
+const formatResponseField = (requestedfields, data) => {
+    let finalData = {}
+    fields = requestedfields.split(",");
+    if(fields.includes("list"))
+    {
+        fields = [...fields, 'filters', 'pagination', 'sort'];
+
+    }
+    for (let field of fields)
+    {
+        if(field.includes("::"))
+        {
+            let subFields = field.split("::");
+            let subFieldKey = subFields[0];
+            let subFieldArr = subFields[1].split(":");
+           if(Array.isArray(data[subFieldKey])){
+                let i=0
+                for(let arrayData of data[subFieldKey])
+                {
+                    for(let subField of subFieldArr)
+                    {
+                        if(!finalData[subFieldKey])  finalData[subFieldKey] = []
+                        if(!finalData[subFieldKey][i])  finalData[subFieldKey][i] = {}
+                        finalData[subFieldKey][i][subField] =  data[subFieldKey][i][subField] 
+                    }
+
+                    i++
+                }
+                
+            }
+            else{
+                for(let subField of subFieldArr)
+                {
+                    if(!finalData[subFieldKey])  finalData[subFieldKey] = {}
+                    finalData[subFieldKey][subField] =  data[subFieldKey][subField] 
+                }
+            }
+            
+        }
+        else
+        {
+            if(Array.isArray(data))
+            {
+                let i=0
+                finalData = []
+                for(let arrayData of data)
+                {
+                    if(!finalData[i]) finalData[i] ={}
+                    finalData[i][field] =  arrayData[field] 
+                    
+                    i++
+                }
+            }
+            else {
+                finalData[field] =  data[field]
+            }
+            
+        }
+    }
+    return finalData
+}
+
 
   module.exports = {
     getUserCurrency,
@@ -629,7 +695,9 @@ const compareRule = async (rule,engineEvent,facts) =>{
     getUserFromHeaders,
     calculateFilterCount,
     generateMetaInfo,
-    compareRule
+    compareRule,
+    paginate,
+    formatResponseField
 }
 
 

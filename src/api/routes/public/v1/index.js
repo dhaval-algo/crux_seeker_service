@@ -103,4 +103,21 @@ router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)
 router.post("/listLearnpathEnquiries", listEnquiriesController.listLearnpath)
 router.get("/detailedLearnpathEnquiry/:id", listEnquiriesController.getDetailedLearnpathEnquiry)
 
+//Home page API
+router.get('/homepage-top-categories', homeController.getHomePageTopCategories)
+router.get('/homepage-top-partners', homeController.getHomePageTopPartners)
+router.get('/homepage-top-institutes', homeController.getHomePageTopInstitutes)
+
+//Category page API
+router.get('/learn-content-learn-types', learnContentController.getLearnContentLearntypes)
+router.get('/learn-content-topics', learnContentController.getLearnContentTopics)
+
+//Learn Path API
+router.get('/learn-path-learn-types', learnPathController.getLearnPathLearntypes)
+router.get('/learn-path-topics', learnPathController.getLearnPathTopics)
+
+
+
+
+
 module.exports = router;
