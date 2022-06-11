@@ -4,6 +4,11 @@ const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const learnContentService = require("../api/services/learnContentService");
 let LearnContentService = new learnContentService();
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
+const redisConnection = require('../services/v1/redis');
+const RedisConnection = new redisConnection();
+
 
 const {
     getCurrencies,
@@ -74,6 +79,132 @@ const  invalidatTopics = async () => {
     }  
 }
 
+const invalidateAboutUs = async () => {
+    let result = null;
+    const cacheKey = "about-us";
+    try{
+        result = await fetch(`${apiBackendUrl}/about-us`);
+    }catch(e){
+        console.log('Error while retriving about us data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    } 
+}
+
+const invalidateLeadership = async () => {
+    let result = null;
+    const cacheKey = "leadership";
+    try{
+        result = await fetch(`${apiBackendUrl}/leadership`);
+    }catch(e){
+        console.log('Error while retriving leadership data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
+
+const invalidateTeam = async () => {
+    let result = null;
+    const cacheKey = "team";
+    try{
+        result = await fetch(`${apiBackendUrl}/team`);
+    }catch(e){
+        console.log('Error while retriving team data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }
+}
+
+const invalidateCareer = async () => {
+    let result = null;
+    const cacheKey = "career";
+    try{
+        result = await fetch(`${apiBackendUrl}/career`);
+    }catch(e){
+        console.log('Error while retriving career data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
+
+const invalidateTNM = async () => {
+    let result = null;
+    const cacheKey = "term-and-condition";
+    try{
+        result = await fetch(`${apiBackendUrl}/terms-and-conditions`);
+    }catch(e){
+        console.log('Error while retriving terms-and-conditions data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }  
+}
+
+const invalidatePP = async () => {
+    let result = null;
+    const cacheKey = "privacy-policy";
+    try{
+        result = await fetch(`${apiBackendUrl}/privacy-policy`);
+    }catch(e){
+        console.log('Error while retriving privacy-policy data',e);
+    }
+    if(result.ok) {
+        let response = await result.json();
+        let res = {};
+        for (let key in response) {
+            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                res[key] = response[key];
+            }
+        }
+
+        RedisConnection.set(cacheKey, res);
+    }
+}
+
 const invalidatSkills = async () => {
     try {
         await CategoryService.getSkills({query:{}}, (err, data) => {}, true);
@@ -92,5 +223,11 @@ module.exports = {
     invalidateFilterConfigs,
     invalidateRankingFilter,
     invalidatTopics,
+    invalidateAboutUs,
+    invalidateLeadership,
+    invalidateTeam,
+    invalidateCareer,
+    invalidateTNM,
+    invalidatePP,
     invalidatSkills
 }
