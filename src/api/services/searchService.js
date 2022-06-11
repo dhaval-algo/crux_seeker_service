@@ -214,7 +214,7 @@ module.exports = class searchService {
                 reviews_count: entityData.reviews.length,
                 provider: entityData.provider_name
             };
-        }else if(data_source == 'learn-path'){
+        }else if(data_source == 'learn-path' || data_source.includes("learn-path-v")){
             data = {
                 index: "learn-path",
                 title: entityData.title,
@@ -225,14 +225,14 @@ module.exports = class searchService {
                 courses_count: entityData.courses.length
             };
         }
-        else if(data_source == 'provider'){
+        else if(data_source == 'provider' || data_source.includes("provider-v") ){
             data = {
                 index: data_source,
                 title: entityData.name,
                 slug: entityData.slug,
                 description: "Institute"
             };
-        }else if(data_source == 'article'){
+        }else if(data_source == 'article' || data_source.includes("article-v")){
             data = {
                 index: data_source,
                 title: entityData.title,

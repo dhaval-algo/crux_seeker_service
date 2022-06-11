@@ -26,7 +26,7 @@ const RedisConnection = new redisConnection();
 
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
-const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
+const filterFields = ['programs','study_modes','institute_types','city','gender_accepted', 'region', 'country', 'state'];
 const allowZeroCountFields = ['programs','study_modes'];
 const FEATURED_RANK_LIMIT = 2;
 
