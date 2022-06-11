@@ -581,7 +581,7 @@ module.exports = class learnPathService {
                 const learnPath = await this.fetchLearnPathBySlug(slug);
                 if (learnPath) {
                     const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
-                    learnpathId = learnPath.id
+                    learnpathId = data.id
                     callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
@@ -589,8 +589,10 @@ module.exports = class learnPathService {
                     callback({ status: 'failed', message: 'Not found!' }, null);
                 }
             }
-            req.body = {learnpathId: "LRN_PTH_"+learnpathId}
-            this.addActivity(req, (err, data) => {})
+            if(learnpathId){
+                req.body = {learnpathId: learnpathId}
+                this.addActivity(req, (err, data) => {})
+            }
         }
         catch(err){
             console.log(err)
