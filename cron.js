@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const path = require('path');
 const cron = require('node-cron')
+const Sentry = require("@sentry/node");
 
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
@@ -9,6 +10,44 @@ const { storeActivity, learnpathActivity, articleActivity} = require('./src/util
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam, invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills} = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 
+Sentry.init({
+    attachStacktrace:true,
+    // Set tracesSampleRate to 1.0 to capture 100%
+    // of transactions for performance monitoring.
+    // We recommend adjusting this value in production
+    tracesSampleRate: 1.0,
+  })
+  if(process.env.SENTRY_DSN != undefined ||   process.env.SENTRY_DSN != ''){
+    
+    global.console.log = (data, data1) => {
+
+        //for multiple cases console.log('msg', err) or console.log(err, 'msg'); we have to consider data, data1
+      let err = [data, data1];
+      err = err.filter(e =>{ return e != undefined } )
+        //for printing error in console, only when environment is set to 'development' and 'staging'
+      const logInDevStag = (process.env.SENTRY_ENVIRONMENT == 'development' || process.env.SENTRY_ENVIRONMENT == 'staging')            
+
+      err.forEach(data => {
+        //if error is simple message (string)
+        if (typeof data === 'string' || data instanceof String){
+          Sentry.captureMessage(data);
+          if(logInDevStag)
+            process.stdout.write(data+'\n')
+        }
+          //if error is object (derived from Error class)
+        else{
+
+          Sentry.captureException(data);
+          if(logInDevStag){
+            let {message = '', name = '', stack = '' } = data
+            process.stdout.write(name+ '\n'+ message+ '\n'+ stack +'\n')
+          }
+        }
+
+      })
+
+    }
+  }
 
 // cron jobs
 const ENABLE_TOP_TEN_CRON = process.env.ENABLE_TOP_TEN_CRON || true

@@ -3,7 +3,8 @@ let client = require('redis');
 let config = {
     url: process.env.REDIS_URL
 }
-
+    //define is Production variable 
+const isNotProd = (process.env.NODE_ENV == 'production') ? false : true;
 let redis;
 
 module.exports = class REDIS {
@@ -23,7 +24,8 @@ module.exports = class REDIS {
         return new Promise(function(resolve,reject){
             that.connect();
             key='apiData-'+key+'-*';
-            console.log("key",key)
+            if(isNotProd)
+                console.log("key",key)
             redis.keys(key,(err,data)=>{
                 console.log("data",data,err)
                 if(err){
@@ -31,11 +33,13 @@ module.exports = class REDIS {
                 }
                 else{
                     if(data == null){
-                        console.log('REDIS:: No key = ',key);
+                        if(isNotProd)
+                            console.log('REDIS:: No key = ',key);
                         resolve({noCacheKeys:true})
                     }
                     else{
-                        console.log('REDIS:: Cache available key = ',key);
+                        if(isNotProd)
+                            console.log('REDIS:: Cache available key = ',key);
                         let allKeys =[]
                          for(let i=0; i<data.length; i++){
                             let replaceTxt = data[i].replace('apiData-','')
@@ -63,11 +67,13 @@ module.exports = class REDIS {
             }
             else{
                 if(data == null){
-                    console.log('REDIS:: No cache available for key = ',key);
+                    if(isNotProd)
+                        console.log('REDIS:: No cache available for key = ',key);
                     callback(null,{noCacheData:true})
                 }
                 else{
-                    console.log('REDIS:: Cache available for key = ',key);
+                    if(isNotProd)
+                        console.log('REDIS:: Cache available for key = ',key);
                     callback(null,JSON.parse(data));
                 }
             }
@@ -85,11 +91,13 @@ module.exports = class REDIS {
                 }
                 else{
                     if(data == null){
-                        console.log('REDIS:: No cache available for key = ',key);
+                        if(isNotProd)
+                            console.log('REDIS:: No cache available for key = ',key);
                         resolve({noCacheData:true})
                     }
                     else{
-                        console.log('REDIS:: Cache available for key = ',key);
+                        if(isNotProd)
+                            console.log('REDIS:: Cache available for key = ',key);
                         resolve(JSON.parse(data));
                     }
                 }
@@ -103,7 +111,8 @@ module.exports = class REDIS {
         redis.set(key,JSON.stringify(value),function(err,response){
             if(response){
                 if(expirySeconds) redis.expire(key, expirySeconds);
-                console.log("Redis object added for key = ",key);
+                if(isNotProd)
+                    console.log("Redis object added for key = ",key);
             }
             else{
                 console.log("Error while setting object for key = "+key+" error = "+err);
@@ -114,7 +123,8 @@ module.exports = class REDIS {
     delete(key){
         this.connect(); 
         key='apiData-'+key;
-        console.log("REDIS::Delete key for  "+key);
+        if(isNotProd)
+            console.log("REDIS::Delete key for  "+key);
         redis.del(key);
     }
 
