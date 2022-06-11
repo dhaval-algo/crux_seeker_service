@@ -21,8 +21,9 @@ const recommendationMiddleware = require("../../../../services/v1/middleware/rec
 const jobController = require("../../../controllers/jobController");
 const listUsersController = require("../../../controllers/listUsersController")
 const listEnquiriesController = require("../../../controllers/listEnquiriesController")
+const sessionKPIController = require("../../../controllers/sessionController")
 
-router.get('/learn-content/', learnContentController.getLearnContentList);
+router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
 router.get('/learn-content-filters/', learnContentController.getLearnContentFilters);
 router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
@@ -65,7 +66,7 @@ router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
 router.get('/skills', categoryController.getSkills);
 
-router.get('/search/:keyword', searchController.getSearchResult);
+router.get('/search/:keyword', injectTokenPayload,searchController.getSearchResult);
 router.get('/suggest-search-keyword/:word', searchController.getSearchKeyword);
 router.get('/search-with-suggest/:word', searchController.getSearchWithSuggestion);
 
@@ -95,6 +96,7 @@ router.post('/activity-course-viewed',injectTokenPayload, learnContentController
 router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 //learnpath enquiry
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
+
 //listing all users for admin; temporarily added to this path 
 router.post('/listUsers', listUsersController.list)
 router.get("/detailedUser/:id", listUsersController.getDetailedUser)
@@ -119,5 +121,6 @@ router.get('/learn-path-topics', learnPathController.getLearnPathTopics)
 
 
 
+router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 
 module.exports = router;

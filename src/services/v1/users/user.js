@@ -49,6 +49,7 @@ const validators = require("../../../utils/validators")
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
+const {saveSessionKPIs}=require("../../../utils/sessionActivity");
 
 const login = async (req, res, next) => {
     try {
@@ -1163,6 +1164,8 @@ const addCourseToWishList = async (req, res) => {
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
           
             await logActvity("COURSE_WISHLIST", userId, courseIds);
+            sendDataForStrapi(data, "profile-add-wishlist");
+            saveSessionKPIs(userId,{courseIds:courseIds},'wishlist');
 
             return res.status(200).json({
                 success: true,
