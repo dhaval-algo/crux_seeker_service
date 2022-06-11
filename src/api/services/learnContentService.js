@@ -437,10 +437,21 @@ module.exports = class learnContentService {
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+                    let filter_object = {}
+                            //case for boolean attribute;
+                    if(elasticAttribute.elastic_data_type == 'boolean'){
+                        if(elasticAttribute.elastic_attribute_name == 'job_assistance'){
+                            let job_asis = filter.value[0]
 
-                    let filter_object = {
-                        "terms": {[attribute_name]: filter.value}
-                    };
+                            job_asis.toLowerCase() == 'yes' ? job_asis = true : job_asis = false;
+                            filter_object = {"term": {[attribute_name]: job_asis}};
+                        }
+                        else
+                            filter_object = {"term": {[attribute_name]: filter.value[0]}};
+
+                    }
+                    else 
+                        filter_object = {"terms": {[attribute_name]: filter.value}};
 
                     query.bool.must.push(filter_object);
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
@@ -531,7 +542,10 @@ module.exports = class learnContentService {
 
             switch(filter.filter_type){
                 case "Checkboxes":
-                    aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                    if(filter.elastic_data_type == 'boolean')
+                        aggs_object.aggs['filtered'] = { terms: { field: filter.elastic_attribute_name }}
+                    else
+                        aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
                     break;
                 case "RangeOptions":
                     aggs_object.aggs['filtered'] = {
@@ -626,6 +640,9 @@ module.exports = class learnContentService {
                 
                         if(filter.elastic_attribute_name == "learn_type")
                         {   option.image  = learn_types_images[item.key] }
+
+                        if(filter.elastic_attribute_name == "job_assistance")
+                            item.key == 1 ? option.label = "Yes" : option.label = "No"
 
                         return option;
                     });
