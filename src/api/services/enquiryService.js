@@ -72,6 +72,14 @@ const sendEnquiryEmail = async (email, data) =>{
         email_data: data 
     }
     await communication.sendEmail(emailPayload, false)
+
+    emailPayload = {
+        fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
+        toemail:  process.env.TO_EMAIL_ENQUIRY_ADMINS,
+        email_type: "enquiry_email_to_admins",
+        email_data: data 
+    }
+    await communication.sendEmail(emailPayload, false)
 }
 
 
