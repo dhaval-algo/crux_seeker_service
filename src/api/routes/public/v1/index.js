@@ -13,7 +13,7 @@ const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
 const footerController = require('../../../controllers/footerController');
-
+const trendingNowController = require('../../../controllers/trendingNowController');
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
@@ -66,7 +66,9 @@ router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 
 router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
-
+router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
+router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
+router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);
 router.get('/author/:slug', ArticleController.getAuthor);
 
 router.post('/contact-us',footerController.sendContactEmail);
