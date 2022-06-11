@@ -66,6 +66,8 @@ router.get('/topics', categoryController.getTopics);
 router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', searchController.getSearchResult);
+router.get('/suggest-search-keyword/:word', searchController.getSearchKeyword);
+router.get('/search-with-suggest/:word', searchController.getSearchWithSuggestion);
 
 router.get('/count-page',sectionController.countPage)
 router.get('/section/tree',sectionController.getCategoryTree)
