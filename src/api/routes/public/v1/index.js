@@ -19,6 +19,8 @@ const injectTokenPayload = require("../../../../services/v1/middleware/injectTok
 const enquiryController = require("../../../controllers/enquiryController")
 const recommendationMiddleware = require("../../../../services/v1/middleware/recommendation");
 const jobController = require("../../../controllers/jobController");
+const listUsersController = require("../../../controllers/listUsersController")
+const listEnquiriesController = require("../../../controllers/listEnquiriesController")
 
 router.get('/learn-content/', learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
@@ -91,5 +93,12 @@ router.post('/activity-course-viewed',injectTokenPayload, learnContentController
 router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 //learnpath enquiry
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
+//listing all users for admin; temporarily added to this path 
+router.post('/listUsers', listUsersController.list)
+router.get("/detailedUser/:id", listUsersController.getDetailedUser)
+router.post("/listEnquiries", listEnquiriesController.list)
+router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)
+router.post("/listLearnpathEnquiries", listEnquiriesController.listLearnpath)
+router.get("/detailedLearnpathEnquiry/:id", listEnquiriesController.getDetailedLearnpathEnquiry)
 
 module.exports = router;
