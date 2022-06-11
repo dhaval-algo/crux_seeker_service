@@ -70,7 +70,21 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
                        {
                            featured_articles = entity.featured_articles.map((article)=> article.id);
                        }
+                    //pick only image urls , instead of sending whole large logo object
+                    let logos = {}
+                       if(entity.logo){
+                           if(entity.logo.formats){
+
+                                Object.keys(entity.logo.formats).forEach((size, index) => {
+                                    logos[size] = entity.logo.formats[size].url
+                                })
+                           }
+                           else
+                                logos['thumbnail'] = entity.logo.url     
+                       }
                         entities[entity.slug] = {
+                            "logo" : (entity.logo) ? logos : null,
+                            "faq" : (entity.faq) ? entity.faq : null,
                             "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
                             "description"  :(entity.description)?entity.description :null,
                             "meta_information":(entity.meta_information)?entity.meta_information :null,
@@ -102,7 +116,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
     else
     {
         let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
-        
+
         if (response.ok) {
         let json = await response.json();
         
@@ -121,7 +135,21 @@ const getEntityLabelBySlug = async (entity, slug) => {
                 {
                     featured_articles = json[0].featured_articles.map((article)=> article.id);
                 }
+                //pick only image urls , instead of sending whole large logo object
+                let logos = {}
+                if(json[0].logo){
+                    if(json[0].logo.formats){
+
+                         Object.keys(json[0].logo.formats).forEach((size, index) => {
+                             logos[size] = json[0].logo.formats[size].url
+                         })
+                    }
+                    else
+                         logos['thumbnail'] = json[0].logo.url     
+                }
                 cacheData[slug] = {
+                "logo" : (json[0].logo) ? json[0].logo : null,
+                "faq" : (json[0].faq) ? json[0].faq : null,
                 "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
                 "description"  :(json[0].description)?json[0].description :null,                
                 "meta_information":(json[0].meta_information)?json[0].meta_information :null,
@@ -349,6 +377,8 @@ module.exports = class learnContentService {
                 var slug_meta_information = slug_data.meta_information;
                 var slug_article_advice = slug_data.article_advice;
                 var slug_featured_articles = slug_data.featured_articles;
+                var slug_logo = slug_data.logo;
+                var slug_faq = slug_data.faq;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -692,12 +722,14 @@ module.exports = class learnContentService {
                 sort: req.query['sort'],
             };
 
-
+            
             data.page_details = {
                 pageType: slug_pageType || "default",
                 slug: req.query['slug'] || null,
                 label: slugLabel || null,
                 description: slug_description || null,
+                logo : slug_logo,
+                faq : slug_faq
             }
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
                 try {
