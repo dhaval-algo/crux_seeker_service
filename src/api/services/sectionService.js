@@ -254,6 +254,70 @@ module.exports = class sectionService {
     }
   }
 
+  async countPage(req, callback,useCache = true) {
+    const cacheKey = "count-page";
+    if(useCache){
+      try {
+          let cacheData = await RedisConnection.getValuesSync(cacheKey);
+          if(cacheData.noCacheData != true) {
+              //console.log("cache found for footer: returning data");
+              return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+          }
+      }catch(error){
+          console.warn("Redis cache failed for count page: "+cacheKey,error);
+      }
+    }
+
+    let result = {
+      course:null,
+      partner:null,
+      institute:null
+    };
+    try{
+      const query_courses = await elasticService.count('learn-content-v2')
+      const query_partner = await elasticService.count('partner')
+      const query_institute = await elasticService.count('provider')
+      if(query_courses.count){
+        if(query_courses.count < 100){
+          query_courses.count = Math.floor(query_courses.count/10)*10;
+        }else if(query_courses.count < 1000){
+          query_courses.count = Math.floor(query_courses.count/100)*100;
+        }else if(query_courses.count > 1000){
+          query_courses.count = Math.floor(query_courses.count/1000)+'k';
+        }
+        result['course'] = query_courses['count']+''
+      }
+      if(query_partner.count){
+        if(query_partner.count < 100){
+          query_partner.count = Math.floor(query_partner.count/10)*10;
+        }else if(query_partner.count < 1000){
+          query_partner.count = Math.floor(query_partner.count/100)*100;
+        }else if(query_partner.count > 1000){
+          query_partner.count = Math.floor(query_partner.count/1000)+'k';
+        }
+        result['partner'] = query_partner['count']+''
+      }
+      if(query_institute.count){
+        if(query_institute.count < 100){
+          query_institute.count = Math.floor(query_institute.count/10)*10;
+        }else if(query_institute.count < 1000){
+          query_institute.count = Math.floor(query_institute.count/100)*100;
+        }else if(query_institute.count > 1000){
+          query_institute.count = Math.floor(query_institute.count/1000)+'k';
+        }
+        result['institute'] = query_institute['count']+''
+      }
+        
+      RedisConnection.set('count-page', result);
+      RedisConnection.expire('count-page', process.env.CACHE_EXPIRE_COUNT_PAGE);
+
+      return callback(null, { success: true, data:result })
+    }catch(e){
+        return callback(null, { success: true, data:{} })
+        console.log('Error while retriving about us data',e);
+    }
+  }
+
   async getSectionContent(slug, callback,skipCache) {
     let data = {}
     try {

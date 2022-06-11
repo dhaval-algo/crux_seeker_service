@@ -6,8 +6,8 @@ const cron = require('node-cron')
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 const { storeActivity, learnpathActivity} = require('./src/utils/activityCron');
+const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam, invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills} = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
-const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidatSkills} = require('./src/utils/cacheInvalidationCron');
 
 
 // cron jobs
@@ -69,6 +69,12 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidateFilterConfigs()
             await invalidateRankingFilter()
             await invalidatTopics()
+            await invalidateAboutUs()
+            await invalidateLeadership()
+            await invalidateTeam()
+            await invalidateCareer()
+            await invalidatePP()
+            await invalidateTNM()
             await invalidatSkills()
         } catch (error) {
             console.log("Error in cron", error);

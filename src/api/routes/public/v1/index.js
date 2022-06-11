@@ -13,6 +13,7 @@ const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
 const footerController = require('../../../controllers/footerController');
+const trendingNowController = require('../../../controllers/trendingNowController');
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
@@ -40,6 +41,12 @@ router.get('/news', newsController.getNewsContent);
 router.get('/news/:slug', newsController.getNewsBySlug);
 
 router.get('/footer', footerController.getFooter);
+router.get('/about-us', footerController.aboutUs);
+router.get('/leadership', footerController.leadership);
+router.get('/team', footerController.team);
+router.get('/career', footerController.career);
+router.get('/terms-and-conditions', footerController.termandcondition);
+router.get('/privacy-policy', footerController.privacypolicy);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
@@ -58,6 +65,7 @@ router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', searchController.getSearchResult);
 
+router.get('/count-page',sectionController.countPage)
 router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
@@ -66,7 +74,9 @@ router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 
 router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
-
+router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
+router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
+router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);
 router.get('/author/:slug', ArticleController.getAuthor);
 
 router.get('/get-job-listing',jobController.getJobListing);
