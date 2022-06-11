@@ -3520,6 +3520,68 @@ const addCategoryToRecentlyViewed = async (req, res) => {
     }
 }
 
+const addArticleToRecentlyViewed = async (req, res) => {
+    try {
+
+        const { user } = req;
+        const { articleId } = req.body;
+        if (!articleId) {
+            return res.status(400).json({
+                success: false,
+                "message": "article id is mandatory"
+
+            });
+        }
+        const unique_data = { userId: user.userId, articleId: articleId };
+        const SAVE_RECENTLY_VIEWED_ARTICLE_COUNT = process.env.SAVE_RECENTLY_VIEWED_ARTICLE_COUNT || 20;
+
+        //check if article exists for the user
+        const exists = await models.recently_viewed_articles.findOne({ where: unique_data });
+        if (exists) {
+            //if exists change updated at
+            await models.recently_viewed_articles.update({ userId: unique_data.userId, articleId: unique_data.articleId }, { where: unique_data });
+        } else {
+
+            const { count, rows } = await models.recently_viewed_articles.findAndCountAll(
+                {
+                    limit: 1,
+                    where: { userId: user.userId },
+                    order: [['createdAt', 'ASC']],
+                    attributes: {
+                        include: ['id']
+                    }
+                });
+
+            if (count >= SAVE_RECENTLY_VIEWED_ARTICLE_COUNT) {
+                //remove first entry
+                await models.recently_viewed_articles.destroy(
+                    { where: { id: rows[0].id } }
+                );
+            }
+
+            await models.recently_viewed_articles.create(unique_data);
+
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Article added to recently viewed"
+
+        });
+
+    } catch (error) {
+
+        console.log("Error occured while adding article to recently viewed : ", error);
+        res.status(500).json({
+            success: false,
+            "message": "Internal Server Error"
+
+        });
+    }
+}
+
+
+
+
 const peopleAreAlsoViewing = async (req, callback) => {
 
     try {
@@ -3566,6 +3628,79 @@ const peopleAreAlsoViewing = async (req, callback) => {
         callback(null, { "success": false, message: "failed to fetch", data: { list: [] } });
     }
 }
+
+
+
+const getUserProfileKeywords = async (userId) => {
+    
+    let skills = null;
+    const skillsKeywords = [];
+    const workExpKeywords = [];
+
+    const topSkills = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'primarySkills' } });
+
+    if (topSkills && topSkills.value && topSkills.value != "{}") {
+        skills = JSON.parse(topSkills.value);
+    }
+    else {
+        const additionalSkills = await models.user_meta.findOne({ where: { userId: userId, metaType: 'primary', key: 'skills' } })
+        if (additionalSkills && additionalSkills.value && additionalSkills.value != "{}") skills = JSON.parse(additionalSkills.value);
+    }
+
+    let workExp = null;
+    const workExperience = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'workExp' } });
+
+    
+
+    if (skills) {
+        for (const key in skills) {
+            skillsKeywords.push(key);
+            skillsKeywords.push(...skills[key]);
+        }
+    }
+
+    if (workExperience && workExperience.value && workExperience.value != "[]") {
+        workExp = JSON.parse(workExperience.value);
+        workExp.forEach((workExp) => {
+            if (workExp.jobTitle) {
+                workExpKeywords.push(workExp.jobTitle.label);
+            }
+
+            if (workExp.industry) {
+                workExpKeywords.push(workExp.industry.label);
+            }
+        });
+    }
+
+
+    return {skillsKeywords:skillsKeywords,workExpKeywords:workExpKeywords};
+
+}
+
+const getKeywordsFromUsersGoal = async (userId) => {
+    const highPriorityKeywords = [];
+    const lowPriorityKeywords = [];
+    const goals = await models.goal.findAll({ where: { userId: userId } });
+    for (const goal of goals) {
+
+        if (goal.currentRole) highPriorityKeywords.push(goal.currentRole);
+        if (goal.preferredRole) highPriorityKeywords.push(goal.preferredRole);
+        if (goal.industryChoice) highPriorityKeywords.push(goal.industryChoice);
+
+        if (goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
+        if (goal.specialization) lowPriorityKeywords.push(goal.specialization);
+
+        const goalSkills = await models.skill.findAll({ where: { goalId: goal.id } });
+        goalSkills.forEach((goalSkill) => {
+            if (goalSkill.name) highPriorityKeywords.push(goalSkill.name)
+        });
+
+    };
+
+    return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
+
+}
+
 
 module.exports = {
     login,
@@ -3630,6 +3765,9 @@ module.exports = {
     recentlySearchedCourses,
     peopleAreAlsoViewing,
     addCategoryToRecentlyViewed,
+    addArticleToRecentlyViewed ,
+    getUserProfileKeywords,
+    getKeywordsFromUsersGoal ,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
@@ -3644,8 +3782,8 @@ module.exports = {
         }
         if (!suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
 
-            if (search.type == 'learn-content') {
-                if (suggestionList[search.type].length == (process.env.LAST_COURSE_SEARCH_LIMIT||20)) {
+            if (search.type == 'learn-content'|| search.type == 'article') {
+                if (suggestionList[search.type].length == (process.env.LAST_COURSE_ARTICLE_SEARCH_LIMIT||20)) {
                     suggestionList[search.type].shift();
 
                 }
