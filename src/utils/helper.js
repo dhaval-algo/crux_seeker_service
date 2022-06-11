@@ -172,356 +172,6 @@ const verifyGoogleToken = async (tokenId) => {
     }
 }
 
-const createUser = async (userObj) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            switch (userObj.provider) {
-                case LOGIN_TYPES.LOCAL:
-                    return resolve(await handleLocalSignUP(userObj))
-                    break;
-
-                case LOGIN_TYPES.GOOGLE:
-                case LOGIN_TYPES.LINKEDIN:
-                    return resolve(await handleSocialSignUp(userObj))
-                    break;
-                default:
-                    break;
-            }
-
-            // if (tokenPayload) {
-            //     if (tokenPayload.userType == USER_TYPE.GUEST) {
-            //         const { userId } = tokenPayload;
-            //         const user = await models.user.update(
-            //             {
-            //                 userType: USER_TYPE.REGISTERED,
-            //                 status: USER_STATUS.ACTIVE
-            //             },
-            //             {
-            //                 where: { id: userId }
-            //             }
-            //         )
-            //     }
-            // } else {
-
-            // }
-
-            // if (user == null) {
-            //     try {
-            //         const newUser = await models.user.create({
-            //             status: USER_STATUS.ACTIVE,
-            //             userType: USER_TYPE.REGISTERED,
-            //             verified: userObj.verified || false
-            //             // email: userObj.email || "",
-            //             // phone: userObj.phone || "",
-            //             // fullName: userObj.fullName || "",
-            //         })
-            //         await models.user_login.create({
-            //             userId: newUser.id,
-            //             email: userObj.username || "",
-            //             password: userObj.password || "",
-            //             phone: userObj.phone || "",
-            //             provider: LOGIN_TYPES.LOCAL,
-            //             providerId: "",
-            //             providerData: {},
-            //         })
-            //         console.log(userObj.provider, [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN].includes(userObj.provider));
-            //         // return false
-            //         if ([LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN].includes(userObj.provider)) {
-            //             const userLogin = await models.user_login.create({
-            //                 userId: newUser.id,
-            //                 email: userObj.email || "",
-            //                 password: null,
-            //                 phone: userObj.phone || "",
-            //                 provider: userObj.provider || "",
-            //                 providerId: userObj.providerId || "",
-            //                 providerData: userObj.providerData || {},
-            //             })
-            //         }
-            //         //make entry in user meta
-            //         const userMeta = userObj.userMeta.filter((f) => { return f['userId'] = newUser.id })
-            //         await createUserMeta(userMeta)
-            //         return resolve({
-            //             success: true,
-            //             code: DEFAULT_CODES.USER_CREATED.code,
-            //             message: DEFAULT_CODES.USER_CREATED.message,
-            //             data: {
-            //                 user: {
-            //                     username: userObj.username,
-            //                     userId: newUser.id,
-            //                     email: newUser.email,
-            //                     phone: newUser.phone,
-            //                     userType: newUser.userType,
-            //                     provider: userObj.provider
-            //                 }
-            //             }
-            //         })
-
-            //     } catch (error) {
-            //         console.log(error);
-            //     }
-
-            // } else {
-            //     const userLogin = await models.user_login.create({
-            //         userId: user.userId,
-            //         email: userObj.email || "",
-            //         phone: userObj.phone || "",
-            //         provider: userObj.provider || "",
-            //         providerId: userObj.providerId || "",
-            //         providerData: userObj.providerData || {},
-            //     })
-            //     const userRec = await models.user.findOne({ where: { id: user.userId } })
-            //     return resolve({
-            //         success: true,
-            //         code: DEFAULT_CODES.USER_CREATED.code,
-            //         message: DEFAULT_CODES.USER_CREATED.message,
-            //         data: {
-            //             user: {
-            //                 username: userObj.username,
-            //                 userId: user.userId,
-            //                 email: userObj.email || "",
-            //                 phone: userObj.phone || "",
-            //                 provider: userObj.provider || "",
-            //                 userType: userRec.userType
-            //             }
-            //         }
-            //     })
-            // }
-        } catch (error) {
-            console.log(error);
-            return resolve({
-                success: false,
-                code: DEFAULT_CODES.SYSTEM_ERROR.code,
-                message: DEFAULT_CODES.SYSTEM_ERROR.message,
-                data: {
-                }
-            })
-        }
-
-    })
-}
-const handleLocalSignUP = async (userObj) => {
-    const { tokenPayload = {} } = userObj
-    // return ({success:false})
-    return new Promise(async (resolve, reject) => {
-        let { userId, userType } = tokenPayload;
-        try {
-            // return resolve({success:false})
-            if (userId && userType) {
-                if (userType == USER_TYPE.GUEST) {
-                    await models.user.update(
-                        {
-                            userType: USER_TYPE.REGISTERED,
-                            status: USER_STATUS.ACTIVE
-                        },
-                        {
-                            where: { id: userId }
-                        }
-                    )
-                }
-
-            } else {
-                const newUser = await models.user.create({
-                    status: USER_STATUS.ACTIVE,
-                    userType: USER_TYPE.REGISTERED,
-                    verified: userObj.verified || false
-                })
-                userId = newUser.id
-            }
-            const userMeta = userObj.userMeta.filter((f) => {
-                f['userId'] = userId
-                f['metaType'] = "primary"
-                return f
-            })
-            await createUserMeta(userMeta)
-            sendDataForStrapi(userMeta, "new-user")
-            const encryptedPWD = encryptStr(userObj.password);
-            await createUserLogin([{
-                userId,
-                email: userObj.username || "",
-                password: encryptedPWD || null,
-                phone: userObj.phone || null,
-                provider: LOGIN_TYPES.LOCAL,
-                providerId: null,
-                providerData: {},
-            }])
-            let reducedObj = userMeta.filter(t => {
-                if (t.key == "firstName" || t.key == "lastName") {
-                    return t
-                }
-
-            }).map((t) => {return {[t.key]:t.value}}).reduce(function(acc, x) {
-                for (var key in x) acc[key] = x[key];
-                return acc;
-            }, {});
-            await sendVerifcationLink({
-                username: userObj.username,
-                userId,
-                email: userObj.username,
-                phone: userObj.phone,
-                userType: USER_TYPE.REGISTERED,                
-                audience: process.env.FRONTEND_URL,
-                provider: LOGIN_TYPES.LOCAL,
-                ...reducedObj,
-                ...userObj
-            })
-            
-            //check if mobile number entered is indian
-            let phone = null;
-            let country = null;
-            for(let usermeta of userObj.userMeta)
-            {
-                if(usermeta.key=="phone")
-                {
-                    phone = usermeta.value
-                }
-                if(usermeta.key=="country")
-                {
-                    country = usermeta.value
-                }
-            }           
-
-            return resolve({
-                success: true,
-                code: DEFAULT_CODES.USER_CREATED.code,
-                message: DEFAULT_CODES.USER_CREATED.message,
-                data: {
-                    user: {
-                        name:reducedObj.firstName | "",
-                        username: userObj.username,
-                        userId,
-                        email: userObj.username,
-                        phone: userObj.phone,
-                        userType: USER_TYPE.REGISTERED,
-                        provider: LOGIN_TYPES.LOCAL,
-                        verified:userObj.verified || false,
-                        phone:phone || false,
-                        country:country || false,
-                    }
-                }
-            })
-
-        } catch (error) {
-            console.log(error);
-            return resolve({
-                success: false,
-                code: DEFAULT_CODES.SYSTEM_ERROR.code,
-                message: DEFAULT_CODES.SYSTEM_ERROR.message,
-                data: {
-                }
-            })
-        }
-
-    })
-}
-
-const handleSocialSignUp = (userObj) => {
-    const { tokenPayload = {} } = userObj
-    // return ({success:false})
-    return new Promise(async (resolve, reject) => {
-        let { userId, userType } = tokenPayload;
-        try {
-            // return resolve({success:false})
-           
-            if (userId && userType) {
-                if (userType == USER_TYPE.GUEST) {
-                    await models.user.update(
-                        {
-                            userType: USER_TYPE.REGISTERED,
-                            status: USER_STATUS.ACTIVE,
-                            verified:true
-                        },
-                        {
-                            where: { id: userId }
-                        }
-                    )
-                }
-
-            } else {
-                const newUser = await models.user.create({
-                    status: USER_STATUS.ACTIVE,
-                    userType: USER_TYPE.REGISTERED,
-                    verified: true
-                })
-                userId = newUser.id
-            }
-            let userMeta = [
-                {value:userObj.firstName, key:"firstName", metaType:"primary", userId},
-                {key:"lastName", value:userObj.lastName || null, metaType:"primary", userId},
-                {key:"email",value:userObj.email, metaType:"primary", userId}
-            ]
-            await createUserMeta(userMeta)
-            sendDataForStrapi(userMeta, "new-user")
-            await createUserLogin([{
-                userId,
-                email: userObj.username || userObj.username || "",
-                password: null,
-                phone: userObj.phone || null,
-                provider: LOGIN_TYPES.LOCAL,
-                providerId: null,
-                providerData: {},
-            },
-            {
-                provider:userObj.provider,
-                providerId: userObj.providerId || null,
-                userId: userId,
-                email: userObj.email || userObj.username,
-                providerData: userObj.providerData || {}
-            }])
-            await sendWelcomeEmail({email: userObj.email || userObj.username})
-            return resolve({
-                success: true,
-                code: DEFAULT_CODES.USER_CREATED.code,
-                message: DEFAULT_CODES.USER_CREATED.message,
-                data: {
-                    user: {
-                        name: userObj.firstName || "",
-                        username: userObj.username,
-                        userId,
-                        email: userObj.username || userObj.email,
-                        phone: userObj.phone || null,
-                        userType: USER_TYPE.REGISTERED,
-                        provider: userObj.provider,
-                        isVerified: true
-                    }
-                }
-            })
-
-        } catch (error) {
-            console.log(error);
-            return resolve({
-                success: false,
-                code: DEFAULT_CODES.SYSTEM_ERROR.code,
-                message: DEFAULT_CODES.SYSTEM_ERROR.message,
-                data: {
-                }
-            })
-        }
-    })
-}
-
-const createUserMeta = (userMeta) => {
-    return new Promise(async (resolve, reject) => {   
-        models.user_meta.bulkCreate(userMeta)
-            .then((res) => {
-                resolve(res)
-            }).catch(err => {
-                console.log(err);
-                resolve(false)
-            })
-    })
-}
-
-const createUserLogin = (userObject) => {
-    return new Promise(async (resolve, reject) => {
-        models.user_login.bulkCreate(userObject).then(() => {
-            resolve(true)
-        }).catch(err => {
-            console.log(err);
-            resolve(false)
-        })
-    })
-}
-
 const createToken = async (userObj, tokenType) => {
     try {
         let tokenExpiry = 86400
@@ -598,7 +248,7 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
                 email_data: {
                     verification_link: link,
                     account_email: userObj.email,
-                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                    full_name: userObj.fullName,
                 }
             }
             await communication.sendEmail(emailPayload, useQueue)
@@ -610,49 +260,7 @@ const sendVerifcationLink = (userObj, useQueue = false) => {
 
 }
 
-/**
- * Checks if user is verified
- * if not verified verifies the user.
- * delete verification tokens
- * check if social provider rec present if not creates
- * @param {*} userObject 
- * @param {*} provider 
- */
-const createSocialEntryIfNotExists = (userObject,provider) => {
-    return new Promise(async (resolve) => {
-        try {
-            const providerRec = await models.user_login.findOne({
-                where:{
-                    provider:provider,
-                    userId:userObject.userId || userObject.id
-                }
-            })
-            if(!providerRec) {
-                let providerObj = {
-                    provider,
-                    providerId: userObject.providerId || null,
-                    userId: userObject.userId || userObject.id,
-                    email: userObject.email.toLowerCase() || userObject.username.toLowerCase(),
-                    providerData: userObject.providerData || {}
-                }
-                await createUserLogin([providerObj])
-            }
-           
-            if(!userObject.verified) {
-                await models.user.update({verified:true}, {
-                    where: {
-                        id:userObject.userId || userObject.id
-                    }
-                })
-               await invalidateTokens(userObject)
-            }
-            resolve(true)
-        } catch (error) {
-            console.log(error);
-            resolve(false)
-        }
-    })
-}
+
 /* 
     * Generate Token for login session
     input => audience- origin(client), provider-> (google facebook or linked in or local)    
@@ -822,7 +430,7 @@ const sendResetPasswordLink = (userObj, useQueue) => {
                 email_data: {
                     reset_link: link,
                     account_email: userObj.email,
-                    full_name: userObj.firstName + ' ' + userObj.lastName,
+                    full_name: userObj.fullName,
                 }
             }
             await communication.sendEmail(emailPayload, useQueue)
@@ -1550,7 +1158,6 @@ module.exports = {
     isEmail,
     getOtp,
     verifySocialToken,
-    createUser,
     createToken,
     sendVerifcationLink,
     getLoginToken,
@@ -1558,7 +1165,6 @@ module.exports = {
     sendWelcomeEmail,
     sendResetPasswordLink,
     calculateProfileCompletion,
-    createSocialEntryIfNotExists,
     getImgBuffer,
     getFileBuffer,
     generateSingleViewData,
