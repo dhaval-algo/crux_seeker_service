@@ -95,18 +95,19 @@ module.exports = class ProviderService {
 
     async recacheSingleProvider(queueData){
 
-        for (var i = 0; i < queueData.currencies.length; i++) {
-            let currency = queueData.currencies[i];
-            let payload = {
-                params:{
-                    slug:queueData.slug
-                },
-                query:{
-                    currency:currency
+        for(let j = 0; j < queueData.slug.length; j++)
+            for (var i = 0; i < queueData.currencies.length; i++) {
+                let currency = queueData.currencies[i];
+                let payload = {
+                    params:{
+                        slug:queueData.slug[j]
+                    },
+                    query:{
+                        currency:currency
+                    }
                 }
-            }
-            await provider.getProvider(payload ,(err, data) => {},true)
-        }      
+                await provider.getProvider(payload ,(err, data) => {},true)
+            }      
     }
 
     async deleteSingleProviderCache(queueData){
