@@ -68,6 +68,9 @@ const learnpathActivity = async () => {
                     trending_score:0
                 }
             }
+            if(!activity.resource.startsWith("LRN_PTH")){
+                continue;
+            }
             
             switch (activity_types[activity.activityId]) {
                 case "LEARNPATH_VIEW": 
@@ -157,6 +160,9 @@ const learnpathActivity = async () => {
                     learnpath_share:0,
                     trending_score:0
                 }
+            }
+            if(!activity.resource.startsWith("LRN_PTH")){
+                continue;
             }
 
             switch (activity_types[activity.activityId]) {
@@ -292,6 +298,9 @@ const articleActivity = async () => {
                     trending_score:0
                 }
             }
+            if(!activity.resource.startsWith("ARTCL_PUB")){
+                continue;
+            }
             
             switch (activity_types[activity.activityId]) {
                 case "ARTICLE_VIEW": 
@@ -365,6 +374,10 @@ const articleActivity = async () => {
                     article_share:0,
                     trending_score:0
                 }
+            }
+
+            if(!activity.resource.startsWith("ARTCL_PUB")){
+                continue;
             }
 
             switch (activity_types[activity.activityId]) {
@@ -478,6 +491,10 @@ const storeActivity = async () => {
                 }
             }
 
+            if(!activity.resource.startsWith("LRN_CNT")){
+                continue;
+            }
+
             switch (activity_types[activity.activityId]) {
                 case "COURSE_VIEW": 
                     activity_count[activity.resource].all_time.course_views= Number(activity.count)              
@@ -530,6 +547,10 @@ const storeActivity = async () => {
                     course_share:0,
                     trending_score:0
                 }
+            }
+
+            if(!activity.resource.startsWith("LRN_CNT")){
+                continue;
             }
 
             switch (activity_types[activity.activityId]) {
