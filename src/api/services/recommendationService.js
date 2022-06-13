@@ -338,7 +338,7 @@ module.exports = class recommendationService {
 
         try {
             const userId = req.user.userId;
-            const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+            const { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
             const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);
 
             let limitForSkills = 0;
@@ -373,7 +373,33 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-
+            if (category) {
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if (sub_category) {
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "sub_categories.keyword": decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if (topic) {
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "topics.keyword": decodeURIComponent(topic)
+                        }
+                    }
+                );
+            }
             let courses = [];
             if (skillsKeywords.length) {
                 const offset = (page - 1) * limitForSkills;
@@ -403,7 +429,7 @@ module.exports = class recommendationService {
                 req.query.subType = "Popular"
                 if (!req.query.page) req.query.page = 1;
                 if (!req.query.limit) req.query.limit = 6;
-                reposnse = await this.getPopularCourses(req);
+                let reposnse = await this.getPopularCourses(req);
                 return reposnse
             }
             return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
@@ -742,11 +768,11 @@ module.exports = class recommendationService {
     async getFeaturedArticles (req) {
         try {
             let {pageType} = req.query;        
-            let { category, sub_category, topic} = req.query; 
+            let { category, sub_category, topic, section} = req.query; 
             let featured_articles = []
             let articles = []
             let maxArticles = 2;
-            let cacheKey = `Featured_Articles-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}`;
+            let cacheKey = `Featured_Articles-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}-${section || ''}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 articles = cachedData;
@@ -885,6 +911,16 @@ module.exports = class recommendationService {
                         {
                             "term": {
                                 "article_topics.keyword": decodeURIComponent(topic)
+                            }
+                        }
+                    );
+                }
+
+                if (section) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "section_name.keyword": decodeURIComponent(section)
                             }
                         }
                     );
