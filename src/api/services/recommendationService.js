@@ -273,13 +273,21 @@ module.exports = class recommendationService {
                         { "term": { "display_price": true } }
                     );
                 }
+                if (subType && subType == "Paid") {
+                    esQuery.bool.filter.push(
+                        { "term": { "pricing_type.keyword": "Paid" } }
+                    );
+                    esQuery.bool.filter.push(
+                        { "term": { "display_price": true } }
+                    );
+                }
                 let sort = null
                 switch (subType) {
                     case "Trending":
-                        sort = [{ "activity_count.last_x_days.course_views": "desc" }, { "ratings": "desc" }]
+                        sort = [{ "activity_count.last_x_days.trending_score": "desc" }, { "ratings": "desc" }]
                         break;
                     default:
-                        sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }]
+                        sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
                         break;
                 }
 
@@ -533,7 +541,7 @@ module.exports = class recommendationService {
                     }
                 }
 
-                const sort = [{ "activity_count.all_time.article_views": "desc" }];
+                const sort = [{ "activity_count.all_time.popularity_score": "desc" }];
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort });
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
@@ -901,7 +909,7 @@ module.exports = class recommendationService {
                     );
                 }
             
-                let sort = [{ "activity_count.last_x_days.article_views": "desc" }]                
+                let sort = [{ "activity_count.last_x_days.trending_score": "desc" }]                
 
                 let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort , _source: articleFields});
             
@@ -1074,7 +1082,7 @@ module.exports = class recommendationService {
                     );
                 }
                
-                let sort = [{ "activity_count.last_x_days.article_views": "desc" }]
+                let sort = [{ "activity_count.last_x_days.trending_score": "desc" }]
 
                 if(pageType == "learnPathPage")
                 {
@@ -1415,13 +1423,21 @@ module.exports = class recommendationService {
                     { "term": { "display_price": true } }
                 );
             }
+            if(subType && subType =="Paid"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Paid" } }
+                );
+                 esQuery.bool.filter.push(
+                    { "term": { "display_price": true } }
+                );
+            }
             let sort = null
             switch (subType) {                
                 case "Trending":
-                    sort = [{ "activity_count.last_x_days.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.last_x_days.trending_score" : "desc" },{ "ratings" : "desc" }]
                     break; 
                 default:
-                    sort = [{ "activity_count.all_time.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.all_time.popularity_score" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
             
@@ -1499,7 +1515,7 @@ module.exports = class recommendationService {
 
             switch (subType) {
                 case "Trending":
-                    sort = [{ "activity_count.last_x_days.article_views": "desc" }];
+                    sort = [{ "activity_count.last_x_days.trending_score": "desc" }];
 
                     break;
 
@@ -1507,7 +1523,7 @@ module.exports = class recommendationService {
                     sort = [{ "published_date": { "order": "desc" } }];
                     break;
                 default:
-                    sort = [{ "activity_count.all_time.article_views": "desc" }]
+                    sort = [{ "activity_count.all_time.popularity_score": "desc" }]
                     break;
             }
 
@@ -1754,7 +1770,7 @@ module.exports = class recommendationService {
                     }
                 }
     
-                const sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }];
+                const sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }];
                 const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source:courseFields });
     
                 if (result.hits && result.hits.length) {
@@ -1939,7 +1955,7 @@ module.exports = class recommendationService {
                 ]
 
             
-                let  sort = [{ "activity_count.all_time.article_views": "desc" }]
+                let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
                     
 
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });

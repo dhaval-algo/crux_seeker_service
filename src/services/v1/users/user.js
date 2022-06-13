@@ -3592,7 +3592,7 @@ const peopleAreAlsoViewing = async (req, callback) => {
                 }
             }
 
-            const sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }];
+            const sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }];
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort });
 
             if (result.hits && result.hits.length) {

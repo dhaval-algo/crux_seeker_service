@@ -953,13 +953,19 @@ module.exports = class learnContentService {
                 );
                 
             }
+            if(subType && subType =="Paid"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Paid" } }
+                );
+                
+            }
             let sort = null
             switch (subType) {                
                 case "Trending":
-                    sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.last_x_days.trending_score" : "desc" },{ "ratings" : "desc" }]
                     break; 
                 default:
-                    sort = [{ "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.all_time.popularity_score" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
             
