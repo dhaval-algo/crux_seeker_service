@@ -61,17 +61,7 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
             if(json){
                 for(let entity of json)
                 {                    
-                    if( entity.slug){
-                       let article_advice = [];
-                       let featured_articles = [];
-                       if(entity.article_advice && entity.article_advice.length > 0)
-                       {
-                           article_advice = entity.article_advice.map((article)=> article.id);
-                       }
-                       if(entity.featured_articles && entity.featured_articles.length > 0)
-                       {
-                           featured_articles = entity.featured_articles.map((article)=> article.id);
-                       }
+                    if( entity.slug){                       
                     //pick only image urls , instead of sending whole large logo object
                     let logos = {}
                        if(entity.logo){
@@ -89,9 +79,7 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
                             "faq" : (entity.faq) ? entity.faq : null,
                             "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
                             "description"  :(entity.description)?entity.description :null,
-                            "meta_information":(entity.meta_information)?entity.meta_information :null,
-                            "article_advice":article_advice,
-                            "featured_articles": featured_articles
+                            "meta_information":(entity.meta_information)?entity.meta_information :null
                         }
                     }                    
                 }
@@ -126,17 +114,6 @@ const getEntityLabelBySlug = async (entity, slug) => {
             let cacheName = `enity_slug_${entity}`;
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             if(cacheData.noCacheData != true) {
-
-                let article_advice = [];
-                let featured_articles = [];
-                if(json[0].article_advice && json[0].article_advice.length > 0)
-                {
-                    article_advice = json[0].article_advice.map((article)=> article.id);
-                }
-                if(json[0].featured_articles && json[0].featured_articles.length > 0)
-                {
-                    featured_articles = json[0].featured_articles.map((article)=> article.id);
-                }
                 //pick only image urls , instead of sending whole large logo object
                 let logos = {}
                 if(json[0].logo){
@@ -154,9 +131,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
                 "faq" : (json[0].faq) ? json[0].faq : null,
                 "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
                 "description"  :(json[0].description)?json[0].description :null,                
-                "meta_information":(json[0].meta_information)?json[0].meta_information :null,
-                "article_advice":article_advice,
-                "featured_articles": featured_articles
+                "meta_information":(json[0].meta_information)?json[0].meta_information :null
                 }
                 RedisConnection.set(cacheName, cacheData);
                // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
@@ -400,8 +375,6 @@ module.exports = class learnContentService {
                 var slug_pageType = slugMapping[i].pageType;
                 var slug_description = slug_data.description;
                 var slug_meta_information = slug_data.meta_information;
-                var slug_article_advice = slug_data.article_advice;
-                var slug_featured_articles = slug_data.featured_articles;
                 var slug_logo = slug_data.logo;
                 var slug_faq = slug_data.faq;
                 if(!slugLabel){
@@ -774,26 +747,6 @@ module.exports = class learnContentService {
                 course_count: result.hits.length
             }
             data.faq = slug_faq
-            if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
-                try {
-                    data.article_advice = []
-                    data.featured_articles = []
-                    if(slug_article_advice && slug_article_advice.length >0 )
-                    {
-                        data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
-                    }
-                    if(slug_featured_articles && slug_featured_articles.length >0 )
-                    {
-                        data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
-                    }
-                } catch (error) {
-                    console.log("Error in getArticleByIds", error)
-                    data.article_advice = []
-                    data.featured_articles = []
-                }
-               
-            }
-
             result.page_details = data.page_details;
             result.meta_information = slug_meta_information;
 
