@@ -48,6 +48,7 @@ if(ENABLE_ACTVITY_LOG_CRON)
 {
     cron.schedule( process.env.ACIVITY_TRACKING_CRON_TIME, async function () {
         try { 
+            console.log("cron started")
             await learnpathActivity()       
             await storeActivity()
             await articleActivity()
