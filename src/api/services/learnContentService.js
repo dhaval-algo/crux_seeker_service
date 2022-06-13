@@ -1107,7 +1107,7 @@ module.exports = class learnContentService {
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
-              {term: { "status.keyword": 'published' }}
+              {terms: { "status.keyword": ['published','unpublished' ]}}
             ]
         }};       
 
@@ -1279,6 +1279,7 @@ module.exports = class learnContentService {
         let data = {
             canBuy: canBuy,
             title: result.title,
+            status:result.status,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
             subtitle: result.subtitle,
