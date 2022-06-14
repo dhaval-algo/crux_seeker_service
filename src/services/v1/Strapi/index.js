@@ -80,12 +80,13 @@ const prepareStrapiData = (enquiry_id) => {
             strapiObj.first_name = enquiry.dataValues.fullName.split(" ")[0] || ""
             strapiObj.last_name = enquiry.dataValues.fullName.split(strapiObj.first_name)[1] || "-"
             strapiObj.email = enquiry.dataValues.email || "";
-            strapiObj.student = Boolean(enquiry.dataValues.student) || null;
+            strapiObj.student = Boolean(enquiry.dataValues.student);
             strapiObj.enquiry_message = enquiry.dataValues.enquiryMessage || "";
             strapiObj.experience = enquiry.dataValues.experience || "";
             strapiObj.highest_degree = enquiry.dataValues.highestDegree || "";
             strapiObj.enquiry_on = "learn_content";
             strapiObj.enquiry_submitted_on = enquiry.dataValues.createdAt;
+            strapiObj.fromSeekerService = true
             
             const query = { "bool": {
                 "must": [{ term: { "_id": enquiry.courseId }}]
@@ -157,12 +158,13 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
             strapiObj.first_name = enquiry.dataValues.fullName.split(" ")[0] || ""
             strapiObj.last_name = enquiry.dataValues.fullName.split(strapiObj.first_name)[1] || "-"
             strapiObj.email = enquiry.dataValues.email || "";
-            strapiObj.student = Boolean(enquiry.dataValues.student) || null;
+            strapiObj.student = Boolean(enquiry.dataValues.student);
             strapiObj.enquiry_message = enquiry.dataValues.enquiryMessage || "";
             strapiObj.experience = enquiry.dataValues.experience || "";
             strapiObj.highest_degree = enquiry.dataValues.highestDegree || "";
             strapiObj.enquiry_on = "learn_path";
             strapiObj.enquiry_submitted_on = enquiry.dataValues.createdAt;
+            strapiObj.fromSeekerService = true
 
             const query = { "bool": {
                 "must": [{ term: { "_id": enquiry.learnpathId }}]

@@ -192,7 +192,7 @@ const prepareLeadData = (enquiry_id) => {
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
             leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || "-"
             leadObj.Email = enquiry.dataValues.email || "";
-            leadObj.Student = Boolean(enquiry.dataValues.student) || null;
+            leadObj.Student = Boolean(enquiry.dataValues.student);
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
             leadObj.Experience_Level = enquiry.dataValues.experience || "";
             leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
@@ -321,7 +321,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             leadObj.First_Name = enquiry.dataValues.fullName.split(" ")[0] || ""
             leadObj.Last_Name = enquiry.dataValues.fullName.split(leadObj.First_Name)[1] || "-"
             leadObj.Email = enquiry.dataValues.email || "";
-            leadObj.Student = Boolean(enquiry.dataValues.student) || null;
+            leadObj.Student = Boolean(enquiry.dataValues.student);
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
             leadObj.Experience_Level = enquiry.dataValues.experience || "";
             leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
