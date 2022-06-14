@@ -217,7 +217,7 @@ module.exports = class recommendationService {
     }
 
     async getPopularCourses(req) {
-        let { subType } = req.query; // Populer, Trending,Free
+        let { subType="Paid" } = req.query; // Populer, Trending,Free
         let { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 20 } = req.query;
 
         const offset = (page - 1) * limit
@@ -268,17 +268,11 @@ module.exports = class recommendationService {
                 if (subType && subType == "Free") {
                     esQuery.bool.filter.push(
                         { "term": { "pricing_type.keyword": "Free" } }
-                    );
-                    esQuery.bool.filter.push(
-                        { "term": { "display_price": true } }
-                    );
+                    ); 
                 }
                 if (subType && subType == "Paid") {
                     esQuery.bool.filter.push(
                         { "term": { "pricing_type.keyword": "Paid" } }
-                    );
-                    esQuery.bool.filter.push(
-                        { "term": { "display_price": true } }
                     );
                 }
                 let sort = null
@@ -1368,7 +1362,7 @@ module.exports = class recommendationService {
     }
 
     async getPopularLearnPaths(req){
-        let { subType } = req.params; // Populer, Trending,Free
+        let { subType="Paid" } = req.params; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;  
 
         let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
@@ -1419,16 +1413,10 @@ module.exports = class recommendationService {
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
-                 esQuery.bool.filter.push(
-                    { "term": { "display_price": true } }
-                );
             }
             if(subType && subType =="Paid"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Paid" } }
-                );
-                 esQuery.bool.filter.push(
-                    { "term": { "display_price": true } }
                 );
             }
             let sort = null
@@ -1458,6 +1446,87 @@ module.exports = class recommendationService {
         } catch (error) {
             console.log("Error while processing data for popular learnpaths", error);
             let response = { success: false, message: "failed to fetch", data:{ list:[] } };
+            
+            return response;
+        }
+    }
+
+    async getLearnPathRecommendation(req){
+        const userId = req.user.userId;
+        const { page = 1, limit = 4 } = req.query;
+        const offset = (page - 1) * limit;
+
+        let cacheKey = `learn-paths-recommendations-${userId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+
+        if (cachedData.noCacheData != true) {
+            return { "success": true, message: "list fetched successfully", data: cachedData}
+        }
+        try {
+            let goalsKeywords = []
+            const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+            goalsKeywords = [...highPriorityKeywords, ...lowPriorityKeywords];
+
+            const learnPaths = [];
+
+            let searchedLearnPaths = [];
+            let suggestionList = await this.getUserLastSearch(req)
+            searchedLearnPaths.push(...suggestionList['learn-path']);    
+            const learnPathsSlugs = searchedLearnPaths.map((learnpath) => learnpath.slug);
+
+            const esQuery = {
+                bool: {
+                    should: [
+                        {
+                            bool: {
+                                should: [
+                                    {
+                                        query_string: {
+                                            fields: [
+                                                "title^4",
+                                                "description^3",
+                                                "topics^2",
+                                                "categories"
+                                            ],
+                                            query: goalsKeywords.join(" OR ").replace("/", "\\/")
+                                        }
+                                    }
+                                ],
+                                boost: 1000
+                            }
+                        },
+                        {
+                            bool: {
+                                should: [
+                                    {
+                                        terms: {
+                                            "slug.keyword": learnPathsSlugs
+                                        }
+                                    }
+                                ],
+                                boost: 10
+                            }
+                        }
+                    ]
+                }
+            }
+            const result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit,_source :learnPathFields});
+            
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await this.generateLearnPathFinalResponse(hit._source);
+                    learnPaths.push(data);
+                }
+            }
+            RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            let response = { "success": true, message: "list fetched successfully", data: learnPaths };
+            
+            return response;
+           
+            
+        } catch (error) {
+            console.log("Error while processing data for learn Paths Recommendations", error);
+            let response = { success: false, message: "failed to fetch", data: [] };
             
             return response;
         }

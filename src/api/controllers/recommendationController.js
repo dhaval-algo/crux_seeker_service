@@ -107,11 +107,15 @@ module.exports = {
 
     getRecommendedLearnPaths: async (req, res) => {
         const { type } = req.query;
-
+        let response
         switch (type) {
            
             case "learn-paths-to-get-started": 
-                const response = await RecommendationService.getPopularLearnPaths(req);
+                response = await RecommendationService.getPopularLearnPaths(req);
+                res.status(200).send(response);  
+                break;
+            case "learn-paths-recommendations": 
+                response = await RecommendationService.getLearnPathRecommendation(req);
                 res.status(200).send(response);  
                 break;
            
