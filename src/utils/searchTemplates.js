@@ -2,21 +2,49 @@ const { getAllTimeSessionKPIs, getRecentSessionKPIs } = require("../utils/sessio
 
 
 const entityQueryMapping = {
-    'learn-content': { status: 'published', prefix_field: "title", fuzziness_fields: ["title^16", "skills^4", "topics^3", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], fields: ["title^18", "skills^4", "topics^4", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"],kpis: ["topics", "skills", "categories", "sub_categories"] },
-    'learn-path': { status: 'approved', prefix_field: "title", fuzziness_fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6"], fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6", "description^4"] },
+    'learn-content': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.course_views", fuzziness_fields: ["title^16", "skills^4", "topics^3", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], fields: ["title^18", "skills^4", "topics^4", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], kpis: ["topics", "skills", "categories", "sub_categories"] },
+    'learn-path': { status: 'approved', prefix_field: "title", total_view_field: "activity_count.all_time.learnpath_views", fuzziness_fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6"], fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6", "description^4"], kpis: ["topics", "categories", "sub_categories"] },
     'provider': { status: 'approved', prefix_field: "name", fuzziness_fields: ["name^7"], fields: ['name^7'] },
-    'article': { status: 'published', prefix_field: "title", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"] }
+    'article': { status: 'published', prefix_field: "title",total_view_field: "activity_count.all_time.article_views", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"], kpis: ["topics", "skills", "categories", "sub_categories"] }
 };
 
 
 const weightForKeywordBoosting = process.env.KEYWORD_BOOST_WEIGHT || 1.5;
 
-const getFunctionScoreFunction = (kpiKey, kpis, weight = weightForKeywordBoosting) => {
+
+const entityKPIKeyElasticFieldMap = {
+
+    "article": {
+        "topics": "article_topics",
+        "skills": "article_skills",
+        "categories": "categories",
+        "sub_categories": "article_sub_categories"
+    },
+
+    "learn-content": {
+        "topics": "topics",
+        "skills": "skills",
+        "categories": "categories",
+        "sub_categories": "sub_categories"
+
+
+
+    },
+    "learn-path": {
+        "topics": "topics",
+        "categories": "categories",
+        "sub_categories": "sub_categories"
+
+    }
+}
+
+
+const getFunctionScoreFunction = (entity, kpiKey, kpis, weight = weightForKeywordBoosting) => {
     return {
         filter: {
             terms: {
 
-                [`${kpiKey}.keyword`]: kpis
+                [`${entityKPIKeyElasticFieldMap[entity][kpiKey]}.keyword`]: kpis
 
             }
         },
@@ -26,15 +54,17 @@ const getFunctionScoreFunction = (kpiKey, kpis, weight = weightForKeywordBoostin
 
 
 
-const getCourseSearchTemplate = async (query, userId = null) => {
+const getSearchTemplate = async (entity, query, userId = null) => {
 
-    const courseQueryMapping = entityQueryMapping['learn-content'];
+    if (entity == 'provider') return getProviderSearchTemplate(query);
+
+    const entityQueryFields = entityQueryMapping[entity];
     const template = {
         function_score: {
             functions: [
                 {
                     field_value_factor: {
-                        field: "activity_count.all_time.course_views",
+                        field: entityQueryFields.total_view_field,
                         modifier: "log2p",
                         missing: 0
                     }
@@ -47,14 +77,10 @@ const getCourseSearchTemplate = async (query, userId = null) => {
                     must: [
                         {
                             term: {
-                                "status.keyword": courseQueryMapping.status
-                            }
-                        },
-                        {
-                            term: {
-                                _index: "learn-content"
+                                "status.keyword": entityQueryFields.status
                             }
                         }
+
                     ],
                     should: [
                         {
@@ -63,13 +89,13 @@ const getCourseSearchTemplate = async (query, userId = null) => {
                                 type: "bool_prefix",
                                 boost: 50,
                                 fields: [
-                                    courseQueryMapping.prefix_field
+                                    entityQueryFields.prefix_field
                                 ]
                             }
                         },
                         {
                             match_phrase_prefix: {
-                                [courseQueryMapping.prefix_field]: {
+                                [entityQueryFields.prefix_field]: {
                                     query: query,
                                     boost: 30
                                 }
@@ -77,14 +103,14 @@ const getCourseSearchTemplate = async (query, userId = null) => {
                         },
                         {
                             multi_match: {
-                                fields: courseQueryMapping.fields,
+                                fields: entityQueryFields.fields,
                                 query: query,
                                 boost: 35
                             }
                         },
                         {
                             multi_match: {
-                                fields: courseQueryMapping.fuzziness_fields,
+                                fields: entityQueryFields.fuzziness_fields,
                                 query: query,
                                 fuzziness: "AUTO",
                                 prefix_length: 0,
@@ -100,7 +126,7 @@ const getCourseSearchTemplate = async (query, userId = null) => {
     if (userId) {
         const recentSessionKPIs = await getRecentSessionKPIs(userId);
         const allTimeSessionKPIs = await getAllTimeSessionKPIs(userId);
-        for (const kpiKey of courseQueryMapping.kpis) {
+        for (const kpiKey of entityQueryFields.kpis) {
 
             let kpis = [];
 
@@ -110,7 +136,7 @@ const getCourseSearchTemplate = async (query, userId = null) => {
             kpis = Array.from(new Set(kpis));
             if (kpis.length) {
 
-                const functionScoreFunction = getFunctionScoreFunction(kpiKey, kpis);
+                const functionScoreFunction = getFunctionScoreFunction(entity, kpiKey, kpis);
                 template.function_score.functions.push(functionScoreFunction);
 
             }
@@ -124,124 +150,6 @@ const getCourseSearchTemplate = async (query, userId = null) => {
     return template;
 
 }
-
-
-
-const getLearnPathSearchTemplate = (query) => {
-
-    const learnPathQueryMapping = entityQueryMapping['learn-path'];
-    const template = {
-        bool: {
-            must: [
-                {
-                    term: {
-                        "status.keyword": learnPathQueryMapping.status
-                    }
-                }
-
-            ],
-            should: [
-                {
-                    multi_match: {
-                        query: query,
-                        type: "bool_prefix",
-                        boost: 50,
-                        fields: [
-                            learnPathQueryMapping.prefix_field
-                        ]
-                    }
-                },
-                {
-                    match_phrase_prefix: {
-                        [learnPathQueryMapping.prefix_field]: {
-                            query: query,
-                            boost: 30
-                        }
-                    }
-                },
-                {
-                    multi_match: {
-                        fields: learnPathQueryMapping.fields,
-                        query: query,
-                        boost: 35
-                    }
-                },
-                {
-                    multi_match: {
-                        fields: learnPathQueryMapping.fuzziness_fields,
-                        query: query,
-                        fuzziness: "AUTO",
-                        prefix_length: 0,
-                        boost: 5
-                    }
-                }
-            ]
-
-        }
-    };
-
-    return template;
-
-}
-
-
-const getArticleSearchTemplate = (query) => {
-
-    const articleQueryMapping = entityQueryMapping['article'];
-    const template = {
-        bool: {
-            must: [
-                {
-                    term: {
-                        "status.keyword": articleQueryMapping.status
-                    }
-                }
-
-            ],
-            should: [
-                {
-                    multi_match: {
-                        query: query,
-                        type: "bool_prefix",
-                        boost: 50,
-                        fields: [
-                            articleQueryMapping.prefix_field
-                        ]
-                    }
-                },
-                {
-                    match_phrase_prefix: {
-                        [articleQueryMapping.prefix_field]: {
-                            query: query,
-                            boost: 30
-                        }
-                    }
-                },
-                {
-                    multi_match: {
-                        fields: articleQueryMapping.fields,
-                        query: query,
-                        boost: 35
-                    }
-                },
-                {
-                    multi_match: {
-                        fields: articleQueryMapping.fuzziness_fields,
-                        query: query,
-                        fuzziness: "AUTO",
-                        prefix_length: 0,
-                        boost: 5
-                    }
-                }
-            ]
-
-        }
-    };
-
-    return template;
-
-}
-
 
 const getProviderSearchTemplate = (query) => {
 
@@ -300,13 +208,7 @@ const getProviderSearchTemplate = (query) => {
 
 }
 
-
-
-
 module.exports = {
 
-    getCourseSearchTemplate,
-    getLearnPathSearchTemplate,
-    getArticleSearchTemplate,
-    getProviderSearchTemplate
+    getSearchTemplate
 }
