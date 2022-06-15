@@ -47,6 +47,18 @@ module.exports = {
                 response = await RecommendationService.wishlistBasedRecommendation(req);
                 res.status(200).send(response);
                 break;
+            case "courses-recommendation": 
+                response = await RecommendationService.coursesRecommendationForUser(req);
+                res.status(200).send(response);
+                break;
+            case "related-courses-for-learn-path": 
+                response = await RecommendationService.relatedCoursesForLearnPath(req);
+                res.status(200).send(response);
+                break;
+            case "related-courses-for-article": 
+                response = await RecommendationService.relatedCoursesForArticle(req);
+                res.status(200).send(response);
+                break;
             default:
                 res.status(200).send({});
                 break;
@@ -101,6 +113,14 @@ module.exports = {
                 response = await RecommendationService.getRecommendationArticlesforCourse(req) 
                 res.status(200).send(response);             
                 break;
+            case "related-articles-for-learnpath":             
+                response = await RecommendationService.getRelatedArticlesForLearnPath(req) 
+                res.status(200).send(response);             
+                break;
+            case "article-recommendation":             
+                response = await RecommendationService.articleRecommendationForUser(req) 
+                res.status(200).send(response);             
+                break;
             default:
                 res.status(200).send({});
                 break;
@@ -122,12 +142,16 @@ module.exports = {
         let response
         switch (type) {
            
+            case "related-learnpaths": 
+                response = await RecommendationService.relatedLearnPaths(req);
+                res.status(200).send(response);  
+                break;
             case "learn-paths-to-get-started": 
                 response = await RecommendationService.getPopularLearnPaths(req);
                 res.status(200).send(response);  
                 break;
             case "learn-paths-recommendations": 
-                response = await RecommendationService.getLearnPathRecommendation(req);
+                response = await RecommendationService.getLearnPathRecommendationForUser(req);
                 res.status(200).send(response);  
                 break;
             case "related-learning-path-for-course": {
