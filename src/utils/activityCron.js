@@ -2,7 +2,12 @@ const models = require("../../models");
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { publishToSNS } = require('../services/v1/sns');
+const elasticService = require("../api/services/elasticService");
 const moment = require("moment");
+const redisConnection = require('../services/v1/redis');
+
+const RedisConnection = new redisConnection();
+const POPULAR_TRENDING_PERCENTAGE = 20
 
 const learnpathActivity = async () => {
     let activity_types = {}
@@ -532,9 +537,86 @@ const storeActivity = async () => {
         }
     }
 }
+
+const setTrendingPopularityThreshold = async () => {
+    let esQuery = {
+        "bool": {
+            "filter": [
+                { "term": { "status.keyword": "published" } }
+            ]
+        }
+    }
+
+    // Get total count of course
+    let count = await elasticService.count("learn-content", {"query": esQuery});
+    if(count)
+    {
+        //calculate popular/trending number of cources
+        let thresholdCount = Math.ceil((count.count*POPULAR_TRENDING_PERCENTAGE)/100)        
+        let result = await elasticService.search("learn-content", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.all_time.popularity_score": "desc" } ,_source: ["activity_count"]});
+         if (result.hits) {      
+            RedisConnection.set("COURSE_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
+        }
+
+        result = await elasticService.search("learn-content", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.last_x_days.trending_score": "desc" } ,_source: ["activity_count"]});
+        if (result.hits) {      
+            RedisConnection.set("COURSE_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
+        }
+    }
+
+    // Get total count of Learnpath
+    esQuery = {
+        "bool": {
+            "filter": [
+                { "term": { "status.keyword": "approved" } }
+            ]
+        }
+    }
+    count = await elasticService.count("learn-path", {"query": esQuery});
+    if(count)
+    {
+        //calculate popular/trending number of Learnpaths
+        let thresholdCount = Math.ceil((count.count*POPULAR_TRENDING_PERCENTAGE)/100)        
+        let result = await elasticService.search("learn-path", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.all_time.popularity_score": "desc" } ,_source: ["activity_count"]});
+         if (result.hits) {      
+            RedisConnection.set("LEARN_PATH_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
+        }
+
+        result = await elasticService.search("learn-path", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.last_x_days.trending_score": "desc" } ,_source: ["activity_count"]});
+        if (result.hits) {      
+            RedisConnection.set("LEARN_PATH_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
+        }
+    }
+
+
+    // Get total count of article
+    esQuery = {
+        "bool": {
+            "filter": [
+                { "term": { "status.keyword": "published" } }
+            ]
+        }
+    }
+    count = await elasticService.count("article", {"query": esQuery});
+    if(count)
+    {
+        //calculate popular/trending number of cources
+        let thresholdCount = Math.ceil((count.count*POPULAR_TRENDING_PERCENTAGE)/100)        
+        let result = await elasticService.search("article", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.all_time.popularity_score": "desc" } ,_source: ["activity_count"]});
+         if (result.hits) {      
+            RedisConnection.set("ARTICLE_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
+        }
+
+        result = await elasticService.search("article", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.last_x_days.trending_score": "desc" } ,_source: ["activity_count"]});
+        if (result.hits) {      
+            RedisConnection.set("ARTICLE_PATH_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
+        }
+    }
+}
    
 module.exports = {
     storeActivity,
     learnpathActivity,
-    articleActivity
+    articleActivity,
+    setTrendingPopularityThreshold
 }

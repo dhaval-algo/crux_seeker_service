@@ -611,7 +611,7 @@ module.exports = class learnPathService {
         };
 
         let result = await elasticService.search('learn-path', query); 
-        if (result.hits && result.hits.length > 0) {
+        if (result.hits && result.hits.length > 0) { 
             return result.hits[0]._source;
         } else {
             return null;
@@ -656,7 +656,8 @@ module.exports = class learnPathService {
                 total_duration_unit: result.total_duration_unit,
             },
             courses: result.courses,
-            skills: (result.skills) ? result.skills :null
+            skills: (result.skills) ? result.skills :null,
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         }
 
         if (!isList) {
@@ -673,7 +674,22 @@ module.exports = class learnPathService {
             }
         }
 
+        //SET popular and trending keys
+        const COURSE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
 
+        data.isPopular  = false
+        if(COURSE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD)))
+        {
+            data.isPopular  = true
+        }
+
+        const COURSE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
+
+        data.isTrending  = false
+        if(COURSE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD)))
+        {
+            data.isTrending  = true
+        }
         //TODO this logic is copied from course service
         //but this aggreation logic should be put in elastic search add added in the reviews_extended object for both course and learn-path.
         if (result.reviews && result.reviews.length > 0) {
