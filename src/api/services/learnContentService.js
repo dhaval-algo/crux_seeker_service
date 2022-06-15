@@ -730,6 +730,17 @@ module.exports = class learnContentService {
                 }
             }
 
+            //remove filter if pagetype is partner or institute
+            if(req.query['pageType'] == "partner")
+            {
+                filters = filters.filter(o => o.label !== 'Partner');
+            }
+            else if(req.query['pageType'] == "institute")
+            {
+                filters = filters.filter(o => o.label !== 'Institute');
+
+            }
+
             let data = {
                 list: list,
                 filters: filters,
