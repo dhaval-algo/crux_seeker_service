@@ -3,6 +3,49 @@ const emailTemplate = require("./template.js");
 const emailProviders = require("./emailProviders");
 // const SEND_USER_EMAIL = (process.env.SEND_USER_EMAIL == 'true');
 var request = require("request");
+const crypto = require('crypto');
+
+function getEncryptedData(data){
+    let queryString = "";
+    for(const [key, value] of Object.entries(data)){
+        queryString = queryString + key + "=" + value + "&";
+    }
+    queryString = queryString.slice(0,-1);
+    queryString = Buffer.from(queryString, 'utf-8').toString();
+    /**
+     * Querystring is the data that is encrypted.
+     * It is making sure password is also encrypted.
+     */
+    const GCM_IV_LENGTH = 12;
+    const GCM_TAG_LENGTH_BYTES = 16;
+    const GIVEN_KEY = process.env.SMS_GUPSHUP_HASH_KEY;//32 byte key
+    const ALGO = "aes-256-gcm";
+
+    //initialization vector
+    const iv = Buffer.from(crypto.randomBytes(GCM_IV_LENGTH), 'utf8');
+
+    //key decoding
+    let decodedKey = Buffer.from(GIVEN_KEY, 'base64');
+
+    //initializing the cipher
+    const cipher = crypto.createCipheriv(ALGO, decodedKey, iv, { authTagLength: GCM_TAG_LENGTH_BYTES })
+    cipher.setAutoPadding(false);
+
+    //running encryption
+    const encrypted = Buffer.concat([cipher.update(queryString, 'utf8')]);
+    cipher.final()
+
+    //Obtaining auth tag
+    tag = cipher.getAuthTag();
+    const finalBuffer = Buffer.concat([iv, encrypted, tag]);
+
+    //converting string to base64
+    const finalString = finalBuffer.toString('base64');
+
+    //making the string url safe
+    const urlSafeString = finalString.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    return urlSafeString;
+}
 
 module.exports = {
 
@@ -106,19 +149,23 @@ module.exports = {
                 if(process.env.SENDSMS == "true"){            
                     switch ( process.env.SMS_PROVIDER) {
                         case "smsgupshup":
+                            var data=
+                            {
+                                method: 'SendMessage',// "Here SendMessage is different that unencrypted sendMessage code"
+                                send_to: phone,
+                                msg: message,
+                                msg_type: 'TEXT',
+                                auth_scheme: 'PLAIN',
+                                password: process.env.SMS_GUPSHUP_PASSOWRD,
+                                format: 'JSON',
+                                v:1.1
+                            }
                             var options = { method: 'POST',
                             url: process.env.SMS_GUPSHUP_URL,
                             form: 
                             {
-                                method: 'sendMessage',
-                                send_to: phone,
-                                msg: message,
-                                msg_type: 'TEXT',
                                 userid: process.env.SMS_GUPSHUP_USERID,
-                                auth_scheme: 'PLAIN',
-                                password: process.env.SMS_GUPSHUP_PASSOWRD,
-                                format: 'JSON',
-                                v:1.1,
+                                encrdata: getEncryptedData(data),
                                 principalEntityId:process.env.SMS_GUPSHUP_PE_ID,
                                 dltTemplateId: dltTemplateId,
                                 mask: 'CVIOTP'

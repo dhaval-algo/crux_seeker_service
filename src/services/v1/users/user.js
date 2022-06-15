@@ -299,14 +299,25 @@ const verifyOtp = async (req, res, next) => {
     }
 }
 
-const verifyUserToken = (req, res) => {
+const verifyUserToken = async (req, res) => {
+    
+    let user_login_obj = await models.user_login.findOne({where:{userId:req.user.userId}})
+    let user_obj = await models.user.findOne({where:{id:req.user.userId}})
+
+    const response_obj = {
+        email: user_login_obj.email || "",
+        userId: req.user.userId,
+        provider: user_login_obj.provider || "",
+        userType: user_obj.userType,
+        isVerified: user_obj.verified ||  false
+    }
 
     let resp = {
         code: DEFAULT_CODES.VALID_TOKEN.code,
         message: DEFAULT_CODES.VALID_TOKEN.message,
         success: true,
         data: {
-            user: req.user
+            user: response_obj
         }
     }
     return res.status(200).json(resp);

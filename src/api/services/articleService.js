@@ -413,6 +413,8 @@ module.exports = class articleService {
             rewards = await CheckArticleRewards(req.user, premium);
         }
 
+        if(!result.created_by_role) result.created_by_role='author'
+
         if(result.created_by_role=='author')
         {            
             let auth = await this.getAuthor(result.author_id);         
@@ -443,8 +445,6 @@ module.exports = class articleService {
         {
             author = []
         }
-        
-
         if(result.co_authors && result.co_authors.length > 0)
         {
             for( let co_author of result.co_authors)
