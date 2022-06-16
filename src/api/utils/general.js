@@ -537,13 +537,7 @@ const generateMetaInfo = async (page, result, list) => {
                 {
                     meta_description =  meta_description.substring(0, position);
                 }
-            }else
-            {
-                content = result.content.replace(/<(.|\n)*?>/g, '');
-                content = content.replace(/&nbsp;/g, ' ');
-                let content_index = content.indexOf(".")       
-                meta_description = content.substring(0, (content_index > 0)? content_index :100);
-            }       
+            }
             
             keywords =[result.title]
             if(result.categories){

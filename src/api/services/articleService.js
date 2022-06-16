@@ -475,7 +475,7 @@ module.exports = class articleService {
                     image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
                 });
             }
-         }
+        }
 
         if(result.partners && result.partners.length > 0 )
         {
@@ -517,17 +517,12 @@ module.exports = class articleService {
             premium: (result.premium)? result.premium:false,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,          
-            cover_image: (result.cover_image)? result.cover_image : null,
+            cover_image: (result.cover_image)? result.cover_image : null,            
+            listing_image: (result.listing_image)? result.listing_image : null,            
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
-            created_by_role: (result.created_by_role)? result.created_by_role:'author', 
-            comments: (result.comments && !isList) ? result.comments : [],
-            social_links: {
-                facebook: result.facebook_link,
-                linkedin: result.linkedin_link,
-                twitter: result.twitter_link
-            },
+            created_by_role: (result.created_by_role)? result.created_by_role:'author',
             published_date: result.published_date,
             categories: (result.categories) ? result.categories : [],
             levels: (result.levels) ? result.levels : [],
@@ -564,12 +559,7 @@ module.exports = class articleService {
                 data.meta_information  = meta_information;
             }
         }
-
-        data.description = null;
-        data.content_section = null
-        data.level_info = null
-        data.course_recommendation = null
-        data.conclusion = null
+       
         if(!isList){
             data.full_access = false;
             if(rewards && rewards.length > 0)
@@ -577,27 +567,16 @@ module.exports = class articleService {
                 if(rewards[0].access_type == 'full_access')
                 {
                     data.full_access= true;
-                    data.description = result.content;
-                    data.content_section = result.content_section || null
-                    data.level_info = result.level_info || null
-                    if(data.level_info){
-                        data.level_info.levels_beginner = result.level_beginner || null
-                        data.level_info.levels_intermediate = result.level_intermediate || null
-                        data.level_info.levels_advance = result.level_advance || null
-                    }else{
-                        data.level_info = {}
-                        data.level_info.levels_beginner = result.level_beginner || null
-                        data.level_info.levels_intermediate = result.level_intermediate || null
-                        data.level_info.levels_advance = result.level_advance || null
-                    }
-                    data.course_recommendation = result.course_recommendation || null;
-                    data.conclusion = result.conclusion || null;
+                    data.top_content = result.top_content || null
+                    data.levels_beginner = result.level_beginner || null
+                    data.levels_intermediate = result.level_intermediate || null
+                    data.levels_advance = result.level_advance || null
+                    data.bottom_content = result.bottom_content || null
+                                       
                 }
                 else if(rewards[0].access_type == 'partial_access')
                 {
-                    let description = result.content.replace(/<(.|\n)*?>/g, '');
-                    description = description.replace(/&nbsp;/g, ' ');
-                    data.description = description.split(' ').slice(0, 70).join(' ');
+                    data.level_info.top_content = result.top_content || null;
                 }
             }           
         }
@@ -607,6 +586,7 @@ module.exports = class articleService {
         }
         return data;
         }
+        
         catch(err){
             console.log("ERROR: ",err)
         }
