@@ -22,6 +22,7 @@ const jobController = require("../../../controllers/jobController");
 const listUsersController = require("../../../controllers/listUsersController")
 const listEnquiriesController = require("../../../controllers/listEnquiriesController")
 const sessionKPIController = require("../../../controllers/sessionController")
+const graphController = require("../../../controllers/graphController")
 
 router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
@@ -118,8 +119,12 @@ router.get('/learn-content-topics', learnContentController.getLearnContentTopics
 router.get('/learn-path-learn-types', learnPathController.getLearnPathLearntypes)
 router.get('/learn-path-topics', learnPathController.getLearnPathTopics)
 
-
-
+// graph / data tables api
+router.get('/bar-graph/:id', graphController.getBarGraph)
+router.get('/line-graph/:id', graphController.getlineGraph)
+router.get('/pie-chart/:id', graphController.getPieChart)
+router.get('/donut-chart/:id', graphController.getDonutChart)
+router.get('/data-table/:id', graphController.getDataTable)
 
 router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 
