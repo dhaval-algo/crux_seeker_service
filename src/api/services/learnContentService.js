@@ -1356,21 +1356,20 @@ module.exports = class learnContentService {
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         };
 
+        
         //SET popular and trending keys
-        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD");
+        const COURSE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
 
-        data.isPopular  = false
-        if(LEARN_PATH_POPULARITY_SCORE_THRESHOLD  && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(LEARN_PATH_POPULARITY_SCORE_THRESHOLD)))
-        {
-            data.isPopular  = true
+        data.isPopular = false
+        if (COURSE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD))) {
+            data.isPopular = true
         }
 
-        const ARTICLE_PATH_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_PATH_TRENDING_SCORE_THRESHOLD");
-        
-        data.isTrending  = false
-        if(ARTICLE_PATH_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(ARTICLE_PATH_TRENDING_SCORE_THRESHOLD)))
-        {
-            data.isTrending  = true
+        const COURSE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
+
+        data.isTrending = false
+        if (COURSE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD))) {
+            data.isTrending = true
         }
 
 
