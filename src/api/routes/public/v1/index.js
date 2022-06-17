@@ -26,8 +26,8 @@ router.get('/learn-content-filters/', learnContentController.getLearnContentFilt
 router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
 router.get('/learn-content-reviews/:courseId',learnContentController.getReviews);
 
-router.get('/learn-path/',learnPathController.getLearnPathList);
-router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
+router.get('/learn-path/',injectTokenPayload,learnPathController.getLearnPathList);
+router.get('/learn-path/:slug',injectTokenPayload,learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
 router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 

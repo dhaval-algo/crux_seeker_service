@@ -11,6 +11,7 @@ const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 
 const categoryService = require("./categoryService");
+const {getSearchTemplate} = require("../../utils/searchTemplates");
 const CategoryService = new categoryService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -59,10 +60,12 @@ module.exports = class learnPathService {
     async getLearnPathList(req, callback, skipCache) {
 
         try {
+            let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
             let defaultSort = "ratings:desc";
             let useCache = false;
             let cacheName = "learnpath";
+            const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
 
             if(
                 req.query['learnPathIds'] == undefined
@@ -99,12 +102,21 @@ module.exports = class learnPathService {
             const filterConfigs = await getFilterConfigs('Learn_Path');
 
             let esFilters = {};
-            const query = {
-                "bool": {
-                    "must": [
-                        { term: { "status.keyword": 'approved' } }
-                    ],
-                }
+            let query = null;
+            if (req.query['q']) {
+
+                searchTemplate = await getSearchTemplate('learn-path',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
+                query = searchTemplate.function_score.query;
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+                
+            } else {
+                query = {
+                    "bool": {
+                        "must": [
+                            { term: { "status.keyword": 'approved' } }
+                        ],
+                    }
+                };
             };
 
             let queryPayload = {};
@@ -146,37 +158,6 @@ module.exports = class learnPathService {
             let parsedFilters = [];
             let parsedRangeFilters = [];
             let filters = [];
-
-            if(req.query['q']){
-
-                let filter_object = {                    
-                    "bool": {
-                        "should": [
-                          {
-                            "query_string" : {
-                                "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                                "fields" : ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'],
-                                "analyze_wildcard" : true,
-                                "allow_leading_wildcard": true
-                            }
-                          },
-                          {
-                              "multi_match": {
-                                      "fields": ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'],
-                                      "query": decodeURIComponent(req.query['q']).trim(),
-                                      "fuzziness": "AUTO",
-                                      "prefix_length": 0                              
-                              }
-                          }           
-                        ]
-                      }                    
-                    }
-    
-    
-                query.bool.must.push(filter_object);
-                esFilters['q'] = filter_object;
-                
-            }
 
             if (req.query['f']) {
                 parsedFilters = parseQueryFilters(req.query['f']);
@@ -341,7 +322,7 @@ module.exports = class learnPathService {
 
             // --Aggreation query build
 
-            let result = await elasticService.searchWithAggregate('learn-path', query, queryPayload);
+            let result = await elasticService.searchWithAggregate('learn-path', searchTemplate ? searchTemplate : query, queryPayload);
 
             /**
              * Aggregation object from elastic search
