@@ -5,7 +5,7 @@ const entityQueryMapping = {
     'learn-content': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.course_views", fuzziness_fields: ["title^16", "skills^4", "topics^3", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], fields: ["title^18", "skills^4", "topics^4", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], kpis: ["topics", "skills", "categories", "sub_categories"] },
     'learn-path': { status: 'approved', prefix_field: "title", total_view_field: "activity_count.all_time.learnpath_views", fuzziness_fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6"], fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6", "description^4"], kpis: ["topics", "categories", "sub_categories"] },
     'provider': { status: 'approved', prefix_field: "name", fuzziness_fields: ["name^7"], fields: ['name^7'] },
-    'article': { status: 'published', prefix_field: "title",total_view_field: "activity_count.all_time.article_views", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"], kpis: ["topics", "skills", "categories", "sub_categories"] }
+    'article': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.article_views", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"], kpis: ["topics", "skills", "categories", "sub_categories"] }
 };
 
 
@@ -79,42 +79,48 @@ const getSearchTemplate = async (entity, query, userId = null) => {
                             term: {
                                 "status.keyword": entityQueryFields.status
                             }
-                        }
+                        },
 
-                    ],
-                    should: [
                         {
-                            multi_match: {
-                                query: query,
-                                type: "bool_prefix",
-                                boost: 50,
-                                fields: [
-                                    entityQueryFields.prefix_field
+
+                            bool: {
+
+                                should: [
+                                    {
+                                        multi_match: {
+                                            query: query,
+                                            type: "bool_prefix",
+                                            boost: 50,
+                                            fields: [
+                                                entityQueryFields.prefix_field
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        match_phrase_prefix: {
+                                            [entityQueryFields.prefix_field]: {
+                                                query: query,
+                                                boost: 30
+                                            }
+                                        }
+                                    },
+                                    {
+                                        multi_match: {
+                                            fields: entityQueryFields.fields,
+                                            query: query,
+                                            boost: 35
+                                        }
+                                    },
+                                    {
+                                        multi_match: {
+                                            fields: entityQueryFields.fuzziness_fields,
+                                            query: query,
+                                            fuzziness: "AUTO",
+                                            prefix_length: 0,
+                                            boost: 5
+                                        }
+                                    }
                                 ]
-                            }
-                        },
-                        {
-                            match_phrase_prefix: {
-                                [entityQueryFields.prefix_field]: {
-                                    query: query,
-                                    boost: 30
-                                }
-                            }
-                        },
-                        {
-                            multi_match: {
-                                fields: entityQueryFields.fields,
-                                query: query,
-                                boost: 35
-                            }
-                        },
-                        {
-                            multi_match: {
-                                fields: entityQueryFields.fuzziness_fields,
-                                query: query,
-                                fuzziness: "AUTO",
-                                prefix_length: 0,
-                                boost: 5
                             }
                         }
                     ]
@@ -161,42 +167,46 @@ const getProviderSearchTemplate = (query) => {
                     term: {
                         "status.keyword": providerQueryMapping.status
                     }
-                }
+                },
+                {
 
-            ],
-            should: [
-                {
-                    multi_match: {
-                        query: query,
-                        type: "bool_prefix",
-                        boost: 50,
-                        fields: [
-                            providerQueryMapping.prefix_field
+                    bool: {
+                        should: [
+                            {
+                                multi_match: {
+                                    query: query,
+                                    type: "bool_prefix",
+                                    boost: 50,
+                                    fields: [
+                                        providerQueryMapping.prefix_field
+                                    ]
+                                }
+                            },
+                            {
+                                match_phrase_prefix: {
+                                    [providerQueryMapping.prefix_field]: {
+                                        query: query,
+                                        boost: 30
+                                    }
+                                }
+                            },
+                            {
+                                multi_match: {
+                                    fields: providerQueryMapping.fields,
+                                    query: query,
+                                    boost: 35
+                                }
+                            },
+                            {
+                                multi_match: {
+                                    fields: providerQueryMapping.fuzziness_fields,
+                                    query: query,
+                                    fuzziness: "AUTO",
+                                    prefix_length: 0,
+                                    boost: 5
+                                }
+                            }
                         ]
-                    }
-                },
-                {
-                    match_phrase_prefix: {
-                        [providerQueryMapping.prefix_field]: {
-                            query: query,
-                            boost: 30
-                        }
-                    }
-                },
-                {
-                    multi_match: {
-                        fields: providerQueryMapping.fields,
-                        query: query,
-                        boost: 35
-                    }
-                },
-                {
-                    multi_match: {
-                        fields: providerQueryMapping.fuzziness_fields,
-                        query: query,
-                        fuzziness: "AUTO",
-                        prefix_length: 0,
-                        boost: 5
                     }
                 }
             ]
