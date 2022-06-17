@@ -23,6 +23,7 @@ const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
 const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug','article_sub_categories','article_job_roles','article_skills','article_topics'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
+const {getSearchTemplate} = require("../../utils/searchTemplates");
 
 const CheckArticleRewards = async (user, premium) => {  
     let rewards = [];
@@ -56,19 +57,29 @@ module.exports = class articleService {
 
     async getArticleList(req, callback){
         const filterConfigs = await getFilterConfigs('Article');
-        
+        let searchTemplate = null;
+        const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
         let esFilters = {}
 
         let publishedFilter = {term: { "status.keyword": 'published' }};
         esFilters['published'] = publishedFilter;
 
-        const query = { 
-            "bool": {
-                "must": [
-                    publishedFilter                
-                ],
-            }
-        };
+        let query = null;
+        if (req.query['q']) {
+
+            searchTemplate = await getSearchTemplate('article', decodeURIComponent(req.query['q']).replace("+", "//+").trim(), userId);
+            query = searchTemplate.function_score.query;
+            esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+
+        } else {
+            query = {
+                "bool": {
+                    "must": [
+                        publishedFilter
+                    ],
+                }
+            };
+        }
 
         if(req.query.articleIds)
         {
@@ -138,36 +149,6 @@ module.exports = class articleService {
         }
         
         let queryString = null;
-        if(req.query['q']){
-
-            let filterObject = {                    
-                "bool": {
-                    "should": [
-                        {
-                            "query_string" : {
-                                "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                                "fields" : (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-                                "analyze_wildcard" : true,
-                                "allow_leading_wildcard": true
-                            }
-                        },
-                        {
-                            "multi_match": {
-
-                                "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-
-                                "query": decodeURIComponent(req.query['q']).trim(),
-                                "fuzziness": "AUTO",
-                                "prefix_length": 0                              
-                            }
-                        }           
-                    ]
-                    }                    
-                }
-
-            query.bool.must.push(filterObject);
-            esFilters['q'] = filterObject;         
-        }
 
          //FILTER FACET AGGREGATIONS
          let aggs = {
@@ -216,7 +197,7 @@ module.exports = class articleService {
 
         queryPayload.aggs = aggs;
         
-        let result = await elasticService.searchWithAggregate('article', query, queryPayload, queryString);
+        let result = await elasticService.searchWithAggregate('article', searchTemplate ? searchTemplate : query, queryPayload, queryString);
         let aggs_result = result.aggregations;
         result = result.hits;
 
