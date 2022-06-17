@@ -35,6 +35,7 @@ const helperService = require("../../utils/helper");
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 const {saveSessionKPIs} = require("../../utils/sessionActivity");
+const {getSearchTemplate} = require("../../utils/searchTemplates");
 
 const getBaseCurrency = (result) => {
     return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
@@ -258,13 +259,14 @@ const saveLearnContentListSessionKPIs = (req, page_details) => {
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
-
+ 
         try{
-
+        let searchTemplate = null;
         let defaultSize = await getPaginationDefaultSize();
         let defaultSort = "ratings:desc";
         let useCache = false;
         let cacheName = "";
+        const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
@@ -297,7 +299,7 @@ module.exports = class learnContentService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    saveLearnContentListSessionKPIs(req.user , cacheData.page_details);
+                    saveLearnContentListSessionKPIs(req , cacheData.page_details);
                     return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 }
             }
@@ -311,15 +313,23 @@ module.exports = class learnContentService {
 
 
         const filterConfigs = await getFilterConfigs('Learn_Content');
-        
-        const query = { 
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }}                
-                ],
-            }
-        };
+            
+            let query = null;
+            if (req.query['q']) {
 
+                searchTemplate = await getSearchTemplate('learn-content',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
+                query = searchTemplate.function_score.query;
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+                
+            } else {
+                query = {
+                    "bool": {
+                        "must": [
+                            { term: { "status.keyword": 'published' } }
+                        ],
+                    }
+                };
+            }
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
@@ -387,36 +397,6 @@ module.exports = class learnContentService {
             }           
         }
 
-        if(req.query['q']){
-
-            let filter_object = {                    
-                "bool": {
-                    "should": [
-                      {
-                        "query_string" : {
-                            "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                            "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
-                            "analyze_wildcard" : true,
-                            "allow_leading_wildcard": true
-                        }
-                      },
-                      {
-                          "multi_match": {
-                                  "fields": ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
-                                  "query": decodeURIComponent(req.query['q']).trim(),
-                                  "fuzziness": "AUTO",
-                                  "prefix_length": 0                              
-                          }
-                      }           
-                    ]
-                  }                    
-                }
-
-
-            query.bool.must.push(filter_object);
-            esFilters['q'] = filter_object;
-            
-        }
         let parsedFilters = [];
         let parsedRangeFilters = [];       
         let filters = [];
@@ -540,10 +520,10 @@ module.exports = class learnContentService {
         }
 
         queryPayload.aggs = aggs;
-
+      
         // --Aggreation query build
-
-        let result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
+    
+        let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
 
         /**
          * Aggregation object from elastic search
@@ -784,7 +764,7 @@ module.exports = class learnContentService {
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24 );
             }
 
-
+      
     }catch(e){
         console.log(e)
         callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
