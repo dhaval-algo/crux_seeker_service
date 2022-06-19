@@ -87,9 +87,10 @@ const ENABLE_ACTVITY_LOG_CRON = process.env.ENABLE_ACTVITY_LOG_CRON || false;
 if(ENABLE_ACTVITY_LOG_CRON)
 {
     cron.schedule( process.env.ACIVITY_TRACKING_CRON_TIME, async function () {
-        try {        
+        try { 
+            console.log("cron started")
+            await learnpathActivity()       
             await storeActivity()
-            await learnpathActivity()
             await articleActivity()
             await setTrendingPopularityThreshold()
         } catch (error) {

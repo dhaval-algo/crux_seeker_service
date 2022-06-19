@@ -1012,13 +1012,21 @@ module.exports = class learnPathService {
                     { "term": { "display_price": true } }
                 );
             }
+            if(type && type =="Paid"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Paid" } }
+                );
+                 esQuery.bool.filter.push(
+                    { "term": { "display_price": true } }
+                );
+            }
             let sort = null
             switch (type) {                
                 case "Trending":
-                    sort = [{ "activity_count.last_x_days.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.last_x_days.trending_score" : "desc" },{ "ratings" : "desc" }]
                     break; 
                 default:
-                    sort = [{ "activity_count.all_time.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.all_time.popularity_score" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
             

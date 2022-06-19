@@ -5,6 +5,7 @@ const elasticService = require("../../api/services/elasticService");
 const enquiryService = require("../../api/services/enquiryService");
 const eventEmitter = require("../../utils/subscriber");
 const validators = require("../../utils/validators")
+const helperService = require("../../utils/helper");
 const { sequelize } = require("../../../models");
 
 
@@ -137,7 +138,7 @@ const fetchEnquiry = async(req, res) => {
 }
 
 const createEnquiry = async (req, res) => {
-
+    const { user } = req.user
     let { courseId = "" } = req.body
     courseId = courseId.trim()
 
@@ -193,6 +194,7 @@ const createEnquiry = async (req, res) => {
                 }
                 enquiryService.sendEnquiryEmail(correspondence_email, data)
             }}
+            const activity_log =  await helperService.logActvity("COURSE_ENQUIRED",(user)? user.userId : null, courseId);
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
         .catch(err => {
@@ -209,6 +211,7 @@ const createEnquiry = async (req, res) => {
 const createLearnpathEnquiry = async (req, res) => {
 
     try {
+        const { user } = req.user
         let { learnpathId = "" } = req.body
         learnpathId = learnpathId.trim()
     
@@ -230,6 +233,7 @@ const createLearnpathEnquiry = async (req, res) => {
             // emit event to createLead in zoho
             if(enq.id != undefined )
                 eventEmitter.emit('learnpathenquiry',enq.id)
+            const activity_log =  await helperService.logActvity("LEARNPATH_ENQUIRED",(user)? user.userId : null, learnpathId);
             return res.status(200).send({success:true, message:"learnpath enquiry submitted"})
         })
         .catch(err => {

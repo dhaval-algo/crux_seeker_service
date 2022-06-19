@@ -31,6 +31,9 @@ router.post('/fetch-recently-viewed-courses',authenticateJWT, userService.getRec
 router.post('/remove-from-wishlist',authenticateJWT, userService.removeCourseFromWishList);
 router.post('/remove-from-learnpathwishlist',authenticateJWT, userService.removeLearnPathFromWishList);
 router.post('/fetch-wishlist',authenticateJWT, userService.fetchWishListIds);
+router.post('/add-to-course-share',authenticateJWT, userService.addCourseToShare);
+router.post('/add-to-learnpath-share',authenticateJWT, userService.addLearnPathToShare);
+router.post('/add-to-article-share',authenticateJWT, userService.addArticleToShare);
 router.post('/fetch-learnpathwishlist',authenticateJWT, userService.fetchLearnPathWishListIds);
 router.get('/fetch-bookmarked-courses',authenticateJWT, userService.wishListCourseData);
 router.get('/fetch-bookmarked-learnpaths',authenticateJWT, userService.wishListLearnPathData);
