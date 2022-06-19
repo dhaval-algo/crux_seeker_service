@@ -9,9 +9,9 @@ const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options"]
-const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners"]
-const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","display_price","courses"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take"]
+const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count"]
+const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","display_price","courses","activity_count","cv_take"]
 const getCurrencies = async (useCache = true) => {
 
     let cacheKey = "get-currencies-backend";
@@ -338,7 +338,7 @@ module.exports = class recommendationService {
 
         try {
             const userId = req.user.userId;
-            const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+            const { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
             const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);
 
             let limitForSkills = 0;
@@ -373,7 +373,33 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-
+            if (category) {
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "categories.keyword": decodeURIComponent(category)
+                        }
+                    }
+                );
+            }
+            if (sub_category) {
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "sub_categories.keyword": decodeURIComponent(sub_category)
+                        }
+                    }
+                );
+            }
+            if (topic) {
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "topics.keyword": decodeURIComponent(topic)
+                        }
+                    }
+                );
+            }
             let courses = [];
             if (skillsKeywords.length) {
                 const offset = (page - 1) * limitForSkills;
@@ -403,7 +429,7 @@ module.exports = class recommendationService {
                 req.query.subType = "Popular"
                 if (!req.query.page) req.query.page = 1;
                 if (!req.query.limit) req.query.limit = 6;
-                reposnse = await this.getPopularCourses(req);
+                let reposnse = await this.getPopularCourses(req);
                 return reposnse
             }
             return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
@@ -742,11 +768,11 @@ module.exports = class recommendationService {
     async getFeaturedArticles (req) {
         try {
             let {pageType} = req.query;        
-            let { category, sub_category, topic} = req.query; 
+            let { category, sub_category, topic, section} = req.query; 
             let featured_articles = []
             let articles = []
             let maxArticles = 2;
-            let cacheKey = `Featured_Articles-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}`;
+            let cacheKey = `Featured_Articles-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}-${section || ''}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 articles = cachedData;
@@ -885,6 +911,16 @@ module.exports = class recommendationService {
                         {
                             "term": {
                                 "article_topics.keyword": decodeURIComponent(topic)
+                            }
+                        }
+                    );
+                }
+
+                if (section) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "section_name.keyword": decodeURIComponent(section)
                             }
                         }
                     );
@@ -1226,7 +1262,8 @@ module.exports = class recommendationService {
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
-            }
+            },
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
            
         };     
         
@@ -1240,6 +1277,22 @@ module.exports = class recommendationService {
      
         if(result.partner_currency){
             data.provider.currency = result.partner_currency.iso_code;
+        }
+
+        const EARN_CONTENT_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD");
+
+        data.isPopular  = false
+        if(EARN_CONTENT_POPULARITY_SCORE_THRESHOLD  && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(EARN_CONTENT_POPULARITY_SCORE_THRESHOLD)))
+        {
+            data.isPopular  = true
+        }
+
+        const LEARN_CONTENT_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_TRENDING_SCORE_THRESHOLD");
+        
+        data.isTrending  = false
+        if(LEARN_CONTENT_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(LEARN_CONTENT_TRENDING_SCORE_THRESHOLD)))
+        {
+            data.isTrending  = true
         }
 
         return data;
@@ -1352,6 +1405,23 @@ module.exports = class recommendationService {
                 created_by_role: (result.created_by_role)? result.created_by_role:'author',            
                 published_date: result.published_date
             };
+
+            //SET popular and trending keys
+            const ARTICLE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD");
+
+            data.isPopular  = false
+            if(ARTICLE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(ARTICLE_POPULARITY_SCORE_THRESHOLD)))
+            {
+                data.isPopular  = true
+            }
+
+            const ARTICLE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD");
+            
+            data.isTrending  = false
+            if(ARTICLE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(ARTICLE_TRENDING_SCORE_THRESHOLD)))
+            {
+                data.isTrending  = true
+            }
             return data;
         }
         catch(err){
@@ -1703,7 +1773,8 @@ module.exports = class recommendationService {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
             },
-            course_count: result.courses.length
+            course_count: result.courses.length,
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         }       
 
         //TODO this logic is copied from course service
@@ -1743,6 +1814,20 @@ module.exports = class recommendationService {
             data.ratings.rating_distribution = rating_distribution.reverse();
         }
 
+        //SET popular and trending keys
+        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD");
+
+        data.isPopular = false
+        if (LEARN_PATH_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(LEARN_PATH_POPULARITY_SCORE_THRESHOLD))) {
+            data.isPopular = true
+        }
+
+        const LEARN_PATH_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_TRENDING_SCORE_THRESHOLD");
+
+        data.isTrending = false
+        if (LEARN_PATH_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(LEARN_PATH_TRENDING_SCORE_THRESHOLD))) {
+            data.isTrending = true
+        }
 
         return data;
     }

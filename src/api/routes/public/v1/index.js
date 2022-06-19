@@ -77,8 +77,6 @@ router.get('/section/:slug',sectionController.getSectionContent)
 router.get('/articles/', ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
-
-router.get('/homepage', injectTokenPayload, homeController.getHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
 router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
 router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
@@ -107,6 +105,7 @@ router.post("/listLearnpathEnquiries", listEnquiriesController.listLearnpath)
 router.get("/detailedLearnpathEnquiry/:id", listEnquiriesController.getDetailedLearnpathEnquiry)
 
 //Home page API
+router.get('/homepage', homeController.getHomePageContent)
 router.get('/homepage-top-categories', homeController.getHomePageTopCategories)
 router.get('/homepage-top-partners', homeController.getHomePageTopPartners)
 router.get('/homepage-top-institutes', homeController.getHomePageTopInstitutes)

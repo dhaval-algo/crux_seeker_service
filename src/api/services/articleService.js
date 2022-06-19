@@ -5,6 +5,9 @@ const helperService = require("../../utils/helper");
 
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
 
 const { 
     getFilterConfigs, 
@@ -584,6 +587,24 @@ module.exports = class articleService {
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
+
+        //SET popular and trending keys
+        const ARTICLE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD");
+
+        data.isPopular  = false
+        if(ARTICLE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(ARTICLE_POPULARITY_SCORE_THRESHOLD)))
+        {
+            data.isPopular  = true
+        }
+
+        const ARTICLE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD");
+        
+        data.isTrending  = false
+        if(ARTICLE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(ARTICLE_TRENDING_SCORE_THRESHOLD)))
+        {
+            data.isTrending  = true
+        }
+
         return data;
         }
         
