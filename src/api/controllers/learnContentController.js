@@ -73,7 +73,11 @@ module.exports = {
         LearnContentService.getLearnContent(req, (err, data) => {
             if (data) {
                 let finalData = {}
-                if(req.query['fields']){                    
+                if(data.data && data.data.status=='unpublished')
+                {
+                    res.status(302).send({status: 'unpublished', message: 'Fetched successfully!', data: data.data});
+                }
+                else if(req.query['fields']){                    
                     finalData =  formatResponseField(req.query['fields'], data.data )                    
                     res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
                 }
