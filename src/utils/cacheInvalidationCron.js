@@ -125,6 +125,13 @@ const invalidateLeadership = async () => {
     }
     if(result.ok) {
         let response = await result.json();
+        if(response.team_section  && response.team_section.length > 0)
+        {
+            response.team_section = response.team_section.map(team_section => {
+                team_section.image = formatImageResponse(team_section.image)
+                return team_section
+            })
+        }
         let res = {};
         for (let key in response) {
             if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
@@ -146,6 +153,13 @@ const invalidateTeam = async () => {
     }
     if(result.ok) {
         let response = await result.json();
+        if(response.teams  && response.teams.length > 0)
+        {
+            response.teams = response.team_section.map(teams => {
+                teams.image = formatImageResponse(teams.image)
+                return teams
+            })
+        }
         let res = {};
         for (let key in response) {
             if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
@@ -167,6 +181,13 @@ const invalidateCareer = async () => {
     }
     if(result.ok) {
         let response = await result.json();
+        if(response.content_section && response.content_section.length > 0)
+        {
+            response.content_section = response.content_section.map(content_section => {
+                content_section.image = formatImageResponse(content_section.image)
+                return content_section
+            })
+        }
         let res = {};
         for (let key in response) {
             if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
