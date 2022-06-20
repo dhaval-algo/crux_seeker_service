@@ -153,7 +153,7 @@ const invalidateTeam = async () => {
     }
     if(result.ok) {
         let response = await result.json();
-        if(response.teams  && response.teams.length > 0)
+        if(response.teams && response.teams.length > 0)
         {
             response.teams = response.teams.map(team => {
                 team.image = formatImageResponse(team.image)

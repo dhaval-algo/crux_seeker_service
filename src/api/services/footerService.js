@@ -74,6 +74,20 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.content_section && response.content_section.length > 0)
+            {
+                response.content_section = response.content_section.map(content_section => {
+                    content_section.image = formatImageResponse(content_section.image)
+                    return content_section
+                })
+            }
+            if(response.learn_more_about_us && response.learn_more_about_us.length > 0)
+            {
+                response.learn_more_about_us = response.learn_more_about_us.map(learn_more_about_us => {
+                    learn_more_about_us.image = formatImageResponse(learn_more_about_us.image)
+                    return learn_more_about_us
+                })
+            }
             let res = {};
             for (let key in response) {
                 if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
@@ -111,6 +125,13 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.team_section  && response.team_section.length > 0)
+            {
+                response.team_section = response.team_section.map(team_section => {
+                    team_section.image = formatImageResponse(team_section.image)
+                    return team_section
+                })
+            }
             let res = {};
             for (let key in response) {
                 if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
@@ -148,6 +169,13 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.teams && response.teams.length > 0)
+            {
+                response.teams = response.teams.map(team => {
+                    team.image = formatImageResponse(team.image)
+                    return team
+                })
+            }
             let res = {};
             for (let key in response) {
                 if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
@@ -185,6 +213,13 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.content_section && response.content_section.length > 0)
+            {
+                response.content_section = response.content_section.map(content_section => {
+                    content_section.image = formatImageResponse(content_section.image)
+                    return content_section
+                })
+            }
             let res = {};
             for (let key in response) {
                 if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
