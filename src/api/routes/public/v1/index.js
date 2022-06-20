@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+const geoIpController = require('../../../controllers/geoIpControlller');
 const learnContentController = require('../../../controllers/learnContentController');
 const providerController = require('../../../controllers/providerController');
 const categoryController = require('../../../controllers/categoryController');
@@ -127,4 +128,5 @@ router.get('/data-table/:id', graphController.getDataTable)
 
 router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 
+router.get('/getIpDetails', geoIpController.getIpDetails )
 module.exports = router;
