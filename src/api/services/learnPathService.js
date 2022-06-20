@@ -26,7 +26,8 @@ const {
     updateSelectedFilters,
     getCurrencies,
     getCurrencyAmount,
-    paginate
+    paginate,
+    formatImageResponse
 } = require('../utils/general');
 
 const round = (value, step) => {
@@ -355,12 +356,12 @@ module.exports = class learnPathService {
                                 for (let learn_type of json) {
 
                                     if (learn_type.image && learn_type.image.formats) {
-                                        learn_types_images[learn_type.default_display_label] = {
+                                        learn_types_images[learn_type.default_display_label] = formatImageResponse({
                                             "small": (learn_type.image.formats.small) ? learn_type.image.formats.small.url : null,
                                             "medium": (learn_type.image.formats.medium) ? learn_type.image.formats.medium.url : null,
                                             "thumbnail": (learn_type.image.formats.thumbnail) ? learn_type.image.formats.thumbnail.url : null,
                                             "large": (learn_type.image.formats.large) ? learn_type.image.formats.large.url : null
-                                        }
+                                        })
                                     }
                                 }
                             }
@@ -607,7 +608,7 @@ module.exports = class learnPathService {
             title: result.title,
             slug: result.slug,
             description: result.description,
-            cover_images: result.images,
+            cover_images: (result.images)? formatImageResponse(result.images) : null,
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],
             medium: result.medium,
             reviews_extended: [],

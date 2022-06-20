@@ -128,6 +128,15 @@ const calculateDuration = (total_duration_in_hrs) => {
         }
         return duration;
 };
+
+const formatImageResponse = (imageObject) => {
+    let image = null
+   if(imageObject.large) image = imageObject.large
+   else if (imageObject.medium) image = imageObject.medium
+   else if (imageObject.small) image = imageObject.small
+   else if (imageObject.thumbnail) image = imageObject.thumbnail
+   return image
+}
 module.exports = class recommendationService {
 
     async getRelatedCourses(req) {
@@ -1248,7 +1257,7 @@ module.exports = class recommendationService {
                 currency: result.partner_currency
             },
             currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
-            cover_image: (result.images)? result.images :null,
+            cover_image: (result.images)? formatImageResponse(result.images) :null,
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
@@ -1419,7 +1428,7 @@ module.exports = class recommendationService {
                 premium: (result.premium)? result.premium:false,
                 slug: result.slug,
                 id: `ARTCL_PUB_${result.id}`,          
-                cover_image: (result.cover_image)? result.cover_image : null,
+                cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,
                 short_description: result.short_description,
                 author: (author)? author: [],
                 partners: (result.partners)? result.partners : [],
@@ -2018,7 +2027,7 @@ module.exports = class recommendationService {
             title: result.title,
             slug: result.slug,
             description: result.description,
-            cover_images: result.images,
+            cover_images: (result.images)? formatImageResponse(result.images) :null,
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],          
             pricing: {
                 regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),

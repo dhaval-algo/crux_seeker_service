@@ -24,7 +24,7 @@ const initialize = (app) => {
     app.use(Sentry.Handlers.tracingHandler());
     
     // wrapping console.log and sentry
-    if(process.env.SENTRY_DSN != undefined ||   process.env.SENTRY_DSN != ''){
+    if(process.env.SENTRY_DSN != undefined &&   process.env.SENTRY_DSN != ''){
     
         global.console.log = (data, data1) => {
       

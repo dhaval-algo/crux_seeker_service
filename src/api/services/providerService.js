@@ -17,7 +17,8 @@ const {
     getRankingFilter,
     getRankingBySlug,
     sortFilterOptions,
-    generateMetaInfo
+    generateMetaInfo,
+    formatImageResponse
 } = require('../utils/general');
 
 const redisConnection = require('../../services/v1/redis');
@@ -432,25 +433,6 @@ module.exports = class providerService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, rank = null){
-        let coverImageSize = 'large';
-        if(isList){
-            coverImageSize = 'thumbnail';
-        }
-        let cover_image = null;
-        let logo = null;
-        if(result.cover_image){
-            cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            if(!cover_image){
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-        if(result.logo){
-            logo = getMediaurl(result.logo[coverImageSize]);
-            if(!logo){
-                logo = getMediaurl(result.logo['thumbnail']);
-            }
-        }
-
         let courses = {
             list: [],
             total: 0
@@ -464,8 +446,8 @@ module.exports = class providerService {
             slug: result.slug,
             id: `PVDR_${result.id}`,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
-            cover_image: cover_image,
-            logo:logo,
+            cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
+            logo:(result.logo)? formatImageResponse(result.logo):null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             overview: result.overview,
             programs: (result.programs) ? result.programs : [],
@@ -503,7 +485,7 @@ module.exports = class providerService {
             course_count: (result.course_count) ? result.course_count : 0,
             featured_ranks: [],
             placements: {},
-            gallery: (result.gallery) ? result.gallery : null,
+            gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
             facilities: (result.facilities) ? result.facilities : null,
             highlights: (result.highlights) ? result.highlights : null,
         };
