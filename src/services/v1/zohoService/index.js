@@ -421,6 +421,8 @@ const createLead = async (enquiry_id) => {
     const access_token = await getAccessToken();
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLeadData(enquiry_id)
+    data.Layout = { name:"B2C", id:process.env.ZOHO_LAYOUT_ID }
+
     axios.post(request_url, data,{headers}).then((response) => {
         if(response.data.details) {
             
@@ -442,6 +444,8 @@ const createLearnPathLead = async (enquiry_id) => {
     const access_token = await getAccessToken();
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLearnPathLeadData(enquiry_id)
+    data.Layout = { name:"B2C", id:process.env.ZOHO_LAYOUT_ID }
+
     axios.post(request_url, data,{headers}).then((response) => {
         if(response.data.details) {
             
