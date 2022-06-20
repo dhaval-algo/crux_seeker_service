@@ -31,8 +31,8 @@ router.get('/learn-content-filters/', learnContentController.getLearnContentFilt
 router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
 router.get('/learn-content-reviews/:courseId',learnContentController.getReviews);
 
-router.get('/learn-path/',learnPathController.getLearnPathList);
-router.get('/learn-path/:slug',learnPathController.getSingleLearnPath);
+router.get('/learn-path/',injectTokenPayload,learnPathController.getLearnPathList);
+router.get('/learn-path/:slug',injectTokenPayload,learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
 router.get('/learn-path-explore/',learnPathController.exploreLearnPath);
 
@@ -75,7 +75,7 @@ router.get('/search-with-suggest/:word', searchController.getSearchWithSuggestio
 router.get('/count-page',sectionController.countPage)
 router.get('/section/tree',sectionController.getCategoryTree)
 router.get('/section/:slug',sectionController.getSectionContent)
-router.get('/articles/', ArticleController.getArticleList);
+router.get('/articles/',injectTokenPayload, ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
