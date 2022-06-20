@@ -155,7 +155,7 @@ const invalidateTeam = async () => {
         let response = await result.json();
         if(response.teams  && response.teams.length > 0)
         {
-            response.teams = response.team_section.map(teams => {
+            response.teams = response.teams.map(teams => {
                 teams.image = formatImageResponse(teams.image)
                 return teams
             })
