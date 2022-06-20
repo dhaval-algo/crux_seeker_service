@@ -8,6 +8,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const redisConnection = require('../services/v1/redis');
 const RedisConnection = new redisConnection();
+const {formatImageResponse} = require('../api/utils/general');
 
 
 const {
@@ -89,6 +90,20 @@ const invalidateAboutUs = async () => {
     }
     if(result.ok) {
         let response = await result.json();
+        if(response.content_section && response.content_section.length > 0)
+        {
+            response.content_section = response.content_section.map(content_section => {
+                content_section.image = formatImageResponse(content_section.image)
+                return content_section
+            })
+        }
+        if(response.learn_more_about_us && response.learn_more_about_us.length > 0)
+        {
+            response.learn_more_about_us = response.learn_more_about_us.map(learn_more_about_us => {
+                learn_more_about_us.image = formatImageResponse(learn_more_about_us.image)
+                return learn_more_about_us
+            })
+        }
         let res = {};
         for (let key in response) {
             if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
