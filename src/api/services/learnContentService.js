@@ -13,7 +13,8 @@ const {
     getMediaurl,
     getFilterAttributeName,
     updateSelectedFilters,
-    paginate
+    paginate,
+    formatImageResponse
 } = require('../utils/general');
 
 const redisConnection = require('../../services/v1/redis');
@@ -1263,7 +1264,7 @@ module.exports = class learnContentService {
             currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images)? result.images :null,
+            cover_image: (result.images)? formatImageResponse(result.images) :null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
@@ -1703,12 +1704,12 @@ module.exports = class learnContentService {
                     {
                         
                         if( learn_type.image &&  learn_type.image.formats){
-                            learn_types_images[learn_type.default_display_label] = {
+                            learn_types_images[learn_type.default_display_label] = formatImageResponse({
                             "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
                             "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
                             "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
                             "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
-                            }
+                            })
                         }                    
                     }
                     RedisConnection.set(cacheName, learn_types_images);

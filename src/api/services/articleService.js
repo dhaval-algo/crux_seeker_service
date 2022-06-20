@@ -19,7 +19,8 @@ const {
     generateMetaInfo,
     compareRule,
     getCurrencies,
-    getCurrencyAmount
+    getCurrencyAmount,
+    formatImageResponse
 } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -475,7 +476,7 @@ module.exports = class articleService {
                     designation: co_author.designation,
                     bio: co_author.bio,
                     slug: co_author.slug,
-                    image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                    image: (co_author.image) ? formatImageResponse(co_author.image) :  null
                 });
             }
         }
@@ -508,7 +509,7 @@ module.exports = class articleService {
                         name: hit._source.name.trim(),
                         id: hit._source.id,
                         slug: hit._source.slug,
-                        image:  (hit._source.cover_image) || null
+                        image:  (hit._source.cover_image)? formatImageResponse(hit._source.cover_image) : null
                     })
                 }
             }
@@ -520,8 +521,8 @@ module.exports = class articleService {
             premium: (result.premium)? result.premium:false,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,          
-            cover_image: (result.cover_image)? result.cover_image : null,            
-            listing_image: (result.listing_image)? result.listing_image : null,            
+            cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,            
+            listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : null,            
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
@@ -575,6 +576,65 @@ module.exports = class articleService {
                     data.levels_intermediate = result.level_intermediate || null
                     data.levels_advance = result.level_advance || null
                     data.bottom_content = result.bottom_content || null
+                    if(data.top_content && data.top_content.length > 0)
+                    {
+                        data.top_content = data.top_content.map(top_content => {
+                            if(top_content.__component =="image")
+                            {
+                                top_content.image = formatImageResponse (top_content.image);
+                            }
+                            return top_content
+                        })
+                       
+                    }
+
+                    if(data.levels_beginner && data.levels_beginner.length > 0)
+                    {
+                        data.levels_beginner = data.levels_beginner.map(levels_beginner => {
+                            if(levels_beginner.__component =="image")
+                            {
+                                levels_beginner.image = formatImageResponse (levels_beginner.image);
+                            }
+                            return levels_beginner
+                        })
+                       
+                    }
+
+                    if(data.levels_intermediate && data.levels_intermediate.length > 0)
+                    {
+                        data.levels_intermediate = data.levels_intermediate.map(levels_intermediate => {
+                            if(levels_intermediate.__component =="image")
+                            {
+                                levels_intermediate.image = formatImageResponse (levels_intermediate.image);
+                            }
+                            return levels_intermediate
+                        })
+                       
+                    }
+
+                    if(data.levels_advance && data.levels_advance.length > 0)
+                    {
+                        data.levels_advance = data.levels_advance.map(levels_advance => {
+                            if(levels_advance.__component =="image")
+                            {
+                                levels_advance.image = formatImageResponse (levels_advance.image);
+                            }
+                            return levels_advance
+                        })
+                       
+                    }
+
+                    if(data.bottom_content && data.bottom_content.length > 0)
+                    {
+                        data.bottom_content = data.bottom_content.map(bottom_content => {
+                            if(bottom_content.__component =="image")
+                            {
+                                bottom_content.image = formatImageResponse (bottom_content.image);
+                            }
+                            return bottom_content
+                        })
+                       
+                    }
                                        
                 }
                 else if(rewards[0].access_type == 'partial_access')
@@ -674,7 +734,7 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ?( (result.image.large) ? getMediaurl(result.image.large):  getMediaurl(result.image.thumbnail)): null,
+            image: (result.image) ? formatImageResponse (result.image) : null,
             slug: result.slug,
             email: result.email,
             twitter_url: result.twitter_url,

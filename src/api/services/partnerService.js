@@ -8,7 +8,7 @@ let ArticleService = new articleService();
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 
-const {generateMetaInfo} = require('../utils/general');
+const {generateMetaInfo, formatImageResponse} = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
@@ -246,19 +246,8 @@ module.exports = class partnerService {
 
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
-        
-        let coverImageSize = 'large';
-        if(isList){
-            coverImageSize = 'thumbnail';
-        }
-        let cover_image = null;
-        if(result.cover_image){
-            cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            if(!cover_image){
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){       
+
 
         let courses = {
             list: [],
@@ -284,7 +273,7 @@ module.exports = class partnerService {
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
-            cover_image: cover_image,
+            cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
             establishment_year: result.establishment_year,
             corporate_partners: [],
@@ -311,11 +300,11 @@ module.exports = class partnerService {
             user_email: result.user_email,
             user_id: result.user_id,
             category_tree: await getCategoryTree(result.name),
-            gallery: (result.gallery)? result.gallery : null,
+            gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
             vision: (result.vision)? result.vision : null,
             mission: (result.mission)? result.mission : null,
-            partner_universities: (result.partner_universities)? result.partner_universities : null,
-            accreditations: (result.accreditations)? result.accreditations : null,
+            partner_universities: [],
+            accreditations: [],
             report: (result.report)? result.report : null,
             highlights: (result.highlights)? result.highlights : null,
             facts: (result.facts)? result.facts : null
@@ -328,11 +317,33 @@ module.exports = class partnerService {
                 data.meta_information  = meta_information;
             }
         }
-        if(result.awards && result.awards.length > 0){
-            for(let award of result.awards){                
-                if(!isList){
-                    if(award.image){
-                        award.image = getMediaurl(award.image.thumbnail);                    
+         
+        if (result.accreditations && result.accreditations.length > 0) {
+            for (let accreditations of result.accreditations) {
+                if (!isList) {
+                    if (accreditations.logo) {
+                        accreditations.logo = formatImageResponse(accreditations.logo);
+                    }
+                    data.accreditations.push(accreditations);
+                }
+            }
+        }
+        if (result.partner_universities && result.partner_universities.length > 0) {
+            for (let partner_universities of result.partner_universities) {
+                if (!isList) {
+                    if (partner_universities.logo) {
+                        partner_universities.logo = formatImageResponse(partner_universities.logo);
+                    }
+                    data.partner_universities.push(partner_universities);
+                }
+            }
+        }
+
+        if (result.awards && result.awards.length > 0) {
+            for (let award of result.awards) {
+                if (!isList) {
+                    if (award.image) {
+                        award.image = formatImageResponse(award.image);
                     }
                     data.awards.push(award);
                 }
@@ -343,7 +354,7 @@ module.exports = class partnerService {
             for(let epartner of result.education_partners){                
                 if(!isList){
                     if(epartner.logo){
-                        epartner.logo = getMediaurl(epartner.logo.thumbnail);                    
+                        epartner.logo = formatImageResponse( epartner.logo);                 
                     }
                     data.education_partners.push(epartner);
                 }
@@ -354,7 +365,7 @@ module.exports = class partnerService {
             for(let cpartner of result.corporate_partners){                
                 if(!isList){
                     if(cpartner.logo){
-                        cpartner.logo = getMediaurl(cpartner.logo.thumbnail);                    
+                        cpartner.logo = formatImageResponse( cpartner.logo);  ;                    
                     }
                     data.corporate_partners.push(cpartner);
                 }

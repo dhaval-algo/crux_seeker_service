@@ -668,6 +668,22 @@ const formatResponseField = (requestedfields, data) => {
     return finalData
 }
 
+const formatImageResponse = (imageObject) => {
+    let image = null
+   if(imageObject.large) image = imageObject.large
+   else if (imageObject.medium) image = imageObject.medium
+   else if (imageObject.small) image = imageObject.small
+   else if (imageObject.thumbnail) image = imageObject.thumbnail
+   else if(imageObject.formats)
+   {
+        if(imageObject.formats.large && imageObject.formats.large.url) image = imageObject.formats.large.url
+        else if (imageObject.formats.medium && imageObject.formats.medium.url) image = imageObject.formats.medium.url
+        else if (imageObject.formats.small && imageObject.formats.small.url) image = imageObject.formats.small.url
+        else if (imageObject.formats.thumbnail && imageObject.formats.thumbnail.url) image = imageObject.formats.thumbnail.url
+   }
+   return image
+}
+
 
   module.exports = {
     getUserCurrency,
@@ -691,7 +707,8 @@ const formatResponseField = (requestedfields, data) => {
     generateMetaInfo,
     compareRule,
     paginate,
-    formatResponseField
+    formatResponseField,
+    formatImageResponse
 }
 
 
