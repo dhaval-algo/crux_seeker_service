@@ -4,6 +4,7 @@ const redisConnection = require('../../services/v1/redis');
 const fetch = require("node-fetch");
 const RedisConnection = new redisConnection();
 const apiBackendUrl = process.env.API_BACKEND_URL;
+const {formatImageResponse} = require('../../api/utils/general');
 
 module.exports = class FooterService {
     async getFooter(slug, callback,useCache = true){
