@@ -108,8 +108,11 @@ router.get("/detailedLearnpathEnquiry/:id", listEnquiriesController.getDetailedL
 //Home page API
 router.get('/homepage', homeController.getHomePageContent)
 router.get('/homepage-top-categories', homeController.getHomePageTopCategories)
-router.get('/homepage-top-partners', homeController.getHomePageTopPartners)
-router.get('/homepage-top-institutes', homeController.getHomePageTopInstitutes)
+router.get('/homepage-top-partners-categories', homeController.getHomePageTopPartnersCategories)
+router.get('/homepage-top-institutes-region', homeController.getHomePageTopInstitutesRegion)
+router.get('/homepage-top-partners-by-categories', homeController.getHomePageTopPartnersByCategories)
+router.get('/homepage-top-institutes-by-region', homeController.getHomePageTopInstitutesByRegion)
+
 
 //Category page API
 router.get('/learn-content-learn-types', learnContentController.getLearnContentLearntypes)
