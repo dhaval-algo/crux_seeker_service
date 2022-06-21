@@ -700,6 +700,18 @@ module.exports = class articleService {
               {term: { "slug.keyword": slug }}
             ]
         }};
+
+        // let response = await fetch(`${apiBackendUrl}/url-redirections?filters[redirection][old_url][$eq]=${slug}`);
+        let response = await fetch(`${apiBackendUrl}/url-redirections`);
+        if (response.ok) {
+            let author = await response.json();
+            if(author.length > 0){
+                slug = author[0].new_url
+            }else{
+                return null;
+            }
+        }
+
         const result = await elasticService.search('author', query);
         if(result.hits && result.hits.length > 0){
             author = await this.generateAuthorData(result.hits[0]._source, true);
