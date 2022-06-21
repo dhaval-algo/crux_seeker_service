@@ -274,7 +274,7 @@ module.exports = class sectionService {
       institute:null
     };
     try{
-      const query_courses = await elasticService.count('learn-content-v2')
+      const query_courses = await elasticService.count('learn-content')
       const query_partner = await elasticService.count('partner')
       const query_institute = await elasticService.count('provider')
       if(query_courses.count){
