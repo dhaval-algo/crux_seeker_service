@@ -141,13 +141,13 @@ module.exports = class homePageService {
 
       }
       else {
-        data = {
+        let data = {
           total: cacheData.length,
           page,
           limit,
           partners: await paginate(cacheData, page, limit)
         }
-        return { success: true, data: categories }
+        return { success: true, data: data }
       }
 
       return { success: false, data: null }
@@ -199,8 +199,7 @@ module.exports = class homePageService {
   }
 
   async getHomePageTopInstitutesByRegion(req) {
-    let { page = 1, limit = 5, region } = req.query    
-    let data = {};
+    let { page = 1, limit = 5, region } = req.query 
     try {
       const query = {
         "match_all": {}
@@ -230,13 +229,13 @@ module.exports = class homePageService {
         }
       }
       else {
-        data = {
+        let data = {
           total: cacheData.length,
           page,
           limit,
           partners: await paginate(cacheData, page, limit)
         }
-        return { success: true, data: categories }
+        return { success: true, data: data }
       }
 
       return { success: false, data: null }
