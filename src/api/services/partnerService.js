@@ -218,6 +218,18 @@ module.exports = class partnerService {
 
     async getPartner(req, callback){
         const slug = req.params.slug;
+
+        /***
+         * We are checking every incoming slug and checking(from the strapi backend APIs) if not there in the replacement.
+         */
+         let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+         if (response.ok) {
+             let urls = await response.json();
+             if(urls.length > 0){  
+                 slug = urls[0].new_url
+             }
+         }
+
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }}

@@ -376,6 +376,18 @@ module.exports = class articleService {
     }
 
     async getArticle( slug, req, callback){
+
+        /***
+         * We are checking every incoming slug and checking(from the strapi backend APIs) if not there in the replacement.
+         */
+         let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+         if (response.ok) {
+             let author = await response.json();
+             if(author.length > 0){  
+                 slug = author[0].new_url
+             }
+         }
+
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
@@ -695,22 +707,23 @@ module.exports = class articleService {
 
     async getAuthorBySlug(slug, callback){
         let author = null;
+
+        /***
+         * We are checking every incoming slug and checking(from the strapi backend APIs) if not there in the replacement.
+         */
+        let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+        if (response.ok) {
+            let urls = await response.json();
+            if(urls.length > 0){  
+                slug = urls[0].new_url
+            }
+        }
+
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }}
             ]
         }};
-
-        // let response = await fetch(`${apiBackendUrl}/url-redirections?filters[redirection][old_url][$eq]=${slug}`);
-        let response = await fetch(`${apiBackendUrl}/url-redirections`);
-        if (response.ok) {
-            let author = await response.json();
-            if(author.length > 0){
-                slug = author[0].new_url
-            }else{
-                return null;
-            }
-        }
 
         const result = await elasticService.search('author', query);
         if(result.hits && result.hits.length > 0){
