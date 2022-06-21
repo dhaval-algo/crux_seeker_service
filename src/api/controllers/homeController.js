@@ -6,7 +6,7 @@ module.exports = {
         let result = await HomePageService.getHomePageContent(req);
         if (req.query['fields']) {
             let finalData = formatResponseField(req.query['fields'], result.data)
-            res.status(200).send({ status: 'success', message: 'Fetched successfully!', data: finalData });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
         } else {
             res.status(200).send(result);
         }
@@ -16,7 +16,7 @@ module.exports = {
         let result = await HomePageService.getHomePageTopCategories(req);
         if (req.query['fields']) {
             let finalData = formatResponseField(req.query['fields'], result.data)
-            res.status(200).send({ status: 'success', message: 'Fetched successfully!', data: finalData });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
         } else {
             res.status(200).send(result);
 
@@ -27,7 +27,7 @@ module.exports = {
         let result = await HomePageService.getHomePageTopPartnersCategories(req);
         if (req.query['fields']) {
             let finalData = formatResponseField(req.query['fields'], result.data)
-            res.status(200).send({ status: 'success', message: 'Fetched successfully!', data: finalData });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
         } else {
             res.status(200).send(result);
 
@@ -38,7 +38,7 @@ module.exports = {
         let result = await HomePageService.getHomePageTopInstitutesRegion(req);
         if (req.query['fields']) {
             let finalData = formatResponseField(req.query['fields'], result.data)
-            res.status(200).send({ status: 'success', message: 'Fetched successfully!', data: finalData });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
         } else {
             res.status(200).send(result);
 
@@ -49,7 +49,7 @@ module.exports = {
         let result = await HomePageService.getHomePageTopPartnersByCategories(req);
         if (req.query['fields']) {
             let finalData = formatResponseField(req.query['fields'], result.data)
-            res.status(200).send({ status: 'success', message: 'Fetched successfully!', data: finalData });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
         } else {
             res.status(200).send(result);
 
@@ -60,7 +60,7 @@ module.exports = {
         let result = await HomePageService.getHomePageTopInstitutesByRegion(req);
         if (req.query['fields']) {
             let finalData = formatResponseField(req.query['fields'], result.data)
-            res.status(200).send({ status: 'success', message: 'Fetched successfully!', data: finalData });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
         } else {
             res.status(200).send(result);
 
