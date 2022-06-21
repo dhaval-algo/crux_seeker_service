@@ -128,6 +128,10 @@ module.exports = {
         let source = fs.readFileSync(templatesPath, 'utf8');
         let template = handlebars.compile(source);
         let emailTemplate = template({
+            student:messagData.student,
+            highestDegree:messagData.highestDegree,
+            experience: messagData.experience,
+            enquiryMessage: messagData.enquiryMessage,
             courseImgUrl:messagData.courseImgUrl,
             course_name:messagData.course_name,
             provider:messagData.provider,
