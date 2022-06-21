@@ -20,7 +20,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for page footer: "+cacheKey,error);
@@ -45,9 +45,9 @@ module.exports = class FooterService {
             RedisConnection.set(cacheKey, footerData);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_PAGE_FOOTER); 
 
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:footerData});
+            callback(null, {success: true, message: 'Fetched successfully!', data:footerData});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
 
     }
@@ -60,7 +60,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for about us page: "+cacheKey,error);
@@ -97,9 +97,9 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, res);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
 
@@ -111,7 +111,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for page leadership: "+cacheKey,error);
@@ -141,9 +141,9 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, res);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
 
@@ -155,7 +155,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for page team: "+cacheKey,error);
@@ -185,9 +185,9 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, res);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
 
@@ -199,7 +199,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for page career: "+cacheKey,error);
@@ -229,9 +229,9 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, res);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
 
@@ -243,7 +243,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for page termandcondition: "+cacheKey,error);
@@ -266,9 +266,9 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, res);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
 
@@ -280,7 +280,7 @@ module.exports = class FooterService {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
                     //console.log("cache found for footer: returning data");
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn("Redis cache failed for page privacypolicy: "+cacheKey,error);
@@ -303,9 +303,9 @@ module.exports = class FooterService {
             }
 
             RedisConnection.set(cacheKey, res);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:res});
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
 
