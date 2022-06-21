@@ -124,7 +124,7 @@ module.exports = class homePageService {
       let cacheData = await RedisConnection.getValuesSync('home-page-top-partners-by-categories');
 
       if (cacheData.noCacheData) {
-        result = await elasticService.search('home-page', query, payload, ["top_partners_by_category"]);
+        let result = await elasticService.search('home-page', query, payload, ["top_partners_by_category"]);
         let data = null
         if (result.hits && result.hits.length) {
 
