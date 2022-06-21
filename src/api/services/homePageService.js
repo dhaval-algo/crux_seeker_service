@@ -183,7 +183,7 @@ module.exports = class homePageService {
           if (result.hits[0]._source.top_institutes_by_region) {
             for (const [key, value] of Object.entries(result.hits[0]._source.top_institutes_by_region)) {
 
-              regions.push({ name: key })
+              regions.push({ name: key.replace("_", " ") })
             }
           }
 
@@ -199,8 +199,7 @@ module.exports = class homePageService {
   }
 
   async getHomePageTopInstitutesByRegion(req) {
-    let { page = 1, limit = 5, region } = req.query
-
+    let { page = 1, limit = 5, region } = req.query    
     let data = {};
     try {
       const query = {
@@ -209,6 +208,7 @@ module.exports = class homePageService {
       const payload = {
         "size": 1
       };
+      region = region.replace(" ", "_")
 
       let cacheData = await RedisConnection.getValuesSync('home-page-top-institutes-by-region');
 
