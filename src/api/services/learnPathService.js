@@ -567,18 +567,6 @@ module.exports = class learnPathService {
         try{
             let learnpathId = null
             const slug = req.params.slug;
-
-            /***
-             * We are checking every incoming slug and checking(from the strapi backend APIs) if not there in the replacement.
-             */
-            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-            if (response.ok) {
-                let urls = await response.json();
-                if(urls.length > 0){  
-                    slug = urls[0].new_url
-                }
-            }
-
             let cacheName = `single-learnpath-${slug}_${req.query.currency}`
             let useCache = false
             if(skipCache != true){
@@ -598,6 +586,19 @@ module.exports = class learnPathService {
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
                 } else {
+                    /***
+                     * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+                     */
+                    let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+                    if (response.ok) {
+                        let urls = await response.json();
+                        if(urls.length > 0){  
+                            let slug = urls[0].new_url
+                            return callback({ status: 'redirect', slug:slug, message: 'Redirect!' }, null);
+                        }else{
+                            return callback({ status: 'failed', message: 'Not found!' }, null);
+                        }
+                    }
                     callback({ status: 'failed', message: 'Not found!' }, null);
                 }
             }

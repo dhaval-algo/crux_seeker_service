@@ -218,18 +218,6 @@ module.exports = class partnerService {
 
     async getPartner(req, callback){
         const slug = req.params.slug;
-
-        /***
-         * We are checking every incoming slug and checking(from the strapi backend APIs) if not there in the replacement.
-         */
-         let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-         if (response.ok) {
-             let urls = await response.json();
-             if(urls.length > 0){  
-                 slug = urls[0].new_url
-             }
-         }
-
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }}
@@ -242,6 +230,19 @@ module.exports = class partnerService {
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
+            /***
+             * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+             */
+            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+            if (response.ok) {
+                let urls = await response.json();
+                if(urls.length > 0){  
+                    let slug = urls[0].new_url
+                    return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                }else{
+                    return callback({status: 'failed', message: 'Not found!'}, null);
+                }
+            }
             callback({status: 'failed', message: 'Not found!'}, null);
         }        
     }
