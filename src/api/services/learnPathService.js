@@ -946,7 +946,7 @@ module.exports = class learnPathService {
     }
 
     async getPopularLearnPaths(req, callback, returnData){
-        let { type } = req.params; // Populer, Trending,Free
+        let { type, priceType="Paid" } = req.params; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
         
         let offset= (page -1) * limit
@@ -986,7 +986,7 @@ module.exports = class learnPathService {
                 );
             } 
             
-            if(type && type =="Free"){
+            if(priceType && priceType =="Free"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
@@ -994,7 +994,7 @@ module.exports = class learnPathService {
                     { "term": { "display_price": true } }
                 );
             }
-            if(type && type =="Paid"){
+            if(priceType && priceType =="Paid"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Paid" } }
                 );
