@@ -368,22 +368,8 @@ module.exports = class recommendationService {
 
         try {
             const userId = req.user.userId;
-            const { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
-            const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);
-
-            let limitForSkills = 0;
-            let limitForWorkExp = 0;
-
-            if (skillsKeywords.length && workExpKeywords.length) {
-                limitForSkills = Math.floor(limit / 2);
-                limitForWorkExp = limit - limitForSkills;
-            }
-            else if (skillsKeywords.length) {
-                limitForSkills = limit;
-            }
-            else if (workExpKeywords.length) {
-                limitForWorkExp = limit;
-            }
+            const { profileType, category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+            const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);           
 
             const esQuery = {
                 bool: {
@@ -431,10 +417,95 @@ module.exports = class recommendationService {
                 );
             }
             let courses = [];
-            if (skillsKeywords.length) {
-                const offset = (page - 1) * limitForSkills;
-                esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
-                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills ,_source: courseFields});
+
+            if(profileType == 'profile'  || !profileType)
+            {
+                let limitForSkills = 0;
+                let limitForWorkExp = 0;
+
+                if (skillsKeywords.length && workExpKeywords.length) {
+                    limitForSkills = Math.floor(limit / 2);
+                    limitForWorkExp = limit - limitForSkills;
+                }
+                else if (skillsKeywords.length) {
+                    limitForSkills = limit;
+                }
+                else if (workExpKeywords.length) {
+                    limitForWorkExp = limit;
+                }
+                if (skillsKeywords.length) {
+                    const offset = (page - 1) * limitForSkills;
+                    esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
+                    const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills ,_source: courseFields});
+                    if (result.hits && result.hits.length) {
+                        for (const hit of result.hits) {
+                            const data = await this.generateCourseFinalResponse(hit._source, currency)
+                            courses.push(data);
+                        }
+                    }
+                }
+
+                if (workExpKeywords.length) {
+                    const offset = (page - 1) * limitForWorkExp;
+                    esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
+                    const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp ,_source: courseFields});
+                    if (result.hits && result.hits.length) {
+                        for (const hit of result.hits) {
+                            const data = await this.generateCourseFinalResponse(hit._source, currency)
+                            courses.push(data);
+                        }
+                    }
+                }
+            }
+            else if(profileType == 'goal'  || (!profileType && courses.length < 1)){
+                const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+
+                esQuery.bool.should[0] = {
+                    bool: {
+                        should: [
+                            {
+                                bool: {
+                                    must: [
+                                        {
+                                            query_string: {
+                                                fields: [
+                                                    "title^4",
+                                                    "skills^3",
+                                                    "topics^2",
+                                                    "categories"
+                                                ],
+                                                query: highPriorityKeywords.join(" OR ").replace("/", "\\/")
+                                            }
+                                        }                                     
+                                    ],
+                                    boost: 1000
+                                }
+                            },
+                            {
+                                bool: {
+                                    must: [
+                                        {
+                                            query_string: {
+                                                fields: [
+                                                    "title^4",
+                                                    "skills^3",
+                                                    "topics^2",
+                                                    "categories"
+
+                                                ],
+                                                query: lowPriorityKeywords.join(" OR ").replace("/", "\\/")
+                                            }
+                                        }                                        
+                                    ],
+                                    boost: 10
+                                }
+                            }
+                        ]
+                    }
+                }
+                const offset = (page - 1) * limit
+               
+                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
                         const data = await this.generateCourseFinalResponse(hit._source, currency)
@@ -443,25 +514,14 @@ module.exports = class recommendationService {
                 }
             }
 
-            if (workExpKeywords.length) {
-                const offset = (page - 1) * limitForWorkExp;
-                esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
-                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp ,_source: courseFields});
-                if (result.hits && result.hits.length) {
-                    for (const hit of result.hits) {
-                        const data = await this.generateCourseFinalResponse(hit._source, currency)
-                        courses.push(data);
-                    }
-                }
-            }
-
-            if (!skillsKeywords.length && !workExpKeywords.length) {
+            if (courses.length < 1) {
                 req.query.subType = "Popular"
                 if (!req.query.page) req.query.page = 1;
                 if (!req.query.limit) req.query.limit = 6;
                 let reposnse = await this.getPopularCourses(req);
                 return reposnse
             }
+           
             return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
         } catch (error) {
             console.log("Error occured while fetching top picks for you : ", error);
