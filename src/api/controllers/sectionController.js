@@ -33,7 +33,14 @@ module.exports = {
         
         SectionService.getSectionContent(slug, (err, data) => {
             if (data) {
-                res.status(200).send(data);
+                let finalData = {}
+                if (req.query['fields']) {
+                    finalData = formatResponseField(req.query['fields'], data.data)
+                    res.status(200).send({ sucess: 'true', message: 'Fetched successfully!', data: finalData });
+                }
+                else {
+                    res.status(200).send(data);
+                }
             } else {
                 res.status(200).send(err);
             }
@@ -41,13 +48,20 @@ module.exports = {
     },
     getBlogHomePageContent: async (req, res) => {
         const slug = req.params.slug;
-        
+
         SectionService.getBlogHomePageContent(slug, (err, data) => {
             if (data) {
-                res.status(200).send(data);
+                let finalData = {}
+                if (req.query['fields']) {
+                    finalData = formatResponseField(req.query['fields'], data.data)
+                    res.status(200).send({ sucess: 'true', message: 'Fetched successfully!', data: finalData });
+                }
+                else {
+                    res.status(200).send(data);
+                }
             } else {
                 res.status(200).send(err);
             }
-        });        
+        });
     },
 }

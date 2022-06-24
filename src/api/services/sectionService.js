@@ -4,39 +4,17 @@ const redisConnection = require('../../services/v1/redis');
 
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
-
+const {formatImageResponse} = require('../utils/general');
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
     try{
         let articles = [];
-        if (!!section.featured_articles && !!section.featured_articles.length) {
-          let featured_articles = await getActiveArticles(section.featured_articles, true)
-          section.featured_articles =  featured_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...featured_articles.articleSlugs])]
-           
-        }
-        if (!!section.trending_articles && !!section.trending_articles.length) {
-          let trending_articles = await ArticleService.getArticleByIds(section.trending_articles, true, true)
-          section.trending_articles =  trending_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...trending_articles.articleSlugs])]
-        }
-
-        if (!!section.recent_articles && !!section.recent_articles.length) {
-          let recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false, true)
-          section.recent_articles =  recent_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...recent_articles.articleSlugs])]
-
-        }
-        if (!!section.recommended_articles && !!section.recommended_articles.length) {
-          let recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles, true, true)
-          section.recommended_articles =  recommended_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...recommended_articles.articleSlugs])]
-        }
-        if (!!section.location_display_labels && !!section.location_display_labels.length) {
-          let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
-          section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...location_display_labels.articleSlugs])]
-        }
+       
+        // if (!!section.location_display_labels && !!section.location_display_labels.length) {
+        //   let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
+        //   section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
+        //   articles = [...new Set([...articles,...location_display_labels.articleSlugs])]
+        // }
       
         if (!!section.career_guidance && !!section.career_guidance.length) {
           let career_guidance = await ArticleService.getArticleByIds(section.career_guidance, true, true)
@@ -128,7 +106,6 @@ const getActiveArticles =  (articles,returnSlugs) => {
     let articleSlugs = [];
     if(resultT.hits.hits){
       if(resultT.hits.hits && resultT.hits.hits.length > 0){
-          //console.log("result.hits.hits <> ", result.hits.hits);
           let articles = resultT.hits.hits;
           for (let index = 0; index < articles.length; index++) {
             const element = articles[index];
@@ -339,6 +316,9 @@ module.exports = class sectionService {
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
+        console.log("response", response)
+        response.cover_image = formatImageResponse(response.data.cover_image)
+        
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
         RedisConnection.set('section-page-'+slug, response.data);
@@ -358,28 +338,26 @@ module.exports = class sectionService {
     let data = {}
     try {
 
-      if(skipCache != true) {
-          let cacheData = await RedisConnection.getValuesSync('blog-home-page');
-          if(cacheData.noCacheData != true) {
-              return callback(null, { success: true, data:cacheData });
-          }
+      if (skipCache != true) {
+        let cacheData = await RedisConnection.getValuesSync('blog-home-page');
+        if (cacheData.noCacheData != true) {
+          return callback(null, { success: true, data: cacheData });
+        }
       }
 
       const query = {
         "match_all": {}
       };
-      
-      const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
+
+      const result = await elasticService.search('blog_home_page', query, { from: 0, size: 1000 }, ["meta_information", "ads_keywords", "most_popular_article_categories", "trending_article_categories"])
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
-        RedisConnection.set('blog-home-article-slug', response.articles);
-        RedisConnection.expire('blog-home-article-slug', process.env.CACHE_EXPIRE_HOME_ARTICLE_SLUG);
         RedisConnection.set('blog-home-page', response.data);
         RedisConnection.expire('blog-home-page', process.env.CACHE_EXPIRE_BLOG_HOME_PAGE);
 
-        return callback(null, { success: true,  data:response.data })
+        return callback(null, { success: true, data: response.data })
       }
-      return callback(null, { success: true, data:data })
+      return callback(null, { success: true, data: data })
 
     } catch (error) {
       return callback(null, { success: true, data: data })

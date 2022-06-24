@@ -1996,7 +1996,7 @@ module.exports = class recommendationService {
     }
 
     async getPopularArticles(req) {
-        const { subType, category, sub_category, topic, section, page = 1, limit = 6 } = req.query;
+        const { subType, category, sub_category, topic, skill, section, page = 1, limit = 6 } = req.query;
         const offset = (page - 1) * limit
 
         const articles = [];
@@ -2037,6 +2037,12 @@ module.exports = class recommendationService {
                 );
             }
 
+            if (skill) {
+                esQuery.bool.filter.push(
+                    { "term": { "article_skills.keyword": skill } }
+                );
+
+            }
             if (section) {
                 esQuery.bool.filter.push(
                     { "term": { "section_name.keyword": section } }
