@@ -862,6 +862,8 @@ module.exports = class recommendationService {
             let featured_articles = []
             let articles = []
             let maxArticles = 2;
+            let result = null
+            let query = null
             let cacheKey = `Featured_Articles-${pageType}-${category || ''}-${sub_category || ''}-${topic || ''}-${section || ''}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
@@ -872,16 +874,31 @@ module.exports = class recommendationService {
             // fetch featured article if manually added from strapi
             switch (pageType) {
                 case "homePage":
-                case "AdvicePage":              
-                        const query = {
-                        "match_all": {}
-                        };                
-                    const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000,_source:["featured_articles"]})
+                case "advicePage":              
+                    query = {
+                    "match_all": {}
+                    };                
+                    result = await elasticService.search('blog_home_page', query, {from: 0, size: 1,_source:["featured_articles"]})
                     if (result.hits && result.hits.length) {
                     featured_articles =result.hits[0]._source.featured_articles                
                     }
                     maxArticles = 1
                     break;
+                case "sectionPage":              
+                    query = {
+                        "bool": {
+                          "must": [
+                            { term: { "default_display_label.keyword": section } },
+                          ]
+                        }
+                      };   
+                    result = await elasticService.search('section', query, { from: 0, size: 1, _source: ["featured_articles"] })
+
+                    if (result.hits && result.hits.length) {
+                        featured_articles = result.hits[0]._source.featured_articles
+                    }
+                    maxArticles = 3
+                break;
                 case "categoryPage":
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
