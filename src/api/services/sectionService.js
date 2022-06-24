@@ -316,8 +316,7 @@ module.exports = class sectionService {
       const result = await elasticService.search('section', query)
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
-        console.log("response", response)
-        response.cover_image = formatImageResponse(response.data.cover_image)
+        response.data.cover_image = formatImageResponse(response.data.cover_image)
         
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
