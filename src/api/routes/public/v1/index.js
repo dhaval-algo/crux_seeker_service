@@ -25,12 +25,18 @@ const listEnquiriesController = require("../../../controllers/listEnquiriesContr
 const sessionKPIController = require("../../../controllers/sessionController")
 const graphController = require("../../../controllers/graphController")
 
+//course API
 router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
 router.get('/learn-content-list/', learnContentController.getLearnContentListing);
 router.get('/learn-content-filters/', learnContentController.getLearnContentFilters);
 router.get('/learn-content/:slug',injectTokenPayload, learnContentController.getSingleLearnContent);
 router.get('/learn-content-reviews/:courseId',learnContentController.getReviews);
 
+//Course Landing page
+router.get('/course-landing-page', learnContentController.getCourseLandingPage)
+router.get('/course-landing-page-categories', learnContentController.geCourseLandingPageTopCategories)
+
+//Learn path APi
 router.get('/learn-path/',injectTokenPayload,learnPathController.getLearnPathList);
 router.get('/learn-path/:slug',injectTokenPayload,learnPathController.getSingleLearnPath);
 router.get('/learn-path-reviews/:learnPathId',learnPathController.getReviews);
@@ -128,6 +134,7 @@ router.get('/line-graph/:id', graphController.getlineGraph)
 router.get('/pie-chart/:id', graphController.getPieChart)
 router.get('/donut-chart/:id', graphController.getDonutChart)
 router.get('/data-table/:id', graphController.getDataTable)
+
 
 router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 

@@ -2071,4 +2071,74 @@ module.exports = class learnContentService {
             return { success: false, data:null }
         }
     }
+
+    
+  async getCourseLandingPage(req) {
+    let data = {};
+    try {
+      const query = {
+        "match_all": {}
+      };
+      const payload = {
+        "size": 1
+      };
+
+      let cacheData = await RedisConnection.getValuesSync('course-home-page');
+      let result = cacheData;
+
+      if (cacheData.noCacheData) {
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls"]);
+        await RedisConnection.set('course-home-page', result);
+        RedisConnection.expire('course-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
+      }
+      if (result.hits && result.hits.length) {
+        data = result.hits[0]._source
+        return { success: true, data }
+      }
+      return { success: false, data: null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in course-home-page", error);
+      return { success: false, data: null }
+    }
+  }
+
+  async geCourseLandingPageTopCategories(req) {
+    let { page = 1, limit = 5 } = req.query
+
+    let data = {};
+    try {
+      const query = {
+        "match_all": {}
+      };
+      const payload = {
+        "size": 1
+      };
+
+      let cacheData = await RedisConnection.getValuesSync('course-home-page-top-categories');
+      let result = cacheData;
+
+      if (cacheData.noCacheData) {
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories"]);
+        await RedisConnection.set('course-home-page-top-categories', result);
+        RedisConnection.expire('course-home-page-top-categories', process.env.CACHE_EXPIRE_HOME_PAGE);
+      }
+
+      if (result.hits && result.hits.length) {
+        data = {
+          total: result.hits[0]._source.top_categories.length,
+          page,
+          limit,
+          categories: await paginate(result.hits[0]._source.top_categories, page, limit)
+        }
+        return { success: true, data }
+      }
+      return { success: false, data: null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in course-home-page", error);
+      return { success: false, data: null }
+    }
+  }
+
 }

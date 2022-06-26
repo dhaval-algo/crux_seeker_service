@@ -21,7 +21,7 @@ module.exports = {
                         {
                             if(fields.includes("learn_types")  && filter.field =="learn_type")
                             {
-                                data.data["learn_types"] = filter.options.map(item => {return {label:item.label, image:item.image}})
+                                data.data["learn_types"] = filter.options.map(item => {return {label:item.label, image:item.image, count:item.count}})
                             }
 
                             if(fields.includes("topics") && filter.field =="topics")
@@ -31,8 +31,28 @@ module.exports = {
                         }
                     
                     }
+                    else if(fields.includes("search_filters"))
+                    {
+                        data.data["search_filters"] = {}
+                        for (let filter of data.data.filters)
+                        {
+                            if(filter.field =="learn_type")
+                            {
+                                data.data["search_filters"]["learn_type"] = filter.options.map(item => {return {label:item.label}})
+                            }
+                            if(filter.field =="topics")
+                            {
+                                data.data["search_filters"]["topics"] = filter.options.map(item => {return {label:item.label}})
+                            }                            
+                            if(filter.field =="sub_categories")
+                            {
+                                data.data["search_filters"]["sub_categories"] = filter.options.map(item => {return {label:item.label}})
+                            }                          
+                        }
+                       
+                    }
                     finalData =  formatResponseField(req.query['fields'], data.data )
-                    res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
+                    res.status(200).send({success: true, message: 'Fetched successfully!', data: finalData});
                 }
                 else
                 {
@@ -75,11 +95,11 @@ module.exports = {
                 let finalData = {}
                 if(data.data && data.data.status=='unpublished')
                 {
-                    res.status(302).send({status: 'unpublished', message: 'Fetched successfully!', data: data.data});
+                    res.status(302).send({success: false, message: 'unpublished', data: data.data});
                 }
                 else if(req.query['fields']){                    
                     finalData =  formatResponseField(req.query['fields'], data.data )                    
-                    res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
+                    res.status(200).send({success: true, message: 'Fetched successfully!', data: finalData});
                 }
                 else
                 {
@@ -322,6 +342,26 @@ module.exports = {
     getLearnContentTopics: async(req, res) => {
         let result = await LearnContentService.getLearnContentTopics(req);
         res.status(200).send(result);
-    }
+    },
+    getCourseLandingPage: async (req, res) => {
+        let result = await LearnContentService.getCourseLandingPage(req);
+        if (req.query['fields']) {
+            let finalData = formatResponseField(req.query['fields'], result.data)
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
+        } else {
+            res.status(200).send(result);
+        }
+    },
+
+    geCourseLandingPageTopCategories: async (req, res) => {
+        let result = await LearnContentService.geCourseLandingPageTopCategories(req);
+        if (req.query['fields']) {
+            let finalData = formatResponseField(req.query['fields'], result.data)
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
+        } else {
+            res.status(200).send(result);
+
+        }
+    },
     
 };
