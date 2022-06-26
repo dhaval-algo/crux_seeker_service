@@ -3832,5 +3832,81 @@ module.exports = class recommendationService {
         }
     }
 
+    async jobTitleBasedRecommendation (req)  {
+        const user = req.user;
+        let learnContents = []
+        let jobTitles = []
+        if (!user) {
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+        }
+        try {
+            const userId = user.userId
+            //get job titles
+            const user_experiences = await models.user_experience.findAll({
+                where: {
+                    userId: userId
+                },
+                attributes: ['jobTitle']
+            })
+            if (user_experiences.length > 0) {
+                user_experiences.map(user_experience => jobTitles.push(user_experience.jobTitle))
+                //console.log("user_experiences", user_experiences);
+
+                const { page = 1, limit = 4 } = req.query;
+                const offset = (page - 1) * limit;
+
+                let cacheKey = `jobTitleBasedRecommendation-${userId}`;
+                let cachedData = await RedisConnection.getValuesSync(cacheKey);
+
+                if (cachedData.noCacheData != true) {
+                    return { "success": true, message: "list fetched successfully", data: { list: cachedData, mlList: [], show: "logic" } }
+                }
+
+
+                let esQuery = {
+                    bool: {
+                        must: [
+                            { "term": { "status.keyword": "published" } },
+                            {
+                                query_string: {
+                                    fields: [
+                                        "title^4",
+                                        "description^3",
+                                        "topics^2",
+                                        "categories"
+                                    ],
+                                    query: jobTitles.join(" OR ").replace("/", "\\/")
+                                }
+                            }
+
+                        ]
+                    }
+                }
+                let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, _source: courseFields });
+
+
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        const data = await this.generateCourseFinalResponse(hit._source);
+                        learnContents.push(data);
+                    }
+                }
+                RedisConnection.set(cacheKey, learnContents, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+                let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, mlList: [], show: "logic" } };
+
+                return response;
+            }
+            else {
+
+            }
+
+        } catch (error) {
+            console.log("Error while processing data for learn Content Recommendations", error);
+            let response = { success: false, message: "failed to fetch", data: { list: [] } };
+
+            return response;
+        }
+    }
+
     
 }

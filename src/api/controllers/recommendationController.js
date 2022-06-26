@@ -49,8 +49,8 @@ module.exports = {
             case "related-courses-for-learn-path": 
                 response = await RecommendationService.relatedCoursesForLearnPath(req);
                 break;
-            case "related-courses-for-article": 
-                response = await RecommendationService.relatedCoursesForArticle(req);
+            case "jobTitle-based-recommendation": 
+                response = await RecommendationService.jobTitleBasedRecommendation(req);
                 break;
             default:
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
