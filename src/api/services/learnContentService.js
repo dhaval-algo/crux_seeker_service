@@ -701,6 +701,11 @@ module.exports = class learnContentService {
             }
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
                 try {
+                    if(slug_pageType == "category" && slugLabel){
+                        this.addPopularEntities(slug_pageType, slugLabel)
+                    }else if(slug_pageType == "topic" && slugLabel){
+                        this.addPopularEntities(slug_pageType, slugLabel)
+                    }
                     data.article_advice = []
                     data.featured_articles = []
                     if(slug_article_advice && slug_article_advice.length >0 )
@@ -790,6 +795,14 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 const data = await this.generateSingleViewData(course, false, req.query.currency);
+                /**
+                 * Log skills entity
+                 */
+                if(course.skills.length > 0){
+                    for(let name of course.skills){
+                        this.addPopularEntities("skill", name)
+                    }
+                }
                 courseId = data.id
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
@@ -1570,6 +1583,22 @@ module.exports = class learnContentService {
 
         return orderData;
     }
+
+    async addPopularEntities(type, resource){
+        try {
+            if(type == "topic"){
+                const activity_log =  await helperService.logPopularEntities("topics", resource);
+            }else if(type == "category"){
+                const activity_log =  await helperService.logPopularEntities("categories", resource);
+            }
+            else if(type == "skill"){
+                const activity_log =  await helperService.logPopularEntities("skills", resource);
+            }
+        } catch (error) {
+            console.log("Course activity error",  error)
+        }
+         
+     }
 
     async addActivity(req, callback){
        try {

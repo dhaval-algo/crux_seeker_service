@@ -56,6 +56,22 @@ const parseQueryRangeFilters = (filter) => {
 };
 
 module.exports = class learnPathService {
+    async addPopularEntities(type, resource){
+        try {
+            if(type == "topic"){
+                const activity_log =  await helperService.logPopularEntities("topics", resource);
+            }else if(type == "category"){
+                const activity_log =  await helperService.logPopularEntities("categories", resource);
+            }
+            else if(type == "skill"){
+                const activity_log =  await helperService.logPopularEntities("skills", resource);
+            }
+        } catch (error) {
+            console.log("Learn Path activity entity error",  error)
+        }
+         
+    }
+
     async getLearnPathList(req, callback, skipCache) {
 
         try {
@@ -181,6 +197,15 @@ module.exports = class learnPathService {
             if (req.query['f']) {
                 parsedFilters = parseQueryFilters(req.query['f']);
                 for (const filter of parsedFilters) {
+                    if(filter["key"] == "Category"){
+                        for(let name of filter["value"]){
+                            this.addPopularEntities("category", name)
+                        }
+                    }else if(filter["key"] == "Topic"){
+                        for(let name of filter["value"]){
+                            this.addPopularEntities("topic", name)
+                        }
+                    }
                     let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                     if (elasticAttribute) {
                         const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
@@ -580,6 +605,14 @@ module.exports = class learnPathService {
             if(useCache != true){
                 const learnPath = await this.fetchLearnPathBySlug(slug);
                 if (learnPath) {
+                    /**
+                     * Log skills entity
+                     */
+                    if("skills" in learnPath && learnPath.skills.length > 0){
+                        for(let name of learnPath.skills){
+                            this.addPopularEntities("skill", name)
+                        }
+                    }
                     const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
                     learnpathId = learnPath.id
                     callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
