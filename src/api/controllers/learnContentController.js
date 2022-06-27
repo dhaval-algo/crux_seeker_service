@@ -47,7 +47,11 @@ module.exports = {
                             if(filter.field =="sub_categories")
                             {
                                 data.data["search_filters"]["sub_categories"] = filter.options.map(item => {return {label:item.label}})
-                            }                          
+                            }
+                            if(filter.field =="categories")
+                            {
+                                data.data["search_filters"]["categories"] = filter.options.map(item => {return {label:item.label}})
+                            }                           
                         }
                        
                     }
