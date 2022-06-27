@@ -3602,6 +3602,78 @@ const getUserProfile = async (req, res) => {
     }
 }
 
+const getSkills = async (req, res) => {    
+    try {        
+        
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary']
+                }
+            ],
+            attributes: ['topic']
+
+        })
+        res.status(200).send({
+            message: "User Skills fetched successfully",
+            success: true,
+            data: userData             
+        })
+    } catch (error) {
+        console.log('getSkills err ',error);
+        res.status(200).send({
+            message: "Error fetching Skill",
+            success: false
+        })
+    }
+}
+
+const getKeySkills = async (req, res) => {    
+    try {        
+        let keySkill = []
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary'],
+                    where: { isPrimary: true }
+                }
+            ],
+            attributes: ['topic']
+
+        })
+
+        if(userData && userData.length > 0)
+        {
+            for(let data of userData)
+            {
+                for(let user_skill of data.user_skills)
+                {
+                    keySkill.push(user_skill.skill)
+                }   
+            }
+         }
+        res.status(200).send({
+            message: "User Key skills fetched successfully",
+            success: true,
+            data: keySkill             
+        })
+    } catch (error) {
+        console.log('getKeySkills err ',error);
+        res.status(200).send({
+            message: "Error fetching KeySkills",
+            success: false
+        })
+    }
+}
+
 
 const recentlyViewedCourses = async (req, callback) => {
 
@@ -3985,7 +4057,8 @@ module.exports = {
     deleteWorkExperience,
     getWorkExperiences,
     getUserProfile,
-    
+    getSkills,
+    getKeySkills,    
     recentlyViewedCourses,
     getUserLastSearch,
     recentlySearchedCourses,

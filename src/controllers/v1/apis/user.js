@@ -51,6 +51,8 @@ router.post('/add-education',authenticateJWT, userService.addEducation);
 router.post('/edit-education',authenticateJWT, userService.editEducation);
 router.post('/delete-education',authenticateJWT, userService.deleteEducation);
 router.get('/get-user-profile',authenticateJWT, userService.getUserProfile);
+router.get('/get-skills',authenticateJWT, userService.getSkills);
+router.get('/get-key-skills',authenticateJWT, userService.getKeySkills);
 router.get('/get-educations',authenticateJWT, userService.getEducations);
 router.post ('/add-skills',authenticateJWT, userService.addSkills);
 router.post ('/upload-primary-skills',authenticateJWT, userService.uploadPrimarySkills);
