@@ -248,6 +248,14 @@ const invalidatSkills = async () => {
         console.log("Skills cache invalidation Error",error)
     }  
 }
+    
+const invalidPopularCategories = async () => {
+    try {
+        await LearnContentService.getPopularCategories({query:{}}, true);
+    } catch (error) {
+        console.log("Popular Categories cache invalidation Error",error)
+    }  
+}
 
 
    
@@ -265,5 +273,6 @@ module.exports = {
     invalidateCareer,
     invalidateTNM,
     invalidatePP,
-    invalidatSkills
+    invalidatSkills,
+    invalidPopularCategories
 }

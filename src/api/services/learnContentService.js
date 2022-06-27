@@ -2203,4 +2203,47 @@ module.exports = class learnContentService {
     }
   }
 
+  async getPopularCategories(req, skipCache) {
+    let { page = 1, limit = 5 } = req.query
+
+    let data = {};
+    let result = null
+    let cacheData = null
+    try {
+
+      if(skipCache !=true) {
+        cacheData = await RedisConnection.getValuesSync('course-home-page-popular-categories');
+        result = cacheData;
+      }
+
+      if (cacheData.noCacheData) {
+        result = await models.popular_categories.findAll({          
+           
+            attributes: ['name'],
+            order: [
+                ['count', 'DESC']
+            ]
+
+        })
+
+        await RedisConnection.set('course-home-page-popular-categories', result);
+      }
+
+      if (result && result.length) {
+        data = {
+          total: result.length,
+          page,
+          limit,
+          categories: await paginate(result, page, limit)
+        }
+        return { success: true, data }
+      }
+      return { success: false, data: null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in course-home-page", error);
+      return { success: false, data: null }
+    }
+  }
+
 }
