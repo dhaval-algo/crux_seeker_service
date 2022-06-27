@@ -1,6 +1,8 @@
 const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const redisConnection = require('../../services/v1/redis');
+const apiBackendUrl = process.env.API_BACKEND_URL;
+const fetch = require("node-fetch");
 
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
@@ -296,6 +298,7 @@ module.exports = class sectionService {
   }
 
   async getSectionContent(slug, callback,skipCache) {
+
     let data = {}
     try {
       if(skipCache != true) {
@@ -324,6 +327,19 @@ module.exports = class sectionService {
         RedisConnection.expire('section-page-'+slug, process.env.CACHE_EXPIRE_SECTION_PAGE);
 
         return callback(null, { success: true, data:response.data })
+      }
+      /***
+       * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+       */
+      let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+      if (response.ok) {
+          let urls = await response.json();
+          if(urls.length > 0){  
+              slug = urls[0].new_url
+              return callback(null, { success: "redirect", slug: slug,  data:data })
+          }else{
+            return callback(null, { success: true, data:data })
+          }
       }
       return callback(null, { success: true, data:data })
 

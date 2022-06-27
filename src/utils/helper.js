@@ -1162,6 +1162,77 @@ const logActvity = async (type, userId, resource) => {
     
     return resource;
 }
+
+const logPopularEntities = async (type, resource) => {
+    switch(type){
+        case "skills":
+            let existEntry = await models.popular_skills.findOne({where:{name:resource}})
+            if(!existEntry){
+                await models.popular_skills.create({ name:resource, count:1})
+            }else{
+                await models.popular_skills.update({count:existEntry.count+1},{where:{id: existEntry.id, name:resource}})
+            }
+        case "categories":
+            let existEntryCategories = await models.popular_categories.findOne({where:{name:resource}})
+            if(!existEntryCategories){
+                await models.popular_categories.create({ name:resource, count:1})
+            }else{
+                await models.popular_categories.update({count:existEntryCategories.count+1},{where:{id: existEntryCategories.id, name:resource}})
+            }
+        case "topics":
+            let existEntryTopics = await models.popular_topics.findOne({where:{name:resource}})
+            if(!existEntryTopics){
+                await models.popular_topics.create({ name:resource, count:1})
+            }else{
+                await models.popular_topics.update({count:existEntryTopics.count+1},{where:{id: existEntryTopics.id, name:resource}})
+            }
+        default:
+            break
+    }
+    
+    
+    
+    const activity =  await models.activity.findOne({ where: {type:type} });
+    if (type=="COURSE_WISHLIST"){
+        const dataToLog=resource.map((courseId)=>{
+            return {
+            userId:userId,
+            activityId:activity.id,
+            resource:courseId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
+    if (type=="LEARNPATH_WISHLIST"){
+        const dataToLog=resource.map((learnpathId)=>{
+            return {
+            userId:userId,
+            activityId:activity.id,
+            resource:learnpathId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
+    if(userId > 0)
+    {
+        const activity_log = await models.activity_log.create({
+            userId: userId,
+            activityId:activity.id,
+            resource: resource
+        })
+    }
+    else
+    {
+        const activity_log = await models.activity_log_loggedout.create({
+            activityId:activity.id,
+            resource: resource
+        })
+    }
+    
+    return resource;
+}
    
 module.exports = {
     encryptStr,
@@ -1184,5 +1255,6 @@ module.exports = {
     sendDataForStrapi,
     sendSuspendedEmail,
     sendActivatedEmail,
-    logActvity
+    logActvity,
+    logPopularEntities
 }

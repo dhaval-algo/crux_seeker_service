@@ -739,6 +739,31 @@ module.exports = class learnContentService {
                 course_count: result.hits.length
             }
             data.faq = slug_faq
+            if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
+                try {
+                    if(slug_pageType == "category" && slugLabel){
+                        this.addPopularEntities(slug_pageType, slugLabel)
+                    }else if(slug_pageType == "topic" && slugLabel){
+                        this.addPopularEntities(slug_pageType, slugLabel)
+                    }
+                    data.article_advice = []
+                    data.featured_articles = []
+                    if(slug_article_advice && slug_article_advice.length >0 )
+                    {
+                        data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
+                    }
+                    if(slug_featured_articles && slug_featured_articles.length >0 )
+                    {
+                        data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
+                    }
+                } catch (error) {
+                    console.log("Error in getArticleByIds", error)
+                    data.article_advice = []
+                    data.featured_articles = []
+                }
+               
+            }
+
             result.page_details = data.page_details;
             result.meta_information = slug_meta_information;
 
@@ -816,6 +841,14 @@ module.exports = class learnContentService {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
                 let data = await this.generateSingleViewData(course, false, req.query.currency);
+                /**
+                 * Log skills entity
+                 */
+                if(course.skills.length > 0){
+                    for(let name of course.skills){
+                        this.addPopularEntities("skill", name)
+                    }
+                }
                 courseId = data.id
 
                 // if enquiry is 'On', then check course end date,
@@ -856,6 +889,19 @@ module.exports = class learnContentService {
                 }
                 
             }else{
+                /***
+                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+                 */
+                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+                if (response.ok) {
+                    let urls = await response.json();
+                    if(urls.length > 0){  
+                        let slug = urls[0].new_url
+                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                    }else{
+                        return callback({status: 'failed', message: 'Not found!'}, null);
+                    }
+                }
                 callback({status: 'failed', message: 'Not found!'}, null);
             } 
         }
@@ -1641,6 +1687,22 @@ module.exports = class learnContentService {
 
         return orderData;
     }
+
+    async addPopularEntities(type, resource){
+        try {
+            if(type == "topic"){
+                const activity_log =  await helperService.logPopularEntities("topics", resource);
+            }else if(type == "category"){
+                const activity_log =  await helperService.logPopularEntities("categories", resource);
+            }
+            else if(type == "skill"){
+                const activity_log =  await helperService.logPopularEntities("skills", resource);
+            }
+        } catch (error) {
+            console.log("Course activity error",  error)
+        }
+         
+     }
 
     async addActivity(req, callback){
        try {

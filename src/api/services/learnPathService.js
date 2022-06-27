@@ -59,6 +59,22 @@ const parseQueryRangeFilters = (filter) => {
 };
 
 module.exports = class learnPathService {
+    async addPopularEntities(type, resource){
+        try {
+            if(type == "topic"){
+                const activity_log =  await helperService.logPopularEntities("topics", resource);
+            }else if(type == "category"){
+                const activity_log =  await helperService.logPopularEntities("categories", resource);
+            }
+            else if(type == "skill"){
+                const activity_log =  await helperService.logPopularEntities("skills", resource);
+            }
+        } catch (error) {
+            console.log("Learn Path activity entity error",  error)
+        }
+         
+    }
+
     async getLearnPathList(req, callback, skipCache) {
 
         try {
@@ -164,6 +180,15 @@ module.exports = class learnPathService {
             if (req.query['f']) {
                 parsedFilters = parseQueryFilters(req.query['f']);
                 for (const filter of parsedFilters) {
+                    if(filter["key"] == "Category"){
+                        for(let name of filter["value"]){
+                            this.addPopularEntities("category", name)
+                        }
+                    }else if(filter["key"] == "Topic"){
+                        for(let name of filter["value"]){
+                            this.addPopularEntities("topic", name)
+                        }
+                    }
                     let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                     if (elasticAttribute) {
                         const attribute_name = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
@@ -563,12 +588,33 @@ module.exports = class learnPathService {
             if(useCache != true){
                 const learnPath = await this.fetchLearnPathBySlug(slug);
                 if (learnPath) {
+                    /**
+                     * Log skills entity
+                     */
+                    if("skills" in learnPath && learnPath.skills.length > 0){
+                        for(let name of learnPath.skills){
+                            this.addPopularEntities("skill", name)
+                        }
+                    }
                     const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
                     learnpathId = data.id
                     callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
                 } else {
+                    /***
+                     * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+                     */
+                    let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+                    if (response.ok) {
+                        let urls = await response.json();
+                        if(urls.length > 0){  
+                            let slug = urls[0].new_url
+                            return callback({ status: 'redirect', slug:slug, message: 'Redirect!' }, null);
+                        }else{
+                            return callback({ status: 'failed', message: 'Not found!' }, null);
+                        }
+                    }
                     callback({ status: 'failed', message: 'Not found!' }, null);
                 }
             }
