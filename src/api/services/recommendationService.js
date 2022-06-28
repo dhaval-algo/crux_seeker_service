@@ -1503,6 +1503,7 @@ module.exports = class recommendationService {
             let data = {
                 title: result.title,
                 premium: (result.premium)? result.premium:false,
+                display_author: (result.display_author)? result.display_author:true,
                 slug: result.slug,
                 id: `ARTCL_PUB_${result.id}`,          
                 cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,
