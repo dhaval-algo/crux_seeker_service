@@ -493,12 +493,12 @@ const countCheck = (format) => {
 const generateMetaDescription = async (result) => {
     try{
         const actions = {
-            "subscribe_now":"Subscribe Now!",
-            "want_more_information":"Want more information? Call Us Now.",
-            "visit_us_at_careervira":"Visit us at Careervira.",
-            "join_us_now":"Join Us Now!",
-            "click_here_for_details":"Click here for details.",
-            "enroll_now":"Enroll Now!"
+            "subscribe_now":" Subscribe Now!",
+            "want_more_information":" Want more information? Call Us Now.",
+            "visit_us_at_careervira":" Visit us at Careervira.",
+            "join_us_now":" Join Us Now!",
+            "click_here_for_details":" Click here for details.",
+            "enroll_now":" Enroll Now!"
         }
         const max_char_count = 160
         let format = result.meta_description
@@ -518,7 +518,7 @@ const generateMetaDescription = async (result) => {
         }
         let skill_string = "";
         if(skills.length > 0){
-            skill_string += "like ";
+            skill_string += " like ";
             for(let skill of skills){
                 skill_string = skill_string + skill + ","; 
             }
