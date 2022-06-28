@@ -2216,7 +2216,7 @@ module.exports = class learnContentService {
         result = cacheData;
       }
 
-      if (cacheData.noCacheData || skipCache) {
+      if ((cacheData && cacheData.noCacheData) || skipCache) {
         result = await models.popular_categories.findAll({          
            
             attributes: ['name'],
