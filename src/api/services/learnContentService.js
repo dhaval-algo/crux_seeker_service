@@ -2203,7 +2203,7 @@ module.exports = class learnContentService {
     }
   }
 
-  async getPopularCategories(req, skipCache) {
+  async getPopularCategories(req, skipCache=false) {
     let { page = 1, limit = 5 } = req.query
 
     let data = {};
