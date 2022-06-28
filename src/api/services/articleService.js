@@ -515,6 +515,7 @@ module.exports = class articleService {
         let data = {
             title: result.title,
             premium: (result.premium)? result.premium:false,
+            display_author: (result.display_author)? result.display_author:true,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,          
             cover_image: (result.cover_image)? result.cover_image : null,            
