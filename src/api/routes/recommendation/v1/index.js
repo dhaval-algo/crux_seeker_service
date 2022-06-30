@@ -8,4 +8,5 @@ router.get('/recommended-articles/',recommendationMiddleware, recommendationCont
 router.get('/recommended-learn-paths/',recommendationMiddleware, recommendationController.getRecommendedLearnPaths);
 router.get('/featured-articles/',recommendationMiddleware, recommendationController.getFeaturedArticles);
 router.get('/article-advice/',recommendationMiddleware, recommendationController.getArticleAdvice);
+router.get('/popular-comparison/',recommendationMiddleware, recommendationController.getPopularComparison);
 module.exports = router;
