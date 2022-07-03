@@ -8,7 +8,33 @@ module.exports = {
         ProviderService.getProviderList(req, (err, data) => {
             if (data) {
                 let finalData = {}
-                if(req.query['fields']){                    
+                if(req.query['fields']){ 
+                    if(req.query['fields'].includes("search_filters"))
+                    {
+                        data.data["search_filters"] = {}
+                        for (let filter of data.data.filters)
+                        {
+                            if(filter.field =="programs")
+                            {
+                                data.data["search_filters"]["programs"] = filter.options.map(item => {return {label:item.label}})
+                            }
+                            if(filter.field =="study_modes")
+                            {
+                                data.data["search_filters"]["study_modes"] = filter.options.map(item => {return {label:item.label}})
+                            }                            
+                            if(filter.field =="institute_types")
+                            {
+                                data.data["search_filters"]["institute_types"] = filter.options.map(item => {return {label:item.label}})
+                            }
+                            if(filter.field =="region")
+                            {
+                                data.data["search_filters"]["region"] = filter.options.map(item => {return {label:item.label}})
+                            }                           
+                        }
+                       
+                    }
+                    
+                                   
                     finalData =  formatResponseField(req.query['fields'], data.data )                    
                     res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
                 }
