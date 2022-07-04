@@ -19,6 +19,7 @@ const learnPathWeightDistribution = {
 const learnpathActivity = async () => {
     let activity_types = {}
     let activity_count = {}
+    let activity_ids = []
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],
         where:{
@@ -30,13 +31,17 @@ const learnpathActivity = async () => {
     for (activity_type of activities)
     {
         activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
     }
     
     // All time counts for logged in user 
     const activity_logs_all =  await models.activity_log.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
         group: ['activityId', "resource"],
-        raw:true
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
     })
     
     const activity_log_x_days = await models.activity_log.findAll({
@@ -44,7 +49,8 @@ const learnpathActivity = async () => {
         where: {
             createdAt: {
                 [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
-            }
+            },
+            activityId: activity_ids
         },
         group: ['activityId', "resource"],
         raw:true
@@ -128,7 +134,10 @@ const learnpathActivity = async () => {
     const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
         group: ['activityId', "resource"],
-        raw:true
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
     })
 
     const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
@@ -136,7 +145,8 @@ const learnpathActivity = async () => {
         where: {
             createdAt: {
                 [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
-            }
+            },
+            activityId: activity_ids
         },
         group: ['activityId', "resource"],
         raw:true
@@ -253,6 +263,7 @@ const articleWeightDistribution = {
 const articleActivity = async () => {
     let activity_types = {}
     let activity_count = {}
+    let activity_ids = []
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],     
         where:{
@@ -264,13 +275,17 @@ const articleActivity = async () => {
     for (activity_type of activities)
     {
         activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
     }
     
     // All time counts for logged in user 
     const activity_logs_all =  await models.activity_log.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
         group: ['activityId', "resource"],
-        raw:true
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
     })
     
     const activity_log_x_days = await models.activity_log.findAll({
@@ -278,7 +293,8 @@ const articleActivity = async () => {
         where: {
             createdAt: {
                 [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
-            }
+            },
+            activityId: activity_ids
         },
         group: ['activityId', "resource"],
         raw:true
@@ -346,7 +362,10 @@ const articleActivity = async () => {
     const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
         group: ['activityId', "resource"],
-        raw:true
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
     })
 
     const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
@@ -354,7 +373,8 @@ const articleActivity = async () => {
         where: {
             createdAt: {
                 [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
-            }
+            },
+            activityId: activity_ids
         },
         group: ['activityId', "resource"],
         raw:true
@@ -452,6 +472,7 @@ const learnContentWeightDistribution = {
 const storeActivity = async () => {
     let activity_types = {}
     let activity_count = {}
+    let activity_ids = []
     const activities =  await models.activity.findAll({
         attributes: ["id","type"],     
         where:{
@@ -463,13 +484,17 @@ const storeActivity = async () => {
     for (activity_type of activities)
     {
         activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
     }
     
     // All time counts for logged in user 
     const activity_logs_all =  await models.activity_log.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
         group: ['activityId', "resource"],
-        raw:true
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
     })
 
     for (let activity of activity_logs_all)
@@ -526,7 +551,10 @@ const storeActivity = async () => {
     const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
         attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
         group: ['activityId', "resource"],
-        raw:true
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
     })
 
     for (let activity of activity_logs_loggedout_all)
@@ -586,7 +614,8 @@ const storeActivity = async () => {
         where: {
             createdAt: {
                 [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
-            }
+            },
+            activityId: activity_ids
         },
         group: ['activityId', "resource"],
         raw:true
@@ -623,7 +652,8 @@ const storeActivity = async () => {
         where: {
             createdAt: {
                 [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
-            }
+            },
+            activityId: activity_ids
         },
         group: ['activityId', "resource"],
         raw:true
