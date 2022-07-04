@@ -226,14 +226,14 @@ module.exports = class recommendationService {
     }
 
     async getPopularCourses(req) {
-        let { subType="Paid" } = req.query; // Populer, Trending,Free
+        let { subType="Popular", priceType="Paid" } = req.query; // Populer, Trending,Free
         let { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY,provider,partner, page = 1, limit = 20 } = req.query;
 
         const offset = (page - 1) * limit
 
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${provider || ''}-${partner || ''}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${provider || ''}-${partner || ''}-${priceType || ''}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -293,12 +293,12 @@ module.exports = class recommendationService {
                     );
                 }
 
-                if (subType && subType == "Free") {
+                if (priceType && priceType == "Free") {
                     esQuery.bool.filter.push(
                         { "term": { "pricing_type.keyword": "Free" } }
                     ); 
                 }
-                if (subType && subType == "Paid") {
+                if (priceType && priceType == "Paid") {
                     esQuery.bool.filter.push(
                         { "term": { "pricing_type.keyword": "Paid" } }
                     );
@@ -1610,10 +1610,10 @@ module.exports = class recommendationService {
     }
 
     async getPopularLearnPaths(req){
-        let { subType="Paid" } = req.params; // Populer, Trending,Free
+        let { subType="Popular", priceType="Paid" } = req.params; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;  
 
-        let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+        let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${priceType || ''}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
         if (cachedData.noCacheData != true) {
@@ -1657,12 +1657,12 @@ module.exports = class recommendationService {
                 );
             } 
             
-            if(subType && subType =="Free"){
+            if(priceType && priceType =="Free"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
                 );
             }
-            if(subType && subType =="Paid"){
+            if(priceType && priceType =="Paid"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Paid" } }
                 );
