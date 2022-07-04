@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const _ = require('underscore');
 let LearnContentService = new learnContentService();
-
+const helperService = require("../../utils/helper");
 const { 
     getFilterConfigs, 
     parseQueryFilters,
@@ -392,6 +392,7 @@ module.exports = class providerService {
 
     async getProvider(req, callback, skipCache){
         const slug = req.params.slug;
+        let providerId = null
         let cacheName = `single-provider-${slug}_${req.query.currency}`
         let useCache = false
         if(skipCache !=true) {
@@ -399,6 +400,7 @@ module.exports = class providerService {
             if(cacheData.noCacheData != true) {
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
                 useCache = true
+                providerId = cacheData.id
             }            
         }
         if(useCache !=true)
@@ -415,6 +417,7 @@ module.exports = class providerService {
                 RedisConnection.set(cacheName, data);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                providerId = data.id
             }else{
                 /***
                  * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
@@ -431,7 +434,9 @@ module.exports = class providerService {
                 }
                 callback({status: 'failed', message: 'Not found!'}, null);
             }
-        }       
+        }
+        req.body = {providerId: providerId}
+        this.addActivity(req)      
     }
 
 
@@ -697,6 +702,16 @@ module.exports = class providerService {
         }
       }
     
+      async addActivity(req){
+       try {           
+            const {user} = req;
+            const {providerId} = req.body	
+            const activity_log =  await helperService.logActvity("INSTITUTE_VIEW",(user)? user.userId : null, providerId)           
+       } catch (error) {
+           console.log("provider activity error",  error)
+       }
+        
+    }
 
 
 }

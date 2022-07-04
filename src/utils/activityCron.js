@@ -753,10 +753,214 @@ const setTrendingPopularityThreshold = async () => {
         }
     }
 }
+
+
+
+const providerWeightDistribution = {
+    "INSTITUTE_VIEW":1,
+    "INSTITUTE_WISHLIST": 0,
+    "INSTITUTE_SHARE":0
+}
+
+const providerActivity = async () => {
+    let activity_types = {}
+    let activity_count = {}
+    let activity_ids = []
+    const activities =  await models.activity.findAll({
+        attributes: ["id","type"],     
+        where:{
+            "type": ["INSTITUTE_VIEW","INSTITUTE_WISHLIST","INSTITUTE_SHARE"]
+        },   
+        raw:true
+    })
+    
+    for (activity_type of activities)
+    {
+        activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
+    }
+    
+    // All time counts for logged in user 
+    const activity_logs_all =  await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+    
+    const activity_log_x_days = await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+
+    for (let activity of activity_logs_all)
+    {
+        if(activity.resource){
+            if(!activity_count[activity.resource])
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    institute_views:0,
+                    institute_wishlists:0,
+                    institute_share:0,
+                    popularity_score:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    institute_views:0,
+                    institute_wishlists:0,
+                    institute_share:0,
+                    trending_score:0
+                }
+            }           
+            
+            switch (activity_types[activity.activityId]) {
+                case "INSTITUTE_VIEW": 
+                    activity_count[activity.resource].all_time.institute_views= Number(activity.count)              
+                    break;
+                case "INSTITUTE_WISHLIST":
+                    activity_count[activity.resource].all_time.institute_wishlists= Number(activity.count)              
+                    break;
+                case "INSTITUTE_SHARE":
+                    activity_count[activity.resource].all_time.institute_share= Number(activity.count)              
+                    break;
+                default:
+                    break;
+            }
+        }  
+    }
+
+    for (let activity of activity_log_x_days)
+    {
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "INSTITUTE_VIEW": 
+                    activity_count[activity.resource].last_x_days.institute_views= Number(activity.count)
+                    break;
+                case "INSTITUTE_WISHLIST":
+                    activity_count[activity.resource].last_x_days.institute_wishlists= Number(activity.count)
+                    break;
+                case "INSTITUTE_SHARE":
+                    activity_count[activity.resource].last_x_days.institute_share= Number(activity.count)              
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // All time counts for non-logged in user 
+    const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+
+    const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+    
+    for (let activity of activity_logs_loggedout_all)
+    {
+        if(activity.resource){
+            if(!activity_count[activity.resource] )
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    institute_views:0,
+                    institute_wishlists:0,
+                    institute_share:0,
+                    popularity_score:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    institute_views:0,
+                    institute_wishlists:0,
+                    institute_share:0,
+                    trending_score:0
+                }
+            }            
+
+            switch (activity_types[activity.activityId]) {
+                case "INSTITUTE_VIEW": 
+                    activity_count[activity.resource].all_time.institute_views += Number(activity.count)             
+                    break;
+                case "INSTITUTE_WISHLIST":
+                    activity_count[activity.resource].all_time.institute_wishlists += Number(activity.count)
+                    break;
+                case "INSTITUTE_SHARE":
+                    activity_count[activity.resource].all_time.institute_share += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }   
+    }
+
+    for (let activity of activity_logs_loggedout_x_days)
+    {
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "INSTITUTE_VIEW": 
+                    activity_count[activity.resource].last_x_days.institute_views += Number(activity.count)
+                    break;
+                case "INSTITUTE_WISHLIST":
+                    activity_count[activity.resource].last_x_days.institute_wishlists += Number(activity.count)
+                    break;
+                case "INSTITUTE_SHARE":
+                    activity_count[activity.resource].last_x_days.institute_share += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+    if(Object.keys(activity_count).length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            value.all_time.popularity_score = providerWeightDistribution["INSTITUTE_VIEW"]*value.all_time.institute_views + 
+                                                                        providerWeightDistribution["INSTITUTE_WISHLIST"]*value.all_time.institute_wishlists +
+                                                                        providerWeightDistribution["INSTITUTE_SHARE"]*value.all_time.institute_share;
+            value.last_x_days.trending_score = providerWeightDistribution["INSTITUTE_VIEW"]*value.last_x_days.institute_views + 
+            providerWeightDistribution["INSTITUTE_WISHLIST"]*value.last_x_days.institute_wishlists +
+            providerWeightDistribution["INSTITUTE_SHARE"]*value.last_x_days.institute_share;
+        }
+    }
+    if(Object.keys(activity_count).length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            let payload = {
+                provider_id:key,
+                activity_count:value,
+            }
+            publishToSNS(process.env.PROVIDER_ACTIVITY_TOPIC_ARN, payload, "INSTITUTE_ACTIVITY_COUNT")
+        }
+    }
+}
    
 module.exports = {
     storeActivity,
     learnpathActivity,
     articleActivity,
+    providerActivity,
     setTrendingPopularityThreshold
 }
