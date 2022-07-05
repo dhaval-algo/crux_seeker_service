@@ -37,6 +37,9 @@ router.get('/course-landing-page', learnContentController.getCourseLandingPage)
 router.get('/course-landing-page-categories', learnContentController.geCourseLandingPageTopCategories)
 router.get('/popular-categories', learnContentController.getPopularCategories)
 
+//Institute Landing page 
+router.get('/institute-landing-page', providerController.getInstituteLandingPage)
+
 //Learn path APi
 router.get('/learn-path/',injectTokenPayload,learnPathController.getLearnPathList);
 router.get('/learn-path/:slug',injectTokenPayload,learnPathController.getSingleLearnPath);

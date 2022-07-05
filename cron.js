@@ -6,7 +6,7 @@ const Sentry = require("@sentry/node");
 
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
-const { storeActivity, learnpathActivity, articleActivity, setTrendingPopularityThreshold} = require('./src/utils/activityCron');
+const { storeActivity, learnpathActivity, articleActivity, providerActivity, setTrendingPopularityThreshold} = require('./src/utils/activityCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam, invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills,invalidPopularCategories} = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 
@@ -51,7 +51,7 @@ Sentry.init({
   }
 
 // cron jobs
-const ENABLE_TOP_TEN_CRON = process.env.ENABLE_TOP_TEN_CRON || true
+const ENABLE_TOP_TEN_CRON = process.env.ENABLE_TOP_TEN_CRON || false
 if(ENABLE_TOP_TEN_CRON){
     cron.schedule(process.env.TOP_TEN_CRON_TIME, async function () {
         try {        

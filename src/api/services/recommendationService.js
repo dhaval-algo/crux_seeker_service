@@ -1,6 +1,7 @@
 const elasticService = require("./elasticService");
 const models = require("../../../models");
 const fetch = require("node-fetch");
+const _ = require('underscore');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
@@ -12,6 +13,7 @@ const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count"]
 const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","display_price","courses","activity_count","cv_take"]
+const FEATURED_RANK_LIMIT = 2;
 const getCurrencies = async (useCache = true) => {
 
     let cacheKey = "get-currencies-backend";
@@ -141,6 +143,11 @@ const formatImageResponse = (imageObject) => {
 const paginate = async (array, page_number, page_size) => {
     return array.slice((page_number - 1) * page_size, page_number * page_size);
   }
+const round = (value, step) => {
+    step || (step = 1.0);
+    var inv = 1.0 / step;
+    return Math.round(value * inv) / inv;
+};
 module.exports = class recommendationService {
 
     async getRelatedCourses(req) {
@@ -4152,4 +4159,181 @@ module.exports = class recommendationService {
 
 
     
+    async getPopularProviders(req) {
+        let { subType = "Populer" } = req.query; // Populer, Trending
+        let { category, program, region, page = 1, limit = 20 } = req.query;
+
+        const offset = (page - 1) * limit
+
+        let providers = [];
+        try {
+            let cacheKey = `popular-providers-${subType}-${category || ''}-${program || ''}-${region || ''}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                providers = cachedData;
+            } else {
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "approved" } }
+                        ]
+                    }
+                }
+                if (category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": decodeURIComponent(category)
+                            }
+                        }
+                    );
+                }
+                if (program) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "programs.keyword": decodeURIComponent(program)
+                            }
+                        }
+                    );
+                }
+                if (region) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "region.keyword": decodeURIComponent(region)
+                            }
+                        }
+                    );
+                }
+
+                let sort = null
+                switch (subType) {
+                    case "Trending":
+                        sort = [{ "activity_count.last_x_days.trending_score": "desc" }]
+                        break;
+                    default:
+                        sort = [{ "activity_count.all_time.popularity_score": "desc" }]
+                        break;
+                }
+                console.log("esQuery");
+                console.dir(esQuery, { depth: null })
+                let result = await elasticService.search("provider", esQuery, { from: offset, size: limit, sortObject: sort });
+
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateproviderFinalResponse(hit._source)
+                        providers.push(data);
+                    }
+                    RedisConnection.set(cacheKey, providers, process.env.CACHE_EXPIRE_POPULAR_PROVIDERS || 60 * 15);
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: providers, mlList: [], show: "logic" } };
+            return response;
+
+
+        } catch (error) {
+            console.log("Error while processing data for popular providers", error);
+            let response = { success: false, message: "Failed to fetch", data: { list: [] } };
+            return response;
+        }
+    }
+
+    async generateproviderFinalResponse(result) {
+        let data = {
+            title: result.name,
+            slug: result.slug,
+            id: `PVDR_${result.id}`,
+            cover_image: (result.cover_image) ? formatImageResponse(result.cover_image) : null,
+            logo: (result.logo) ? formatImageResponse(result.logo) : null,
+            programs: (result.programs) ? result.programs : [],
+            institute_types: (result.institute_types) ? result.institute_types : [],
+            study_modes: (result.study_modes) ? result.study_modes : [],
+            reviews: [],
+            ratings: {
+                total_review_count: result.reviews ? result.reviews.length : 0,
+                average_rating: 0,
+                average_rating_actual: 0,
+                rating_distribution: []
+            },
+            contact_details: {
+                address_line1: result.address_line1,
+                address_line2: result.address_line2,
+                city: result.city,
+                state: result.state,
+                pincode: result.pincode,
+                country: result.country,
+                phone: result.phone,
+                email: result.email,
+                website_link: result.website_link
+            },
+            course_count: (result.course_count) ? result.course_count : 0,
+            featured_ranks: [],
+        };
+        if (result.reviews && result.reviews.length > 0) {
+            let totalRating = 0;
+            let ratings = {};
+            for (let review of result.reviews) {
+                totalRating += review.rating;
+
+
+                if (review.photo) {
+                    review.photo = getMediaurl(review.photo.thumbnail);
+                }
+                data.reviews.push(review);
+
+
+                if (ratings[review.rating]) {
+                    ratings[review.rating] += 1;
+                } else {
+                    ratings[review.rating] = 1;
+                }
+            }
+
+            const average_rating = totalRating / result.reviews.length;
+            data.ratings.average_rating = round(average_rating, 0.5);
+            data.ratings.average_rating_actual = average_rating.toFixed(1);
+            let rating_distribution = [];
+
+            //add missing ratings
+            for (let i = 0; i < 5; i++) {
+                if (!ratings[i + 1]) {
+                    ratings[i + 1] = 0;
+                }
+            }
+            Object.keys(ratings)
+                .sort()
+                .forEach(function (v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
+                });
+            data.ratings.rating_distribution = rating_distribution.reverse();
+        }
+
+
+        data.institute_rankings = result.ranks;
+        if (result.ranks) {
+            let sortedRanks = _.sortBy(result.ranks, 'rank');
+            let featuredCount = 0;
+            for (const rank of sortedRanks) {
+                if (!rank.featured) {
+                    continue;
+                }
+                data.featured_ranks.push({
+                    name: rank.name,
+                    slug: rank.slug,
+                    rank: rank.rank
+                });
+                featuredCount++;
+                if (featuredCount == FEATURED_RANK_LIMIT && isList) {
+                    break;
+                }
+            }
+        }
+
+        return data;
+    }
 }

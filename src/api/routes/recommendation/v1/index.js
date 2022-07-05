@@ -9,4 +9,5 @@ router.get('/recommended-learn-paths/',recommendationMiddleware, recommendationC
 router.get('/featured-articles/',recommendationMiddleware, recommendationController.getFeaturedArticles);
 router.get('/article-advice/',recommendationMiddleware, recommendationController.getArticleAdvice);
 router.get('/popular-comparison/',recommendationMiddleware, recommendationController.getPopularComparison);
+router.get('/recommended-providers/',recommendationMiddleware, recommendationController.getRecommendedProviders);
 module.exports = router;
