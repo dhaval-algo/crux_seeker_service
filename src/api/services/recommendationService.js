@@ -137,6 +137,10 @@ const formatImageResponse = (imageObject) => {
    else if (imageObject.thumbnail) image = imageObject.thumbnail
    return image
 }
+
+const paginate = async (array, page_number, page_size) => {
+    return array.slice((page_number - 1) * page_size, page_number * page_size);
+  }
 module.exports = class recommendationService {
 
     async getRelatedCourses(req) {
@@ -3911,7 +3915,7 @@ module.exports = class recommendationService {
 
     async getPopularComparison(req) {
         try {
-            let { currency = process.env.DEFAULT_CURRENCY } = req.query
+            let { currency = process.env.DEFAULT_CURRENCY, page =1, limit =10 } = req.query
             let courses = []
             let compares = []
 
@@ -3919,6 +3923,7 @@ module.exports = class recommendationService {
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
             if (cachedData.noCacheData != true) {
+                cachedData = await paginate(cachedData, page, limit)
                 return { "success": true, message: "list fetched successfully", data: cachedData }
             }
 
@@ -4131,6 +4136,7 @@ module.exports = class recommendationService {
                 }
             }
             RedisConnection.set(cacheKey, compares, process.env.CACHE_EXPIRE_POPULAR_Compare || 60 * 15);
+            compares = await paginate(cachedData, page, limit)
             let response = { "success": true, message: "list fetched successfully", data: compares };
             return response;
 
