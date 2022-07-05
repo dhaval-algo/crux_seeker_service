@@ -3909,5 +3909,241 @@ module.exports = class recommendationService {
         }
     }
 
+    async getPopularComparison(req) {
+        try {
+            let { currency = process.env.DEFAULT_CURRENCY } = req.query
+            let courses = []
+            let compares = []
+
+            let cacheKey = `popular_compares-${req.query.courseId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+
+            if (cachedData.noCacheData != true) {
+                return { "success": true, message: "list fetched successfully", data: cachedData }
+            }
+
+            if (req.query.courseId) {
+                const courseId = req.query.courseId.toString();
+                //fetch course information
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must = [
+                    {
+                        "ids": {
+                            "values": [courseId]
+                        }
+                    }
+                ]
+
+                let courseData = await elasticService.search("learn-content", esQuery, { _source: ['topics', 'sub_categories', 'categories', 'skills', 'partner_name'] });
+
+                esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                esQuery.bool.must_not = [
+                    {
+                        "ids": {
+                            "values": [courseId]
+                        }
+                    }
+                ]
+
+                if (courseData.hits) {
+                    for (const hit of courseData.hits) {
+                        let sort = [{ "activity_count.last_x_days.trending_score": "desc" }, { "ratings": "desc" }];
+                        if (hit._source.topics && hit._source.topics.length > 0) {
+                            esQuery.bool.filter.push(
+                                {
+                                    "terms": {
+                                        "topics.keyword": hit._source.topics
+                                    }
+                                }
+                            );
+                            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10, sortObject: sort, _source: courseFields });
+
+                            if (result && result.hits.length > 0) {
+                                for (let hit of result.hits) {
+                                    let course = await this.generateCourseFinalResponse(hit._source, currency);
+                                    courses.push(course);
+                                }
+                            }
+
+                        }
+                        if (courses.length < 10 && hit._source.sub_categories && hit._source.sub_categories.length > 0) {
+                            esQuery.bool.filter[0] =
+                            {
+                                "terms": {
+                                    "sub_categories.keyword": hit._source.sub_categories
+                                }
+                            }
+                            if (courses.length > 0) {
+                                esQuery.bool.must_not = [
+                                    {
+                                        "ids": {
+                                            "values": courses.map(course => course.id)
+                                        }
+                                    }
+                                ]
+                            }
+                            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
+
+                            if (result && result.hits.length > 0) {
+                                for (let hit of result.hits) {
+                                    let course = await this.generateCourseFinalResponse(hit._source, currency);
+                                    courses.push(course);
+                                }
+                            }
+                        }
+                        if (courses.length < 10 && hit._source.categories && hit._source.categories.length > 0) {
+                            esQuery.bool.filter[0] =
+                            {
+                                "terms": {
+                                    "categories.keyword": hit._source.categories
+                                }
+                            }
+                            if (courses.length > 0) {
+                                esQuery.bool.must_not = [
+                                    {
+                                        "ids": {
+                                            "values": courses.map(course => course.id)
+                                        }
+                                    }
+                                ]
+                            }
+                            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
+
+                            if (result && result.hits.length > 0) {
+                                for (let hit of result.hits) {
+                                    let course = await this.generateCourseFinalResponse(hit._source, currency);
+                                    courses.push(course);
+                                }
+                            }
+                        }
+
+
+                        if (courses.length < 10 && hit._source.skills && hit._source.skills.length > 0) {
+                            esQuery.bool.filter[0] =
+                            {
+                                "terms": {
+                                    "skills.keyword": hit._source.skills
+                                }
+                            }
+                            if (courses.length > 0) {
+                                esQuery.bool.must_not = [
+                                    {
+                                        "ids": {
+                                            "values": courses.map(course => course.id)
+                                        }
+                                    }
+                                ]
+                            }
+                            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
+
+                            if (result && result.hits.length > 0) {
+                                for (let hit of result.hits) {
+                                    let course = await this.generateCourseFinalResponse(hit._source, currency);
+                                    courses.push(course);
+                                }
+                            }
+                        }
+                        if (courses.length < 10 && hit._source.partner_name) {
+                            esQuery.bool.filter[0] =
+                            {
+                                "term": {
+                                    "partner_name.keyword": hit._source.partner_name
+                                }
+                            }
+                            if (courses.length > 0) {
+                                esQuery.bool.must_not = [
+                                    {
+                                        "ids": {
+                                            "values": courses.map(course => course.id)
+                                        }
+                                    }
+                                ]
+                            }
+                            let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
+
+                            if (result && result.hits.length > 0) {
+                                for (let hit of result.hits) {
+                                    let course = await this.generateCourseFinalResponse(hit._source, currency);
+                                    courses.push(course);
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
+            else
+            {
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }               
+
+                let sort = [{ "activity_count.last_x_days.trending_score": "desc" }, { "ratings": "desc" }];
+
+                let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10, sortObject: sort, _source: courseFields });
+                if (result && result.hits.length > 0) {
+                    for (let hit of result.hits) {
+                        let course = await this.generateCourseFinalResponse(hit._source, currency);
+                        courses.push(course);
+                    }
+                }
+            }
+            for (let course of courses) {
+                req.query.courseId = course.id
+                let related_courses = await this.getRelatedCourses(req)
+                if (course.course_details.pricing.pricing_type == "FREE") course.course_details.pricing.sale_price = 0
+
+                if (related_courses && related_courses.data && related_courses.data.list && related_courses.data.list.length > 0) {
+                    let final_course = null
+                    let price_diff = null
+                    for (let related_course of related_courses.data.list) {
+                        if (related_course.course_details.pricing.pricing_type == "FREE") related_course.course_details.pricing.sale_price = 0
+                        if (price_diff && price_diff > Math.abs(related_course.course_details.pricing.sale_price - course.course_details.pricing.sale_price)) {
+                            final_course = related_course
+                            price_diff = Math.abs(related_course.course_details.pricing.sale_price - course.course_details.pricing.sale_price)
+
+                        } else if (!price_diff) {
+                            if (related_course.course_details && course.course_details) {
+                                final_course = related_course;
+                                price_diff = Math.abs(related_course.course_details.pricing.sale_price - course.course_details.pricing.sale_price)
+                            }
+
+                        }
+                    }
+                    if (final_course)
+                        compares.push({ course_1: course, course_2: final_course })
+                }
+            }
+            RedisConnection.set(cacheKey, compares, process.env.CACHE_EXPIRE_POPULAR_Compare || 60 * 15);
+            let response = { "success": true, message: "list fetched successfully", data: compares };
+            return response;
+
+        } catch (error) {
+            console.log("Error while processing data for Popular comparison", error);
+            let response = { success: false, message: "failed to fetch", data: { list: [] } };
+
+            return response;
+        }
+
+
+    }
+
+
     
 }

@@ -188,4 +188,17 @@ module.exports = {
             res.status(200).send(response);
         }
     },
+
+    getPopularComparison: async (req, res) =>{
+        const response = await RecommendationService.getPopularComparison(req)  
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
+        }
+    },
 };
