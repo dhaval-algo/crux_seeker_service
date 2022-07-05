@@ -4136,7 +4136,7 @@ module.exports = class recommendationService {
                 }
             }
             RedisConnection.set(cacheKey, compares, process.env.CACHE_EXPIRE_POPULAR_Compare || 60 * 15);
-            compares = await paginate(cachedData, page, limit)
+            compares = await paginate(compares, page, limit)
             let response = { "success": true, message: "list fetched successfully", data: compares };
             return response;
 
