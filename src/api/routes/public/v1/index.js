@@ -86,6 +86,7 @@ router.get('/articles/',injectTokenPayload, ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
+//trending now API
 router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
 router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
 router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);

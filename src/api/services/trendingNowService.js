@@ -11,11 +11,11 @@ const articleService = new ArticleService();
 
 
 
-const getTrendingNow = async () => {
+const getTrendingNow = async (type, fields, category = '_', component_slug = '_') => {
 
     try {
         let trendingNowData = [];
-        const cacheName = 'trending-now';
+        const cacheName = 'trending-now-' + type + '-' + category + '-' + component_slug 
         const cacheData = await RedisConnection.getValuesSync(cacheName);
 
         if (!cacheData.noCacheData) {
@@ -23,11 +23,16 @@ const getTrendingNow = async () => {
         } else {
 
             const esQuery = {
-
-                match_all: {}
+                bool :  {
+                    must: [{ match: {_id: type }}]
+                }
             }
+            if(category != '_')
+                esQuery.bool.must.push({ exists: { field: "trending_nows." + category }})
+            if(component_slug != '_')
+                esQuery.bool.must.push({ match: { [`trending_nows.${category}.list.slug`]: component_slug }})
 
-            const result = await elasticService.search('trending-now', esQuery, {});
+            const result = await elasticService.search('trending-now', esQuery, {}, fields);
 
             if (result.hits && result.hits.length) {
                 trendingNowData = result.hits[0]._source.trending_nows;
@@ -35,7 +40,7 @@ const getTrendingNow = async () => {
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TRENDING_NOW || 86400);
             }
         }
-
+        
         return trendingNowData;
 
     } catch (error) {
@@ -49,19 +54,22 @@ const getTrendingNow = async () => {
 const getTrendingNowCategories = async (req, callback) => {
 
     try {
+        const { type = "category_list_homepage" } = req.query;
+        const fields = {
+            "includes": ["trending_nows.*.category.slug","trending_nows.*.category.name",
+        "trending_nows.*.category.id","trending_nows.*.description"],
+        "excludes": ["trending_nows.*.list"]
+        }
+        const trendingNowData = await getTrendingNow(type, fields);
+        let categories = [], categoryData = {};
 
-        const trendingNowData = await getTrendingNow();
-        const categories = [];
-
-        for (const category in trendingNowData) {
-
-            const categoryData = {};
+        for (const category in trendingNowData)
+        {   
             categoryData.description = trendingNowData[category].description;
             categoryData.id = trendingNowData[category].category.id;
             categoryData.slug = trendingNowData[category].category.slug;
             categoryData.name = trendingNowData[category].category.name;
-
-            categories.push(categoryData);
+            categories.push(categoryData)
         }
 
 
@@ -79,28 +87,16 @@ const getTrendingNowList = async (req, callback) => {
 
     try {
 
-        const { category, page = 1, limit = 5 } = req.query;
+        const { category, page = 1, limit = 5, type = "category_list_homepage" } = req.query;
         const offset = (page - 1) * limit;
-        const trendingNowData = await getTrendingNow();
+        const fields = [`trending_nows.${category}.list.slug`,`trending_nows.${category}.list.title`,
+        `trending_nows.${category}.list.type`,`trending_nows.${category}.list.image`,
+        `trending_nows.${category}.list.description`]
 
-        let list = [];
-        if (trendingNowData[category]) {
-            list = trendingNowData[category].list;
+        const trendingNowData = await getTrendingNow(type, fields, category);
+        let list = trendingNowData[category].list.slice(offset, offset + limit);
 
-        }
-
-        list = list.slice(offset, offset + limit);
-        list = list.map((data) => {
-            return {
-                title: data.title,
-                description: data.description,
-                slug: data.slug,
-                image: data.image,
-                type: data.type
-            }
-        });
-
-        callback(null, { success: true, message: "list fetched successfully", data: { list: list } });
+        callback(null, { success: true, message: "list fetched successfully", data: { list } });
 
 
     } catch (error) {
@@ -116,22 +112,11 @@ const getTrendingNowComponentData = async (req, callback) => {
 
     try {
 
-        const { component_slug, category } = req.query;
-        const trendingNowData = await getTrendingNow();
+        const { component_slug, category, type = "category_list_homepage"} = req.query;
+        const fields = [`trending_nows.${category}`]
+        const trendingNowData = await getTrendingNow(type, fields, category, component_slug);
 
-        let component = null;
-        let list = [];
-        if (trendingNowData[category]) {
-            list = trendingNowData[category].list;
-
-        }
-
-        for (const comp of list) {
-            if (comp.slug == component_slug) {
-                component = comp;
-                break;
-            }
-        }
+        let component = trendingNowData[category].list[0]
 
 
         if (component) {
