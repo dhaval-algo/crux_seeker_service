@@ -1429,7 +1429,7 @@ module.exports = class recommendationService {
               {term: { "user_id": id }}
             ]
         }};
-        const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug']});
+        const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
         if(result.hits && result.hits.length > 0){
             author = await this.generateAuthorData(result.hits[0]._source);
         }
@@ -1441,6 +1441,7 @@ module.exports = class recommendationService {
             firstname: result.first_name,
             lastname: result.last_name,
             slug: result.slug,
+            image: result.image? formatImageResponse(result.image) : null
            
         };
         return data;
@@ -1457,12 +1458,14 @@ module.exports = class recommendationService {
                         firstname: auth.firstname? auth.firstname.trim():"",
                         lastname: auth.lastname ? auth.lastname.trim():"",                      
                         slug: auth.slug,
+                        image:auth.image
                     }];
                 }else{
                     author = [{
                         firstname: result.author_first_name.trim(),
                         lastname: result.last_name ? result.author_last_name.trim():"",
-                        slug: result.author_slug
+                        slug: result.author_slug,
+                        image:null
                     }];
                 }
             }
@@ -1480,6 +1483,7 @@ module.exports = class recommendationService {
                         firstname:co_author.first_name.trim(),
                         lastname: co_author.last_name ? co_author.last_name.trim():"",
                         slug: co_author.slug,
+                        image:(co_author.image)? formatImageResponse(co_author.image) : null
                     });
                 }
             }
@@ -1511,6 +1515,7 @@ module.exports = class recommendationService {
                         partners.push({
                             name: hit._source.name.trim(),
                             slug: hit._source.slug,
+                            image:(hit._source.cover_image) ? formatImageResponse (hit._source.cover_image) :null
                         })
                     }
                 }
