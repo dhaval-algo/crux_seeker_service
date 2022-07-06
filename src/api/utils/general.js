@@ -152,7 +152,9 @@ const getRankingFilter = async (useCache = true) => {
                 slug: rank.slug,
                 count: 0,
                 selected: false,
-                disabled: false
+                disabled: false,
+                image: rank.image ? formatImageResponse (rank.image): null,
+                logo: rank.logo ? formatImageResponse (rank.logo) :null
             });
         }
         RedisConnection.set(cacheKey, rankingFilter);

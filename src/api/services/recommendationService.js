@@ -133,11 +133,17 @@ const calculateDuration = (total_duration_in_hrs) => {
 
 const formatImageResponse = (imageObject) => {
     let image = null
-   if(imageObject.large) image = imageObject.large
-   else if (imageObject.medium) image = imageObject.medium
-   else if (imageObject.small) image = imageObject.small
-   else if (imageObject.thumbnail) image = imageObject.thumbnail
-   return image
+    if (imageObject.large) image = imageObject.large
+    else if (imageObject.medium) image = imageObject.medium
+    else if (imageObject.small) image = imageObject.small
+    else if (imageObject.thumbnail) image = imageObject.thumbnail
+    else if (imageObject.formats) {
+        if (imageObject.formats.large && imageObject.formats.large.url) image = imageObject.formats.large.url
+        else if (imageObject.formats.medium && imageObject.formats.medium.url) image = imageObject.formats.medium.url
+        else if (imageObject.formats.small && imageObject.formats.small.url) image = imageObject.formats.small.url
+        else if (imageObject.formats.thumbnail && imageObject.formats.thumbnail.url) image = imageObject.formats.thumbnail.url
+    }
+    return image
 }
 
 const paginate = async (array, page_number, page_size) => {
@@ -4313,8 +4319,8 @@ module.exports = class recommendationService {
             data.ratings.rating_distribution = rating_distribution.reverse();
         }
 
-
         data.institute_rankings = result.ranks;
+        let ranking_images = await this.getRankingImages()        
         if (result.ranks) {
             let sortedRanks = _.sortBy(result.ranks, 'rank');
             let featuredCount = 0;
@@ -4325,7 +4331,8 @@ module.exports = class recommendationService {
                 data.featured_ranks.push({
                     name: rank.name,
                     slug: rank.slug,
-                    rank: rank.rank
+                    rank: rank.rank,
+                    logo: ranking_images[rank.name]['logo']
                 });
                 featuredCount++;
                 if (featuredCount == FEATURED_RANK_LIMIT && isList) {
@@ -4336,4 +4343,41 @@ module.exports = class recommendationService {
 
         return data;
     }
+
+    async getRankingImages(skipCache = false) 
+    {
+        let ranking_images = {}
+        let cacheName = `ranking_images`
+        let useCache = false
+        if(skipCache !=true) {    
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true) {
+                ranking_images =  cacheData   
+                useCache = true				 
+            }
+        }
+              
+        if(useCache !=true)
+        {
+            let response = await fetch(`${apiBackendUrl}/rankings`);
+            if (response.ok) {
+                let json = await response.json();
+                if(json){
+                    for(let ranking of json)
+                    {
+                        ranking_images[ranking.name] = {}
+                        if( ranking.image){
+                            ranking_images[ranking.name]['iamge'] = formatImageResponse(ranking.image)
+                        } 
+                        if( ranking.logo){
+                            ranking_images[ranking.name]['logo'] = formatImageResponse(ranking.logo)
+                        }                    
+                    }
+                    RedisConnection.set(cacheName,  ranking_images);
+                }
+            }
+        }
+        return ranking_images
+    }
+
 }

@@ -709,9 +709,6 @@ module.exports = class providerService {
             const activity_log =  await helperService.logActvity("INSTITUTE_VIEW",(user)? user.userId : null, providerId)           
        } catch (error) {
            console.log("provider activity error",  error)
-       }
-        
+       }        
     }
-
-
 }
