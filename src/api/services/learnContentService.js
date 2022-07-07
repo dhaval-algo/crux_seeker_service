@@ -1267,7 +1267,7 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
-            //temp patch for moving scatter fields of provider in to single object
+            //temp patch for moving scatter fields of provider in to single object; would b redundent after half year
         if(result.providers_list == undefined){
             let provider = {name: result.provider_name, slug: result.provider_slug,
                         currency: result.provider_currency, url:result.provider_course_url}
@@ -1281,6 +1281,8 @@ module.exports = class learnContentService {
             id: `LRN_CNT_PUB_${result.id}`,
             subtitle: result.subtitle,
             providers: result.providers_list,
+            provider_course_url: result.provider_course_url,
+            original_course_url: result.original_course_url,
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
