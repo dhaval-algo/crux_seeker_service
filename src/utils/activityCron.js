@@ -3,13 +3,8 @@ const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { publishToSNS } = require('../services/v1/sns');
 const moment = require("moment");
-
-const learnPathWeightDistribution = {
-    "LEARNPATH_VIEW":0.5,
-    "LEARNPATH_WISHLIST": 0.166,
-    "LEARNPATH_ENQUIRED": 0.166,
-    "LEARNPATH_SHARE": 0.166
-}
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const learnpathActivity = async () => {
     let activity_types = {}
@@ -211,39 +206,74 @@ const learnpathActivity = async () => {
             }
         }    
     }
-    
-    if(Object.keys(activity_count).length){
-        for ( const [key, value] of Object.entries(activity_count))
-        {
-            value.all_time.popularity_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.all_time.learnpath_views + 
-                                                                        learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.all_time.learnpath_wishlists +
-                                                                        learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.all_time.learnpath_enquiries + 
-                                                                        learnPathWeightDistribution["LEARNPATH_SHARE"]*value.all_time.learnpath_share;
-            value.last_x_days.trending_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.last_x_days.learnpath_views + 
-                                                                        learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.last_x_days.learnpath_wishlists +
-                                                                        learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.last_x_days.learnpath_enquiries + 
-                                                                        learnPathWeightDistribution["LEARNPATH_SHARE"]*value.last_x_days.learnpath_share;
-        }
-    }
-    
-    if(Object.keys(activity_count).length){
-        for ( const [key, value] of Object.entries(activity_count))
-        {
-            let payload = {
-                learn_path_id:key,
-                activity_count:value,
+
+    try{
+        var learnPathWeightDistribution = {}
+        let response = await fetch(`${apiBackendUrl}/learn-path-weight?_limit=-1`)
+        if (response.ok) {
+            let json = await response.json();
+            if(json){
+                learnPathWeightDistribution["LEARNPATH_VIEW"] = json.priority_weights.view
+                learnPathWeightDistribution["LEARNPATH_WISHLIST"] = json.priority_weights.wishlist
+                learnPathWeightDistribution["LEARNPATH_ENQUIRED"] = json.priority_weights.enquiry
+                learnPathWeightDistribution["LEARNPATH_SHARE"] = json.priority_weights.share
             }
-            publishToSNS(process.env.LEARN_PATH_ACTIVITY_TOPIC_ARN, payload, "LEARNPATH_ACTIVITY_COUNT")
+        }else{
+            console.log("err in access weights")
+            return ;
         }
+
+    }catch(err){
+        console.log(err)
+    }
+
+    try{
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                value.all_time.popularity_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.all_time.learnpath_views + 
+                                                                            learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.all_time.learnpath_wishlists +
+                                                                            learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.all_time.learnpath_enquiries + 
+                                                                            learnPathWeightDistribution["LEARNPATH_SHARE"]*value.all_time.learnpath_share;
+                value.last_x_days.trending_score = learnPathWeightDistribution["LEARNPATH_VIEW"]*value.last_x_days.learnpath_views + 
+                                                                            learnPathWeightDistribution["LEARNPATH_WISHLIST"]*value.last_x_days.learnpath_wishlists +
+                                                                            learnPathWeightDistribution["LEARNPATH_ENQUIRED"]*value.last_x_days.learnpath_enquiries + 
+                                                                            learnPathWeightDistribution["LEARNPATH_SHARE"]*value.last_x_days.learnpath_share;
+            }
+        }
+        
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                let payload = {
+                    learn_path_id:key,
+                    activity_count:value,
+                }
+                publishToSNS(process.env.LEARN_PATH_ACTIVITY_TOPIC_ARN, payload, "LEARNPATH_ACTIVITY_COUNT")
+            }
+        }
+    }catch(err){
+        console.log(err)
     }
     
 }
 
-const articleWeightDistribution = {
-    "ARTICLE_VIEW":0.5,
-    "ARTICLE_WISHLIST": 0.25,
-    "ARTICLE_SHARE": 0.25
-}
+const articleWeightDistribution = {}
+
+let responsearticle = fetch(`${apiBackendUrl}/article-weight?_limit=-1`).then(async function(response){
+    if (response.ok) {
+        let json = await response.json();
+        if(json){
+            articleWeightDistribution["ARTICLE_VIEW"] = json.priority_weights.view
+            articleWeightDistribution["ARTICLE_WISHLIST"] = json.priority_weights.wishlist
+            articleWeightDistribution["ARTICLE_SHARE"] = json.priority_weights.share
+        }
+    }
+    else{
+        console.log("err in access weights")
+        return ;
+    }
+});
 
 const articleActivity = async () => {
     let activity_types = {}
@@ -414,34 +444,49 @@ const articleActivity = async () => {
             }
         }
     }
-    if(Object.keys(activity_count).length){
-        for ( const [key, value] of Object.entries(activity_count))
-        {
-            value.all_time.popularity_score = articleWeightDistribution["ARTICLE_VIEW"]*value.all_time.article_views + 
-                                                                        articleWeightDistribution["ARTICLE_WISHLIST"]*value.all_time.article_wishlists +
-                                                                        articleWeightDistribution["ARTICLE_SHARE"]*value.all_time.article_share;
-            value.last_x_days.trending_score = articleWeightDistribution["ARTICLE_VIEW"]*value.last_x_days.article_views + 
-                                                                        articleWeightDistribution["ARTICLE_WISHLIST"]*value.last_x_days.article_wishlists +
-                                                                        articleWeightDistribution["ARTICLE_SHARE"]*value.last_x_days.article_share;
-        }
-    }
-    if(Object.keys(activity_count).length){
-        for ( const [key, value] of Object.entries(activity_count))
-        {
-            let payload = {
-                article_id:key,
-                activity_count:value,
+    try{
+        var articleWeightDistribution = {}
+        let response = await fetch(`${apiBackendUrl}/article-weight?_limit=-1`)
+        if (response.ok) {
+            let json = await response.json();
+            if(json){
+                articleWeightDistribution["ARTICLE_VIEW"] = json.priority_weights.view
+                articleWeightDistribution["ARTICLE_WISHLIST"] = json.priority_weights.wishlist
+                articleWeightDistribution["ARTICLE_SHARE"] = json.priority_weights.share
             }
-            publishToSNS(process.env.ARTICLE_ACTIVITY_TOPIC_ARN, payload, "ARTICLE_ACTIVITY_COUNT")
         }
+        else{
+            console.log("err in access weights")
+            return ;
+        }
+    }catch(err){
+        console.log(err)
     }
-}
-
-const learnContentWeightDistribution = {
-    "COURSE_VIEW":0.5,
-    "COURSE_WISHLIST": 0.166,
-    "COURSE_ENQUIRED": 0.166,
-    "COURSE_SHARE": 0.166
+    try{
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                value.all_time.popularity_score = articleWeightDistribution["ARTICLE_VIEW"]*value.all_time.article_views + 
+                                                                            articleWeightDistribution["ARTICLE_WISHLIST"]*value.all_time.article_wishlists +
+                                                                            articleWeightDistribution["ARTICLE_SHARE"]*value.all_time.article_share;
+                value.last_x_days.trending_score = articleWeightDistribution["ARTICLE_VIEW"]*value.last_x_days.article_views + 
+                                                                            articleWeightDistribution["ARTICLE_WISHLIST"]*value.last_x_days.article_wishlists +
+                                                                            articleWeightDistribution["ARTICLE_SHARE"]*value.last_x_days.article_share;
+            }
+        }
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                let payload = {
+                    article_id:key,
+                    activity_count:value,
+                }
+                publishToSNS(process.env.ARTICLE_ACTIVITY_TOPIC_ARN, payload, "ARTICLE_ACTIVITY_COUNT")
+            }
+        }
+    }catch(err){
+        console.log(err)
+    }
 }
 
 const storeActivity = async () => {
@@ -648,28 +693,52 @@ const storeActivity = async () => {
             }
         }
     }
-    if(Object.keys(activity_count).length){
-        for ( const [key, value] of Object.entries(activity_count))
-        {
-            value.all_time.popularity_score = learnContentWeightDistribution["COURSE_VIEW"]*value.all_time.course_views + 
-                                                                        learnContentWeightDistribution["COURSE_WISHLIST"]*value.all_time.course_wishlists +
-                                                                        learnContentWeightDistribution["COURSE_ENQUIRED"]*value.all_time.course_enquiries + 
-                                                                        learnContentWeightDistribution["COURSE_SHARE"]*value.all_time.course_share;
-            value.last_x_days.trending_score = learnContentWeightDistribution["COURSE_VIEW"]*value.last_x_days.course_views + 
-                                                                        learnContentWeightDistribution["COURSE_WISHLIST"]*value.last_x_days.course_wishlists +
-                                                                        learnContentWeightDistribution["COURSE_ENQUIRED"]*value.last_x_days.course_enquiries + 
-                                                                        learnContentWeightDistribution["COURSE_SHARE"]*value.last_x_days.course_share;
+    try{
+        var learnContentWeightDistribution = {}
+
+        let response = await fetch(`${apiBackendUrl}/learn-content-weight?_limit=-1`)
+        if (response.ok) {
+            let json = await response.json();
+            if(json){
+                learnContentWeightDistribution["COURSE_VIEW"] = json.priority_weights.view
+                learnContentWeightDistribution["COURSE_WISHLIST"] = json.priority_weights.wishlist
+                learnContentWeightDistribution["COURSE_SHARE"] = json.priority_weights.share
+                learnContentWeightDistribution["COURSE_ENQUIRED"] = json.priority_weights.enquiry
+            }
         }
+        else{
+            console.log("err in access weights")
+            return ;
+        }
+    }catch(err){
+        console.log(err)
     }
-    if(Object.keys(activity_count).length){
-        for ( const [key, value] of Object.entries(activity_count))
-        {
-            let payload = {
-                learn_content_id:key,
-                activity_count:value,
-            }  
-            publishToSNS(process.env.LEARN_CONTENT_ACTIVITY_TOPIC_ARN, payload, "COURSE_ACTIVITY_COUNT")
+    try{
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                value.all_time.popularity_score = learnContentWeightDistribution["COURSE_VIEW"]*value.all_time.course_views + 
+                                                                            learnContentWeightDistribution["COURSE_WISHLIST"]*value.all_time.course_wishlists +
+                                                                            learnContentWeightDistribution["COURSE_ENQUIRED"]*value.all_time.course_enquiries + 
+                                                                            learnContentWeightDistribution["COURSE_SHARE"]*value.all_time.course_share;
+                value.last_x_days.trending_score = learnContentWeightDistribution["COURSE_VIEW"]*value.last_x_days.course_views + 
+                                                                            learnContentWeightDistribution["COURSE_WISHLIST"]*value.last_x_days.course_wishlists +
+                                                                            learnContentWeightDistribution["COURSE_ENQUIRED"]*value.last_x_days.course_enquiries + 
+                                                                            learnContentWeightDistribution["COURSE_SHARE"]*value.last_x_days.course_share;
+            }
         }
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                let payload = {
+                    learn_content_id:key,
+                    activity_count:value,
+                }  
+                publishToSNS(process.env.LEARN_CONTENT_ACTIVITY_TOPIC_ARN, payload, "COURSE_ACTIVITY_COUNT")
+            }
+        }
+    }catch(err){
+        console.log(err);
     }
 }
    
