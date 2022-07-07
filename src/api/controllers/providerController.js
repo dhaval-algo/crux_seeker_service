@@ -30,7 +30,7 @@ module.exports = {
                     {
                         for (let filter of data.data.filters)
                         {
-                            if(label.field =="Ranking")
+                            if(filter.label =="Ranking")
                             {
                                 data.data["ranking"] = filter.options.map(item => {return {label:item.label, image:item.image, count:item.count, slug:item.slug}})
                             }
