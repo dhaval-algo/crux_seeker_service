@@ -25,20 +25,20 @@ module.exports = {
                                 data.data["search_filters"]["region"] = filter.options.map(item => { return { label: item.label } })
                             }
                         }
-                    }          
-                    finalData =  formatResponseField(req.query['fields'], data.data )                    
-                    res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
-                }
-                if(req.query['fields'].includes("ranking"))
-                {
-                    for (let filter of data.data.filters)
-                    {
-                        if(label.field =="Ranking")
-                        {
-                            data.data["ranking"] = filter.options.map(item => {return {label:item.label, image:item.image, count:item.count, slug:item.slug}})
-                        }
                     }
-                }
+                    else if(req.query['fields'].includes("ranking"))
+                    {
+                        for (let filter of data.data.filters)
+                        {
+                            if(label.field =="Ranking")
+                            {
+                                data.data["ranking"] = filter.options.map(item => {return {label:item.label, image:item.image, count:item.count, slug:item.slug}})
+                            }
+                        }
+                    }       
+                    finalData =  formatResponseField(req.query['fields'], data.data )                    
+                    res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});                }
+                
                 else
                 {
                     res.status(200).send(data);
