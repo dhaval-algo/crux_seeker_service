@@ -29,7 +29,7 @@ module.exports = {
                     finalData =  formatResponseField(req.query['fields'], data.data )                    
                     res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
                 }
-                if(fields.includes("ranking"))
+                if(req.query['fields'].includes("ranking"))
                 {
                     for (let filter of data.data.filters)
                     {
