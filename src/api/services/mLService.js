@@ -42,8 +42,13 @@ const whetherShowMLCourses = (recommendationType) => {
                     RedisConnection.set(cacheKey, user_percentage);
                     return true
                 }else{
-                    user_percentage={ml_counter:0, logic_counter:1}
-                    RedisConnection.set(cacheKey, user_percentage);
+                    // user_percentage={ml_counter:0, logic_counter:1}
+                    // RedisConnection.set(cacheKey, user_percentage);
+
+                    /**
+                     * This case can also make cohorts in AB Testing. Now If you want to start sampling again flush the cache and start again.
+                     * For cohorts we can just send False if rest is LOGIC or True if rest is ML to send.
+                     */
                     return false
                 }
             }else{
