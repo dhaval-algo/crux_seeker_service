@@ -305,7 +305,7 @@ module.exports = class learnContentService {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
                     saveLearnContentListSessionKPIs(req , cacheData.page_details);
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }
         }
@@ -789,7 +789,7 @@ module.exports = class learnContentService {
             }
 
             
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, { success: true, message: 'Fetched successfully!', data: data });
             saveLearnContentListSessionKPIs(req , data.page_details);
 
             if (useCache) {
@@ -810,7 +810,7 @@ module.exports = class learnContentService {
       
     }catch(e){
         console.log(e)
-        callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+        callback(null, {success: false, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
 
     }
 
@@ -827,7 +827,7 @@ module.exports = class learnContentService {
             courseId = cacheData.id
             if(cacheData.noCacheData != true) {
 
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 useCache = true
                 if ((req.user && req.user.userId) || req.segmentId) {
                     const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -878,7 +878,7 @@ module.exports = class learnContentService {
 
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: data});
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_COURSE);                   
                 })
@@ -897,12 +897,12 @@ module.exports = class learnContentService {
                     let urls = await response.json();
                     if(urls.length > 0){  
                         let slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                        return callback({success: false,slug:slug, message: 'Redirect'}, null);
                     }else{
-                        return callback({status: 'failed', message: 'Not found!'}, null);
+                        return callback({success: false, message: 'Not found!'}, null);
                     }
                 }
-                callback({status: 'failed', message: 'Not found!'}, null);
+                callback({success: false, message: 'Not found!'}, null);
             } 
         }
         req.body = {courseId: courseId}
@@ -1137,7 +1137,7 @@ module.exports = class learnContentService {
                 }    
             }
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: categories});
+        callback(null, {success: true, message: 'Fetched successfully!', data: categories});
     }
 
 
@@ -1175,12 +1175,12 @@ module.exports = class learnContentService {
                 }            
             }
             if(callback){
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+                callback(null, {success: true, message: 'Fetched successfully!', data: courseOrdered});
             }else{
                 return courseOrdered;
             }
         } catch (error) {
-            callback(null, {status: 'error', message: 'Failed to Fetch', data: null});
+            callback(null, {success: false, message: 'Failed to Fetch', data: null});
             console.log("course by id error=>",error)
         }
         
@@ -1223,7 +1223,7 @@ module.exports = class learnContentService {
                 }
             }
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: courses});
+        callback(null, {success: true, message: 'Fetched successfully!', data: courses});
     }
 
 
@@ -1712,10 +1712,10 @@ module.exports = class learnContentService {
             const {user} = req;
             const {courseId} = req.body	
             const activity_log =  await helperService.logActvity("COURSE_VIEW",(user)? user.userId : null, courseId);
-            callback(null, {status: 'success', message: 'Added successfully!', data: null});
+            callback(null, {success: true, message: 'Added successfully!', data: null});
        } catch (error) {
            console.log("Course activity error",  error)
-            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+            callback(null, {success: false, message: 'Failed to Add', data: null});
        }
         
     }

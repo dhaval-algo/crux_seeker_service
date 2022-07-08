@@ -111,7 +111,7 @@ module.exports = class learnPathService {
                 if(skipCache != true) {
                     let cacheData = await RedisConnection.getValuesSync(cacheName);
                     if(cacheData.noCacheData != true) {
-                        return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                        return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     }
                 }
             }
@@ -524,9 +524,9 @@ module.exports = class learnPathService {
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24 );
             }
 
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, { success: true, message: 'Fetched successfully!', data: data });
         } catch (e) {
-            callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
+            callback(null, { success: false, message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
 
@@ -564,7 +564,7 @@ module.exports = class learnPathService {
             }            
         }
         if(callback){
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: learnpathOrdered});
+            callback(null, {success: true, message: 'Fetched successfully!', data: learnpathOrdered});
         }else{
             return learnpathOrdered;
         }
@@ -581,7 +581,7 @@ module.exports = class learnPathService {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 learnpathId = cacheData.id
                 if(cacheData.noCacheData != true) {
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     useCache = true
                 }
             }
@@ -598,7 +598,7 @@ module.exports = class learnPathService {
                     }
                     const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
                     learnpathId = data.id
-                    callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+                    callback(null, { success: true, message: 'Fetched successfully!', data: data });
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
                 } else {
@@ -610,12 +610,12 @@ module.exports = class learnPathService {
                         let urls = await response.json();
                         if(urls.length > 0){  
                             let slug = urls[0].new_url
-                            return callback({ status: 'redirect', slug:slug, message: 'Redirect!' }, null);
+                            return callback({ success: false, slug:slug, message: 'Redirect' }, null);
                         }else{
-                            return callback({ status: 'failed', message: 'Not found!' }, null);
+                            return callback({ success: false, message: 'Not found!' }, null);
                         }
                     }
-                    callback({ status: 'failed', message: 'Not found!' }, null);
+                    callback({ success: false, message: 'Not found!' }, null);
                 }
             }
             if(learnpathId){
@@ -973,9 +973,9 @@ module.exports = class learnPathService {
                 filters: filters
             };
 
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, { success: true, message: 'Fetched successfully!', data: data });
         } catch (e) {
-            callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
+            callback(null, { success: false, message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
 
@@ -984,10 +984,10 @@ module.exports = class learnPathService {
              const {user} = req;
              const {learnpathId} = req.body	
              const activity_log =  await helperService.logActvity("LEARNPATH_VIEW",(user)? user.userId : null, learnpathId);
-             callback(null, {status: 'success', message: 'Added successfully!', data: null});
+             callback(null, {success: true, message: 'Added successfully!', data: null});
         } catch (error) {
             console.log("Learn path view activity error",  error)
-            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+            callback(null, {success: false, message: 'Failed to Add', data: null});
         }
     }
 

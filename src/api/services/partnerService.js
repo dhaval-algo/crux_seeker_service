@@ -210,9 +210,9 @@ module.exports = class partnerService {
               };
 
             
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+            callback(null, {success: true, message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
         }        
     }
 
@@ -228,7 +228,7 @@ module.exports = class partnerService {
         //console.log("result <> ", result);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
         }else{
             /***
              * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
@@ -238,12 +238,12 @@ module.exports = class partnerService {
                 let urls = await response.json();
                 if(urls.length > 0){  
                     let slug = urls[0].new_url
-                    return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                    return callback({success: false,slug:slug, message: 'Redirect'}, null);
                 }else{
-                    return callback({status: 'failed', message: 'Not found!'}, null);
+                    return callback({success: false, message: 'Not found!'}, null);
                 }
             }
-            callback({status: 'failed', message: 'Not found!'}, null);
+            callback({success: false, message: 'Not found!'}, null);
         }        
     }
 

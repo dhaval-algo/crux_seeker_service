@@ -28,7 +28,7 @@ module.exports = {
                 
                 }
                 finalData =  formatResponseField(req.query['fields'], data.data )
-                res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
+                res.status(200).send({success: true, message: 'Fetched successfully!', data: finalData});
             }
             else
             {
@@ -58,7 +58,7 @@ module.exports = {
               let finalData = {}
               if(req.query['fields']){                    
                   finalData =  formatResponseField(req.query['fields'], data.data )                    
-                  res.status(200).send({status: 'success', message: 'Fetched successfully!', data: finalData});
+                  res.status(200).send({success: true, message: 'Fetched successfully!', data: finalData});
               }
               else
               {

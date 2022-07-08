@@ -240,7 +240,7 @@ module.exports = class sectionService {
           let cacheData = await RedisConnection.getValuesSync(cacheKey);
           if(cacheData.noCacheData != true) {
               //console.log("cache found for footer: returning data");
-              return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+              return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
           }
       }catch(error){
           console.warn("Redis cache failed for count page: "+cacheKey,error);

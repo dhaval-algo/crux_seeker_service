@@ -2903,7 +2903,7 @@ const bookmarkArticleData = async (req,res) => {
          }); 
         }
         else{
-            res.status(200).send({status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
+            res.status(200).send({success: true, message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
         }      
     } catch (error) {
         console.log(error);
@@ -3027,7 +3027,7 @@ const suspendAccount = async (req, res) => {
                
         await sendSuspendedEmail({email: email})
         //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send({status: 'success', message: 'successfully supended!'})
+        return res.status(200).send({success: true, message: 'successfully supended!'})
 
     } catch (error) {
         console.log(error);
@@ -3049,7 +3049,7 @@ const reactivateAccount = async (req, res) => {
                
         await sendActivatedEmail({email:email})
         //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send({status: 'success', message: 'successfully activated!'})
+        return res.status(200).send({success: true, message: 'successfully activated!'})
 
     } catch (error) {
         console.log(error);

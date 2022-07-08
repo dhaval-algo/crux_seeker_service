@@ -357,7 +357,7 @@ module.exports = class articleService {
               data.meta_information  = meta_information;
           }    
         
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        callback(null, {success: true, message: 'Fetched successfully!', data: data});
 
     }
 
@@ -366,10 +366,10 @@ module.exports = class articleService {
              const {user} = req;
              const {articleId} = req.body	
              const activity_log =  await helperService.logActvity("ARTICLE_VIEW",(user)? user.userId : null, articleId);
-             callback(null, {status: 'success', message: 'Added successfully!', data: null});
+             callback(null, {success: true, message: 'Added successfully!', data: null});
         } catch (error) {
             console.log("Article view activity error",  error)
-            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+            callback(null, {success: false, message: 'Failed to Add', data: null});
         }
     }
 
@@ -383,7 +383,7 @@ module.exports = class articleService {
         const result = await elasticService.search('article', query);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
             req.body = {articleId: data.id}
             this.addActivity(req, (err, data) => {})
         }else{
@@ -395,12 +395,12 @@ module.exports = class articleService {
                 let urls = await response.json();
                 if(urls.length > 0){  
                     slug = urls[0].new_url
-                    return callback({status: 'redirect',slug:slug,message: 'Redirect!'}, null);
+                    return callback({success: false,slug:slug,message: 'Redirect'}, null);
                 }else{
-                    return callback({status: 'failed', message: 'Not found!'}, null);
+                    return callback({success: false, message: 'Not found!'}, null);
                 }
             }
-            callback({status: 'failed', message: 'Not found!'}, null);
+            callback({success: false, message: 'Not found!'}, null);
         }        
     }
 
@@ -777,7 +777,7 @@ module.exports = class articleService {
         }
         if(callback){
             if(author){
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: author});
+                callback(null, {success: true, message: 'Fetched successfully!', data: author});
             }else{
                 /***
                  * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
@@ -787,12 +787,12 @@ module.exports = class articleService {
                     let urls = await response.json();
                     if(urls.length > 0){  
                         slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug,message: 'Redirect!'}, null);
+                        return callback({success: false,slug:slug,message: 'Redirect'}, null);
                     }else{
-                        return callback({status: 'failed', message: 'Not found!', data: null}, null);
+                        return callback({success: false, message: 'Not found!', data: null}, null);
                     }
                 }
-                callback(null, {status: 'failed', message: 'Not found!', data: null});
+                callback(null, {success: false, message: 'Not found!', data: null});
             }            
         }else{
             return author;  

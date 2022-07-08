@@ -62,16 +62,16 @@ module.exports = class searchService {
                 }
                 //  data.result = matchSorter(data.result, keyword, {keys: ['title'], threshold: matchSorter.rankings.NO_MATCH});
 
-                callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+                callback(null, { success: true, message: 'Fetched successfully!', data: data });
             } else {
-                callback(null, { status: 'success', message: 'No records found!', data: data });
+                callback(null, { success: true, message: 'No records found!', data: data });
             }
 
 
 
         } catch (error) {
             console.log("Error Occured while Searching", error);
-            callback(null, { status: 'success', message: 'No records found!', data: {} });
+            callback(null, { success: true, message: 'No records found!', data: {} });
         }
 
     }
@@ -146,9 +146,9 @@ module.exports = class searchService {
                 }
             }
 
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, {success: true, message: 'Fetched successfully!', data: data });
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: data});
+            callback(null, {success: true, message: 'No records found!', data: data});
         }
     }
 
@@ -222,9 +222,9 @@ module.exports = class searchService {
             }
         }
         if(data.totalCount > 0 || data.keywords.length > 0){
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, {success: true, message: 'Fetched successfully!', data: data });
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: data});
+            callback(null, {success: true, message: 'No records found!', data: data});
         }
     }
 }

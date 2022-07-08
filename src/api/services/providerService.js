@@ -183,7 +183,7 @@ module.exports = class providerService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }
         }
@@ -378,7 +378,7 @@ module.exports = class providerService {
                RedisConnection.set(cacheName, data);
                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_PROVIDER); 
             }
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
                 
@@ -386,7 +386,7 @@ module.exports = class providerService {
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
+            callback(null, {success: true, message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
 
@@ -398,7 +398,7 @@ module.exports = class providerService {
         if(skipCache !=true) {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             if(cacheData.noCacheData != true) {
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 useCache = true
                 providerId = cacheData.id
             }            
@@ -416,7 +416,7 @@ module.exports = class providerService {
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
                 RedisConnection.set(cacheName, data);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
                 providerId = data.id
             }else{
                 /***
@@ -427,12 +427,12 @@ module.exports = class providerService {
                     let urls = await response.json();
                     if(urls.length > 0){  
                         let slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                        return callback({success: false,slug:slug, message: 'Redirect'}, null);
                     }else{
-                        return callback({status: 'failed', message: 'Not found!'}, null);
+                        return callback({success: false, message: 'Not found!'}, null);
                     }
                 }
-                callback({status: 'failed', message: 'Not found!'}, null);
+                callback({success: false, message: 'Not found!'}, null);
             }
         }
         req.body = {providerId: providerId}

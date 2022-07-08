@@ -30,9 +30,9 @@ module.exports = class CustomPageService {
         }
         if(result && result.hits && result.hits.length > 0) {
             let newsData = await getNewsData(result.hits);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:newsData});
+            callback(null, {success: true, message: 'Fetched successfully!', data:newsData});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
 
     }
@@ -56,7 +56,7 @@ module.exports = class CustomPageService {
         }
         if(result && result.hits && result.hits.length > 0) {
            // let newsData = await getNewsData(result.hits);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:result.hits[0]._source});
+            callback(null, {success: true, message: 'Fetched successfully!', data:result.hits[0]._source});
         } else {
             /***
              * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
@@ -66,12 +66,12 @@ module.exports = class CustomPageService {
                 let urls = await response.json();
                 if(urls.length > 0){  
                     slug = urls[0].new_url
-                    return callback(null, {status: 'redirect',slug:slug, message: 'Redirect!', data: []});
+                    return callback(null, {success: false,slug:slug, message: 'Redirect', data: []});
                 }else{
-                    return callback(null, {status: 'failed', message: 'No data available!', data: []});
+                    return callback(null, {success: false, message: 'No data available!', data: []});
                 }
             }
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
 
     }

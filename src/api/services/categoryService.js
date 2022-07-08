@@ -123,7 +123,7 @@ module.exports = class categoryService {
             if(skipCache !=true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     useCache = true
                 }            
             }
@@ -134,11 +134,11 @@ module.exports = class categoryService {
                 {
                     RedisConnection.set(cacheName, data);
                 }
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
             }
         }catch(err){
             console.log("err", err)
-            callback(null, {status: 'success', message: 'No records found!', data: []});
+            callback(null, {success: true, message: 'No records found!', data: []});
         }        
     }  
     
@@ -149,7 +149,7 @@ module.exports = class categoryService {
             if(skipCache !=true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     useCache = true
                 }            
             }
@@ -165,11 +165,11 @@ module.exports = class categoryService {
                 {
                     RedisConnection.set(cacheName, data);
                 }
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
             }
         }catch(err){
             console.log("err", err)
-            callback(null, {status: 'success', message: 'No records found!', data: []});
+            callback(null, {success: true, message: 'No records found!', data: []});
         }        
     }
 
@@ -180,7 +180,7 @@ module.exports = class categoryService {
             if(skipCache !=true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     useCache = true
                 }            
             }
@@ -199,11 +199,11 @@ module.exports = class categoryService {
                 {
                     RedisConnection.set(cacheName, data);
                 }
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
             }
         }catch(err){
             console.log("err", err)
-            callback(null, {status: 'success', message: 'No records found!', data: []});
+            callback(null, {success: true, message: 'No records found!', data: []});
         }        
     }
 

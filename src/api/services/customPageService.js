@@ -23,7 +23,7 @@ module.exports = class CustomPageService {
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
                 console.warn(`Redis cache failed for : ${cacheKey}`,error);
@@ -37,7 +37,7 @@ module.exports = class CustomPageService {
             RedisConnection.set(cacheKey, data);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_CUSTOM_PAGE); 
 
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:data});
+            callback(null, {success: true, message: 'Fetched successfully!', data:data});
         } else {
             /***
              * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
@@ -47,12 +47,12 @@ module.exports = class CustomPageService {
                 let urls = await response.json();
                 if(urls.length > 0){  
                     slug = urls[0].new_url
-                    return callback(null, {status: 'redirect',slug:slug, message: 'Redirect!', data: {}});
+                    return callback(null, {success: false,slug:slug, message: 'Redirect', data: {}});
                 }else{
-                    return callback(null, {status: 'failed', message: 'No data available!', data: {}});
+                    return callback(null, {success: false, message: 'No data available!', data: {}});
                 }
             }
-            callback(null, {status: 'failed', message: 'No data available!', data: {}});
+            callback(null, {success: false, message: 'No data available!', data: {}});
         }
 
     }
