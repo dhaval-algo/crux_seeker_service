@@ -745,21 +745,9 @@ module.exports = class learnContentService {
                         this.addPopularEntities(slug_pageType, slugLabel)
                     }else if(slug_pageType == "topic" && slugLabel){
                         this.addPopularEntities(slug_pageType, slugLabel)
-                    }
-                    data.article_advice = []
-                    data.featured_articles = []
-                    if(slug_article_advice && slug_article_advice.length >0 )
-                    {
-                        data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
-                    }
-                    if(slug_featured_articles && slug_featured_articles.length >0 )
-                    {
-                        data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
-                    }
+                    }                    
                 } catch (error) {
-                    console.log("Error in getArticleByIds", error)
-                    data.article_advice = []
-                    data.featured_articles = []
+                    console.log("Error in addPopularEntities", error)
                 }
                
             }
