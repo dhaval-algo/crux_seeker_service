@@ -1,14 +1,9 @@
-const models = require("../../models");
-const moment = require("moment");
 const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const learnContentService = require("../api/services/learnContentService");
 let LearnContentService = new learnContentService();
-const fetch = require("node-fetch");
-const apiBackendUrl = process.env.API_BACKEND_URL;
-const redisConnection = require('../services/v1/redis');
-const RedisConnection = new redisConnection();
-const {formatImageResponse} = require('../api/utils/general');
+const  FooterService = require("../api/services/footerService")
+const footerService = new FooterService()
 
 
 const {
@@ -80,164 +75,67 @@ const  invalidatTopics = async () => {
     }  
 }
 
-const invalidateAboutUs = async () => {
-    let result = null;
-    const cacheKey = "about-us";
-    try{
-        result = await fetch(`${apiBackendUrl}/about-us`);
-    }catch(e){
-        console.log('Error while retriving about us data',e);
+const invalidatePartnerWithUs = async () => {
+    try {
+        await footerService.partnerWithUs((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidatePartnerWithUs cache invalidation Error",error)
     }
-    if(result.ok) {
-        let response = await result.json();
-        if(response.content_section && response.content_section.length > 0)
-        {
-            response.content_section = response.content_section.map(content_section => {
-                content_section.image = formatImageResponse(content_section.image)
-                return content_section
-            })
-        }
-        if(response.learn_more_about_us && response.learn_more_about_us.length > 0)
-        {
-            response.learn_more_about_us = response.learn_more_about_us.map(learn_more_about_us => {
-                learn_more_about_us.image = formatImageResponse(learn_more_about_us.image)
-                return learn_more_about_us
-            })
-        }
-        let res = {};
-        for (let key in response) {
-            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
-                res[key] = response[key];
-            }
-        }
+}
 
-        RedisConnection.set(cacheKey, res);
-    } 
+const invalidateLearnersPage = async () => {
+    try {
+        await footerService.learners((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateLearnersPage cache invalidation Error",error)
+    }
+}
+
+const invalidateAboutUs = async () => {
+    try {
+        await footerService.aboutUs((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateAboutUs cache invalidation Error",error)
+    }
 }
 
 const invalidateLeadership = async () => {
-    let result = null;
-    const cacheKey = "leadership";
-    try{
-        result = await fetch(`${apiBackendUrl}/leadership`);
-    }catch(e){
-        console.log('Error while retriving leadership data',e);
+    try {
+        await footerService.leadership((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateLeadership cache invalidation Error",error)
     }
-    if(result.ok) {
-        let response = await result.json();
-        if(response.team_section  && response.team_section.length > 0)
-        {
-            response.team_section = response.team_section.map(team_section => {
-                team_section.image = formatImageResponse(team_section.image)
-                return team_section
-            })
-        }
-        let res = {};
-        for (let key in response) {
-            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
-                res[key] = response[key];
-            }
-        }
-
-        RedisConnection.set(cacheKey, res);
-    }  
 }
 
 const invalidateTeam = async () => {
-    let result = null;
-    const cacheKey = "team";
-    try{
-        result = await fetch(`${apiBackendUrl}/team`);
-    }catch(e){
-        console.log('Error while retriving team data',e);
-    }
-    if(result.ok) {
-        let response = await result.json();
-        if(response.teams && response.teams.length > 0)
-        {
-            response.teams = response.teams.map(team => {
-                team.image = formatImageResponse(team.image)
-                return team
-            })
-        }
-        let res = {};
-        for (let key in response) {
-            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
-                res[key] = response[key];
-            }
-        }
-
-        RedisConnection.set(cacheKey, res);
+    try {
+        await footerService.team((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateTeam cache invalidation Error",error)
     }
 }
 
 const invalidateCareer = async () => {
-    let result = null;
-    const cacheKey = "career";
-    try{
-        result = await fetch(`${apiBackendUrl}/career`);
-    }catch(e){
-        console.log('Error while retriving career data',e);
+    try {
+        await footerService.career((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateCareer cache invalidation Error",error)
     }
-    if(result.ok) {
-        let response = await result.json();
-        if(response.content_section && response.content_section.length > 0)
-        {
-            response.content_section = response.content_section.map(content_section => {
-                content_section.image = formatImageResponse(content_section.image)
-                return content_section
-            })
-        }
-        let res = {};
-        for (let key in response) {
-            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
-                res[key] = response[key];
-            }
-        }
-
-        RedisConnection.set(cacheKey, res);
-    }  
 }
 
 const invalidateTNM = async () => {
-    let result = null;
-    const cacheKey = "term-and-condition";
-    try{
-        result = await fetch(`${apiBackendUrl}/terms-and-conditions`);
-    }catch(e){
-        console.log('Error while retriving terms-and-conditions data',e);
+    try {
+        await footerService.termandcondition((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateTNM cache invalidation Error",error)
     }
-    if(result.ok) {
-        let response = await result.json();
-        let res = {};
-        for (let key in response) {
-            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
-                res[key] = response[key];
-            }
-        }
-
-        RedisConnection.set(cacheKey, res);
-    }  
 }
 
 const invalidatePP = async () => {
-    let result = null;
-    const cacheKey = "privacy-policy";
-    try{
-        result = await fetch(`${apiBackendUrl}/privacy-policy`);
-    }catch(e){
-        console.log('Error while retriving privacy-policy data',e);
-    }
-    if(result.ok) {
-        let response = await result.json();
-        let res = {};
-        for (let key in response) {
-            if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
-                res[key] = response[key];
-            }
-        }
-
-        RedisConnection.set(cacheKey, res);
+    try {
+        await footerService.privacypolicy((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidatePP  cache invalidation Error",error)
     }
 }
 
@@ -260,6 +158,8 @@ const invalidPopularCategories = async () => {
 
    
 module.exports = {
+    invalidatePartnerWithUs,
+    invalidateLearnersPage,
     invalidateCategoryTree,
     invalidateEntityLabelCache,
     invalidateLearnTypeImages,
