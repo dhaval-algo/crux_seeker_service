@@ -196,6 +196,7 @@ const prepareLeadData = (enquiry_id) => {
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
             leadObj.Experience_Level = enquiry.dataValues.experience || "";
             leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
+            leadObj.Layout = process.env.ZOHO_LAYOUT_ID
 
             const query = { "bool": {
                 "must": [{ term: { "_id": enquiry.courseId }}]
@@ -325,6 +326,7 @@ const prepareLearnPathLeadData = (enquiry_id) => {
             leadObj.Enquiry_Message = enquiry.dataValues.enquiryMessage || "";
             leadObj.Experience_Level = enquiry.dataValues.experience || "";
             leadObj.Highest_Degree = enquiry.dataValues.highestDegree || "";
+            leadObj.Layout = process.env.ZOHO_LAYOUT_ID
 
             const query = { "bool": {
                 "must": [{ term: { "_id": enquiry.learnpathId }}]
@@ -421,7 +423,6 @@ const createLead = async (enquiry_id) => {
     const access_token = await getAccessToken();
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLeadData(enquiry_id)
-    data.Layout = { name:"B2C", id:process.env.ZOHO_LAYOUT_ID }
 
     axios.post(request_url, data,{headers}).then((response) => {
         if(response.data.details) {
@@ -444,7 +445,6 @@ const createLearnPathLead = async (enquiry_id) => {
     const access_token = await getAccessToken();
     const headers = { 'Authorization': 'Zoho-oauthtoken ' + access_token, 'Content-Type': 'application/json'}
     const data = await prepareLearnPathLeadData(enquiry_id)
-    data.Layout = { name:"B2C", id:process.env.ZOHO_LAYOUT_ID }
 
     axios.post(request_url, data,{headers}).then((response) => {
         if(response.data.details) {
