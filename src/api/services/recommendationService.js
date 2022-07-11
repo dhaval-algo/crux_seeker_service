@@ -28,7 +28,7 @@ const getCurrencies = async (useCache = true) => {
     if (response.ok) {
         let json = await response.json();
         if(json && json.length){
-            RedisConnection.set(cacheKey, json);
+            await RedisConnection.set(cacheKey, json);
             return json;
         }else{
             return [];
@@ -337,7 +337,7 @@ module.exports = class recommendationService {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
                     }
-                    RedisConnection.set(cacheKey, courses);
+                    await RedisConnection.set(cacheKey, courses);
                     RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
                 }
             }
@@ -1073,7 +1073,7 @@ module.exports = class recommendationService {
                     }
                 }
             }
-            RedisConnection.set(cacheKey, articles);
+            await RedisConnection.set(cacheKey, articles);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
         } catch (error) {
@@ -1316,7 +1316,7 @@ module.exports = class recommendationService {
                     
                 }
             }
-            RedisConnection.set(cacheKey, articles);
+            await RedisConnection.set(cacheKey, articles);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
         } catch (error) {
@@ -1710,7 +1710,7 @@ module.exports = class recommendationService {
                     learnpaths.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, learnpaths);
+            await RedisConnection.set(cacheKey, learnpaths);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION); 
             let response = { "success": true, message: "list fetched successfully", data: { list: learnpaths, mlList: [], show: "logic" } };
             
@@ -1856,7 +1856,7 @@ module.exports = class recommendationService {
                         learnpaths.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, learnpaths);
+                await RedisConnection.set(cacheKey, learnpaths);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION); 
             }
 
@@ -2026,7 +2026,7 @@ module.exports = class recommendationService {
                     learnPaths.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, learnPaths);
+            await RedisConnection.set(cacheKey, learnPaths);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION);
             let response = { "success": true, message: "list fetched successfully", data: { list: learnPaths, mlList: [], show: "logic" } };
             
@@ -2892,7 +2892,7 @@ module.exports = class recommendationService {
                     learnContents.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, learnContents);
+            await RedisConnection.set(cacheKey, learnContents);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
             let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, mlList: [], show: "logic" } };
             
@@ -3031,7 +3031,7 @@ module.exports = class recommendationService {
                         courses.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, courses);
+                await RedisConnection.set(cacheKey, courses);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
             }
 
@@ -3184,7 +3184,7 @@ module.exports = class recommendationService {
                         courses.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, courses);
+                await RedisConnection.set(cacheKey, courses);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
             }
 
@@ -3261,7 +3261,7 @@ module.exports = class recommendationService {
                         articles.push(article);
                     }
                 }
-                RedisConnection.set(cacheKey, articles)
+                await RedisConnection.set(cacheKey, articles)
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             }
            
@@ -3374,7 +3374,7 @@ module.exports = class recommendationService {
                     }
 
                 }
-                RedisConnection.set(cacheKey, articles);
+                await RedisConnection.set(cacheKey, articles);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             }
 
@@ -3520,7 +3520,7 @@ module.exports = class recommendationService {
                     }
 
                 }
-                RedisConnection.set(cacheKey, articles);
+                await RedisConnection.set(cacheKey, articles);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             }
 
@@ -3658,7 +3658,7 @@ module.exports = class recommendationService {
                     }
 
                 }
-                RedisConnection.set(cacheKey, articles);
+                await RedisConnection.set(cacheKey, articles);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             }
 
@@ -3854,7 +3854,7 @@ module.exports = class recommendationService {
                     articles.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, articles);
+            await RedisConnection.set(cacheKey, articles);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
             let response = { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
             
@@ -3928,7 +3928,7 @@ module.exports = class recommendationService {
                         learnContents.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, learnContents);
+                await RedisConnection.set(cacheKey, learnContents);
                 RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
                 let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, mlList: [], show: "logic" } };
 
@@ -4168,7 +4168,7 @@ module.exports = class recommendationService {
                         compares.push({ course_1: course, course_2: final_course })
                 }
             }
-            RedisConnection.set(cacheKey, compares);
+            await RedisConnection.set(cacheKey, compares);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
 
             compares = await paginate(compares, page, limit)
@@ -4254,7 +4254,7 @@ module.exports = class recommendationService {
                         var data = await this.generateproviderFinalResponse(hit._source)
                         providers.push(data);
                     }
-                    RedisConnection.set(cacheKey, providers);
+                    await RedisConnection.set(cacheKey, providers);
                     RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
 
                 }
@@ -4397,7 +4397,7 @@ module.exports = class recommendationService {
                             ranking_images[ranking.name]['logo'] = formatImageResponse(ranking.logo)
                         }                    
                     }
-                    RedisConnection.set(cacheName,  ranking_images);
+                    await RedisConnection.set(cacheName,  ranking_images);
                 }
             }
         }
