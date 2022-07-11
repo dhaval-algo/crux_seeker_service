@@ -39,6 +39,14 @@ const CategoryService = new categoryService();
 const {saveSessionKPIs} = require("../../utils/sessionActivity");
 const {getSearchTemplate} = require("../../utils/searchTemplates");
 
+const sortOptions = {
+    'Popular' : ["activity_count.last_x_days.course_views:desc","ratings:desc"],
+    'Highest Rated': ["ratings:desc"],
+    'Newest' :["published_date:desc"],
+    'Price Low To High': ["basePrice:asc"],
+    'Price High To Low': ["basePrice:desc"]
+}
+
 const getBaseCurrency = (result) => {
     return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
 };
@@ -268,7 +276,7 @@ module.exports = class learnContentService {
         try{
         let searchTemplate = null;
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = ["activity_count.last_x_days.course_views:desc","ratings:desc"]
+        let defaultSort = 'Popular'
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -299,7 +307,7 @@ module.exports = class learnContentService {
                 cacheName = "listing-search_"+apiCurrency;                
             }
 
-            cacheName += `_${defaultSort[0]+defaultSort[1]}`;
+            cacheName += `_${defaultSort}`;
 
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -347,17 +355,17 @@ module.exports = class learnContentService {
         if(req.query['sort']){
             queryPayload.sort = []
             const keywordFields = ['title'];
-            let sort = req.query['sort'];
+            let sort = sortOptions[req.query['sort']];
             for(let field of sort){
             
                 let splitSort = field.split(":");
                 if(keywordFields.includes(splitSort[0])){
-                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    field = `${splitSort[0]}.keyword:${splitSort[1]}`;
                 }
             queryPayload.sort.push(field)
         }
         }
-
+        
         if(req.query['courseIds']){
             let courseIds = req.query['courseIds'].split(",");
             
@@ -727,6 +735,7 @@ module.exports = class learnContentService {
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort'],
+                sortOptions: Object.keys(sortOptions)
             };
 
             

@@ -32,6 +32,11 @@ const filterFields = ['programs','study_modes','institute_types','city','gender_
 const allowZeroCountFields = ['programs','study_modes'];
 const FEATURED_RANK_LIMIT = 2;
 
+const sortOptions = {
+    'A-Z': ["name:asc"],
+    'Z-A' :["name:desc"],
+}
+
 
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
@@ -158,7 +163,7 @@ module.exports = class providerService {
 
     async getProviderList(req, callback, skipCache){
         let useCache = false;
-        let defaultSort = "name:asc";
+        let defaultSort = 'A-Z';
         let cacheName = "";
         if(
             req.query['instituteIds'] == undefined
@@ -221,18 +226,31 @@ module.exports = class providerService {
         }
 
         if(req.query['sort']){
-            let sort = req.query['sort'];
-            let splitSort = sort.split(":");
-            let sortField = splitSort[0];
+            queryPayload.sort = []
+           
+            if(req.query['rank']){
+                let sort = req.query['sort'];
+                let splitSort = sort.split(":");
+                 let sortField = splitSort[0];            
+                if((sortField == 'rank') && (req.query['rank'])){
+                    sort = `ranking_${req.query['rank']}:${splitSort[1]}`;
+                }
+                if(keywordFields.includes(splitSort[0])){
+                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                }
+             }
+             else{
+                let sort = sortOptions[req.query['sort']];
+                let keywordFields = ['name']
+                for(let field of sort){
             
-            if((sortField == 'rank') && (req.query['rank'])){
-                sort = `ranking_${req.query['rank']}:${splitSort[1]}`;
+                    let splitSort = field.split(":");
+                    if(keywordFields.includes(splitSort[0])){
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                    queryPayload.sort.push(field)
+                }
             }
-
-            if(keywordFields.includes(sortField)){
-                sort = `${sortField}.keyword:${splitSort[1]}`;
-            }
-            queryPayload.sort = [sort];
         }
 
         if(req.query['instituteIds']){
@@ -365,7 +383,8 @@ module.exports = class providerService {
                 ranking: ranking,
                 filters: filters,
                 pagination: pagination,
-                sort: req.query['sort']
+                sort: req.query['sort'],
+                sortOptions: Object.keys(sortOptions)
             };
 
             let meta_information = await generateMetaInfo  ('provider-list', result, list);

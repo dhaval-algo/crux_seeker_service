@@ -29,6 +29,11 @@ const keywordFields = ['title', 'slug'];
 const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug','article_sub_categories','article_job_roles','article_skills','article_topics'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
 const {getSearchTemplate} = require("../../utils/searchTemplates");
+const sortOptions = {
+    'Newest' :["created_at:desc"],
+    'A-Z': ["title:asc"],
+    'Z-A' :["title:desc"],
+}
 
 const CheckArticleRewards = async (user, premium) => {  
     let rewards = [];
@@ -103,21 +108,23 @@ module.exports = class articleService {
         
 
         if(!req.query['sort'] && !req.query['q']){
-            req.query['sort'] = "published_date:desc";
+            req.query['sort'] = 'Newest';
         }
+        if (req.query['sort']) {
+            queryPayload.sort = []
+            const keywordFields = ['title'];
+            let sort = sortOptions[req.query['sort']];
+            for(let field of sort){
+        
+                let splitSort = field.split(":");
+                if(keywordFields.includes(splitSort[0])){
+                    field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                }
+                queryPayload.sort.push(field)
+            }                
 
-        if(req.query['sort']){
-            
-            let sort = req.query['sort'];
-            let splitSort = sort.split(":");
-            if(splitSort[0] == 'title'){
-                splitSort[0] = 'slug';
-            }
-            if(keywordFields.includes(splitSort[0])){
-                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
-            }
-            queryPayload.sort = [sort];
         }
+       
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
@@ -348,7 +355,8 @@ module.exports = class articleService {
             list: list,
             filters: filters,
             pagination: pagination,
-            sort: req.query['sort']
+            sort: req.query['sort'],
+            sortOptions: Object.keys(sortOptions)
           };
 
           let meta_information = await generateMetaInfo  ('article-list', result.hits);

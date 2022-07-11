@@ -41,6 +41,13 @@ const ENTRY_PER_PAGE = 25;
 
 const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages'];
 
+const sortOptions = {
+    'Highest Rated': ["ratings:desc"],
+    'Newest' :["created_at:desc"],
+    'Price Low To High': ["basePrice:asc"],
+    'Price High To Low': ["basePrice:desc"]
+}
+
 
 const parseQueryRangeFilters = (filter) => {
     const parsedFilterString = decodeURIComponent(filter);
@@ -80,7 +87,7 @@ module.exports = class learnPathService {
         try {
             let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = "ratings:desc";
+            let defaultSort = "Highest Rated";
             let useCache = false;
             let cacheName = "learnpath";
             const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -148,14 +155,17 @@ module.exports = class learnPathService {
             }
 
             if (req.query['sort']) {
-
+                queryPayload.sort = []
                 const keywordFields = ['title'];
-                let sort = req.query['sort'];
-                let splitSort = sort.split(":");
-                if (keywordFields.includes(splitSort[0])) {
-                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
-                }
-                queryPayload.sort = [sort];
+                let sort = sortOptions[req.query['sort']];
+                for(let field of sort){
+            
+                    let splitSort = field.split(":");
+                    if(keywordFields.includes(splitSort[0])){
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                queryPayload.sort.push(field)
+                }                
 
             }
 
@@ -511,6 +521,7 @@ module.exports = class learnPathService {
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort'],
+                sortOptions: Object.keys(sortOptions)
             };
 
             let meta_information = null; //TODO once reules are given. await generateMetaInfo('learn-path-list', result);
@@ -526,6 +537,7 @@ module.exports = class learnPathService {
 
             callback(null, { success: true, message: 'Fetched successfully!', data: data });
         } catch (e) {
+            console.log("Error in learn path listing", e)
             callback(null, { success: false, message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
