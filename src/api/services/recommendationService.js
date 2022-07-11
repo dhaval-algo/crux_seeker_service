@@ -337,7 +337,7 @@ module.exports = class recommendationService {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
                     }
-                    RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_POPULAR_CARDS || 60 * 15);
+                    RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
                 }
             }
             let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
@@ -1072,7 +1072,7 @@ module.exports = class recommendationService {
                     }
                 }
             }
-            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_FEATURED_ARTICLES || 60 * 15);
+            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
         } catch (error) {
             console.log("Error occured while fetching featured articles", error);
@@ -1314,7 +1314,7 @@ module.exports = class recommendationService {
                     
                 }
             }
-            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_ADVICE || 60 * 15);
+            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
         } catch (error) {
             console.log("Error occured while fetching featured articles", error);
@@ -1707,7 +1707,7 @@ module.exports = class recommendationService {
                     learnpaths.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION || 60 * 15);
             let response = { "success": true, message: "list fetched successfully", data: { list: learnpaths, mlList: [], show: "logic" } };
             
             return response;
@@ -1852,7 +1852,7 @@ module.exports = class recommendationService {
                         learnpaths.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+                RedisConnection.set(cacheKey, learnpaths, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION || 60 * 15);
             }
 
             return { success: true, message: "list fetched successfully", data: { list: learnpaths, mlList: [], show: "logic" } };
@@ -2021,7 +2021,7 @@ module.exports = class recommendationService {
                     learnPaths.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, learnPaths, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            RedisConnection.set(cacheKey, learnPaths, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION || 60 * 15);
             let response = { "success": true, message: "list fetched successfully", data: { list: learnPaths, mlList: [], show: "logic" } };
             
             return response;
@@ -2886,7 +2886,7 @@ module.exports = class recommendationService {
                     learnContents.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, learnContents, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            RedisConnection.set(cacheKey, learnContents, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
             let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, mlList: [], show: "logic" } };
             
             return response;
@@ -3024,7 +3024,7 @@ module.exports = class recommendationService {
                         courses.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+                RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
             }
 
             return { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };
@@ -3176,7 +3176,7 @@ module.exports = class recommendationService {
                         courses.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+                RedisConnection.set(cacheKey, courses, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
             }
 
             return { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };
@@ -3252,7 +3252,7 @@ module.exports = class recommendationService {
                         articles.push(article);
                     }
                 }
-                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RELATED_ARTICLE || 60 * 15);
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             }
            
             const response = { success: true, message: "list fetched successfully", data:{list:articles,mlList:[],show:'logic'} };
@@ -3364,7 +3364,7 @@ module.exports = class recommendationService {
                     }
 
                 }
-                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RECOMMENDATION_FOR_ARTICLE || 60 * 15);
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             }
 
             return { success: true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
@@ -3509,7 +3509,7 @@ module.exports = class recommendationService {
                     }
 
                 }
-                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RECOMMENDATION_FOR_ARTICLE || 60 * 15);
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             }
 
             return { success: true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
@@ -3646,7 +3646,7 @@ module.exports = class recommendationService {
                     }
 
                 }
-                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_RECOMMENDATION_FOR_ARTICLE || 60 * 15);
+                RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             }
 
             return { success: true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
@@ -3841,7 +3841,7 @@ module.exports = class recommendationService {
                     articles.push(data);
                 }
             }
-            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+            RedisConnection.set(cacheKey, articles, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION || 60 * 15);
             let response = { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
             
             return response;
@@ -3914,7 +3914,7 @@ module.exports = class recommendationService {
                         learnContents.push(data);
                     }
                 }
-                RedisConnection.set(cacheKey, learnContents, process.env.CACHE_EXPIRE_POPULAR_LEARN_PATHS || 60 * 15);
+                RedisConnection.set(cacheKey, learnContents, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
                 let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, mlList: [], show: "logic" } };
 
                 return response;
@@ -4153,7 +4153,7 @@ module.exports = class recommendationService {
                         compares.push({ course_1: course, course_2: final_course })
                 }
             }
-            RedisConnection.set(cacheKey, compares, process.env.CACHE_EXPIRE_POPULAR_Compare || 60 * 15);
+            RedisConnection.set(cacheKey, compares, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
             compares = await paginate(compares, page, limit)
             let response = { "success": true, message: "list fetched successfully", data: compares };
             return response;
@@ -4237,7 +4237,7 @@ module.exports = class recommendationService {
                         var data = await this.generateproviderFinalResponse(hit._source)
                         providers.push(data);
                     }
-                    RedisConnection.set(cacheKey, providers, process.env.CACHE_EXPIRE_POPULAR_PROVIDERS || 60 * 15);
+                    RedisConnection.set(cacheKey, providers, process.env.CACHE_EXPIRE_PROVIDER_RECOMMENDATION || 60 * 15);
                 }
             }
             let response = { success: true, message: "list fetched successfully", data: { list: providers, mlList: [], show: "logic" } };
