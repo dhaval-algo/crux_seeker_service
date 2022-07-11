@@ -250,7 +250,7 @@ module.exports = class recommendationService {
 
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${provider || ''}-${partner || ''}-${priceType || ''}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || 'category'}-${sub_category || 'sub_category'}-${topic || 'topic'}-${provider || 'provider'}-${partner || 'partner'}-${priceType || 'priceType'}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
