@@ -131,6 +131,8 @@ module.exports = class REDIS {
     expire(key, time){
         this.connect(); 
         key='apiData-'+key;
+        if(isNotProd)
+            console.log("REDIS::Expire key in "+time +" seconds for  "+key);
         redis.expire(key,time);
     }
 }
