@@ -972,15 +972,10 @@ module.exports = class recommendationService {
                     }
                 }
                 esQuery.bool.must = [
-                    {
-                    "ids": {
-                        "values": featured_articles
-                    }
-                    }
-                ]
+                    { "terms": { "id": featured_articles }}                   
+                ]                
 
                 let result = await elasticService.search("article", esQuery, {_source: articleFields});
-
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
                         const data = await this.generateArticleFinalResponse(hit._source)
