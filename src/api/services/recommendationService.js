@@ -1421,6 +1421,49 @@ module.exports = class recommendationService {
             data.isTrending  = true
         }
 
+        if(result.reviews && result.reviews.length > 0){
+            let totalRating = 0;
+            let ratings = {};
+            for(let review of result.reviews){
+                totalRating += review.rating;
+                
+                // if(!isList){
+                //     if(review.photo){
+                //         review.photo = getMediaurl(review.photo.thumbnail);                    
+                //     }
+                //     data.reviews.push(review);
+                // }
+
+                let rating_round = Math.floor(review.rating);
+                if(ratings[rating_round]){
+                    ratings[rating_round] += 1; 
+                }else{
+                    ratings[rating_round] = 1; 
+                }
+            }
+
+            const average_rating = totalRating/result.reviews.length;            
+            data.ratings.average_rating = round(average_rating, 0.5);
+            data.ratings.average_rating_actual = average_rating.toFixed(1);            
+            let rating_distribution = [];
+
+            //add missing ratings
+            for(let i=0; i<5; i++){
+                if(!ratings[i+1]){
+                    ratings[i+1] = 0;
+                }                
+            }
+            Object.keys(ratings)
+            .sort()
+            .forEach(function(v, i) {
+                rating_distribution.push({
+                    rating: v,
+                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                });
+            });
+            data.ratings.rating_distribution = rating_distribution.reverse();
+        }
+
         return data;
     }
 
