@@ -1461,17 +1461,24 @@ module.exports = class recommendationService {
     }
 
     async getAuthor(id){
-        let author = null;
-        const query = { "bool": {
-            "must": [
-              {term: { "user_id": id }}
-            ]
-        }};
-        const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
-        if(result.hits && result.hits.length > 0){
-            author = await this.generateAuthorData(result.hits[0]._source);
+        try{
+            let author = null;
+            const query = { "bool": {
+                "must": [
+                {term: { "user_id": id }}
+                ]
+            }};
+            const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
+            if(result.hits && result.hits.length > 0){
+                author = await this.generateAuthorData(result.hits[0]._source);
+            }
+            return author;     
+        }catch(e){
+            console.log("error fetching author", e);
+            return null
+
         }
-        return author;     
+        
     }
 
     async generateAuthorData(result){
@@ -1501,9 +1508,9 @@ module.exports = class recommendationService {
                     }];
                 }else{
                     author = [{
-                        firstname: result.author_first_name.trim(),
+                        firstname: result.author_first_name ? result.author_first_name.trim(): "",
                         lastname: result.last_name ? result.author_last_name.trim():"",
-                        slug: result.author_slug,
+                        slug: result.author_slug || '404',
                         image:null
                     }];
                 }
@@ -2150,7 +2157,7 @@ module.exports = class recommendationService {
             const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });
             if (result.hits) {
                 for (const hit of result.hits) {
-                    const data = await this.generateArticleFinalResponse(hit._source);
+                    const data = await this.generateArticleFinalResponse(hit._source);                    
                     articles.push(data);
                 }
 
