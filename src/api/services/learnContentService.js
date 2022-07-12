@@ -1690,12 +1690,12 @@ module.exports = class learnContentService {
     async addPopularEntities(type, resource){
         try {
             if(type == "topic"){
-                const activity_log =  await helperService.logPopularEntities("topics", resource);
+                await helperService.logPopularEntities("topics", resource);
             }else if(type == "category"){
-                const activity_log =  await helperService.logPopularEntities("categories", resource);
+                await helperService.logPopularEntities("categories", resource);
             }
             else if(type == "skill"){
-                const activity_log =  await helperService.logPopularEntities("skills", resource);
+                await helperService.logPopularEntities("skills", resource);
             }
         } catch (error) {
             console.log("Course activity error",  error)
