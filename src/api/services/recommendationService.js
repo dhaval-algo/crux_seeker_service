@@ -370,8 +370,7 @@ module.exports = class recommendationService {
 
     async exploreCoursesFromTopCatgeories(req) {
 
-        try {
-            req.query.subType = "Popular"
+        try {            
             const response = await this.getPopularCourses(req);
             return response
 
