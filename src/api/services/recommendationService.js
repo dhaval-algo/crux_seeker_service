@@ -1488,6 +1488,7 @@ module.exports = class recommendationService {
     async generateArticleFinalResponse(result){
         try{
             let author = null
+            if(!result.created_by_role) result.created_by_role='author'
             if(result.created_by_role=='author')
             {            
                 let auth = await this.getAuthor(result.author_id);       
