@@ -10,9 +10,9 @@ const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count"]
-const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","display_price","courses","activity_count","cv_take"]
+const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take"]
 const FEATURED_RANK_LIMIT = 2;
 const getCurrencies = async (useCache = true) => {
 
