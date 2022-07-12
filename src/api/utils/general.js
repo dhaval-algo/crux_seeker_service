@@ -565,7 +565,7 @@ const generateMetaInfo = async (page, result, list) => {
             
             meta_information = {
                 meta_title: meta_title,
-                meta_description: generateMetaDescription(result),
+                meta_description: await generateMetaDescription(result),
                 meta_keywords: result.meta_keywords,
                 add_type: result.add_type,
                 import_source: result.import_source,
