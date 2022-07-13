@@ -555,6 +555,90 @@ const generateMetaDescription = async (result) => {
     }
 }
 
+const generateMetaKeywords = async (result) => {
+    try{
+        let format = "{skills}, {topic}, {course_name_by_partner_name}, {topic_and_learn_type}, {medium_and_topic_name}, {payment_and_medium}, {payment_and_topic}"
+        // let format = result.meta_keywords
+        const skills = result.skills
+        const topics = result.topics
+        let name = result.title
+        let partner_name = result.partner_name
+        let course_partner_name = [];
+        if(name.includes(partner_name)){
+            course_partner_name.push(name);
+        }else{
+            if((name.split(" ").length + partner_name.split(" ").length) > 6){
+                course_partner_name.push(partner_name + " " + name);
+            }else{
+                course_partner_name.push(name + " by " + partner_name);
+            }
+        }
+        let topic_learn_type = [];
+        for(let i of topics){
+            topic_learn_type.push(i + " " + result.learn_type);
+        }
+        let medium_topic_name = [];
+        if(result.medium){
+            for(let i of topics){
+                medium_topic_name.push(result.medium + " " + i + " course")
+            }
+        }
+
+        let payment_medium = [];
+        if(result.pricing_type == 'Free'){
+            if(result.medium){
+                payment_medium.push("Free " + result.medium)
+            }
+        }
+
+        let payment_topic = [];
+        if(result.pricing_type == 'Free'){
+            for(let i of topics){
+                payment_topic.push("Free " + i + " Course")
+            }
+        }
+        if(skills.length > 0){
+            format = format.replace(/{skills}/g, skills.join(", "))
+        }else{
+            format = format.replace(/{skills}, /g, '')
+        }
+        if(topics.length > 0){
+            format = format.replace(/{topic}/g, topics.join(", "))
+        }else{
+            format = format.replace(/{topic}, /g, '')
+        }
+        if(course_partner_name.length > 0){
+            format = format.replace(/{course_name_by_partner_name}/g, course_partner_name.join(", "))
+        }else{
+            format = format.replace(/{course_name_by_partner_name}, /g, '')
+        }
+        if(topic_learn_type.length > 0){
+            format = format.replace(/{topic_and_learn_type}/g, topic_learn_type.join(", "))
+        }else{
+            format = format.replace(/{topic_and_learn_type}, /g, '')
+        }
+        if(medium_topic_name.length > 0){
+            format = format.replace(/{medium_and_topic_name}/g, medium_topic_name.join(", "))
+        }else{
+            format = format.replace(/{medium_and_topic_name}, /g, '')
+        }
+        if(payment_medium.length > 0){
+            format = format.replace(/{payment_and_medium}/g, payment_medium.join(", "))
+        }else{
+            format = format.replace(/{payment_and_medium}, /g, '')
+        }
+        if(payment_topic.length > 0){
+            format = format.replace(/{payment_and_topic}/g, payment_topic.join(", "))
+        }else{
+            format = format.replace(/{payment_and_topic}/g, '')
+        }
+        
+        return format;
+    }catch(err){
+        console.log("err in meta keywords", err)
+    }
+}
+
 const generateMetaInfo = async (page, result, list) => {
     let meta_information = null;
     let meta_keywords = null;
@@ -568,7 +652,7 @@ const generateMetaInfo = async (page, result, list) => {
             meta_information = {
                 meta_title: meta_title,
                 meta_description: await generateMetaDescription(result),
-                meta_keywords: result.meta_keywords,
+                meta_keywords: await generateMetaKeywords(result),
                 add_type: result.add_type,
                 import_source: result.import_source,
                 external_source_id: result.external_source_id,
