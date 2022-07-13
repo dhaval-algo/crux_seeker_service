@@ -32,6 +32,7 @@ module.exports = class FooterService {
             result = await elasticService.search('footer', query);
         }catch(e){
             console.log('Error while retriving footer data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result && result.hits && result.hits.length > 0) {
             let footerData = {};

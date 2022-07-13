@@ -76,7 +76,7 @@ const login = async (req, res, next) => {
         if (!credVerificationRes.success) {
             return res.status(200).json(credVerificationRes);            
         }
-        console.log("verificationRes", verificationRes)
+
         //create token
         const payload = {           
             email,
@@ -466,7 +466,7 @@ const socialSignIn = async (req, res, next) => {
 
         //verify token 
         const providerRes = await verifySocialToken(req.body)
-        console.log("providerRes", providerRes)
+
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
@@ -500,7 +500,7 @@ const socialSignIn = async (req, res, next) => {
         let user_login = null
         if(user !=null)
         {
-           // console.log("HERE I AM");
+
             user_login = await models.user_login.findOne({ where: {userId:user.id, provider:provider}})
 
             if(user_login !=null)
@@ -515,7 +515,7 @@ const socialSignIn = async (req, res, next) => {
         }
         else{
             //crete new user
-            console.log("NO I AM HERE IN ELSE");
+
             user = await models.user.create({
                 fullName: providerRes.data.firstName+' '+ providerRes.data.lastName,
                 email: providerRes.data.email,
@@ -531,7 +531,6 @@ const socialSignIn = async (req, res, next) => {
             });
             await sendWelcomeEmail(user)
         }     
-        //console.log("user====>", user)
         
         //create token
         const payload = {           
@@ -584,7 +583,7 @@ const userExist = (email, provider) => {
                 ]
             }
             let user = await models.user.findOne({ where: where})
-            //console.log("user", user);
+
             if (user != null) {
                 if (user.status == "suspended") {
                    
@@ -600,7 +599,6 @@ const userExist = (email, provider) => {
 
                 const user_login = await models.user_login.findOne({ where: { userId: user.id, provider: provider} });
           
-                //console.log("user_login", user_login);
                if(user_login)
                {
                     response.success = true;
@@ -1843,12 +1841,9 @@ const getRecentlyViewedCourses = async (req,res,next,returnData=false) => {
     }
     
     return res.status(statusCode).json({
-        success:success,
-        data: {
-            courseIds: courseIds,
-            courses: courses
-        },
-        message: message
+        success,
+        data: { courseIds, courses},
+        message
     });
 }
 
@@ -2123,9 +2118,9 @@ const wishListCourseData = async (req,res) => {
             success: true,
 
             data: {
-                userId: userId,
+                userId,
                 ids: wishListIdsFromElastic,
-                courses: courses
+                courses
             },
             pagination: {
                 page: page,
@@ -2229,13 +2224,13 @@ const wishListLearnPathData = async (req,res) => {
             success: true,
 
             data: {
-                userId: userId,
+                userId,
                 ids: wishListIdsFromElastic,
-                learnpaths: learnpaths
+                learnpaths
             },
             pagination: {
-                page: page,
-                limit: limit,
+                page,
+                limit,
                 total: totalCount
             }
         })
@@ -2755,7 +2750,6 @@ const addSkills = async (req,res) => {
      
              for(let skill in value)
              {
-                 console.log("skill", skill)
                  await models.user_skill.create({
                      userTopicId:userTopic.id,
                      skill:skill
