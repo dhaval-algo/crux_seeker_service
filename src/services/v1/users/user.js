@@ -1,4 +1,5 @@
 const {
+    validateIdsFromElastic,
     isEmail,
     decryptStr,
     getOtp,
@@ -3997,6 +3998,162 @@ const getKeywordsFromUsersGoal = async (userId) => {
 }
 
 
+const addInstituteToWishList = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        let instituteIdsFromClient = validators.validateIds(req.body)
+        if (!instituteIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let response = {
+            success: true,
+            data: {
+                wishlist: []
+            }
+        }
+        //check if provided instituteIdsFromClient are valid/exits in elastic
+        await validateIdsFromElastic("provider", instituteIdsFromClient).then(validIds => {instituteIdsFromClient = validIds})
+
+        if(!instituteIdsFromClient.length)
+            return res.status(200).json(response)
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'institute_wishlist',
+                value: instituteIdsFromClient
+            }
+        });
+        let instituteIds = []
+        existingIds = existingIds.map((institute) => institute.value)
+        instituteIdsFromClient.forEach((instituteId) => {
+            if (!existingIds.includes(instituteId)) instituteIds.push(instituteId)
+        });
+
+        if (instituteIds.length) {
+
+            const dataToSave = instituteIds.map((instituteId) => {
+                return {
+                    key: "institute_wishlist",
+                    value: instituteId,
+                    userId: userId,
+                }
+            });
+            response.data.wishlist = await models.user_meta.bulkCreate(dataToSave)
+            await logActvity("INSTITUTE_WISHLIST", userId, instituteIds);
+
+            return res.status(200).json(response)
+
+        }
+        else
+            return res.status(200).json(response)
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+
+const fetchInstituteWishList = async (req, res) => {
+    try {
+        const { user } = req
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+
+        const offset = (page - 1) * limit
+        let totalCount = 0
+
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['institute_wishlist'] },
+        }
+
+        const wishlistedInstitute = await models.user_meta.findAll({
+            attributes: ['value'],
+            where,
+            order: [["id", "DESC"]]
+        })
+
+        let  totalWishedListIds = wishlistedInstitute.map((rec) => rec.value)
+        totalWishedListIds = totalWishedListIds.filter(x => x != null)
+
+        const queryBody = {
+            "_source": [
+                "_id"
+            ],
+            "from": offset,
+            "size": limit,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "status.keyword": "approved"
+                            }
+                        },
+                        {
+                            "ids": {
+                                "values": totalWishedListIds
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        let activeWishListIds = []
+
+        const result = await elasticService.plainSearch('provider', queryBody);
+        if (result && result.hits) {
+            totalCount = result.hits.total.value
+            if (result.hits.hits.length) {
+                activeWishListIds = result.hits.hits.map((wishList) => wishList._id)
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: user.userId,
+                institutes: activeWishListIds
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+
+    } catch(error) {
+        console.log(error);
+        return res.status(500).send({ message: "internal server error", success: false });
+
+    }
+
+}
+
+const removeInstituteFromWishList = async (req, res) => {
+
+    const { user} = req;
+    const { id } = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"institute_wishlist", value: id, userId:user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -4012,6 +4169,9 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
+    addInstituteToWishList,
+    fetchInstituteWishList,
+    removeInstituteFromWishList,
     addGoals,
     getGoals,
     removeGoal,
