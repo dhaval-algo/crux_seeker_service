@@ -1170,7 +1170,7 @@ module.exports = class learnPathService {
             let learn_types_images = await LearnContentService.getLearnTypeImages();
 
             if (result.aggregations && result.aggregations.learn_type_count.buckets.length >0) {
-                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key]}))
+                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key],count:item.doc_count}))
                 
                 data = {
                     total: learn_types.length,
