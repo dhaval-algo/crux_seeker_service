@@ -71,6 +71,8 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/partner-with-us`);
         }catch(e){
             console.log('Error while retriving data: '+cacheKey,e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
+            
         }
         if(result.ok) {
             let response = await result.json();
@@ -108,6 +110,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/learners-page`);
         }catch(e){
             console.log('Error while retriving learner-page data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -151,6 +154,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/about-us`);
         }catch(e){
             console.log('Error while retriving about us data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -201,6 +205,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/leadership`);
         }catch(e){
             console.log('Error while retriving leadership data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -244,6 +249,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/team`);
         }catch(e){
             console.log('Error while retriving team data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -287,6 +293,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/career`);
         }catch(e){
             console.log('Error while retriving career data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -330,6 +337,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/terms-and-conditions`);
         }catch(e){
             console.log('Error while retriving terms-and-conditions data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -366,6 +374,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/privacy-policy`);
         }catch(e){
             console.log('Error while retriving privacy-policy data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
