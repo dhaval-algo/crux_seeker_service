@@ -953,7 +953,7 @@ module.exports = class recommendationService {
                             json.featured_articles.map(article => featured_articles.push(article.id))                        
                         }
                     }
-                    maxArticles = 1
+                    maxArticles = 2
                     break
                 default:
                     break;
