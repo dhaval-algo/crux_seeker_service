@@ -15,6 +15,8 @@ const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 const { Buffer } = require('buffer');
 const { publishToSNS } = require('../services/v1/sns');
+const elasticService = require("../api/services/elasticService");
+
 const encryptStr = (str) => {
     return crypt.encrypt(str);
 };
@@ -1111,6 +1113,18 @@ const sendDataForStrapi = (userMeta, action) => {
 const logActvity = async (type, userId, resource) => {
     userId = (userId)? userId : 0
     const activity =  await models.activity.findOne({ where: {type:type} });
+    if (type == "INSTITUTE_WISHLIST"){
+        const dataToLog = resource.map((instituteId) => {
+
+            return {
+                userId,
+                activityId:activity.id,
+                resource: instituteId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
     if (type=="COURSE_WISHLIST"){
         const dataToLog=resource.map((courseId)=>{
             return {
@@ -1233,8 +1247,27 @@ const logPopularEntities = async (type, resource) => {
     
     return resource;
 }
+
+        //check if provided Id is valid(exits) in its index (elastic search)
+const validateIdsFromElastic = async (index, ids) => {
+
+        let esQuery = {
+            bool: {
+                must: [{ terms: {"_id": ids} }]
+            }
+        }
+
+        const result = await elasticService.search(index, esQuery, {}, ["_id"]);
+
+        if (result.hits && result.hits.length) {
+            existingIds = result.hits.filter(hit => ids.includes(hit._id) )
+            return existingIds.map(hit => hit._id )
+        }
+        return [];
+}
    
 module.exports = {
+    validateIdsFromElastic,
     encryptStr,
     decryptStr,
     isEmail,
