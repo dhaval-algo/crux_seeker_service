@@ -7,7 +7,11 @@ const Sentry = require("@sentry/node");
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
 const { storeActivity, learnpathActivity, articleActivity, providerActivity, setTrendingPopularityThreshold} = require('./src/utils/activityCron');
-const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages, invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter, invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam, invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills,invalidPopularCategories} = require('./src/utils/cacheInvalidationCron');
+const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages,
+    invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter,
+    invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam,
+    invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills,
+    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage} = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 
 Sentry.init({
@@ -120,6 +124,8 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidateTNM()
             await invalidatSkills()
             await invalidPopularCategories()
+            await invalidatePartnerWithUs()
+            await invalidateLearnersPage()
         } catch (error) {
             console.log("Error in cron", error);
         }

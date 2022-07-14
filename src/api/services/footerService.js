@@ -32,6 +32,7 @@ module.exports = class FooterService {
             result = await elasticService.search('footer', query);
         }catch(e){
             console.log('Error while retriving footer data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result && result.hits && result.hits.length > 0) {
             let footerData = {};
@@ -52,14 +53,96 @@ module.exports = class FooterService {
 
     }
 
-    async aboutUs(req, callback,useCache = true){
+    async partnerWithUs(callback, useCache = true){
+        const cacheKey = "partner-with-us";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for : "+cacheKey, error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/partner-with-us`);
+        }catch(e){
+            console.log('Error while retriving data: '+cacheKey,e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
+            
+        }
+        if(result.ok) {
+            let response = await result.json();
+
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {success: false, message: 'No data available!', data: []});
+        }
+    }
+
+    async learners(callback, useCache = true){
+        const cacheKey = "learners-page";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for learner-page: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/learners-page`);
+        }catch(e){
+            console.log('Error while retriving learner-page data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
+        }
+        if(result.ok) {
+            let response = await result.json();
+            if(response.content_section && response.content_section.length > 0)
+            {
+                response.what_sets_us_apart_from_the_rest = response.what_sets_us_apart_from_the_rest.map(section => {
+                    section.image = formatImageResponse(section.image)
+                    return section
+                })
+            }
+            let res = {};
+            for (let key in response) {
+                if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+                    res[key] = response[key];
+                }
+            }
+
+            RedisConnection.set(cacheKey, res);
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {success: false, message: 'No data available!', data: []});
+        }
+    }
+
+    async aboutUs(callback, useCache = true){
         const cacheKey = "about-us";
 
         if(useCache){
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    //console.log("cache found for footer: returning data");
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
@@ -72,6 +155,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/about-us`);
         }catch(e){
             console.log('Error while retriving about us data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -103,14 +187,13 @@ module.exports = class FooterService {
         }
     }
 
-    async leadership(req, callback,useCache = true){
+    async leadership(callback, useCache = true){
         const cacheKey = "leadership";
 
         if(useCache){
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    //console.log("cache found for footer: returning data");
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
@@ -123,6 +206,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/leadership`);
         }catch(e){
             console.log('Error while retriving leadership data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -147,14 +231,13 @@ module.exports = class FooterService {
         }
     }
 
-    async team(req, callback,useCache = false){
+    async team(callback, useCache = true){
         const cacheKey = "team";
 
         if(useCache){
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    //console.log("cache found for footer: returning data");
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
@@ -167,6 +250,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/team`);
         }catch(e){
             console.log('Error while retriving team data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -191,14 +275,13 @@ module.exports = class FooterService {
         }
     }
 
-    async career(req, callback,useCache = true){
+    async career(callback, useCache = true){
         const cacheKey = "career";
 
         if(useCache){
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    //console.log("cache found for footer: returning data");
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
@@ -211,6 +294,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/career`);
         }catch(e){
             console.log('Error while retriving career data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -235,14 +319,13 @@ module.exports = class FooterService {
         }
     }
 
-    async termandcondition(req, callback,useCache = true){
+    async termandcondition(callback, useCache = true){
         const cacheKey = "term-and-condition";
 
         if(useCache){
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    //console.log("cache found for footer: returning data");
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
@@ -255,6 +338,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/terms-and-conditions`);
         }catch(e){
             console.log('Error while retriving terms-and-conditions data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();
@@ -272,14 +356,13 @@ module.exports = class FooterService {
         }
     }
 
-    async privacypolicy(req, callback,useCache = true){
+    async privacypolicy(callback, useCache = true){
         const cacheKey = "privacy-policy";
 
         if(useCache){
             try {
                 let cacheData = await RedisConnection.getValuesSync(cacheKey);
                 if(cacheData.noCacheData != true) {
-                    //console.log("cache found for footer: returning data");
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }catch(error){
@@ -292,6 +375,7 @@ module.exports = class FooterService {
             result = await fetch(`${apiBackendUrl}/privacy-policy`);
         }catch(e){
             console.log('Error while retriving privacy-policy data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
         }
         if(result.ok) {
             let response = await result.json();

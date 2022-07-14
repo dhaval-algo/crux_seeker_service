@@ -669,7 +669,7 @@ function createLearnPath() {
                 let path = 'sitemaps/learn-paths.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
-                console.log(sitemap); resolve(sitemap)
+                resolve(sitemap)
             }
 
         } catch (error) {

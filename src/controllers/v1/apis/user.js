@@ -78,5 +78,11 @@ router.get('/create-sitemap', async (req,res) => {
 router.get('/enquiry',authenticateJWT, enquiryController.fetchEnquiry)
 router.get('/learnpath-enquiry',authenticateJWT, enquiryController.fetchLearnpathEnquiry)
 
+// institute wishlist endpoints
+router.post("/add-institute-wishlist", authenticateJWT, userService.addInstituteToWishList);
+router.post("/fetch-institute-wishlist", authenticateJWT, userService.fetchInstituteWishList)
+router.post("/remove-institute-wishlist", authenticateJWT, userService.removeInstituteFromWishList)
+
+
 //require.post()
 module.exports = router;            
