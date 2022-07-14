@@ -151,8 +151,8 @@ const getLearnContentListMetaInfo = (result) => {
                 }
 
                 if (result.meta_information && result.meta_information.meta_description) {
-                    // meta_description = result.meta_information.meta_description;
-                    meta_description = generateMetaDescription(result.meta_information.meta_description)
+                    meta_description = result.meta_information.meta_description;
+                    // meta_description = generateMetaDescription(result.meta_information.meta_description)
                 }
 
                 else {
