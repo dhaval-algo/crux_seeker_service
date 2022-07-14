@@ -65,8 +65,27 @@ function validateAddArticleParams(body) {
     return null
 }
 
+//this is generic function to validate Ids; can be replace above few functino; buy API params will aslo change
+function validateIds(body) {
+
+    const { ids, id } = body
+    schemaForCourseId = Joi.object({ id: Joi.string().required() })
+    schemaForCourseIds = Joi.object({ ids: Joi.array().items(Joi.string()).required() })
+    
+    if (!schemaForCourseId.validate({id}).error) {
+        return [id]
+    }
+
+    if (!schemaForCourseIds.validate({ids}).error) {
+        return ids
+    }
+
+    return null
+}
+
 module.exports = {
 
+validateIds,
 validatePaginationParams,
 validateAddWishlistParams,
 validateAddArticleParams,

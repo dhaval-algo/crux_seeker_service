@@ -3,6 +3,27 @@ const footerService = new FooterService();
 
 
 module.exports = {
+
+    partnerWithUs(req,res){
+        footerService.partnerWithUs((err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
+
+    learners(req,res){
+        footerService.learners((err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
+
     getFooter(req,res){
         const slug = req.params.slug;
         footerService.getFooter(slug, (err, data) => {
@@ -15,7 +36,7 @@ module.exports = {
     },
 
     aboutUs(req,res){
-        footerService.aboutUs(req, (err, data) => {
+        footerService.aboutUs((err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
@@ -25,7 +46,7 @@ module.exports = {
     },
 
     leadership(req,res){
-        footerService.leadership(req, (err, data) => {
+        footerService.leadership((err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
@@ -35,7 +56,7 @@ module.exports = {
     },
 
     team(req,res){
-        footerService.team(req, (err, data) => {
+        footerService.team((err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
@@ -45,7 +66,7 @@ module.exports = {
     },
 
     career(req,res){
-        footerService.career(req, (err, data) => {
+        footerService.career((err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
@@ -55,7 +76,7 @@ module.exports = {
     },
 
     termandcondition(req,res){
-        footerService.termandcondition(req, (err, data) => {
+        footerService.termandcondition((err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
@@ -65,7 +86,7 @@ module.exports = {
     },
 
     privacypolicy(req,res){
-        footerService.privacypolicy(req, (err, data) => {
+        footerService.privacypolicy((err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {

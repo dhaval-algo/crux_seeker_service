@@ -55,6 +55,7 @@ router.get('/get-top-categories/', learnContentController.getTopCategories);
 router.get('/news', newsController.getNewsContent);
 router.get('/news/:slug', newsController.getNewsBySlug);
 
+// static content API
 router.get('/footer', footerController.getFooter);
 router.get('/about-us', footerController.aboutUs);
 router.get('/leadership', footerController.leadership);
@@ -62,6 +63,8 @@ router.get('/team', footerController.team);
 router.get('/career', footerController.career);
 router.get('/terms-and-conditions', footerController.termandcondition);
 router.get('/privacy-policy', footerController.privacypolicy);
+router.get('/partner-with-us', footerController.partnerWithUs);
+router.get('/learners-page', footerController.learners);
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
