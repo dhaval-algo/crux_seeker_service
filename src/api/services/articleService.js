@@ -222,6 +222,7 @@ module.exports = class articleService {
                 field: filter.elastic_attribute_name == "author_first_name" ? "author_slug" : filter.elastic_attribute_name,
                 filterable: filter.filterable,
                 sortable: filter.sortable,
+                filter_postion: filter.filter_postion || 'vertical',                
                 order: filter.order,
                 is_singleton: filter.is_singleton,
                 is_collapsed: filter.is_collapsed,
