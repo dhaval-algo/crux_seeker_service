@@ -643,7 +643,7 @@ module.exports = class articleService {
                 }
                 else if(rewards[0].access_type == 'partial_access')
                 {
-                    data.level_info.top_content = result.top_content || null;
+                    data.top_content = result.top_content || null;
                 }
             }           
         }
