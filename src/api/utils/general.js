@@ -558,8 +558,7 @@ const generateMetaDescription = async (result) => {
 
 const generateMetaKeywords = async (result) => {
     try{
-        let format = "{skills}, {topic}, {course_name_by_partner_name}, {topic_and_learn_type}, {medium_and_topic_name}, {payment_and_medium}, {payment_and_topic}"
-        // let format = result.meta_keywords
+        let format = result.meta_keywords
         const skills = result.skills
         const topics = result.topics
         let name = result.title
