@@ -8,7 +8,18 @@ const entitySearchParams = {
     "learn-path": { maxResults: 12, defaultResults: 6, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
     "article": { maxResults: 10, defaultResults: 4, sourceFields: ['title', 'slug', 'section_name', 'section_slug'] },
     "provider": { maxResults: 10, defaultResults: 3, sourceFields: ['name', 'slug'] }
+
 }
+
+
+const entitySearchSuggestionParams = {
+    'keyword-suggestion': { maxResults: 10, sourceFields: ['suggestion'] },
+    "learn-content": { maxResults: 15, sourceFields: ['title', 'slug'] },
+    "learn-path": { maxResults: 12, sourceFields: ['title', 'slug'] },
+    "article": { maxResults: 10, sourceFields: ['title', 'slug',] },
+    "provider": { maxResults: 10, defaultResults: 3, sourceFields: ['name', 'slug'] }
+}
+
 
 module.exports = class searchService {
     async getSearchResult(req, callback) {
@@ -77,6 +88,61 @@ module.exports = class searchService {
     }
 
 
+    async getSearchSuggestions(req, callback){
+        try {
+
+            const query = decodeURIComponent(req.params.word).trim();
+            const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+            const entity = req.query.entity;
+            const result = [];
+
+            if (!entity || (entity == 'all')) {
+                const searchResultPromises = [];
+                for (const entity in entitySearchSuggestionParams) {
+
+                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
+                    const promise = elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchSuggestionParams[entity].maxResults }, entitySearchSuggestionParams[entity].sourceFields);
+                    searchResultPromises.push(promise);
+                }
+
+                const searchResults = await Promise.all(searchResultPromises);
+                for (const searchResult of searchResults) {
+                    if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+                }
+
+            } else {
+
+                const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
+                const searchResult = await elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchSuggestionParams[entity].maxResults }, entitySearchSuggestionParams[entity].sourceFields);
+                if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+
+            }
+
+
+           const data = result.map((hit) => {
+                const source = hit['_source'];
+
+                if (hit['_index'].includes('keyword-suggestion')) return { type: 'keyword-suggestion', suggestion: source['suggestion'] }
+                if (hit['_index'].includes('learn-content')) return { type: 'learn-content', suggestion: source['title'], slug: source['slug'] }
+                if (hit['_index'].includes('learn-path')) return { type: 'learn-path', suggestion: source['title'], slug: source['slug'] }
+                if (hit['_index'].includes('article')) return { type: 'article', suggestion: source['title'], slug: source['slug'] }
+                if (hit['_index'].includes('provider')) return { type: 'provider', suggestion: source['name'], slug: source['slug'] }
+            });
+
+            if (data.length) {
+
+                callback(null, { success: true, message: 'Fetched successfully!', data: data });
+            }
+            else {
+                callback(null, { success: false, message: 'No records found!', data: [] });
+            }
+
+        } catch (error) {
+            console.log("Error Occured while getting search suggestions", error);
+            callback(null, { success: false, message: 'No records found!', data: []});
+        }
+    }
+
 
     async getCardData(data_source, entityData) {
         let data = {};
@@ -121,110 +187,4 @@ module.exports = class searchService {
         return data;
     }
 
-
-    async getSearchKeyword(req, callback){
-        const word = decodeURIComponent(req.params.word);
-        let  suggest = {
-            "keyword_suggest": {
-              "prefix": word,        
-              "completion": {         
-                  "field": "word",
-                  "size": MAX_PER_ENTITY  ,
-                  "skip_duplicates" :true,
-                  "fuzzy": {
-                      "fuzziness": "auto"
-                    }
-              }
-            }
-        }
-        const result = await elasticService.search("search_keyword_suggestion", null, {},null,suggest);
-        let data = []
-        if(result && result.keyword_suggest.length > 0){            
-            for(const keyword_suggest of result.keyword_suggest){
-                for(const option of keyword_suggest.options){
-                    data.push(option.text);  
-                }
-            }
-
-            callback(null, {success: true, message: 'Fetched successfully!', data: data });
-        }else{
-            callback(null, {success: true, message: 'No records found!', data: data});
-        }
-    }
-
-    async getSearchWithSuggestion(req, callback){
-        const keyword = decodeURIComponent(req.params.word);
-        const entity = req.query.entity;
-        const queryEntities = [];
-        let sourceFields = [];
-        
-        let query = { 
-                    "bool": {
-                        "should": []
-                    }
-                };
-        
-        for (const [key, value] of Object.entries(entityQueryMapping)) {
-            queryEntities.push(key);
-            sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
-            const entityQuery = generateEntityQuery(key, keyword);
-            query.bool.should.push(entityQuery);
-
-        }            
-
-        let  suggest = {
-            "keyword_suggest": {
-              "prefix": keyword,        
-              "completion": {         
-                  "field": "word",
-                  "size": MAX_PER_ENTITY  ,
-                  "skip_duplicates" :true,
-                  "fuzzy": {
-                      "fuzziness": "auto"
-                    }
-              }
-            }
-        }
-       
-       // const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
-        let [result, result2] = await Promise.all([elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT}), elasticService.search("search_keyword_suggestion", null, {},null,suggest)]);
-        
-        console.log("result", result)
-        console.log("result2", result2)
-        let data = {
-            result: [],
-            keywords : [],
-            totalCount: 0,
-            viewAll: false
-        };
-        if(result.total && result.total.value > 0){            
-
-            for(const hit of result.hits){
-                let data_source = hit._index;
-                let cardData = await this.getCardData(data_source, hit._source);
-                
-                if(data.result.length < MAX_PER_ENTITY){
-                    data.result.push(cardData);
-                }                    
-                data.totalCount++;
-                if(data.totalCount > MAX_PER_ENTITY){
-                    data.viewAll = true;
-                }  
-            }
-        }
-
-        
-        if(result2 && result2.keyword_suggest.length > 0){            
-            for(const keyword_suggest of result2.keyword_suggest){
-                for(const option of keyword_suggest.options){
-                    data.keywords.push(option.text);  
-                }
-            }
-        }
-        if(data.totalCount > 0 || data.keywords.length > 0){
-            callback(null, {success: true, message: 'Fetched successfully!', data: data });
-        }else{
-            callback(null, {success: true, message: 'No records found!', data: data});
-        }
-    }
 }
