@@ -52,6 +52,12 @@ module.exports = {
             case "jobTitle-based-recommendation": 
                 response = await RecommendationService.jobTitleBasedRecommendation(req);
                 break;
+            case "popular-skill-based-recommendation":
+                response = await RecommendationService.popularSkillBasedRecommendation(req);
+                break;
+            case "popular-goal-based-recommendation":
+                response = await RecommendationService.popularGoalBasedRecommendation(req);
+                break;
             default:
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
                 break;           
