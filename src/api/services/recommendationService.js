@@ -1,5 +1,6 @@
 const elasticService = require("./elasticService");
 const models = require("../../../models");
+const Sequelize = require('sequelize');
 const fetch = require("node-fetch");
 const _ = require('underscore');
 const redisConnection = require('../../services/v1/redis');
@@ -155,6 +156,174 @@ const round = (value, step) => {
     return Math.round(value * inv) / inv;
 };
 module.exports = class recommendationService {
+
+    async popularSkillBasedRecommendation(req) {
+
+        try {
+            let cacheData = await RedisConnection.getValuesSync("popularSkillBasedRecommendation")
+            if(cacheData.noCacheData != true)
+                return { "success": true, message: "list fetched successfully", data: { list: cacheData, mlList: [], show: "logic", cacheHit:true} }
+        }catch(err){
+            console.log(err)
+        }
+
+        let popularSkills;
+        
+        try{
+            popularSkills =  await models.popular_skills.findAll({
+                attributes: ["name"],         
+                limit:5,
+                raw:true,
+                order: Sequelize.literal('count DESC')
+            }).map(skill => skill['name'])
+        }catch(err){
+            console.log("popular_skills query failed",err)
+            return { "success": false, message: "failed to fetched ", data: { list: [], mlList: []} }
+        }
+
+        const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+        const esQuery = {
+            bool: {
+                must: [
+                    {
+                        term: {
+                            "status.keyword": "published"
+                        }
+                    }
+                ],
+                should: [
+                    {
+                        query_string: {
+                            default_field: "title"
+                        }
+                    }
+                ]
+            }
+        }
+        //query popular on title, skills topics categories to find relevant courses
+        esQuery.bool.should[0] = {
+            bool: {
+                should: [
+                    {
+                        bool: {
+                            must: [
+                                {
+                                    query_string: {
+                                        fields: [
+                                            "title^4",
+                                            "skills^3",
+                                            "topics^2",
+                                            "categories"
+                                        ],
+                                        query: popularSkills.join(" OR ").replace("/", "\\/")
+                                    }
+                                }                                     
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+        const offset = (page - 1) * limit, courses = []
+
+        try {
+            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await this.generateCourseFinalResponse(hit._source, currency)
+                    courses.push(data);
+                }
+                RedisConnection.set("popularSkillBasedRecommendation", courses, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
+
+            }
+            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
+        }catch(err){
+            console.log(err)
+            return { "success": false, message: "failed to fetched ", data: { list: [], mlList: []} }
+        }
+    }
+
+    async popularGoalBasedRecommendation(req) {
+
+        try {
+            let cacheData = await RedisConnection.getValuesSync("popularGoalBasedRecommendation")
+            if(cacheData.noCacheData != true)
+                return { "success": true, message: "list fetched successfully", data: { list: cacheData, mlList: [], show: "logic", cacheHit:true} }
+        }catch(err){
+            console.log(err)
+        }
+
+        const { currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+        const esQuery = {
+            bool: {
+                must: [
+                    {
+                        term: {
+                            "status.keyword": "published"
+                        }
+                    }
+                ],
+                should: [
+                    {
+                        query_string: {
+                            default_field: "title"
+                        }
+                    }
+                ]
+            }
+        }
+        let topTenGoalsPreferredRole
+        
+        try {
+                //find top 10 goals from redis
+            topTenGoalsPreferredRole = await RedisConnection.getValuesSync("preferred-role");
+
+        }catch(err){
+            console.log("failed to fetch toptenGoals",err)
+        }
+            //query top ten goals on title, skills topics categories to find relevant courses
+        esQuery.bool.should[0] = {
+            bool: {
+                should: [
+                    {
+                        bool: {
+                            must: [
+                                {
+                                    query_string: {
+                                        fields: [
+                                            "title^4",
+                                            "skills^3",
+                                            "topics^2",
+                                            "categories"
+                                        ],
+                                        query: topTenGoalsPreferredRole.join(" OR ").replace("/", "\\/")
+                                    }
+                                }                                     
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+        const offset = (page - 1) * limit, courses = []
+             
+        try {
+            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
+            if (result.hits && result.hits.length) {
+                for (const hit of result.hits) {
+                    const data = await this.generateCourseFinalResponse(hit._source, currency)
+                    courses.push(data);
+                }
+                RedisConnection.set("popularGoalBasedRecommendation", courses, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION || 60 * 15);
+
+            }
+            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
+        }catch(err){
+            console.log(err)
+            return { "success": false, message: "failed to fetched ", data: { list: [], mlList: []} }
+        }
+
+    }
 
     async getRelatedCourses(req) {
         try {
