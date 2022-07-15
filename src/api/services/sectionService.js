@@ -169,7 +169,7 @@ module.exports = class sectionService {
             ]
           }
         },
-        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "short_description"]
+        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "banner_image","short_description"]
       }
       
       const result = await elasticService.plainSearch('section', query);
@@ -203,6 +203,7 @@ module.exports = class sectionService {
               count: section.doc_count,
               short_description: hit._source.short_description,
               cover_image: (hit._source.cover_image) ?((hit._source.cover_image['large']) ?hit._source.cover_image['large'] : hit._source.cover_image['thumbnail']) : null,
+              banner_image: (hit._source.banner_image) ?((hit._source.banner_image['large']) ?hit._banner.cover_image['large'] : hit._source.banner_image['thumbnail']) : null,
               child: []
             }
             data.push(secR)
@@ -320,6 +321,7 @@ module.exports = class sectionService {
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
         response.data.cover_image = formatImageResponse(response.data.cover_image)
+        response.data.banner_image = formatImageResponse(response.data.banner_image)
         
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
