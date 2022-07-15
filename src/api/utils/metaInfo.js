@@ -32,6 +32,69 @@ const getPartnerMetaTitle = (partnerName)=>{
     return `${partnerName} | Top partners from Careervira`
 }
 
+const generateMetaDescription = async (result) => {
+    try{
+        const actions = {
+            "subscribe_now":" Subscribe Now!",
+            "want_more_information":" Want more information? Call Us Now.",
+            "visit_us_at_careervira":" Visit us at Careervira.",
+            "join_us_now":" Join Us Now!",
+            "click_here_for_details":" Click here for details.",
+            "enroll_now":" Enroll Now!"
+        }
+        const max_char_count = 160
+        let format = result.meta_description
+        const title = result.title
+        const learn_type = result.learn_type
+        const partner = result.partner_name
+        const skills = result.skills
+        const action = result.call_for_action 
+
+        format = format.replace(/{title}/g, '\"'+title+'\"')
+        format = format.replace(/{learn_type}/g, '\"'+learn_type+'\"')
+        format = format.replace(/{partner_name}/g, '\"'+partner+'\"')
+        if(result.call_for_action){
+            format = format.replace(/{call_for_action}/g, actions[action])
+        }else{
+            format = format.replace(/{call_for_action}/g, '')
+        }
+        let skill_string = "";
+        if(skills.length > 0){
+            skill_string += " like ";
+            for(let skill of skills){
+                skill_string = skill_string + skill + ","; 
+            }
+            skill_string = skill_string.slice(0, -1);
+            skill_string += " etc"
+        }
+        
+        format = format.replace(/{skills}/g, skill_string)
+        
+        let count = countCheck(format);
+        if(count>max_char_count){
+            if(result.call_for_action){
+                let re = new RegExp(actions[action],"g");
+                format = format.replace(re, '')
+            }
+        }
+        
+        for(let i = skills.length-1;i >= 0;i--){
+            let re = new RegExp(","+skills[i],"g");
+            let recount = countCheck(format);
+            if(recount > max_char_count){
+                format = format.replace(re, '')
+            }else{
+                break
+            }
+        }
+
+        return format;
+    }catch(err){
+        console.log("err")
+        return result.meta_description
+    }
+}
+
 const getLearnContentListMetaInfo = (result) => {
 
     let meta_description = null;
@@ -89,6 +152,7 @@ const getLearnContentListMetaInfo = (result) => {
 
                 if (result.meta_information && result.meta_information.meta_description) {
                     meta_description = result.meta_information.meta_description;
+                    // meta_description = generateMetaDescription(result.meta_information.meta_description)
                 }
 
                 else {
