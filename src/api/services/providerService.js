@@ -1,6 +1,7 @@
 const elasticService = require("./elasticService");
 const learnContentService = require("./learnContentService");
 const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
 const _ = require('underscore');
 let LearnContentService = new learnContentService();
 
@@ -414,6 +415,19 @@ module.exports = class providerService {
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
             }else{
+                /***
+                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+                 */
+                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+                if (response.ok) {
+                    let urls = await response.json();
+                    if(urls.length > 0){  
+                        let slug = urls[0].new_url
+                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                    }else{
+                        return callback({status: 'failed', message: 'Not found!'}, null);
+                    }
+                }
                 callback({status: 'failed', message: 'Not found!'}, null);
             }
         }       

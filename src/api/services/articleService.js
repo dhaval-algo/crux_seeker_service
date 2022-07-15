@@ -387,6 +387,19 @@ module.exports = class articleService {
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
             callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
         }else{
+            /***
+             * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+             */
+            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+            if (response.ok) {
+                let urls = await response.json();
+                if(urls.length > 0){  
+                    slug = urls[0].new_url
+                    return callback({status: 'redirect',slug:slug,message: 'Redirect!'}, null);
+                }else{
+                    return callback({status: 'failed', message: 'Not found!'}, null);
+                }
+            }
             callback({status: 'failed', message: 'Not found!'}, null);
         }        
     }
@@ -695,11 +708,13 @@ module.exports = class articleService {
 
     async getAuthorBySlug(slug, callback){
         let author = null;
+
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }}
             ]
         }};
+
         const result = await elasticService.search('author', query);
         if(result.hits && result.hits.length > 0){
             author = await this.generateAuthorData(result.hits[0]._source, true);
@@ -708,7 +723,20 @@ module.exports = class articleService {
             if(author){
                 callback(null, {status: 'success', message: 'Fetched successfully!', data: author});
             }else{
-                callback(null, {status: 'failed', message: 'Not found!', data: author});
+                /***
+                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+                 */
+                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+                if (response.ok) {
+                    let urls = await response.json();
+                    if(urls.length > 0){  
+                        slug = urls[0].new_url
+                        return callback({status: 'redirect',slug:slug,message: 'Redirect!'}, null);
+                    }else{
+                        return callback({status: 'failed', message: 'Not found!', data: null}, null);
+                    }
+                }
+                callback(null, {status: 'failed', message: 'Not found!', data: null});
             }            
         }else{
             return author;  

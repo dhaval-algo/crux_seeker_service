@@ -480,6 +480,162 @@ const calculateDuration = (total_duration_in_hrs) => {
         return duration;
 };
 
+const countCheck = (format) => {
+    let counter = 0;
+    for(let i = 0;i < format.length;i++){
+        if(format[i] != ' '){
+            counter++;
+        }
+    }
+    return counter;
+}
+
+const generateMetaDescription = async (result) => {
+    try{
+        const actions = {
+            "subscribe_now":" Subscribe Now!",
+            "want_more_information":" Want more information? Call Us Now.",
+            "visit_us_at_careervira":" Visit us at Careervira.",
+            "join_us_now":" Join Us Now!",
+            "click_here_for_details":" Click here for details.",
+            "enroll_now":" Enroll Now!"
+        }
+        const max_char_count = 160
+        let format = result.meta_description
+        const title = result.title
+        const learn_type = result.learn_type
+        const partner = result.partner_name
+        const skills = result.skills
+        const action = result.call_for_action 
+
+        format = format.replace(/{title}/g, '\"'+title+'\"')
+        format = format.replace(/{learn_type}/g, '\"'+learn_type+'\"')
+        format = format.replace(/{partner_name}/g, '\"'+partner+'\"')
+        if(result.call_for_action){
+            format = format.replace(/{call_for_action}/g, actions[action])
+        }else{
+            format = format.replace(/{call_for_action}/g, '')
+        }
+        let skill_string = "";
+        if(skills.length > 0){
+            skill_string += " like ";
+            for(let skill of skills){
+                skill_string = skill_string + skill + ","; 
+            }
+            skill_string = skill_string.slice(0, -1);
+            skill_string += " etc"
+        }
+        
+        format = format.replace(/{skills}/g, skill_string)
+        
+        let count = countCheck(format);
+        if(count>max_char_count){
+            if(result.call_for_action){
+                let re = new RegExp(actions[action],"g");
+                format = format.replace(re, '')
+            }
+        }
+        
+        for(let i = skills.length-1;i >= 0;i--){
+            let re = new RegExp(","+skills[i],"g");
+            let recount = countCheck(format);
+            if(recount > max_char_count){
+                format = format.replace(re, '')
+            }else{
+                break
+            }
+        }
+
+        return format;
+    }catch(err){
+        console.log("err")
+        return result.meta_description
+    }
+}
+
+const generateMetaKeywords = async (result) => {
+    try{
+        let format = result.meta_keywords
+        const skills = result.skills
+        const topics = result.topics
+        let name = result.title
+        let partner_name = result.partner_name
+        let course_partner_name = [];
+        if(name.includes(partner_name)){
+            course_partner_name.push(name);
+        }else{
+            if((name.split(" ").length + partner_name.split(" ").length) > 6){
+                course_partner_name.push(partner_name + " " + name);
+            }else{
+                course_partner_name.push(name + " by " + partner_name);
+            }
+        }
+        let topic_learn_type = [];
+        for(let i of topics){
+            topic_learn_type.push(i + " " + result.learn_type);
+        }
+        let medium_topic_name = [];
+        if(result.medium){
+            for(let i of topics){
+                medium_topic_name.push(result.medium + " " + i + " course")
+            }
+        }
+
+        let payment_medium = [];
+        if(result.pricing_type == 'Free'){
+            if(result.medium){
+                payment_medium.push("Free " + result.medium)
+            }
+        }
+
+        let payment_topic = [];
+        if(result.pricing_type == 'Free'){
+            for(let i of topics){
+                payment_topic.push("Free " + i + " Course")
+            }
+        }
+        if(skills.length > 0){
+            format = format.replace(/{skills}/g, skills.join(", "))
+        }else{
+            format = format.replace(/{skills}, /g, '')
+        }
+        if(topics.length > 0){
+            format = format.replace(/{topic}/g, topics.join(", "))
+        }else{
+            format = format.replace(/{topic}, /g, '')
+        }
+        if(course_partner_name.length > 0){
+            format = format.replace(/{course_name_by_partner_name}/g, course_partner_name.join(", "))
+        }else{
+            format = format.replace(/{course_name_by_partner_name}, /g, '')
+        }
+        if(topic_learn_type.length > 0){
+            format = format.replace(/{topic_and_learn_type}/g, topic_learn_type.join(", "))
+        }else{
+            format = format.replace(/{topic_and_learn_type}, /g, '')
+        }
+        if(medium_topic_name.length > 0){
+            format = format.replace(/{medium_and_topic_name}/g, medium_topic_name.join(", "))
+        }else{
+            format = format.replace(/{medium_and_topic_name}, /g, '')
+        }
+        if(payment_medium.length > 0){
+            format = format.replace(/{payment_and_medium}/g, payment_medium.join(", "))
+        }else{
+            format = format.replace(/{payment_and_medium}, /g, '')
+        }
+        if(payment_topic.length > 0){
+            format = format.replace(/{payment_and_topic}/g, payment_topic.join(", "))
+        }else{
+            format = format.replace(/{payment_and_topic}/g, '')
+        }
+        
+        return format;
+    }catch(err){
+        console.log("err in meta keywords", err)
+    }
+}
+
 const generateMetaInfo = async (page, result, list) => {
     let meta_information = null;
     let meta_keywords = null;
@@ -492,8 +648,8 @@ const generateMetaInfo = async (page, result, list) => {
             
             meta_information = {
                 meta_title: meta_title,
-                meta_description: result.meta_description,
-                meta_keywords: result.meta_keywords,
+                meta_description: await generateMetaDescription(result),
+                meta_keywords: await generateMetaKeywords(result),
                 add_type: result.add_type,
                 import_source: result.import_source,
                 external_source_id: result.external_source_id,
