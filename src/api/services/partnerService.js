@@ -217,34 +217,40 @@ module.exports = class partnerService {
     }
 
     async getPartner(req, callback){
-        const slug = req.params.slug;
-        const query = { "bool": {
-            "must": [
-              {term: { "slug.keyword": slug }}
-            ]
-        }};
-        
-        const result = await elasticService.search('partner', query);
-        //console.log("result <> ", result);
-        if(result.hits && result.hits.length > 0){
-            const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-            callback(null, {success: true, message: 'Fetched successfully!', data: data});
-        }else{
-            /***
-             * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-             */
-            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-            if (response.ok) {
-                let urls = await response.json();
-                if(urls.length > 0){  
-                    let slug = urls[0].new_url
-                    return callback({success: false,slug:slug, message: 'Redirect'}, null);
-                }else{
-                    return callback({success: false, message: 'Not found!'}, null);
+        try {   
+       
+            const slug = req.params.slug;
+            const query = { "bool": {
+                "must": [
+                {term: { "slug.keyword": slug }}
+                ]
+            }};
+            
+            const result = await elasticService.search('partner', query);
+            //console.log("result <> ", result);
+            if(result.hits && result.hits.length > 0){
+                const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
+            }else{
+                /***
+                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
+                 */
+                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
+                if (response.ok) {
+                    let urls = await response.json();
+                    if(urls.length > 0){  
+                        let slug = urls[0].new_url
+                        return callback({success: false,slug:slug, message: 'Redirect!'}, null);
+                    }else{
+                        return callback({success: false, message: 'Not found!'}, null);
+                    }
                 }
-            }
-            callback({success: false, message: 'Not found!'}, null);
-        }        
+                callback({success: false, message: 'Not found!'}, null);
+            }  
+        } catch (error) {
+                console.log("partner erorr!!!!!!!!!!!!!!", error)
+                callback({success: false, message: 'Not found!'}, null);
+        }      
     }
 
 
@@ -394,25 +400,30 @@ module.exports = class partnerService {
             list: [],
             total: 0
         };
-        const query = {
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }},
-                    {term: { "partner_name.keyword": partner_name }}
-                ]
-             }
-        };
-
-        let queryPayload = {};
-        queryPayload.from = 0;
-        queryPayload.size = 4;
-        queryPayload.sort = "published_date:desc";
-
-        const result = await elasticService.search('learn-content', query, queryPayload);
-        if(result.hits && result.hits.length > 0){
-            courses.list = await LearnContentService.generateListViewData(result.hits, currency);
-            courses.total = result.total.value;
+        try {
+            const query = {
+                "bool": {
+                    "must": [
+                        {term: { "status.keyword": 'published' }},
+                        {term: { "partner_name.keyword": partner_name }}
+                    ]
+                 }
+            };
+    
+            let queryPayload = {};
+            queryPayload.from = 0;
+            queryPayload.size = 4;
+            queryPayload.sort = "published_date:desc";
+    
+            const result = await elasticService.search('learn-content', query, queryPayload);
+            if(result.hits && result.hits.length > 0){
+                courses.list = await LearnContentService.generateListViewData(result.hits, currency);
+                courses.total = result.total.value;
+            }
+        } catch (error) {
+            console.log("error in fetching partner courses",error)
         }
+       
         return courses;        
     }
 
@@ -421,24 +432,29 @@ module.exports = class partnerService {
             list: [],
             total: 0
         };
-        const query = {
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }},
-                    {term: { "partners": partners}}
-                ]
-             }
-        };
-
-        let queryPayload = {};
-        // queryPayload.from = 0;
-        // queryPayload.size = 4;
-        queryPayload.sort = "published_date:desc";
-        const result = await elasticService.search('article', query, queryPayload);
-        if(result.hits && result.hits.length > 0){
-            articles.list = await ArticleService.generateListViewData(result.hits);
-            articles.total = result.total.value;
+        try {
+            const query = {
+                "bool": {
+                    "must": [
+                        {term: { "status.keyword": 'published' }},
+                        {term: { "partners": partners}}
+                    ]
+                 }
+            };
+    
+            let queryPayload = {};
+            // queryPayload.from = 0;
+            // queryPayload.size = 4;
+            queryPayload.sort = "published_date:desc";
+            const result = await elasticService.search('article', query, queryPayload);
+            if(result.hits && result.hits.length > 0){
+                articles.list = await ArticleService.generateListViewData(result.hits);
+                articles.total = result.total.value;
+            }
+        } catch (error) {
+            console.log("error in fetching partner articles",error)
         }
+       
         return articles;        
     }
     
