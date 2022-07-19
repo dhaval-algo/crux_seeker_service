@@ -289,11 +289,11 @@ module.exports = class partnerService {
             total: 0
         };
  
-        // if(!isList){
-        //     courses = await this.getPartnerCourses(result.name, currency);   
-        //     articles = await this.getPartnerArticles(result.id);
+        if(!isList){
+            courses = await this.getPartnerCourses(result.name, currency);   
+            articles = await this.getPartnerArticles(result.id);
                         
-        // }
+        }
 
         let data = {
             name: result.name,
