@@ -3,7 +3,7 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const { getCurrencies, getCurrencyAmount, generateMetaInfo } = require('../utils/general');
+const { getCurrencies, getCurrencyAmount, generateMetaInfo, isDateInRange } = require('../utils/general');
 const models = require("../../../models");
 const { 
     getFilterConfigs, 
@@ -499,7 +499,10 @@ module.exports = class learnContentService {
 
             switch(filter.filter_type){
                 case "Checkboxes":
-                    aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
+                    if(filter.elastic_data_type == 'boolean')
+                        aggs_object.aggs['filtered'] = { terms: { field: filter.elastic_attribute_name }}
+                    else
+                        aggs_object.aggs['filtered'] = { terms: { field: `${filter.elastic_attribute_name}.keyword`, size: topHitsSize } }
                     break;
                 case "RangeOptions":
                     aggs_object.aggs['filtered'] = {
@@ -594,6 +597,9 @@ module.exports = class learnContentService {
                 
                         if(filter.elastic_attribute_name == "learn_type")
                         {   option.image  = learn_types_images[item.key] }
+
+                        if(filter.elastic_attribute_name == "coupon_offers")
+                            item.key == 1 ? option.label = "Yes" : option.label = "No"
 
                         return option;
                     });
@@ -1184,6 +1190,42 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
+        let coupons = [];
+        let offerRange = {low:0, high:0}
+        if(result.pricing_type == "Paid")
+        {
+            if(result.coupons.length > 0){
+                for(let coupon of result.coupons)
+                {
+                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    {
+                        if(coupon.discount){
+                            const percent = ((result.regular_price - coupon.discount.value)/result.regular_price)*100
+                            if(percent < offerRange.low)
+                                offerRange.low = percent
+                            if(percent > offerRange.high)
+                                offerRange.high = percent
+                            coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency.iso_code
+
+                        }
+                        else{
+                            coupon.youSave = coupon.discount_percent + " %"
+                            if(coupon.discount_percent < offerRange.low)
+                                offerRange.low = coupon.discount_percent
+                            if(coupon.discount_percent > offerRange.low)
+                                offerRange.low = coupon.discount_percent
+                        }
+
+                        coupons.push(coupon)
+                    }
+                }
+                    // truncate extra fraction digits if any    
+                offerRange.low =  (Math.trunc((offerRange.low*100)))/100
+                offerRange.high =  (Math.trunc((offerRange.high*100)))/100
+
+            }
+        }
+
         let data = {
             canBuy: canBuy,
             title: result.title,
@@ -1301,7 +1343,10 @@ module.exports = class learnContentService {
             },
             corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
             accreditations: [],
-            ads_keywords:result.ads_keywords
+            ads_keywords:result.ads_keywords,
+            how_to_use:result.how_to_use,
+            coupons,
+            offerRange
         };
 
         if(!isList){
