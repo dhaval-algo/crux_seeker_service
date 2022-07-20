@@ -1844,7 +1844,7 @@ module.exports = class recommendationService {
     }
 
     async getPopularLearnPaths(req){
-        let { subType="Popular", priceType="Paid" } = req.params; // Populer, Trending,Free
+        let { subType="Popular", priceType="Paid" } = req.query; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;  
 
         let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${priceType || ''}-${currency}-${page}-${limit}`;
