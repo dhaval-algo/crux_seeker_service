@@ -18,6 +18,14 @@ const entity_filter_mapping = {
     'article': 'Article'
 };
 
+const isDateInRange = (lowDate, highDate) => {
+    const l = new Date(lowDate), h = new Date(highDate), d = new Date()
+    
+    if(l <= d && d <= h)
+        return true
+    
+    return false
+}
 const getUserCurrency = async(request) => {
     let currency = request.query.currency;
     if(!currency){
@@ -845,6 +853,7 @@ const formatImageResponse = (imageObject) => {
 
 
   module.exports = {
+    isDateInRange,
     getUserCurrency,
     getCurrencies,
     getCurrencyAmount,
