@@ -363,7 +363,11 @@ module.exports = class sectionService {
       }
 
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
 
       const result = await elasticService.search('blog_home_page', query, { from: 0, size: 1000 }, ["meta_information", "ads_keywords", "most_popular_article_categories", "trending_article_categories"])

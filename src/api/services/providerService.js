@@ -696,7 +696,11 @@ module.exports = class providerService {
         let data = {};
         try {
           const query = {
-            "match_all": {}
+            "bool": {
+                "filter": [
+                    { "term": { "id": 1 } }
+                ]
+            }
           };
           const payload = {
             "size": 1

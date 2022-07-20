@@ -8,7 +8,11 @@ module.exports = class homePageService {
     let data = {};
     try {
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
       const payload = {
         "size": 1
@@ -40,7 +44,11 @@ module.exports = class homePageService {
     let data = {};
     try {
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
       const payload = {
         "size": 1
@@ -77,7 +85,11 @@ module.exports = class homePageService {
     let data = {};
     try {
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
       const payload = {
         "size": 1
@@ -115,7 +127,11 @@ module.exports = class homePageService {
     let { page = 1, limit = 5, category } = req.query
     try {
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
       const payload = {
         "size": 1
@@ -161,7 +177,11 @@ module.exports = class homePageService {
   async getHomePageTopInstitutesRegion(req) {
     try {
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
       const payload = {
         "size": 1
@@ -202,7 +222,11 @@ module.exports = class homePageService {
     let { page = 1, limit = 5, region } = req.query 
     try {
       const query = {
-        "match_all": {}
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
+      }
       };
       const payload = {
         "size": 1
