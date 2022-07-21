@@ -1274,16 +1274,16 @@ module.exports = class learnContentService {
             result.providers_list = [provider]
         }
         let coupons = [];
-        let offerRange = {low:0, high:0}
+        let offerRange = {low:100, high:0}
         if(result.pricing_type == "Paid")
         {
-            if(result.coupons.length > 0){
+            if(result.coupons && result.coupons.length > 0){
                 for(let coupon of result.coupons)
                 {
                     if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
                         if(coupon.discount){
-                            const percent = ((result.regular_price - coupon.discount.value)/result.regular_price)*100
+                            const percent = (Math.trunc(((result.regular_price - coupon.discount.value)/result.regular_price)*10000))/100
                             if(percent < offerRange.low)
                                 offerRange.low = percent
                             if(percent > offerRange.high)
@@ -1295,16 +1295,13 @@ module.exports = class learnContentService {
                             coupon.youSave = coupon.discount_percent + " %"
                             if(coupon.discount_percent < offerRange.low)
                                 offerRange.low = coupon.discount_percent
-                            if(coupon.discount_percent > offerRange.low)
-                                offerRange.low = coupon.discount_percent
+                            if(coupon.discount_percent > offerRange.high)
+                                offerRange.high = coupon.discount_percent
                         }
 
                         coupons.push(coupon)
                     }
                 }
-                    // truncate extra fraction digits if any    
-                offerRange.low =  (Math.trunc((offerRange.low*100)))/100
-                offerRange.high =  (Math.trunc((offerRange.high*100)))/100
 
             }
         }
@@ -1426,9 +1423,9 @@ module.exports = class learnContentService {
             accreditations: [],
             ads_keywords:result.ads_keywords,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
-            how_to_use:result.how_to_use,
+            how_to_use: coupons.length > 0 ? result.how_to_use: null,
             coupons,
-            offerRange
+            offerRange : coupons.length > 0 ? offerRange: null
         };
 
         
