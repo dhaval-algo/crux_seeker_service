@@ -1194,7 +1194,7 @@ module.exports = class learnContentService {
         let offerRange = {low:100, high:0}
         if(result.pricing_type == "Paid")
         {
-            if(result.coupons.length > 0){
+            if(result.coupons && result.coupons.length > 0){
                 for(let coupon of result.coupons)
                 {
                     if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
