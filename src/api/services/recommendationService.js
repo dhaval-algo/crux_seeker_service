@@ -4339,7 +4339,17 @@ module.exports = class recommendationService {
                             { "term": { "status.keyword": "published" } }
                         ]
                     }
-                }               
+                }
+                
+                if (req.query.category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": decodeURIComponent(req.query.category)
+                            }
+                        }
+                    );
+                }                
 
                 let sort = [{ "activity_count.last_x_days.trending_score": "desc" }, { "ratings": "desc" }];
 
