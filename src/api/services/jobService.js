@@ -10,7 +10,7 @@ const getJobListing = async (req, callback) => {
             from: 0,
             size: 100,
             query: { "match_all": {} },
-            _source: ["job_department", "job_title", "id"]
+            _source: ["job_department", "job_title", "id","city","country"]
         }
 
         const jobs = {};
@@ -22,10 +22,10 @@ const getJobListing = async (req, callback) => {
                 const job = jobData._source;
                 if (job.job_department in jobs) {
 
-                    jobs[job.job_department].push({ id: jobData._id, job_title: job.job_title });
+                    jobs[job.job_department].push({ id: jobData._id, job_title: job.job_title, city:job.city, country:job.country});
 
                 } else {
-                    jobs[job.job_department] = [{ id: jobData._id, job_title: job.job_title }];
+                    jobs[job.job_department] = [{ id: jobData._id, job_title: job.job_title, city:job.city, country:job.country }];
 
                 }
             }
