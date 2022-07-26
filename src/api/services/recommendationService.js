@@ -413,13 +413,13 @@ module.exports = class recommendationService {
 
     async getPopularCourses(req) {
         let { subType="Popular", priceType="Paid" } = req.query; // Populer, Trending,Free
-        let { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY,provider,partner, page = 1, limit = 20 } = req.query;
+        let { category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY,provider,partner,skill, page = 1, limit = 20 } = req.query;
 
         const offset = (page - 1) * limit
 
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${subType}-${category || 'category'}-${sub_category || 'sub_category'}-${topic || 'topic'}-${provider || 'provider'}-${partner || 'partner'}-${priceType || 'priceType'}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || 'category'}-${sub_category || 'sub_category'}-${topic || 'topic'}-${provider || 'provider'}-${partner || 'partner'}-${priceType || 'priceType'}-${skill || 'skill'}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -474,6 +474,16 @@ module.exports = class recommendationService {
                         {
                             "term": {
                                 "partner_name.keyword": decodeURIComponent(partners)
+                            }
+                        }
+                    );
+                }
+                if (skill) {
+                    esQuery.bool.filter.push(
+                        {
+                            "terms": {
+                                "skills.keyword": skill,
+                              
                             }
                         }
                     );
