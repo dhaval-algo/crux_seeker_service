@@ -4391,7 +4391,7 @@ module.exports = class recommendationService {
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
 
             compares = await paginate(compares, page, limit)
-            let response = { "success": true, message: "list fetched successfully", data: compares };
+            let response = { "success": true, message: "list fetched successfully", data: { list: compares }  };
             return response;
 
         } catch (error) {
