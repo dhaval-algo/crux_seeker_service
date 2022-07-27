@@ -4176,7 +4176,7 @@ module.exports = class recommendationService {
 
             if (cachedData.noCacheData != true) {
                 cachedData = await paginate(cachedData, page, limit)
-                return { "success": true, message: "list fetched successfully", data: cachedData }
+                return { "success": true, message: "list fetched successfully", data: { list: cachedData } }
             }
 
             if (req.query.courseId) {
