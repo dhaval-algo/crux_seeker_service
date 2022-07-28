@@ -341,7 +341,10 @@ const getArticleListMetaInfo = (result) => {
         if (!article._source.categories) article._source.categories = [];
         categories = [...categories, ...article._source.categories];
         author_names.push(`${article._source.author_first_name} ${article._source.author_last_name}`);
-        tags = [...tags, ...article._source.tags];
+        if(article._source.tags && article._source.tags.length > 0)
+        {
+            tags = [...tags, ...article._source.tags];
+        }
     }
 
     categories = categories.filter((x, i, a) => a.indexOf(x) == i);
