@@ -1417,8 +1417,8 @@ module.exports = class learnContentService {
                     if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
                         if(coupon.discount){
-                            //const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency.iso_code, currency)
-                            const percent = Math.ceil((100 * coupon.discount.value)/price)
+                            const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency.iso_code, currency)
+                            const percent = Math.ceil((100 * discount)/price)
                             if(percent < offerRange.low)
                                 offerRange.low = percent
                             if(percent > offerRange.high)
