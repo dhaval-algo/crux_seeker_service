@@ -406,15 +406,31 @@ module.exports = class learnContentService {
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
 
-                    let filter_object = {
-                        "terms": {[attribute_name]: filter.value}
-                    };
+                    let filter_object = {}
+                            //case for boolean attribute;
+                    if(elasticAttribute.elastic_data_type == 'boolean')
+                    {
+                        if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
+                        {
+                            let offer = filter.value[0]
+            
+                            offer.toLowerCase() == 'yes' ? offer = true : offer = false;
+                            filter_object = {"term": {[attribute_name]: offer}};
+                        }
+                        else
+                            filter_object = {"term": {[attribute_name]: filter.value[0]}};
+                    }
+                    else 
+                        filter_object = {"terms": {[attribute_name]: filter.value}};
 
                     query.bool.must.push(filter_object);
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                 }
             }            
         }
+
+
+
 
         if(req.query['rf']){
             parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);
