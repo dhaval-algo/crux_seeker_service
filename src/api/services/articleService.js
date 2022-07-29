@@ -526,7 +526,7 @@ module.exports = class articleService {
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,          
             cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,            
-            listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : null,            
+            listing_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,            
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
@@ -575,77 +575,29 @@ module.exports = class articleService {
                 if(rewards[0].access_type == 'full_access')
                 {
                     data.full_access= true;
-                    data.top_content = result.top_content || null
-                    data.levels_beginner = result.level_beginner || null
-                    data.levels_intermediate = result.level_intermediate || null
-                    data.levels_advance = result.level_advance || null
-                    data.bottom_content = result.bottom_content || null
-                    if(data.top_content && data.top_content.length > 0)
-                    {
-                        data.top_content = data.top_content.map(top_content => {
-                            if(top_content.__component =="image")
-                            {
-                                top_content.image = formatImageResponse (top_content.image);
-                            }
-                            return top_content
-                        })
-                       
+                    data.description = result.content;
+                    data.content_section = result.content_section || null
+                    data.level_info = result.level_info || null
+                    if(data.level_info){
+                        data.level_info.levels_beginner = result.level_beginner || null
+                        data.level_info.levels_intermediate = result.level_intermediate || null
+                        data.level_info.levels_advance = result.level_advance || null
+                    }else{
+                        data.level_info = {}
+                        data.level_info.levels_beginner = result.level_beginner || null
+                        data.level_info.levels_intermediate = result.level_intermediate || null
+                        data.level_info.levels_advance = result.level_advance || null
                     }
-
-                    if(data.levels_beginner && data.levels_beginner.length > 0)
-                    {
-                        data.levels_beginner = data.levels_beginner.map(levels_beginner => {
-                            if(levels_beginner.__component =="image")
-                            {
-                                levels_beginner.image = formatImageResponse (levels_beginner.image);
-                            }
-                            return levels_beginner
-                        })
-                       
-                    }
-
-                    if(data.levels_intermediate && data.levels_intermediate.length > 0)
-                    {
-                        data.levels_intermediate = data.levels_intermediate.map(levels_intermediate => {
-                            if(levels_intermediate.__component =="image")
-                            {
-                                levels_intermediate.image = formatImageResponse (levels_intermediate.image);
-                            }
-                            return levels_intermediate
-                        })
-                       
-                    }
-
-                    if(data.levels_advance && data.levels_advance.length > 0)
-                    {
-                        data.levels_advance = data.levels_advance.map(levels_advance => {
-                            if(levels_advance.__component =="image")
-                            {
-                                levels_advance.image = formatImageResponse (levels_advance.image);
-                            }
-                            return levels_advance
-                        })
-                       
-                    }
-
-                    if(data.bottom_content && data.bottom_content.length > 0)
-                    {
-                        data.bottom_content = data.bottom_content.map(bottom_content => {
-                            if(bottom_content.__component =="image")
-                            {
-                                bottom_content.image = formatImageResponse (bottom_content.image);
-                            }
-                            return bottom_content
-                        })
-                       
-                    }
-                                       
+                    data.course_recommendation = result.course_recommendation || null;
+                    data.conclusion = result.conclusion || null;
                 }
                 else if(rewards[0].access_type == 'partial_access')
                 {
-                    data.top_content = result.top_content || null;
+                    let description = result.content.replace(/<(.|\n)*?>/g, '');
+                    description = description.replace(/&nbsp;/g, ' ');
+                    data.description = description.split(' ').slice(0, 70).join(' ');
                 }
-            }           
+            }     
         }
 
         if(result.custom_ads_keywords) {
