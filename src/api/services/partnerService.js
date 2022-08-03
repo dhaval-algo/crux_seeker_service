@@ -329,7 +329,7 @@ module.exports = class partnerService {
             user_last_name: result.user_last_name,
             user_email: result.user_email,
             user_id: result.user_id,
-            category_tree: await getCategoryTree(result.name)
+            category_tree: null
         };
         if(!isList){
             result.courses  =  courses;
