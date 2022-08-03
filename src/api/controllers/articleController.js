@@ -1,5 +1,6 @@
 const articleService = require("../services/articleService");
 let ArticleService = new articleService();
+const {formatResponseField } = require("../utils/general");
 
 module.exports = {
 
@@ -16,12 +17,17 @@ module.exports = {
     getSingleArticle: async (req, res) => {
         const slug = req.params.slug;
         ArticleService.getArticle( slug, req, (err, data) => {
-            if (data) {
-                res.status(200).send(data);
-            } else {
-                res.status(200).send(err);
+            if(req.query['fields']){                    
+                finalData =  formatResponseField(req.query['fields'], data.data )                    
+                res.status(200).send({success: true, message: 'Fetched successfully!', data: finalData});
             }
-        });        
+            else
+            {
+                res.status(200).send(data);
+            }
+        }); 
+        
+        
     },
 
     getAuthor: async (req, res) => {
