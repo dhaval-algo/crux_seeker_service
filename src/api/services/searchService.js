@@ -1,23 +1,21 @@
 const elasticService = require("./elasticService");
 const { getSearchTemplate } = require("../../utils/searchTemplates");
 
-const MAX_PER_ENTITY = 23;
-
 const entitySearchParams = {
-    "learn-content": { maxResults: 15, defaultResults: 10, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
-    "learn-path": { maxResults: 12, defaultResults: 6, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
-    "article": { maxResults: 10, defaultResults: 4, sourceFields: ['title', 'slug', 'section_name', 'section_slug'] },
-    "provider": { maxResults: 10, defaultResults: 3, sourceFields: ['name', 'slug'] }
+    "learn-content": { maxResults: process.env.MAX_SEARCH_RESULT_COURSE || 10, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
+    "learn-path": { maxResults: process.env.MAX_SEARCH_RESULT_LP || 10, sourceFields: ['title', 'slug', 'reviews', 'provider_name', 'average_rating'] },
+    "article": { maxResults: process.env.MAX_SEARCH_RESULT_ARTICLE || 10, sourceFields: ['title', 'slug', 'section_name', 'section_slug'] },
+    "provider": { maxResults: process.env.MAX_SEARCH_RESULT_PROVIDER || 10, sourceFields: ['name', 'slug'] }
 
 }
 
 
 const entitySearchSuggestionParams = {
-    'keyword-suggestion': { maxResults: 10, sourceFields: ['suggestion'] },
-    "learn-content": { maxResults: 15, sourceFields: ['title', 'slug'] },
-    "learn-path": { maxResults: 12, sourceFields: ['title', 'slug'] },
-    "article": { maxResults: 10, sourceFields: ['title', 'slug',] },
-    "provider": { maxResults: 10, defaultResults: 3, sourceFields: ['name', 'slug'] }
+    'keyword-suggestion': { maxResults: process.env.MAX_SEARCH_SUGGESTION_KEYWORD || 6, sourceFields: ['suggestion'] },
+    "learn-content": { maxResults: process.env.MAX_SEARCH_SUGGESTION_COURSE || 5, sourceFields: ['title', 'slug'] },
+    "learn-path": { maxResults: process.env.MAX_SEARCH_SUGGESTION_LP || 4, sourceFields: ['title', 'slug'] },
+    "article": { maxResults: process.env.MAX_SEARCH_SUGGESTION_ARTICLE || 4, sourceFields: ['title', 'slug',] },
+    "provider": { maxResults: process.env.MAX_SEARCH_SUGGESTION_PROVIDER || 3, sourceFields: ['name', 'slug'] }
 }
 
 
@@ -34,7 +32,7 @@ module.exports = class searchService {
                 for (const entity in entitySearchParams) {
 
                     const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
-                    const promise = elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchParams[entity].defaultResults }, entitySearchParams[entity].sourceFields);
+                    const promise = elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchParams[entity].maxResults }, entitySearchParams[entity].sourceFields);
                     searchResultPromises.push(promise);
                 }
 
@@ -53,31 +51,35 @@ module.exports = class searchService {
 
             }
 
-            let data = {
-                result: [],
-                totalCount: 0,
-                viewAll: false
+            const data = {
+                courses: [],
+                "learn-paths": [],
+                articles: [],
+                institutes: []
             };
             if (result.length) {
 
                 for (const hit of result) {
 
-                    let data_source = hit._index;
-                    let cardData = await this.getCardData(data_source, hit._source);
-                    data.result.push(cardData);
+                    const cardData = await this.getCardData(hit._index, hit._source);
+                    switch (cardData.index) {
 
-                    data.totalCount++;
-                    if (data.totalCount > MAX_PER_ENTITY) {
-                        data.viewAll = true;
+                        case "learn-content": data.courses.push(cardData);
+                            break;
+                        case "learn-path": data['learn-paths'].push(cardData);
+                            break;
+                        case "article": data.articles.push(cardData);
+                            break;
+                        case "provider": data.institutes.push(cardData);
+
                     }
+
                 }
-                //  data.result = matchSorter(data.result, keyword, {keys: ['title'], threshold: matchSorter.rankings.NO_MATCH});
 
                 callback(null, { success: true, message: 'Fetched successfully!', data: data });
             } else {
                 callback(null, { success: true, message: 'No records found!', data: data });
             }
-
 
 
         } catch (error) {
@@ -88,7 +90,7 @@ module.exports = class searchService {
     }
 
 
-    async getSearchSuggestions(req, callback){
+    async getSearchSuggestions(req, callback) {
         try {
 
             const query = decodeURIComponent(req.params.word).trim();
@@ -119,7 +121,7 @@ module.exports = class searchService {
             }
 
 
-           const data = result.map((hit) => {
+            const data = result.map((hit) => {
                 const source = hit['_source'];
 
                 if (hit['_index'].includes('keyword-suggestion')) return { type: 'keyword-suggestion', suggestion: source['suggestion'] }
@@ -139,7 +141,7 @@ module.exports = class searchService {
 
         } catch (error) {
             console.log("Error Occured while getting search suggestions", error);
-            callback(null, { success: false, message: 'No records found!', data: []});
+            callback(null, { success: false, message: 'No records found!', data: [] });
         }
     }
 
@@ -175,7 +177,7 @@ module.exports = class searchService {
             };
         }else if(data_source == 'article' || data_source.includes("article-v")){
             data = {
-                index: data_source,
+                index: 'article',
                 title: entityData.title,
                 slug: entityData.slug,
                 section_name: entityData.section_name,
