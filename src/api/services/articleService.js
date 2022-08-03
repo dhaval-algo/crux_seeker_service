@@ -436,8 +436,9 @@ module.exports = class articleService {
         }
 
         if(!result.created_by_role) result.created_by_role='author'
+        if(!result.template ) result.template='ARTICLE'
 
-        if(result.created_by_role=='author')
+        if(result.created_by_role=='author' && result.template== "ARTICLE" )
         {            
             let auth = await this.getAuthor(result.author_id);         
             if(auth){
@@ -538,7 +539,8 @@ module.exports = class articleService {
             tags: (result.tags) ? result.tags : [],            
             section_name: result.section_name,
             section_slug: result.section_slug,
-            ads_keywords:result.ads_keywords
+            ads_keywords:result.ads_keywords,
+            template:result.template
         };
 
         data.emiInUserCurrency = null
@@ -570,33 +572,208 @@ module.exports = class articleService {
        
         if(!isList){
             data.full_access = false;
+            
             if(rewards && rewards.length > 0)
             {
                 if(rewards[0].access_type == 'full_access')
                 {
+                    data.content = {}
                     data.full_access= true;
-                    data.description = result.content;
-                    data.content_section = result.content_section || null
-                    data.level_info = result.level_info || null
-                    if(data.level_info){
-                        data.level_info.levels_beginner = result.level_beginner || null
-                        data.level_info.levels_intermediate = result.level_intermediate || null
-                        data.level_info.levels_advance = result.level_advance || null
-                    }else{
-                        data.level_info = {}
-                        data.level_info.levels_beginner = result.level_beginner || null
-                        data.level_info.levels_intermediate = result.level_intermediate || null
-                        data.level_info.levels_advance = result.level_advance || null
+                    if(result.template== "ARTICLE"){
+                        data.content.description = result.content;
+                        data.content.content_section = result.content_section || null
+                        data.content.level_info = result.level_info || null
+                        if(data.content.level_info){
+                            data.content.level_info.levels_beginner = result.level_beginner || null
+                            data.content.level_info.levels_intermediate = result.level_intermediate || null
+                            data.content.level_info.levels_advance = result.level_advance || null
+                        }else{
+                            data.content.level_info = {}
+                            data.content.level_info.levels_beginner = result.level_beginner || null
+                            data.content.level_info.levels_intermediate = result.level_intermediate || null
+                            data.content.level_info.levels_advance = result.level_advance || null
+                        }
+                        data.content.course_recommendation = result.course_recommendation || null;
+                        data.content.conclusion = result.conclusion || null;
                     }
-                    data.course_recommendation = result.course_recommendation || null;
-                    data.conclusion = result.conclusion || null;
-                }
-                else if(rewards[0].access_type == 'partial_access')
-                {
-                    let description = result.content.replace(/<(.|\n)*?>/g, '');
-                    description = description.replace(/&nbsp;/g, ' ');
-                    data.description = description.split(' ').slice(0, 70).join(' ');
-                }
+                    if(result.template== "LEARN_GUIDE"){
+                        data.content.description = result.description || null;
+                        data.content.introduction  = result.introduction || null;
+                        data.content.specialization  = result.specialization || null;
+                        data.content.prerequisites   = result.prerequisites|| null;
+                        data.content.path_to_take   = result.path_to_take || null;
+                        data.content.soft_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.soft_skills   = {
+                                title:  result.soft_skills_title,
+                                description:  result.soft_skills_description,
+                                skills:  result.soft_skills_skills
+                            }
+                            if(data.content.soft_skills.skills && data.content.soft_skills.skills.length > 0)
+                            {
+                                data.content.soft_skills.skills.map((skill, index) => {
+                                    data.content.soft_skills.skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.soft_skills.skills[index].description =  skill.logo ? formatImageResponse(skill.description) : null;
+                                })
+                            }                            
+                        }
+                        data.content.technical_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.technical_skills    = {
+                                title:  result.technical_skills_title,
+                                description:  result.technical_skills_description,
+                                beginner_skills:  result.technical_skills_beginner_skills,
+                                intermediate_skills:  result.technical_skills_intermediate_skills,
+                                advanced_skills:  result.technical_skills_advanced_skills
+                            }
+                            if(data.content.technical_skills.beginner_skills && data.content.technical_skills.beginner_skills.length > 0)
+                            {
+                                data.content.technical_skills.beginner_skills.map((skill, index) => {
+                                    data.content.technical_skills.beginner_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.technical_skills.beginner_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
+                                    data.content.technical_skills.beginner_skills[index].description =  skill.logo ? formatImageResponse(skill.beginner_description) : null;
+                                })
+                            }
+                            if(data.content.technical_skills.intermediate_skills && data.content.technical_skills.intermediate_skills.length > 0)
+                            {
+                                data.content.technical_skills.intermediate_skills.map((skill, index) => {
+                                    data.content.technical_skills.intermediate_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.technical_skills.intermediate_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
+                                    data.content.technical_skills.intermediate_skills[index].description =  skill.logo ? formatImageResponse(skill.intermediate_description) : null;
+                                })
+                            }
+                            if(data.content.technical_skills.advanced_skills && data.content.technical_skills.advanced_skills.length > 0)
+                            {
+                                data.content.technical_skills.advanced_skills.map((skill, index) => {
+                                    data.content.technical_skills.advanced_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.technical_skills.advanced_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
+                                    data.content.technical_skills.advanced_skills[index].description =  skill.logo ? formatImageResponse(skill.advanced_description) : null;
+                                })
+                            }
+                            data.content.level_beginner   = result.level_beginner || null;
+                            data.content.level_intermediate    = result.level_intermediate  || null;
+                            data.content.level_advanced   = result.level_advanced || null;
+                            data.content.job_prospects   = result.job_prospects || null;
+                            data.content.advantages   = result.advantages || null;
+                            data.content.related_learn_advice    = result.related_learn_advice || null;
+                            data.content.faq     = result.faq || null;
+                            data.content.conclusion    = result.conclusion || null;                             
+                        }                        
+                    }
+                    if(result.template== "CAREER_GUIDE"){
+                        data.content.description = result.description || null;
+                        data.content.role_duties  = result.role_duties || null;                        
+                        data.content.prerequisites   = result.prerequisites|| null;
+                        data.content.required_skills  = result.required_skills || null;
+                        data.content.soft_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.soft_skills   = {
+                                title:  result.soft_skills_title,
+                                description:  result.soft_skills_description,
+                                skills:  result.soft_skills_skills
+                            }
+                            if(data.content.soft_skills.skills && data.content.soft_skills.skills.length > 0)
+                            {
+                                data.content.soft_skills.skills.map((skill, index) => {
+                                    data.content.soft_skills.skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.soft_skills.skills[index].description =  skill.logo ? formatImageResponse(skill.description) : null;
+                                })
+                            }                            
+                        }
+                        data.content.technical_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.technical_skills    = {
+                                title:  result.technical_skills_title,
+                                description:  result.technical_skills_description,
+                                beginner_skills:  result.technical_skills_beginner_skills,
+                                intermediate_skills:  result.technical_skills_intermediate_skills,
+                                advanced_skills:  result.technical_skills_advanced_skills
+                            }
+                            if(data.content.technical_skills.beginner_skills && data.content.technical_skills.beginner_skills.length > 0)
+                            {
+                                data.content.technical_skills.beginner_skills.map((skill, index) => {
+                                    data.content.technical_skills.beginner_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.technical_skills.beginner_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
+                                    data.content.technical_skills.beginner_skills[index].description =  skill.logo ? formatImageResponse(skill.beginner_description) : null;
+                                })
+                            }
+                            if(data.content.technical_skills.intermediate_skills && data.content.technical_skills.intermediate_skills.length > 0)
+                            {
+                                data.content.technical_skills.intermediate_skills.map((skill, index) => {
+                                    data.content.technical_skills.intermediate_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.technical_skills.intermediate_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
+                                    data.content.technical_skills.intermediate_skills[index].description =  skill.logo ? formatImageResponse(skill.intermediate_description) : null;
+                                })
+                            }
+                            if(data.content.technical_skills.advanced_skills && data.content.technical_skills.advanced_skills.length > 0)
+                            {
+                                data.content.technical_skills.advanced_skills.map((skill, index) => {
+                                    data.content.technical_skills.advanced_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
+                                    data.content.technical_skills.advanced_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
+                                    data.content.technical_skills.advanced_skills[index].description =  skill.logo ? formatImageResponse(skill.advanced_description) : null;
+                                })
+                            }                            
+                            data.content.skill_acquisition   = result.skill_acquisition || null;
+                            data.content.insights    = result.insights  || null;
+                            data.content.summary   = result.summary || null;
+                            data.content.reviews   = result.reviews || null;
+                            if(data.content.reviews && data.content.reviews.length > 0)
+                            {
+                                data.content.reviews.map((review, index) => {
+                                    data.content.reviews[index].image =  review.image ? formatImageResponse(review.image) : null;
+                                })
+                            }
+                            data.content.top_hiring_companies   = result.top_hiring_companies || null;
+                            if(data.content.top_hiring_companies && data.content.top_hiring_companies.length > 0)
+                            {
+                                data.content.top_hiring_companies.map((top_hiring_company, index) => {
+                                    data.content.top_hiring_companies[index].image =  top_hiring_company.image ? formatImageResponse(top_hiring_company.image) : null;
+                                })
+                            }
+                            data.content.faq     = result.faq || null;                            
+                        }
+                        const queryBody = {              
+                              "bool": {
+                                "filter": [
+                                  {term: { "group_id.keyword": result.group_id }}
+                                ]
+                            }
+                        };
+                        
+                        const groupResult = await elasticService.search('article', queryBody, { _source: ['country','levels','slug']});
+                        
+                        let variations = {
+                            regions: [],
+                            levels: [],
+                            slugs:{}
+                        }
+                        if(groupResult.hits){
+                            if(groupResult.hits && groupResult.hits.length > 0){
+                                for(const hit of groupResult.hits){                                   
+                                    variations.regions.push(hit._source.country)
+                                    variations.levels.push(hit._source.levels)
+                                    if(!variations.slugs[hit._source.country]) variations.slugs[hit._source.country] = []
+                                    variations.slugs[hit._source.country].push ({label:hit._source.levels, slug:hit._source.slug})
+                                }
+                            }
+                        }
+                        
+                        variations.regions.filter((x, i, a) => a.indexOf(x) == i)
+                        data.variations = []
+                        for(let region of variations.regions)
+                        {
+                            data.variations.push({
+                                label: region,
+                                levels: variations.slugs[region]
+                            })
+                        }                       
+                    }
+                   
+                }              
             }     
         }
 

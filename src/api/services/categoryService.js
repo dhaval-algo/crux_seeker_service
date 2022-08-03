@@ -192,6 +192,17 @@ module.exports = class categoryService {
                      data = await response.json();
                      data.map(function(el){
                          delete el["topics"]
+                         RedisConnection.set(`skill_${el["default_display_label"]}`, {
+                            'default_display_label' : el["default_display_label"],
+                            'slug' : el["slug"],
+                            'description' : el["description"],
+                            'beginner_description' : el["beginner_description"],
+                            'intermediate_description' : el["intermediate_description"],
+                            'advanced_description' : el["advanced_description"],
+                            'alternate_names' : el["alternate_names"],
+                            'image' : el["image"],
+                            'logo' : el["logo"],
+                         });
                      })
                 }
                 
