@@ -612,9 +612,10 @@ module.exports = class articleService {
                             }
                             if(data.content.soft_skills.skills && data.content.soft_skills.skills.length > 0)
                             {
-                                data.content.soft_skills.skills.map((skill, index) => {
-                                    data.content.soft_skills.skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.soft_skills.skills[index].description =  skill.logo ? formatImageResponse(skill.description) : null;
+                                data.content.soft_skills.skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.soft_skills.skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.soft_skills.skills[index].description =  skill_info.description || null;
                                 })
                             }                            
                         }
@@ -630,26 +631,29 @@ module.exports = class articleService {
                             }
                             if(data.content.technical_skills.beginner_skills && data.content.technical_skills.beginner_skills.length > 0)
                             {
-                                data.content.technical_skills.beginner_skills.map((skill, index) => {
-                                    data.content.technical_skills.beginner_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.technical_skills.beginner_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
-                                    data.content.technical_skills.beginner_skills[index].description =  skill.logo ? formatImageResponse(skill.beginner_description) : null;
+                                data.content.technical_skills.beginner_skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.beginner_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.beginner_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.beginner_skills[index].description =  skill_info.beginner_description || null;
                                 })
                             }
                             if(data.content.technical_skills.intermediate_skills && data.content.technical_skills.intermediate_skills.length > 0)
                             {
-                                data.content.technical_skills.intermediate_skills.map((skill, index) => {
-                                    data.content.technical_skills.intermediate_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.technical_skills.intermediate_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
-                                    data.content.technical_skills.intermediate_skills[index].description =  skill.logo ? formatImageResponse(skill.intermediate_description) : null;
+                                data.content.technical_skills.intermediate_skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.intermediate_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.intermediate_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.intermediate_skills[index].description =  skill_info.intermediate_description || null;
                                 })
                             }
                             if(data.content.technical_skills.advanced_skills && data.content.technical_skills.advanced_skills.length > 0)
                             {
-                                data.content.technical_skills.advanced_skills.map((skill, index) => {
-                                    data.content.technical_skills.advanced_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.technical_skills.advanced_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
-                                    data.content.technical_skills.advanced_skills[index].description =  skill.logo ? formatImageResponse(skill.advanced_description) : null;
+                                data.content.technical_skills.advanced_skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.advanced_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.advanced_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.advanced_skills[index].description =  skill_info.advanced_description || null;
                                 })
                             }
                             data.content.level_beginner   = result.level_beginner || null;
@@ -678,9 +682,10 @@ module.exports = class articleService {
                             }
                             if(data.content.soft_skills.skills && data.content.soft_skills.skills.length > 0)
                             {
-                                data.content.soft_skills.skills.map((skill, index) => {
-                                    data.content.soft_skills.skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.soft_skills.skills[index].description =  skill.logo ? formatImageResponse(skill.description) : null;
+                                data.content.soft_skills.skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.soft_skills.skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.soft_skills.skills[index].description =  skill_info.description || null;
                                 })
                             }                            
                         }
@@ -696,26 +701,29 @@ module.exports = class articleService {
                             }
                             if(data.content.technical_skills.beginner_skills && data.content.technical_skills.beginner_skills.length > 0)
                             {
-                                data.content.technical_skills.beginner_skills.map((skill, index) => {
-                                    data.content.technical_skills.beginner_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.technical_skills.beginner_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
-                                    data.content.technical_skills.beginner_skills[index].description =  skill.logo ? formatImageResponse(skill.beginner_description) : null;
+                                data.content.technical_skills.beginner_skills.map( async  (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.beginner_skills[index].logo =   skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.beginner_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.beginner_skills[index].description =  skill_info.beginner_description || null;
                                 })
                             }
                             if(data.content.technical_skills.intermediate_skills && data.content.technical_skills.intermediate_skills.length > 0)
                             {
-                                data.content.technical_skills.intermediate_skills.map((skill, index) => {
-                                    data.content.technical_skills.intermediate_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.technical_skills.intermediate_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
-                                    data.content.technical_skills.intermediate_skills[index].description =  skill.logo ? formatImageResponse(skill.intermediate_description) : null;
+                                data.content.technical_skills.intermediate_skills.map( async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.intermediate_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.intermediate_skills[index].image = skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.intermediate_skills[index].description =  skill_info.intermediate_description || null; 
                                 })
                             }
                             if(data.content.technical_skills.advanced_skills && data.content.technical_skills.advanced_skills.length > 0)
                             {
-                                data.content.technical_skills.advanced_skills.map((skill, index) => {
-                                    data.content.technical_skills.advanced_skills[index].logo =  skill.logo ? formatImageResponse(skill.logo) : null;
-                                    data.content.technical_skills.advanced_skills[index].image =  skill.logo ? formatImageResponse(skill.image) : null;
-                                    data.content.technical_skills.advanced_skills[index].description =  skill.logo ? formatImageResponse(skill.advanced_description) : null;
+                                data.content.technical_skills.advanced_skills.map(async  (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.advanced_skills[index].logo =   skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.advanced_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.advanced_skills[index].description =  skill_info.advanced_description || null;
                                 })
                             }                            
                             data.content.skill_acquisition   = result.skill_acquisition || null;
