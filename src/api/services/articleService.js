@@ -534,6 +534,8 @@ module.exports = class articleService {
             created_by_role: (result.created_by_role)? result.created_by_role:'author',
             published_date: result.published_date,
             categories: (result.categories) ? result.categories : [],
+            topics: (result.article_topics) ? result.article_topics : [],
+            sub_categories: (result.article_sub_categories) ? result.article_sub_categories : [],
             levels: (result.levels) ? result.levels : [],
             duration:(result.duration) ? result.duration : null,
             tags: (result.tags) ? result.tags : [],            
