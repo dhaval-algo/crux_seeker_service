@@ -268,10 +268,7 @@ module.exports = class partnerService {
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){       
 
 
-        let courses = {
-            list: [],
-            total: 0
-        };
+       
 
         let articles = {
             list: [],
@@ -279,15 +276,16 @@ module.exports = class partnerService {
         };
  
         if(!isList){
-            courses = await this.getPartnerCourses(result.name, currency);   
+            
             articles = await this.getPartnerArticles(result.id);
                         
         }
-
+        
         let data = {
             name: result.name,
             slug: result.slug,            
             id: `PTNR_${result.id}`,
+            short_description: result.short_description || null,
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
@@ -312,7 +310,6 @@ module.exports = class partnerService {
             linkedin_url: result.linkedin_url,
             facebook_url: result.facebook_url,
             twitter_url: result.twitter_url,
-            courses: courses,
             articles:articles,
             user_first_name: result.user_first_name,
             user_last_name: result.user_last_name,
@@ -329,7 +326,28 @@ module.exports = class partnerService {
             facts: (result.facts)? result.facts : null
         };
         if(!isList){
-            result.courses  =  courses;
+            // get course count 
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } },
+                        {"term": { "partner_name.keyword": result.name }}
+                    ]
+                }
+            }
+        
+            // Get total count of course
+            let course_count = await elasticService.count("learn-content", {"query": esQuery});
+            if(course_count)
+            {
+                data.course_count = course_count.count
+                if(data.highlights)
+                {
+                    data.highlights.course_count = course_count.count
+                }
+            }
+            
             let meta_information = await generateMetaInfo  ('partner', result);
             if(meta_information)
             {

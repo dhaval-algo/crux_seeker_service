@@ -302,22 +302,15 @@ const getPartnerMetaInfo = (result) => {
     else {
 
         let awards = [];
-        let courses_names = [];
 
         meta_keywords = [result.name];
         if (result.awards && result.awards.length > 0) {
             for (let award of result.awards) {
                 awards.push(award.name);
             }
-        }
+        }       
 
-        if (result.courses.list && result.courses.list.length > 0) {
-            for (let course of result.courses.list) {
-                courses_names.push(course.title);
-            }
-        }
-
-        meta_keywords = [...meta_keywords, ...awards, ...courses_names];
+        meta_keywords = [...meta_keywords, ...awards];
         meta_keywords = [...meta_keywords, ...EXTRA_KEYWORDS_PARTNER];
 
         if (meta_keywords.length > 0) {
