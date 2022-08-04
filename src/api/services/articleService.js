@@ -527,7 +527,7 @@ module.exports = class articleService {
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,          
             cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,            
-            listing_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,            
+            listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
