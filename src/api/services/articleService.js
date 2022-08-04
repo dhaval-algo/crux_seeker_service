@@ -763,7 +763,8 @@ module.exports = class articleService {
                             }
                         }
                         
-                        variations.regions.filter((x, i, a) => a.indexOf(x) == i)
+                        variations.regions = variations.regions.filter((x, i, a) => a.indexOf(x) == i)                       
+                        
                         data.variations = []
                         for(let region of variations.regions)
                         {
