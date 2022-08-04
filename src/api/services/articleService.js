@@ -782,6 +782,20 @@ module.exports = class articleService {
                             })
                         }                       
                     }
+                    if(result.template== "LEARN_ADVICE"){
+                        data.content.banner = result.banner || null;
+                        if(data.content.banner)
+                        {
+                            data.content.banner.partner_logo = data.content.banner.partner_logo ? formatImageResponse (data.content.banner.partner_logo) : null
+                            data.content.banner.banner_image = data.content.banner.banner_image ? formatImageResponse (data.content.banner.banner_image) : null
+                        }
+                        data.content.overview = result.overview || null;
+                        data.content.quote  = result.quote || null;                        
+                        data.content.course_structure   = result.course_structure|| null;
+                        data.content.final_take  = result.final_take || null;
+                        data.content.takeaways  = result.takeaways || null;
+                        
+                    }
                    
                 }              
             }     
