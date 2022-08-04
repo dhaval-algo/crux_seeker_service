@@ -663,6 +663,7 @@ module.exports = class articleService {
                         }                        
                     }
                     if(result.template== "CAREER_GUIDE"){
+                        data.content.region = result.region || null;
                         data.content.description = result.description || null;
                         data.content.role_duties  = result.role_duties || null;                        
                         data.content.prerequisites   = result.prerequisites|| null;
@@ -754,7 +755,7 @@ module.exports = class articleService {
                         if(groupResult.hits){
                             if(groupResult.hits && groupResult.hits.length > 0){
                                 for(const hit of groupResult.hits){                                   
-                                    variations.regions.push(hit._source.country)
+                                    variations.regions.push(hit._source.region)
                                     variations.levels.push(hit._source.levels)
                                     if(!variations.slugs[hit._source.country]) variations.slugs[hit._source.country] = []
                                     variations.slugs[hit._source.country].push ({label:hit._source.levels, slug:hit._source.slug})
