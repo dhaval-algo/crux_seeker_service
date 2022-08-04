@@ -757,8 +757,8 @@ module.exports = class articleService {
                                 for(const hit of groupResult.hits){                                   
                                     variations.regions.push(hit._source.region)
                                     variations.levels.push(hit._source.levels)
-                                    if(!variations.slugs[hit._source.country]) variations.slugs[hit._source.country] = []
-                                    variations.slugs[hit._source.country].push ({label:hit._source.levels, slug:hit._source.slug})
+                                    if(!variations.slugs[hit._source.region]) variations.slugs[hit._source.region] = []
+                                    variations.slugs[hit._source.region].push ({label:hit._source.levels, slug:hit._source.slug})
                                 }
                             }
                         }
