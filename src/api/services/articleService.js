@@ -663,7 +663,6 @@ module.exports = class articleService {
                             data.content.level_advanced   = result.level_advanced || null;
                             data.content.job_prospects   = result.job_prospects || null;
                             data.content.advantages   = result.advantages || null;
-                            data.content.related_learn_advice    = result.related_learn_advice || null;
                             data.content.faq     = result.faq || null;
                             data.content.conclusion    = result.conclusion || null;                             
                         }                        
