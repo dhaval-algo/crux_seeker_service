@@ -794,6 +794,7 @@ module.exports = class articleService {
                         data.content.quote  = result.quote || null;                        
                         data.content.course_structure   = result.course_structure|| null;
                         data.content.final_take  = result.final_take || null;
+                        data.content.insider_tips  = result.insider_tips || null;                         
                         data.content.takeaways  = result.takeaways || null;
                         
                     }
