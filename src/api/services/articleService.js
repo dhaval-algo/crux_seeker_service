@@ -35,6 +35,14 @@ const sortOptions = {
     'Z-A' :["title:desc"],
 }
 
+const currencyToRegion = {
+    "INR" : "India",
+    "EUR": "Europe",
+    "GBP" : "UK",
+    "USD" : "USA"
+  }
+  
+
 const CheckArticleRewards = async (user, premium) => {  
     let rewards = [];
     let facts = {
@@ -66,6 +74,9 @@ const getEmiBaseCurrency = (result) => {
 module.exports = class articleService {
 
     async getArticleList(req, callback){
+        let userCurrency= (req && req.query && req.query['currency'] )? req.query['currency']: process.env.DEFAULT_CURRENCY 
+        let region = currencyToRegion[userCurrency]
+
         const filterConfigs = await getFilterConfigs('Article');
         let searchTemplate = null;
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -90,6 +101,49 @@ module.exports = class articleService {
                 }
             };
         }
+
+        query.bool.must.push({
+            "bool": {
+              "should": [
+                {
+                  "bool": {
+                    "filter": [
+                      {
+                        "terms": {
+                          "template.keyword": [
+                            "ARTICLE",
+                            "LEARN_GUIDE",
+                            "LEARN_ADVICE"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "bool": {
+                    "filter": [
+                      {
+                        "term": {
+                          "template.keyword": "CAREER_GUIDE"
+                        }
+                      },
+                      {
+                        "term": {
+                          "career_level.keyword": "Level 1"
+                        }
+                      } ,
+                      {
+                        "term": {
+                          "region.keyword": region
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          })
 
         if(req.query.articleIds)
         {
