@@ -754,7 +754,7 @@ module.exports = class articleService {
                             }
                         };
                         
-                        const groupResult = await elasticService.search('article', queryBody, { _source: ['region','levels','slug']});
+                        const groupResult = await elasticService.search('article', queryBody, { _source: ['region','career_level','slug']});
                         
                         let variations = {
                             regions: [],
