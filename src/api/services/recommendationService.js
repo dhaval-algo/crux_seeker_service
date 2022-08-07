@@ -15,6 +15,61 @@ const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","i
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug"]
 const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take"]
 const FEATURED_RANK_LIMIT = 2;
+const currencyToRegion = {
+    "INR" : "India",
+    "EUR": "Europe",
+    "GBP" : "UK",
+    "USD" : "USA"
+}
+function formatQueryForCG (query, currency){
+    currency = (currency) ? currency : process.env.DEFAULT_CURRENCY
+    let region = currencyToRegion[userCurrency]
+    return({
+        "bool": {
+            "should": [
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "terms": {
+                                    "template.keyword": [
+                                        "ARTICLE",
+                                        "LEARN_GUIDE",
+                                        "LEARN_ADVICE"
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "bool": {
+                        "filter": [
+                            {
+                                "term": {
+                                    "template.keyword": "CAREER_GUIDE"
+                                }
+                            },
+                            {
+                                "term": {
+                                    "career_level.keyword": "Level 1"
+                                }
+                            },
+                            {
+                                "term": {
+                                    "region.keyword": region
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    });
+    
+}
+
+
 const getCurrencies = async (useCache = true) => {
 
     let cacheKey = "get-currencies-backend";
@@ -822,7 +877,7 @@ module.exports = class recommendationService {
     async getPeopleAreAlsoViewingArticles(req) {
         try {
             const userId = req.user.userId;
-            const { page = 1, limit = 6 } = req.query;
+            const { page = 1, limit = 6 ,currency} = req.query;
             const offset = (page - 1) * limit;
             const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
             const categoriesNames = categories.map((category) => category.name);
@@ -844,6 +899,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
+                esQuery.bool.must.push(formatQueryForCG (esQuery, currency))
 
                 const sort = [{ "activity_count.all_time.popularity_score": "desc" }];
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort });
@@ -911,7 +967,8 @@ module.exports = class recommendationService {
                 ]
             }
         }
-    
+        
+        esQuery.bool.must.push(formatQueryForCG (esQuery, currency))
         if (skillsKeywords.length) {
             const offset = (page - 1) * limitForSkills;
             esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
@@ -1054,7 +1111,7 @@ module.exports = class recommendationService {
     async getFeaturedArticles (req) {
         try {
             let {pageType} = req.query;        
-            let { category, sub_category, topic, section} = req.query; 
+            let { category, sub_category, topic, section, currency} = req.query; 
             let featured_articles = []
             let articles = []
             let maxArticles = 2;
@@ -1174,7 +1231,8 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-
+                
+                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
                 //Exclude articles which are manually added
                 if(articles.length >  0){
                     esQuery.bool.must_not = [
@@ -1259,7 +1317,7 @@ module.exports = class recommendationService {
     async getArticleAdvice (req) {
         try {
             let {pageType} = req.query;        
-            let { category, sub_category, topic} = req.query; 
+            let { category, sub_category, topic, currency} = req.query; 
             let article_advice = []
             let articles = []
             let maxArticles = 8;
@@ -1354,6 +1412,8 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
+                
+                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
 
                 // exclude manually added articles and featured articles
                 let exclude_articles = []
@@ -2261,7 +2321,7 @@ module.exports = class recommendationService {
     }
 
     async getPopularArticles(req) {
-        const { subType, category, sub_category, topic, skill, section, page = 1, limit = 6 } = req.query;
+        const { subType, category, sub_category, topic, skill, section, page = 1, limit = 6 ,currency} = req.query;
         const offset = (page - 1) * limit
 
         const articles = [];
@@ -2273,6 +2333,8 @@ module.exports = class recommendationService {
                     ]
                 }
             }
+            esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+
             if (category) {
                 esQuery.bool.filter.push(
                     {
@@ -3420,7 +3482,7 @@ module.exports = class recommendationService {
     async getRelatedArticle(req) {
         try {
             const articleId = req.query.articleId.toString();
-            const { page = 1, limit = 6 } = req.query;
+            const { page = 1, limit = 6 ,currency} = req.query;
             const offset = (page - 1) * limit;
             let articles = [];
             let cacheKey = `Recommendation-For-Article-${articleId}`;
@@ -3449,6 +3511,7 @@ module.exports = class recommendationService {
                         }
                     }
                 }
+                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
 
                 function buildQueryTerms(key, i) {
                     let termQuery = { "terms": {} };
@@ -3497,7 +3560,7 @@ module.exports = class recommendationService {
 
 
     async getRecommendationForArticle(req) {
-        const { page = 1, limit = 6 } = req.query;
+        const { page = 1, limit = 6 ,currency} = req.query;
         const offset = (page - 1) * limit
         const articleId = req.query.articleId.toString();
         let categories = null
@@ -3548,6 +3611,8 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
+                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                
                 if (categories) {
                     esQuery.bool.filter.push(
                         {
@@ -3609,7 +3674,7 @@ module.exports = class recommendationService {
     }
 
     async getRecommendationArticlesforCourse(req) {
-        const { page = 1, limit = 5 } = req.query;
+        const { page = 1, limit = 5 , currency} = req.query;
         const offset = (page - 1) * limit
         const courseId = req.query.courseId.toString();
         let topics = null
@@ -3679,6 +3744,7 @@ module.exports = class recommendationService {
                         "should":[]
                     }
                 }
+                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
                 if (topics) {
                     esQuery.bool.should.push(
                         {
@@ -3754,7 +3820,7 @@ module.exports = class recommendationService {
     }
 
     async getRelatedArticlesForLearnPath(req) {
-        const { page = 1, limit = 5, section} = req.query;
+        const { page = 1, limit = 5, section,currency} = req.query;
         const offset = (page - 1) * limit
         const learnPathId = req.query.learnPathId.toString();
         let topics = null
@@ -3818,6 +3884,7 @@ module.exports = class recommendationService {
                         "should":[]
                     }
                 }
+                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
                 if (section) {
                     esQuery.bool.filter.push(
                         {
@@ -3897,7 +3964,7 @@ module.exports = class recommendationService {
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
         const userId = user.userId
-        const { page = 1, limit = 4,section } = req.query;
+        const { page = 1, limit = 4,section , currency} = req.query;
         const offset = (page - 1) * limit;
 
         let cacheKey = `article-recommendations-${section}-${userId}`;
@@ -4006,6 +4073,7 @@ module.exports = class recommendationService {
                     ]
                 }
             }
+            esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
             if (section) {
                 esQuery.bool.filter.push(
                     {
@@ -4632,5 +4700,4 @@ module.exports = class recommendationService {
         }
         return ranking_images
     }
-
 }
