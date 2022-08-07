@@ -22,7 +22,7 @@ const currencyToRegion = {
     "USD" : "USA"
 }
 function formatQueryForCG (query, currency){
-    currency = (currency) ? currency : process.env.DEFAULT_CURRENCY
+    let userCurrency = (currency) ? currency : process.env.DEFAULT_CURRENCY
     let region = currencyToRegion[userCurrency]
     return({
         "bool": {
