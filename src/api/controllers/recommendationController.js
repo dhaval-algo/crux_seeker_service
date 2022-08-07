@@ -58,6 +58,13 @@ module.exports = {
             case "popular-goal-based-recommendation":
                 response = await RecommendationService.popularGoalBasedRecommendation(req);
                 break;
+            case "lg-course-recommendation-for-techinical-skill":
+                    response = await RecommendationService.lgCourseRecommendationForTechinicalSkill(req);
+                    break;
+            case "lg-how-to-learn-courses":
+                response = await RecommendationService.lgHowToLearncourses(req);
+                break;   
+                     
             default:
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
                 break;           

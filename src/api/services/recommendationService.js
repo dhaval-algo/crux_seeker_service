@@ -3482,10 +3482,10 @@ module.exports = class recommendationService {
     async getRelatedArticle(req) {
         try {
             const articleId = req.query.articleId.toString();
-            const { page = 1, limit = 6 ,currency} = req.query;
+            const { page = 1, limit = 6 ,currency,section} = req.query;
             const offset = (page - 1) * limit;
             let articles = [];
-            let cacheKey = `Recommendation-For-Article-${articleId}`;
+            let cacheKey = `Recommendation-For-Article-${articleId}-${section}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 articles = cachedData;
@@ -3510,6 +3510,12 @@ module.exports = class recommendationService {
                             }
                         }
                     }
+                }
+                if (section) {
+                    esQuery.bool.filter.push(
+                        { "term": { "section_name.keyword": section } }
+                    );
+    
                 }
                 esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
 
@@ -4542,8 +4548,7 @@ module.exports = class recommendationService {
                         sort = [{ "activity_count.all_time.popularity_score": "desc" }]
                         break;
                 }
-                console.log("esQuery");
-                console.dir(esQuery, { depth: null })
+                
                 let result = await elasticService.search("provider", esQuery, { from: offset, size: limit, sortObject: sort });
 
                 if (result.hits) {
@@ -4699,5 +4704,262 @@ module.exports = class recommendationService {
             }
         }
         return ranking_images
+    }
+
+
+    async lgCourseRecommendationForTechinicalSkill(req) {        
+        let { articleId, currency = process.env.DEFAULT_CURRENCY,skill, page = 1, limit = 12 } = req.query;
+        let category,sub_category,topic
+        const offset = (page - 1) * limit
+
+        let courses = [];
+        try {
+            let cacheKey = `lg-Techinical-Skill-courses-${articleId}-${skill || 'skill'}-${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
+
+                // Find category /sub-category or topic to which lg belogs to
+                let esQuery = {
+                    "ids": {
+                        "values": articleId
+                    }
+                };
+               
+                let result = await elasticService.search('article', esQuery,{_source: ['categories','article_sub_categories','article_topics']});
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        category =  hit._source.categories;
+                        sub_category =  hit._source.article_sub_categories;
+                        topic =  hit._source.article_topics;
+                    }
+                }
+
+               
+
+                esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": category
+                            }
+                        }
+                    );
+                }
+                if (sub_category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "sub_categories.keyword": sub_category
+                            }
+                        }
+                    );
+                }
+                if (topic) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "topics.keyword": topic
+                            }
+                        }
+                    );
+                }
+
+                esQuery.bool.should =  [
+                    {
+                        bool: {
+                            must: [
+                                {
+                                    query_string: {
+                                        fields: ["title"],
+                                        query: skill
+                                    }
+                                }
+                            ],
+                            boost: 1000
+                        }
+                    },
+                    {
+                        bool: {
+                            filter: [
+                                {
+                                    "term": {
+                                        "skills.keyword": skill,
+
+                                    }
+                                }
+                            ],
+                            boost: 10
+                        }
+                    }
+                ]
+               
+                let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
+              
+                result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
+               
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateCourseFinalResponse(hit._source, currency)
+                        courses.push(data);
+                    }
+                    await RedisConnection.set(cacheKey, courses);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            return response;
+           
+
+        } catch (error) {
+            console.log("Error while processing data for lgCourseRecommendationForTechinicalSkill courses", error);
+            let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
+            return response;
+        }
+    }
+
+    async lgHowToLearncourses(req) {        
+        let { articleId, currency = process.env.DEFAULT_CURRENCY, level, learnType, priceType ="paid", page = 1, limit = 12 } = req.query;
+        let category,sub_category,topic
+        let skills = []
+        const offset = (page - 1) * limit
+        let courses = [];
+        try {
+            let cacheKey = `lg-how-to-learn-courses-${articleId}-${level || 'level'}--${learnType || 'learnType'}--${priceType || 'priceType'}-${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
+
+                // Find category /sub-category or topic to which lg belogs to
+                let esQuery = {
+                    "ids": {
+                        "values": articleId
+                    }
+                };
+               
+                let result = await elasticService.search('article', esQuery,{_source: ['categories','article_sub_categories','article_topics', 'technical_skills_advanced_skills','technical_skills_beginner_skills','technical_skills_intermediate_skills']});
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        category =  hit._source.categories;
+                        sub_category =  hit._source.article_sub_categories;
+                        topic =  hit._source.article_topics;                        
+                        if(level == 'Beginner' || !level)
+                        {
+                            hit._source.technical_skills_beginner_skills.map(skill=>skills.push(skill.default_display_label))
+                        }
+                        if(level == 'Intermediate' || !level)
+                        {
+                            hit._source.technical_skills_intermediate_skills.map(skill=>skills.push(skill.default_display_label))
+                        }
+                        if(level == 'Advanced' || !level)
+                        {
+                            hit._source.technical_skills_advanced_skills.map(skill=>skills.push(skill.default_display_label))
+                        }
+                    }
+                }               
+
+                esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "categories.keyword": category
+                            }
+                        }
+                    );
+                }
+                if (sub_category) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "sub_categories.keyword": sub_category
+                            }
+                        }
+                    );
+                }
+                if (topic) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "topics.keyword": topic
+                            }
+                        }
+                    );
+                }
+                if (level) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "level.keyword": level
+                            }
+                        }
+                    );
+                }
+                if (learnType) {
+                    esQuery.bool.filter.push(
+                        {
+                            "term": {
+                                "learn_type.keyword": learnType
+                            }
+                        }
+                    );
+                }
+                if (skills) {
+                    esQuery.bool.filter.push(
+                        {
+                            "terms": {
+                                "skills.keyword": skills
+                            }
+                        }
+                    );
+                }                
+               
+                if (priceType && priceType == "Free") {
+                    esQuery.bool.filter.push(
+                        { "term": { "pricing_type.keyword": "Free" } }
+                    ); 
+                }
+                if (priceType && priceType == "Paid") {
+                    esQuery.bool.filter.push(
+                        { "term": { "pricing_type.keyword": "Paid" } }
+                    );
+                }
+                let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
+   
+                result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
+               
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateCourseFinalResponse(hit._source, currency)
+                        courses.push(data);
+                    }
+                    await RedisConnection.set(cacheKey, courses);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            return response;
+           
+
+        } catch (error) {
+            console.log("Error while processing data for lgHowToLearncourses", error);
+            let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
+            return response;
+        }
     }
 }
