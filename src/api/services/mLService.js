@@ -7,7 +7,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 
-const whetherShowMLCourses = (recommendationType) => {
+const whetherShowMLCourses = async (recommendationType) => {
     switch (recommendationType) {
 
         case "get-similar-courses":

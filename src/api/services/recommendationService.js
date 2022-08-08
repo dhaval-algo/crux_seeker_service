@@ -449,7 +449,7 @@ module.exports = class recommendationService {
 
             const mlCourses = await this.getSimilarCoursesML(courseId, currency, page, limit);
             let show = null;
-            if (mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
+            if ( await mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
                 show = 'ml';
             }
             else {
