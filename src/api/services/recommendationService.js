@@ -4803,6 +4803,7 @@ module.exports = class recommendationService {
                 ]
                
                 let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
+                sort = null
               
                 result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
                
@@ -4958,6 +4959,386 @@ module.exports = class recommendationService {
 
         } catch (error) {
             console.log("Error while processing data for lgHowToLearncourses", error);
+            let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
+            return response;
+        }
+    }
+
+    async cgCoursesWithPlacement(req) {        
+        let { articleId, currency = process.env.DEFAULT_CURRENCY,  region, noRegion, page = 1, limit = 12 } = req.query;
+        let categories,sub_categories,topics
+        let level = []
+        const offset = (page - 1) * limit
+        let courses = [];
+        try {
+            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
+
+                // Find category /sub-category or topic to which lg belogs to
+                let esQuery = {
+                    "ids": {
+                        "values": articleId
+                    }
+                };
+               
+                let result = await elasticService.search('article', esQuery,{_source: ['categories','article_sub_categories','article_topics','levels']});
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        categories =  hit._source.categories;
+                        sub_categories =  hit._source.article_sub_categories;
+                        topics =  hit._source.article_topics;                        
+                        level =  hit._source.levels
+                    }
+                }               
+
+                esQuery = {
+                    "bool": {
+                        "must": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (categories && categories.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories
+                            }
+                        }
+                    );
+                }
+                if (sub_categories && sub_categories.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "sub_categories.keyword": sub_categories
+                            }
+                        }
+                    );
+                }
+                if (topics && topics.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "topics.keyword": topics
+                            }
+                        }
+                    );
+                }
+                if (level) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "level.keyword": level
+                            }
+                        }
+                    );
+                }
+
+                if (region) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "regions.keyword": region
+                            }
+                        }
+                    );
+                }
+
+                if (noRegion) {
+                    esQuery.bool.must.push(
+                        {
+                            "bool": {
+                              "must_not": [
+                                {
+                                  "term": {                                   
+                                      "regions.keyword": noRegion
+                                   
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                    );
+                }
+                
+                esQuery.bool.must.push(
+                    {
+                        "term": {
+                            "job_assistance": true
+                        }
+                    }
+                );                     
+
+                let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
+                   
+                result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
+               
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateCourseFinalResponse(hit._source, currency)
+                        courses.push(data);
+                    }
+                    await RedisConnection.set(cacheKey, courses);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION);
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            return response;
+           
+
+        } catch (error) {
+            console.log("Error while processing data for cgCoursesWithPlacement", error);
+            let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
+            return response;
+        }
+    }
+
+    async cgCoursesWithLearnType(req) {        
+        let { articleId, currency = process.env.DEFAULT_CURRENCY, learnType,  region, noRegion , page = 1, limit = 12 } = req.query;
+        let categories,sub_categories,topics
+        let level = []
+        const offset = (page - 1) * limit
+        let courses = [];
+        try {
+            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${learnType || 'learnType'}--${currency}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
+
+                // Find category /sub-category or topic to which lg belogs to
+                let esQuery = {
+                    "ids": {
+                        "values": articleId
+                    }
+                };
+               
+                let result = await elasticService.search('article', esQuery,{_source: ['categories','article_sub_categories','article_topics','levels']});
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        categories =  hit._source.categories;
+                        sub_categories =  hit._source.article_sub_categories;
+                        topics =  hit._source.article_topics;                        
+                        level =  hit._source.levels
+                    }
+                }               
+
+                esQuery = {
+                    "bool": {
+                        "must": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (categories && categories.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories
+                            }
+                        }
+                    );
+                }
+                if (sub_categories && sub_categories.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "sub_categories.keyword": sub_categories
+                            }
+                        }
+                    );
+                }
+                if (topics && topics.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "topics.keyword": topics
+                            }
+                        }
+                    );
+                }
+               
+                
+                if (learnType) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "learn_type.keyword": learnType
+                            }
+                        }
+                    );
+                }
+                
+                if (region) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "regions.keyword": region
+                            }
+                        }
+                    );
+                }
+                
+                if (noRegion) {
+                    esQuery.bool.must.push(
+                        {
+                            "bool": {
+                              "must_not": [
+                                {
+                                  "term": {                                   
+                                      "regions.keyword": noRegion
+                                   
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                    );
+                }
+
+                let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
+                   
+                result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
+               
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateCourseFinalResponse(hit._source, currency)
+                        courses.push(data);
+                    }
+                    await RedisConnection.set(cacheKey, courses);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION);
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            return response;
+           
+
+        } catch (error) {
+            console.log("Error while processing data for cgCoursesWithLearnType", error);
+            let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
+            return response;
+        }
+    }
+
+    async cgFreeCourses(req) {        
+        let { articleId, currency = process.env.DEFAULT_CURRENCY, region, noRegion, page = 1, limit = 12 } = req.query;
+        let categories,sub_categories,topics
+        let level = []
+        const offset = (page - 1) * limit
+        let courses = [];
+        try {
+            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            if (cachedData.noCacheData != true) {
+                courses = cachedData;
+            } else {
+
+                // Find category /sub-category or topic to which lg belogs to
+                let esQuery = {
+                    "ids": {
+                        "values": articleId
+                    }
+                };
+               
+                let result = await elasticService.search('article', esQuery,{_source: ['categories','article_sub_categories','article_topics','levels']});
+                if (result.hits && result.hits.length) {
+                    for (const hit of result.hits) {
+                        categories =  hit._source.categories;
+                        sub_categories =  hit._source.article_sub_categories;
+                        topics =  hit._source.article_topics;                        
+                        level =  hit._source.levels
+                    }
+                }               
+
+                esQuery = {
+                    "bool": {
+                        "must": [
+                            { "term": { "status.keyword": "published" } }
+                        ]
+                    }
+                }
+                if (categories && categories.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories
+                            }
+                        }
+                    );
+                }
+                if (sub_categories && sub_categories.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "sub_categories.keyword": sub_categories
+                            }
+                        }
+                    );
+                }
+                if (topics && topics.length > 0) {
+                    esQuery.bool.must.push(
+                        {
+                            "terms": {
+                                "topics.keyword": topics
+                            }
+                        }
+                    );
+                }
+
+                if (region) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "regions.keyword": region
+                            }
+                        }
+                    );
+                }
+
+                if (noRegion) {
+                    esQuery.bool.must.push(
+                        {
+                            "bool": {
+                              "must_not": [
+                                {
+                                  "term": {                                   
+                                      "regions.keyword": noRegion
+                                   
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                    );
+                }
+
+                esQuery.bool.must.push(
+                    { "term": { "pricing_type.keyword": "Free" } }                
+                );                               
+
+                let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
+                  
+                result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
+               
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateCourseFinalResponse(hit._source, currency)
+                        courses.push(data);
+                    }
+                    await RedisConnection.set(cacheKey, courses);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION);
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            return response;
+           
+
+        } catch (error) {
+            console.log("Error while processing data for cgFreeCourses", error);
             let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
             return response;
         }

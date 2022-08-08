@@ -63,8 +63,17 @@ module.exports = {
                     break;
             case "lg-how-to-learn-courses":
                 response = await RecommendationService.lgHowToLearncourses(req);
-                break;   
-                     
+                break; 
+            case "cg-courses-with-placement":
+                response = await RecommendationService.cgCoursesWithPlacement(req);
+                break;  
+            case "cg-courses-with-learn-type":
+                response = await RecommendationService.cgCoursesWithLearnType(req);
+                break;
+            case "cg-free-courses":
+                response = await RecommendationService.cgFreeCourses(req);
+                break;         
+                       
             default:
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
                 break;           
