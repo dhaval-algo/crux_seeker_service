@@ -2679,8 +2679,8 @@ module.exports = class recommendationService {
             }
             const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
             const offset = (page - 1) * limit;
-            const courseValues = await models.form_submission.findAll({ where: { userId: userId, targetEntityType:"course",formType:"enquiry" } });
-            const courseIds = courseValues.map((course) => course.targetEntityId)
+            const courseValues = await models.enquiry.findAll({ where: { userId: userId} });
+            const courseIds = courseValues.map((course) => course.courseId)
             // Course Ids -> Now it is used for getting topics out of them.
 
             let topics = []

@@ -3922,48 +3922,55 @@ const peopleAreAlsoViewing = async (req, callback) => {
 
 
 const getUserProfileKeywords = async (userId) => {
-    
-    let skills = null;
     const skillsKeywords = [];
     const workExpKeywords = [];
+    const userData = await models.user_topic.findAll({
+        where: {
+            userId: req.user.userId
+        },
+        include: [
+            {
+                model: models.user_skill,
+                attributes: ['skill', 'isPrimary']
+            }
+        ],
+        attributes: ['topic']
 
-    const topSkills = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'primarySkills' } });
-
-    if (topSkills && topSkills.value && topSkills.value != "{}") {
-        skills = JSON.parse(topSkills.value);
+    })
+    // Check if there are any primary(key) skills
+    if (userData && userData.length > 0) {
+        for (let data of userData) {
+            for (let user_skill of data.user_skills) {
+                if (user_skill.isPrimary)
+                    skillsKeywords.push(user_skill.skill)
+            }
+        }
     }
-    else {
-        const additionalSkills = await models.user_meta.findOne({ where: { userId: userId, metaType: 'primary', key: 'skills' } })
-        if (additionalSkills && additionalSkills.value && additionalSkills.value != "{}") skills = JSON.parse(additionalSkills.value);
-    }
-
-    let workExp = null;
-    const workExperience = await models.user_meta.findOne({ attributes: ['value'], where: { userId: userId, metaType: 'primary', key: 'workExp' } });
-
-    
-
-    if (skills) {
-        for (const key in skills) {
-            skillsKeywords.push(key);
-            skillsKeywords.push(...skills[key]);
+    // else conside normal skills
+    if (skillsKeywords.length < 1) {
+        if (userData && userData.length > 0) {
+            for (let data of userData) {
+                for (let user_skill of data.user_skills) {
+                    skillsKeywords.push(user_skill.skill)
+                }
+            }
         }
     }
 
-    if (workExperience && workExperience.value && workExperience.value != "[]") {
-        workExp = JSON.parse(workExperience.value);
-        workExp.forEach((workExp) => {
+    const workExperience = await models.user_Work_experience.findAll({ attributes: ['jobTitle', 'industry'], where: { userId: userId } });
+    if (workExperience && workExperience.length > 0) {
+        for (let workExp of workExperience) {
             if (workExp.jobTitle) {
-                workExpKeywords.push(workExp.jobTitle.label);
+                workExpKeywords.push(workExp.jobTitle);
             }
 
             if (workExp.industry) {
-                workExpKeywords.push(workExp.industry.label);
+                workExpKeywords.push(workExp.industry);
             }
-        });
+        }
     }
 
-
-    return {skillsKeywords:skillsKeywords,workExpKeywords:workExpKeywords};
+    return { skillsKeywords: skillsKeywords, workExpKeywords: workExpKeywords };
 
 }
 
