@@ -78,7 +78,17 @@ module.exports = {
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
                 break;           
         }
-
+        if(response && response.data)
+        {
+            if (response.data.list && response.data.list.length > 0)
+            {
+                response.data.list= response.data.list.filter(item => item != null)
+            }
+            if (response.data.mlList && response.data.mlList.length > 0)
+            {
+                response.data.mlList = response.data.mlList.filter(item => item != null)
+            }
+        }
         let finalData = {}
         if(req.query['fields']){                    
             finalData =  formatResponseField(req.query['fields'], response.data )                    
@@ -139,7 +149,17 @@ module.exports = {
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
                 break;           
         }
-
+        if(response && response.data)
+        {
+            if (response.data.list && response.data.list.length > 0)
+            {
+                response.data.list= response.data.list.filter(item => item != null)
+            }
+            if (response.data.mlList && response.data.mlList.length > 0)
+            {
+                response.data.mlList = response.data.mlList.filter(item => item != null)
+            }
+        }
         let finalData = {}
         if(req.query['fields']){                    
             finalData =  formatResponseField(req.query['fields'], response.data )                    
@@ -153,6 +173,17 @@ module.exports = {
 
     getFeaturedArticles: async (req, res) =>{
         const response = await RecommendationService.getFeaturedArticles(req) 
+        if(response && response.data)
+        {
+            if (response.data.list && response.data.list.length > 0)
+            {
+                response.data.list= response.data.list.filter(item => item != null)
+            }
+            if (response.data.mlList && response.data.mlList.length > 0)
+            {
+                response.data.mlList = response.data.mlList.filter(item => item != null)
+            }
+        }
         let finalData = {}
         if(req.query['fields']){                    
             finalData =  formatResponseField(req.query['fields'], response.data )                    
@@ -165,7 +196,18 @@ module.exports = {
     },
 
     getArticleAdvice: async (req, res) =>{
-        const response = await RecommendationService.getArticleAdvice(req)  
+        const response = await RecommendationService.getArticleAdvice(req)
+        if(response && response.data)
+        {
+            if (response.data.list && response.data.list.length > 0)
+            {
+                response.data.list= response.data.list.filter(item => item != null)
+            }
+            if (response.data.mlList && response.data.mlList.length > 0)
+            {
+                response.data.mlList = response.data.mlList.filter(item => item != null)
+            }
+        }
         let finalData = {}
         if(req.query['fields']){                    
             finalData =  formatResponseField(req.query['fields'], response.data )                    
@@ -201,6 +243,17 @@ module.exports = {
         }
     
         let finalData = {}
+        if(response && response.data)
+        {
+            if (response.data.list && response.data.list.length > 0)
+            {
+                response.data.list= response.data.list.filter(item => item != null)
+            }
+            if (response.data.mlList && response.data.mlList.length > 0)
+            {
+                response.data.mlList = response.data.mlList.filter(item => item != null)
+            }
+        }
         if(req.query['fields']){                    
             finalData =  formatResponseField(req.query['fields'], response.data )                    
             res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});

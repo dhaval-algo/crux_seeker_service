@@ -4855,7 +4855,7 @@ module.exports = class recommendationService {
     }
 
     async lgHowToLearncourses(req) {        
-        let { articleId, currency = process.env.DEFAULT_CURRENCY, level, learnType,  region, noRegion, priceType ="paid", page = 1, limit = 12 } = req.query;
+        let { articleId, currency = process.env.DEFAULT_CURRENCY, level, learnType,  region, noRegion, priceType ="Paid", page = 1, limit = 12 } = req.query;
         let category,sub_category,topic
         let skills = []
         const offset = (page - 1) * limit
