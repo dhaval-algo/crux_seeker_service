@@ -4708,13 +4708,13 @@ module.exports = class recommendationService {
 
 
     async lgCourseRecommendationForTechinicalSkill(req) {        
-        let { articleId, currency = process.env.DEFAULT_CURRENCY,skill, page = 1, limit = 12 } = req.query;
+        let { articleId, currency = process.env.DEFAULT_CURRENCY,skill,  region, noRegion, page = 1, limit = 12 } = req.query;
         let category,sub_category,topic
         const offset = (page - 1) * limit
 
         let courses = [];
         try {
-            let cacheKey = `lg-Techinical-Skill-courses-${articleId}-${skill || 'skill'}-${currency}-${page}-${limit}`;
+            let cacheKey = `lg-Techinical-Skill-courses-${articleId}-${skill || 'skill'}-${region || 'region'}--${noRegion || 'noRegion'}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -4740,13 +4740,13 @@ module.exports = class recommendationService {
 
                 esQuery = {
                     "bool": {
-                        "filter": [
+                        "must": [
                             { "term": { "status.keyword": "published" } }
                         ]
                     }
                 }
                 if (category) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "categories.keyword": category
@@ -4755,7 +4755,7 @@ module.exports = class recommendationService {
                     );
                 }
                 if (sub_category) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "sub_categories.keyword": sub_category
@@ -4764,12 +4764,39 @@ module.exports = class recommendationService {
                     );
                 }
                 if (topic) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "topics.keyword": topic
                             }
                         }
+                    );
+                }
+
+                if (region) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "regions.keyword": region
+                            }
+                        }
+                    );
+                }
+
+                if (noRegion) {
+                    esQuery.bool.must.push(
+                        {
+                            "bool": {
+                              "must_not": [
+                                {
+                                  "term": {                                   
+                                      "regions.keyword": noRegion
+                                   
+                                  }
+                                }
+                              ]
+                            }
+                          }
                     );
                 }
 
@@ -4789,7 +4816,7 @@ module.exports = class recommendationService {
                     },
                     {
                         bool: {
-                            filter: [
+                            must: [
                                 {
                                     "term": {
                                         "skills.keyword": skill,
@@ -4828,13 +4855,13 @@ module.exports = class recommendationService {
     }
 
     async lgHowToLearncourses(req) {        
-        let { articleId, currency = process.env.DEFAULT_CURRENCY, level, learnType, priceType ="paid", page = 1, limit = 12 } = req.query;
+        let { articleId, currency = process.env.DEFAULT_CURRENCY, level, learnType,  region, noRegion, priceType ="paid", page = 1, limit = 12 } = req.query;
         let category,sub_category,topic
         let skills = []
         const offset = (page - 1) * limit
         let courses = [];
         try {
-            let cacheKey = `lg-how-to-learn-courses-${articleId}-${level || 'level'}--${learnType || 'learnType'}--${priceType || 'priceType'}-${currency}-${page}-${limit}`;
+            let cacheKey = `lg-how-to-learn-courses-${articleId}-${level || 'level'}--${learnType || 'learnType'}--${priceType || 'priceType'}-${region || 'region'}--${noRegion || 'noRegion'}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -4870,13 +4897,13 @@ module.exports = class recommendationService {
 
                 esQuery = {
                     "bool": {
-                        "filter": [
+                        "must": [
                             { "term": { "status.keyword": "published" } }
                         ]
                     }
                 }
                 if (category) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "categories.keyword": category
@@ -4885,7 +4912,7 @@ module.exports = class recommendationService {
                     );
                 }
                 if (sub_category) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "sub_categories.keyword": sub_category
@@ -4894,7 +4921,7 @@ module.exports = class recommendationService {
                     );
                 }
                 if (topic) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "topics.keyword": topic
@@ -4903,7 +4930,7 @@ module.exports = class recommendationService {
                     );
                 }
                 if (level) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "level.keyword": level
@@ -4912,7 +4939,7 @@ module.exports = class recommendationService {
                     );
                 }
                 if (learnType) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "term": {
                                 "learn_type.keyword": learnType
@@ -4921,22 +4948,49 @@ module.exports = class recommendationService {
                     );
                 }
                 if (skills) {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         {
                             "terms": {
                                 "skills.keyword": skills
                             }
                         }
                     );
-                }                
+                }
+                
+                if (region) {
+                    esQuery.bool.must.push(
+                        {
+                            "term": {
+                                "regions.keyword": region
+                            }
+                        }
+                    );
+                }
+
+                if (noRegion) {
+                    esQuery.bool.must.push(
+                        {
+                            "bool": {
+                              "must_not": [
+                                {
+                                  "term": {                                   
+                                      "regions.keyword": noRegion
+                                   
+                                  }
+                                }
+                              ]
+                            }
+                          }
+                    );
+                }
                
                 if (priceType && priceType == "Free") {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         { "term": { "pricing_type.keyword": "Free" } }
                     ); 
                 }
                 if (priceType && priceType == "Paid") {
-                    esQuery.bool.filter.push(
+                    esQuery.bool.must.push(
                         { "term": { "pricing_type.keyword": "Paid" } }
                     );
                 }
