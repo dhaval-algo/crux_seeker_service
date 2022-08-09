@@ -11,12 +11,34 @@ const models = require("../../../models");
                   and location.locale_code = 'en'
                 )
                 where network >> '${ip}'`)
-                
-                return {error:false, data: details[0][0] }
+                if(details[0][0])
+                {
+                    if(details[0][0].country_name =="India")
+                    {
+                        details[0][0].region ="India"
+                    }
+                    else if(details[0][0].country_name =="United Kingdom")
+                    {
+                        details[0][0].region ="UK"
+                    }
+                    else if(details[0][0].country_name =="United States")
+                    {
+                        details[0][0].region ="USA"
+                    }
+                    else if(details[0][0].continent_name =="Europe")
+                    {
+                        details[0][0].region ="Europe"
+                    }
+                    else
+                    {
+                        details[0][0].region ="Other"
+                    }
+                }
+                return {success:true, data: details[0][0] }
             }
     
             catch(err) {
-                return {error:true, message: err.message}
+                return {success:false, message: err.message}
             }
     
     
