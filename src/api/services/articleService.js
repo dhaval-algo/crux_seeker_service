@@ -723,6 +723,7 @@ module.exports = class articleService {
                     }
                     if(result.template== "CAREER_GUIDE"){
                         data.content.region = result.region || null;
+                        data.content.career_level = result.career_level || null;
                         data.content.description = result.description || null;
                         data.content.role_duties  = result.role_duties || null;                        
                         data.content.prerequisites   = result.prerequisites|| null;
