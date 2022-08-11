@@ -435,9 +435,15 @@ module.exports = class learnContentService {
                             job_asis.toLowerCase() == 'yes' ? job_asis = true : job_asis = false;
                             filter_object = {"term": {[attribute_name]: job_asis}};
                         }
+                        if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
+                        {
+                            let offer = filter.value[0]
+            
+                            offer.toLowerCase() == 'yes' ? offer = true : offer = false;
+                            filter_object = {"term": {[attribute_name]: offer}};
+                        }
                         else
                             filter_object = {"term": {[attribute_name]: filter.value[0]}};
-
                     }
                     else 
                         filter_object = {"terms": {[attribute_name]: filter.value}};
@@ -447,6 +453,9 @@ module.exports = class learnContentService {
                 }
             }            
         }
+
+
+
 
         if(req.query['rf']){
             parsedRangeFilters = parseQueryRangeFilters(req.query['rf']);

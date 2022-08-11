@@ -306,7 +306,7 @@ module.exports = class partnerService {
             user_last_name: result.user_last_name,
             user_email: result.user_email,
             user_id: result.user_id,
-            category_tree: await getCategoryTree(result.name),
+            category_tree: null,
             gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
             vision: (result.vision)? result.vision : null,
             mission: (result.mission)? result.mission : null,
