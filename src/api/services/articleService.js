@@ -450,21 +450,12 @@ module.exports = class articleService {
             req.body = {articleId: data.id}
             this.addActivity(req, (err, data) => {})
         }else{
-            /***
-             * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-             */
-            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-            if (response.ok) {
-                let urls = await response.json();
-                if(urls.length > 0){  
-                    slug = urls[0].new_url
-                    return callback({success: false,slug:slug,message: 'Redirect'}, null);
-                }else{
-                    return callback({success: false, message: 'Not found!'}, null);
-                }
+            let redirectUrl = await helperService.getRedirectUrl(req);
+            if (redirectUrl) {
+                return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
             }
-            callback({success: false, message: 'Not found!'}, null);
-        }        
+            return callback(null, { success: false, message: 'Not found!' });
+        }   
     }
 
 
@@ -981,7 +972,8 @@ module.exports = class articleService {
         return author;     
     }
 
-    async getAuthorBySlug(slug, callback){
+    async getAuthorBySlug(req, callback){
+        const slug = req.params.slug;
         let author = null;
 
         const query = { "bool": {
@@ -998,21 +990,12 @@ module.exports = class articleService {
             if(author){
                 callback(null, {success: true, message: 'Fetched successfully!', data: author});
             }else{
-                /***
-                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                 */
-                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                if (response.ok) {
-                    let urls = await response.json();
-                    if(urls.length > 0){  
-                        slug = urls[0].new_url
-                        return callback({success: false,slug:slug,message: 'Redirect'}, null);
-                    }else{
-                        return callback({success: false, message: 'Not found!', data: null}, null);
-                    }
+                let redirectUrl = await helperService.getRedirectUrl(req);
+                if (redirectUrl) {
+                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                 }
-                callback(null, {success: false, message: 'Not found!', data: null});
-            }            
+                return callback(null, { success: false, message: 'Not found!' });
+                }            
         }else{
             return author;  
         }           

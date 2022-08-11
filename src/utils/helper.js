@@ -16,6 +16,8 @@ const Op = Sequelize.Op;
 const { Buffer } = require('buffer');
 const { publishToSNS } = require('../services/v1/sns');
 const elasticService = require("../api/services/elasticService");
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const encryptStr = (str) => {
     return crypt.encrypt(str);
@@ -1224,6 +1226,27 @@ const validateIdsFromElastic = async (index, ids) => {
         }
         return [];
 }
+
+//get the redirect url for old url
+const getRedirectUrl = async (req) => {    
+    if(req.query.pageUrl)
+    {
+        let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${req.query.pageUrl}`);
+        if (response.ok) {
+            let urls = await response.json();
+            
+            if(urls.length > 0){  
+                return urls[0].new_url
+               
+            }else{
+                return false
+            }
+        }
+    }
+    else{
+        return false
+    }
+}
    
 module.exports = {
     validateIdsFromElastic,
@@ -1248,5 +1271,6 @@ module.exports = {
     sendSuspendedEmail,
     sendActivatedEmail,
     logActvity,
-    logPopularEntities
+    logPopularEntities,
+    getRedirectUrl
 }

@@ -28,10 +28,9 @@ module.exports = {
             }
         });    
     },
-    getSectionContent: async (req, res) => {
-        const slug = req.params.slug;
+    getSectionContent: async (req, res) => {       
         
-        SectionService.getSectionContent(slug, (err, data) => {
+        SectionService.getSectionContent(req, (err, data) => {
             if (data) {
                 let finalData = {}
                 if (req.query['fields']) {

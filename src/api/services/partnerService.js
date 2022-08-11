@@ -1,5 +1,5 @@
 const elasticService = require("./elasticService");
-const fetch = require("node-fetch");
+
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 const articleService = require("./articleService");
@@ -7,10 +7,10 @@ let ArticleService = new articleService();
 
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
+const helperService = require("../../utils/helper");
 
 const {generateMetaInfo, formatImageResponse} = require('../utils/general');
 
-const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
@@ -232,20 +232,11 @@ module.exports = class partnerService {
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
                 callback(null, {success: true, message: 'Fetched successfully!', data: data});
             }else{
-                /***
-                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                 */
-                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                if (response.ok) {
-                    let urls = await response.json();
-                    if(urls.length > 0){  
-                        let slug = urls[0].new_url
-                        return callback({success: false,slug:slug, message: 'Redirect!'}, null);
-                    }else{
-                        return callback({success: false, message: 'Not found!'}, null);
-                    }
+                let redirectUrl = await helperService.getRedirectUrl(req);
+                if (redirectUrl) {
+                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                 }
-                callback({success: false, message: 'Not found!'}, null);
+                return callback(null, { success: false, message: 'Not found!' });
             }  
         } catch (error) {
                 console.log("partner erorr!!!!!!!!!!!!!!", error)

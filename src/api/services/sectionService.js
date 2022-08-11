@@ -1,8 +1,7 @@
 const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const redisConnection = require('../../services/v1/redis');
-const apiBackendUrl = process.env.API_BACKEND_URL;
-const fetch = require("node-fetch");
+const helperService = require("../../utils/helper");
 
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
@@ -298,8 +297,8 @@ module.exports = class sectionService {
     }
   }
 
-  async getSectionContent(slug, callback,skipCache) {
-
+  async getSectionContent(req, callback,skipCache) {
+    const slug = req.params.slug;
     let data = {}
     try {
       if(skipCache != true) {
@@ -330,20 +329,11 @@ module.exports = class sectionService {
 
         return callback(null, { success: true, data:response.data })
       }
-      /***
-       * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-       */
-      let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-      if (response.ok) {
-          let urls = await response.json();
-          if(urls.length > 0){  
-              slug = urls[0].new_url
-              return callback(null, { success: "redirect", slug: slug,  data:data })
-          }else{
-            return callback(null, { success: true, data:data })
-          }
+      let redirectUrl = await helperService.getRedirectUrl(req);
+      if (redirectUrl) {
+          return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
       }
-      return callback(null, { success: true, data:data })
+      return callback(null, { success: false, message: 'Not found!' });
 
     } catch (error) {
       console.log("ERROR:",error)

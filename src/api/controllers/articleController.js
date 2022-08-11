@@ -30,9 +30,8 @@ module.exports = {
         
     },
 
-    getAuthor: async (req, res) => {
-        const slug = req.params.slug;
-        ArticleService.getAuthorBySlug(slug, (err, data) => {
+    getAuthor: async (req, res) => {        
+        ArticleService.getAuthorBySlug(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {

@@ -615,20 +615,11 @@ module.exports = class learnPathService {
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
                 } else {
-                    /***
-                     * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                     */
-                    let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                    if (response.ok) {
-                        let urls = await response.json();
-                        if(urls.length > 0){  
-                            let slug = urls[0].new_url
-                            return callback({ success: false, slug:slug, message: 'Redirect' }, null);
-                        }else{
-                            return callback({ success: false, message: 'Not found!' }, null);
-                        }
+                    let redirectUrl = await helperService.getRedirectUrl(req);
+                    if (redirectUrl) {
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                     }
-                    callback({ success: false, message: 'Not found!' }, null);
+                    return callback(null, { success: false, message: 'Not found!' });
                 }
             }
             if(learnpathId){

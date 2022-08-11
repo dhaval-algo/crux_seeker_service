@@ -388,7 +388,11 @@ module.exports = class learnContentService {
                 query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 if(!slug_data){
-                    return callback(null, {status: 404, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+                    let redirectUrl = await helperService.getRedirectUrl(req);
+                    if (redirectUrl) {
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    }
+                    return callback(null, { success: false, message: 'Not found!' });
                 }
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
@@ -889,20 +893,11 @@ module.exports = class learnContentService {
                 }
                 
             }else{
-                /***
-                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                 */
-                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                if (response.ok) {
-                    let urls = await response.json();
-                    if(urls.length > 0){  
-                        let slug = urls[0].new_url
-                        return callback({success: false,slug:slug, message: 'Redirect'}, null);
-                    }else{
-                        return callback({success: false, message: 'Not found!'}, null);
-                    }
+                let redirectUrl = await helperService.getRedirectUrl(req);
+                if (redirectUrl) {
+                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                 }
-                callback({success: false, message: 'Not found!'}, null);
+                return callback(null, { success: false, message: 'Not found!' });                
             } 
         }
         req.body = {courseId: courseId}
