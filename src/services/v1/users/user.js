@@ -3214,7 +3214,7 @@ const getUserPendingActions = async (req, res) => {
         {
             response.pendingProfileActions = response.pendingProfileActions.filter((v, i, a) => a.indexOf(v) === i)
         }        
-        res.send({ message: "success", data: response })
+        res.send({ success: true, data: response })
     } catch (error) {
         console.log(error)
         res.status(500).send({
