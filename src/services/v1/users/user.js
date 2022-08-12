@@ -2631,7 +2631,7 @@ const updateEmail =async (req,res) => {
             provider = LOGIN_TYPES.LOCAL
         }
 
-        let oldEmailObj = await models.user.findOne({where:{email:email}})
+        let oldEmailObj = await models.user.findOne({where:{id:userId}})
         const oldEmail = oldEmailObj.email;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
         const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
