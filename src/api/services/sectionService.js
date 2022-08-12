@@ -16,68 +16,17 @@ const buildSectionView = (section) => {
         //   section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
         //   articles = [...new Set([...articles,...location_display_labels.articleSlugs])]
         // }
-      
-        if (!!section.career_guidance && !!section.career_guidance.length) {
-          let career_guidance = await ArticleService.getArticleByIds(section.career_guidance, true, true)
-          section.career_guidance =  career_guidance.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...career_guidance.articleSlugs])]
+        let similar_articles = []
+        for(const [key, value] of Object.entries(section.similar_articles)) {
+          
+            let similar = await ArticleService.getArticleByIds(value, true, true)
+            articles = similar.articleSlugs
+              
+            similar_articles.push({title: key, articles: similar.articles, articleSlugs: articles})
         }
-        if (!!section.expert_interview_advice && !!section.expert_interview_advice.length) {
-          let expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice, true, true)
-          section.expert_interview_advice =  expert_interview_advice.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...expert_interview_advice.articleSlugs])]
-        }
-        if (!!section.improve_your_resume && !!section.improve_your_resume.length) {
-          let improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume, true, true)
-          section.improve_your_resume =  improve_your_resume.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...improve_your_resume.articleSlugs])]
-        }
-      
-        if (!!section.all_about_linkedin && !!section.all_about_linkedin.length) {
-          let all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin, true, true)
-          section.all_about_linkedin =  all_about_linkedin.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...all_about_linkedin.articleSlugs])]
-        }
-        if (!!section.best_ways_to_learn && !!section.best_ways_to_learn.length) {
-          let best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn, true, true)
-          section.best_ways_to_learn =  best_ways_to_learn.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...best_ways_to_learn.articleSlugs])]
-        }
-        if (!!section.top_skills_of_the_future && !!section.top_skills_of_the_future.length) {
-          let top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future, true, true)
-          section.top_skills_of_the_future =  top_skills_of_the_future.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...top_skills_of_the_future.articleSlugs])]
-        }
-        if (!!section.important_skills_of_the_future && !!section.important_skills_of_the_future.length) {
-          let important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future, true, true)
-          section.important_skills_of_the_future =  important_skills_of_the_future.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...important_skills_of_the_future.articleSlugs])]
-        }
-      
-        if (!!section.tips_for_learners && !!section.tips_for_learners.length) {
-          let tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners, true, true)
-          section.tips_for_learners =  tips_for_learners.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...tips_for_learners.articleSlugs])]
-        }
+        section.similar_articles = similar_articles
 
-        if (!!section.best_certifications && !!section.best_certifications.length) {
-          let best_certifications = await ArticleService.getArticleByIds(section.best_certifications, true, true)
-          section.best_certifications =  best_certifications.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...best_certifications.articleSlugs])]
-        }
-
-        if (!!section.top_stories && !!section.top_stories.length) {
-          let top_stories = await ArticleService.getArticleByIds(section.top_stories, true, true)
-          section.top_stories =  top_stories.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...top_stories.articleSlugs])]
-        }
-
-        if (!!section.latest_stories && !!section.latest_stories.length) {
-          let latest_stories = await ArticleService.getArticleByIds(section.latest_stories, true, true)
-          section.latest_stories =  latest_stories.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...latest_stories.articleSlugs])]
-        }
-        return resolve({data:section, articles:articles});
+        return resolve({data:section, articles});
     } catch (error) {
       return resolve({data:[], articles:[]});
     }
@@ -316,7 +265,7 @@ module.exports = class sectionService {
         }
       };
       
-      const result = await elasticService.search('section', query)
+      const result = await elasticService.search('section', query, {},  {excludes: ["all_featured_articles"] })
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
         response.data.cover_image = formatImageResponse(response.data.cover_image)
