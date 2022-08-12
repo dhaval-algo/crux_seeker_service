@@ -631,14 +631,14 @@ module.exports = class articleService {
                         data.content.content_section = result.content_section || null
                         data.content.level_info = result.level_info || null
                         if(data.content.level_info){
-                            data.content.level_info.levels_beginner = result.level_beginner || null
-                            data.content.level_info.levels_intermediate = result.level_intermediate || null
-                            data.content.level_info.levels_advance = result.level_advance || null
+                            data.content.level_info.levels_beginner = result.article_level_beginner || null
+                            data.content.level_info.levels_intermediate = result.article_level_intermediate || null
+                            data.content.level_info.levels_advance = result.article_level_advance || null
                         }else{
                             data.content.level_info = {}
-                            data.content.level_info.levels_beginner = result.level_beginner || null
-                            data.content.level_info.levels_intermediate = result.level_intermediate || null
-                            data.content.level_info.levels_advance = result.level_advance || null
+                            data.content.level_info.levels_beginner = result.article_level_beginner || null
+                            data.content.level_info.levels_intermediate = result.article_level_intermediate || null
+                            data.content.level_info.levels_advance = result.article_level_advance || null
                         }
                         data.content.course_recommendation = result.course_recommendation || null;
                         data.content.conclusion = result.conclusion || null;
