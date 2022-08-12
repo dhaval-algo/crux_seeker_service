@@ -3232,9 +3232,9 @@ const isUserEmailExist = async (req, res) => {
     let response = {
         code: DEFAULT_CODES.INVALID_USER.code,
         message: DEFAULT_CODES.INVALID_USER.message,
-        success: false,
+        success: true,
         data: {
-            user: {}
+            isUserExist : false
         }
     }
 
@@ -3256,10 +3256,11 @@ const isUserEmailExist = async (req, res) => {
             response.success = true;
             response.code = DEFAULT_CODES.VALID_USER;
             response.message = DEFAULT_CODES.VALID_USER.message;
+            response.data.isUserExist = true
             response.data.user = {
                 email: user.email,
                 userType: user.userType
-            }
+            }            
             res.status(200).send(response)
         } else {
             res.status(200).send(response)
