@@ -536,7 +536,7 @@ module.exports = class recommendationService {
                 if (skill) {
                     esQuery.bool.filter.push(
                         {
-                            "terms": {
+                            "term": {
                                 "skills.keyword": skill,
                               
                             }
