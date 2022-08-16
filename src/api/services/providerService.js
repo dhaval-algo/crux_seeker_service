@@ -710,7 +710,7 @@ module.exports = class providerService {
           let result = cacheData;
     
           if (cacheData.noCacheData) {
-            result = await elasticService.search('institute-home-page', query, payload, ["category_recommendations", "program_recommendations", "region_recommendations"]);
+            result = await elasticService.search('institute-home-page', query, payload, ["category_recommendations", "program_recommendations", "region_recommendations", "meta_description", "meta_keywords"]);
             await RedisConnection.set('institute-home-page', result);
             RedisConnection.expire('institute-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
           }
