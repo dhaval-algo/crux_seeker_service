@@ -1158,6 +1158,15 @@ module.exports = class learnContentService {
                 ids = req.query['ids'].split(",");
             }
             if(ids.length > 0){
+                ids = ids.map(id => {
+                    
+                    if(!id.includes("LRN_CNT_PUB_"))
+                    {
+                        id = 'LRN_CNT_PUB_'+id
+                    }
+
+                    return id
+                })
                 const queryBody =  {
                     "ids": {
                         "values": ids
