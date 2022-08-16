@@ -836,6 +836,9 @@ const formatResponseField = (requestedfields, data) => {
 }
 
 const formatImageResponse = (imageObject) => {
+
+   if(!imageObject)
+        return null;
     let image = null
    if(imageObject.large) image = imageObject.large
    else if (imageObject.medium) image = imageObject.medium
