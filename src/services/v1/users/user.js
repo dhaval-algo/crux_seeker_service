@@ -3366,28 +3366,39 @@ const addEducation = async (req, res) => {
 const editEducation = async (req, res) => {
     let {id, instituteName, degree, specialization, graduationYear, gradeType, grade } = req.body
     try {        
-        
-        /**
-         * Adding profile progress for profile Actions : 10%
-        */
-        const goalObj = await models.goal.findAll({
-            where:{
-                userId: userId
+        const user_education = await models.user_education.update(
+            {            
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+            },
+            {
+                where: {id:req.user.userId, id:id}
+            }
+        )
+
+        res.status(200).send({
+            message: "Education updated successfully",
+            success: true,
+            data: {
+                id: user_education.id,
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+
             }
         })
 
-        if(!goalObj.length){
-            response.pendingProfileActions.push('goal') 
-        }else{
-            profileProgress += 10
-        }
-
-        response.profileProgress=profileProgress
-        res.send({ message: "success", data: response })
     } catch (error) {
         console.log('editEducation err ',error);
         res.status(200).send({
-            message: "Error adding Education",
+            message: "Error updating Education",
             success: false,
             data: {}
         })
