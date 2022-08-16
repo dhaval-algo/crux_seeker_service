@@ -605,7 +605,8 @@ module.exports = class articleService {
                 name: result.brochure.name,
                 ext: result.brochure.ext,
                 mime: result.brochure.mime,
-                url: result.brochure.url
+                url: result.brochure.url,
+                size: (( Math.round(result.brochure.size / 1024), 2) > 1 ) ? ( Math.round(result.brochure.size / 1024), 2) + " Mb": result.brochure.size+ " Kb"
             }
         }
 
