@@ -642,6 +642,13 @@ module.exports = class articleService {
                         }
                         data.content.course_recommendation = result.course_recommendation || null;
                         data.content.conclusion = result.conclusion || null;
+                        if(result.summary_title && result.summary_content)
+                        {
+                            data.content.summary = {
+                                title: result.summary_title,
+                                content: result.summary_content
+                            }
+                        }
                     }
                     if(result.template== "LEARN_GUIDE"){
                         data.content.description = result.description || null;
