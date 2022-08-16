@@ -22,7 +22,7 @@ module.exports = class homePageService {
       let result = cacheData;
 
       if (cacheData.noCacheData) {
-        result = await elasticService.search('home-page', query, payload, ["top_categories", "top_partners_by_category", "top_institutes_by_region", "course_recommendation_categories", "learn_path_recommendation_categories", "", "most_popular_article_categories", "trending_article_categories"]);
+        result = await elasticService.search('home-page', query, payload, ["top_categories", "top_partners_by_category", "top_institutes_by_region", "course_recommendation_categories", "learn_path_recommendation_categories", "", "most_popular_article_categories", "trending_article_categories", "meta_description", "meta_keywords"]);
         await RedisConnection.set('home-page', result);
         RedisConnection.expire('home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
