@@ -2205,7 +2205,7 @@ module.exports = class learnContentService {
       let result = cacheData;
 
       if (cacheData.noCacheData) {
-        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls"]);
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls", "meta_description", "meta_keywords"]);
         await RedisConnection.set('course-home-page', result);
         RedisConnection.expire('course-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
