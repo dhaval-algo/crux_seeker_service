@@ -2742,17 +2742,17 @@ const addSkills = async (req,res) => {
     let responseData = null;
     try {
         for (const [key, value] of Object.entries(data)) {
-        
             const userTopic  = await models.user_topic.create({
                  userId: user.userId,
                  topic: key
              })
      
-             for(let skill in value)
+             for(let skill of value)
              {
                  await models.user_skill.create({
                      userTopicId:userTopic.id,
-                     skill:skill
+                     skill:skill.skill,
+                     isPrimary: skill.isPrimary
                  })
              }
              
