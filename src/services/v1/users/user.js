@@ -1163,22 +1163,18 @@ const addCourseToWishList = async (req, res) => {
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
           
             await logActvity("COURSE_WISHLIST", userId, courseIds);
-            sendDataForStrapi(data, "profile-add-wishlist");
+            //sendDataForStrapi(data, "profile-add-wishlist");
             saveSessionKPIs(userId,{courseIds:courseIds},'wishlist');
 
             return res.status(200).json({
                 success: true,
-                data: {
-                    wishlist: resMeta
-                }
+                message: "Wishlisted Succesfully!"
             })
         }
         else {
             return res.status(200).json({
                 success: true,
-                data: {
-                    wishlist: []
-                }
+                message: "Wishlisted Succesfully!"
             })
         }
 
@@ -3148,7 +3144,7 @@ const getUserPendingActions = async (req, res) => {
                 id: userId
             }
         })
-        
+
         if(education && education.length > 0){
             profileProgress += fields.education.weightage;
         }
