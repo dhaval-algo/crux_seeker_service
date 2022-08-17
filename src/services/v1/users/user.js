@@ -2741,6 +2741,8 @@ const addSkills = async (req,res) => {
     const { user} = req;
     let responseData = null;
     try {
+        await models.user_topic.destroy({where: {userId: user.userId}})
+
         for (const [key, value] of Object.entries(data)) {
             const userTopic  = await models.user_topic.create({
                  userId: user.userId,
