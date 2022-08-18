@@ -600,7 +600,7 @@ module.exports = class articleService {
         }
 
         data.brochure = null
-        console.log("size",  (Math.round(result.brochure.size / 1024, 2))> 1)
+
         if(result.brochure){       
             data.brochure = {
                 name: result.brochure.name,
