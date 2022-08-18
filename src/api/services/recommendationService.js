@@ -1287,16 +1287,14 @@ module.exports = class recommendationService {
                     esQuery.bool.filter.push(
                         {
                             "term": {
-                                "section_name.keyword":"Learn Path"
+                                "section_name.keyword":"Learn Guide"
                             }
                         }
                     );
                 }
             
                 let sort = [{ "activity_count.last_x_days.trending_score": "desc" }]                
-
                 let result = await elasticService.search("article", esQuery, { from: 0, size: (maxArticles - articles.length) , sortObject: sort , _source: articleFields});
-            
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
                         const data = await this.generateArticleFinalResponse(hit._source)
@@ -1306,6 +1304,7 @@ module.exports = class recommendationService {
             }
             await RedisConnection.set(cacheKey, articles);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTICLE_RECOMMENDATION); 
+
             return { "success": true, message: "list fetched successfully", data: { list: articles, mlList: [], show: "logic" } };
         } catch (error) {
             console.log("Error occured while fetching featured articles", error);
@@ -1476,7 +1475,7 @@ module.exports = class recommendationService {
                     esQuery.bool.filter.push(
                         {
                             "term": {
-                                "section_name.keyword":"Learn Path"
+                                "section_name.keyword":"Learn Guide"
                             }
                         }
                     );                                   
@@ -1697,14 +1696,17 @@ module.exports = class recommendationService {
     async getAuthor(id){
         try{
             let author = null;
-            const query = { "bool": {
-                "must": [
-                {term: { "user_id": id }}
-                ]
-            }};
-            const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
-            if(result.hits && result.hits.length > 0){
-                author = await this.generateAuthorData(result.hits[0]._source);
+            if(id)
+            {
+                const query = { "bool": {
+                    "filter": [
+                    {term: { "user_id": id }}
+                    ]
+                }};
+                const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
+                if(result.hits && result.hits.length > 0){
+                    author = await this.generateAuthorData(result.hits[0]._source);
+                }
             }
             return author;     
         }catch(e){
