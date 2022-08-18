@@ -629,7 +629,10 @@ module.exports = class articleService {
                     data.content = {}
                     data.full_access= true;
                     if(result.template== "ARTICLE"){
-                        data.content.description = result.content;
+                        data.content.description ={
+                            title: "Description",
+                            content : result.content
+                        }
                         data.content.content_section = result.content_section || null
                         data.content.level_info = result.level_info || null
                         if(data.content.level_info){
@@ -643,7 +646,13 @@ module.exports = class articleService {
                             data.content.level_info.levels_advance = result.article_level_advance || null
                         }
                         data.content.course_recommendation = result.course_recommendation || null;
-                        data.content.conclusion = result.conclusion || null;
+                        if(result.conclusion)
+                        {
+                            data.content.conclusion ={
+                                title: "Conclusion",
+                                content: result.conclusion
+                            }
+                        }
                         if(result.summary_title && result.summary_content)
                         {
                             data.content.summary = {
