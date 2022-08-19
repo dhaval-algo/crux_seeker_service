@@ -854,7 +854,7 @@ module.exports = class articleService {
                             {
                                 redirectResourse = {
                                     title: `Expolre ${result.categories[0]} Category`,
-                                    Subtitle: `To know more on how to learn the skill required to be a ${result.categories[0]} expert`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.categories[0]} expert`,
                                     url: redirectUrl
                                 }
                             }
@@ -867,7 +867,7 @@ module.exports = class articleService {
                             {
                                 redirectResourse = {
                                     title: `Expolre ${result.article_sub_categories[0]} Subcategory`,
-                                    Subtitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories[0]} expert`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories[0]} expert`,
                                     url: redirectUrl
                                 }
                             }
@@ -880,7 +880,7 @@ module.exports = class articleService {
                             {
                                 redirectResourse = {
                                     title: `Explore ${result.article_topics[0]} Topic`,
-                                    Subtitle: `To know more on how to learn the skill required to be a ${result.article_topics[0]} expert`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_topics[0]} expert`,
                                     url: redirectUrl
                                 }
                             }
