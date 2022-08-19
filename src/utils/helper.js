@@ -16,6 +16,8 @@ const Op = Sequelize.Op;
 const { Buffer } = require('buffer');
 const { publishToSNS } = require('../services/v1/sns');
 const elasticService = require("../api/services/elasticService");
+const categoryService = require("../api/services/categoryService");
+let CategoryService = new categoryService();
 const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
@@ -1247,6 +1249,59 @@ const getRedirectUrl = async (req) => {
         return false
     }
 }
+
+const getTreeUrl = async (type, label) => {
+    let data = await CategoryService.getTreeV2();
+    if(type =='category')
+    {
+        for(let category of data)
+        {
+            if(label == category.label)
+            {
+                return `courses/${category.slug}`
+            }
+        }
+    }
+    else if(type =='sub-category')
+    {
+        for(let category of data)
+        {
+            if(category.child && category.child.length > 0){
+                for(let sub_category of category.child){
+                    if(label == sub_category.label)
+                    {
+                        return `courses/${category.slug}/${sub_category.slug}`
+                    }
+                }
+                
+            }            
+        }
+    }
+    else if(type =='topic')
+    {
+        for(let category of data)
+        {
+            if(category.child && category.child.length > 0){
+                for(let sub_category of category.child){
+                    if(sub_category.child && sub_category.child.length > 0){
+                        for(let topic of sub_category.child){
+                            if(label == topic.label)
+                            {
+                                return `topic/${topic.slug}`
+                            }
+                        }
+                        
+                    }
+                }
+                
+            }            
+        }
+    }
+    else{
+        return false
+    }
+   
+}
    
 module.exports = {
     validateIdsFromElastic,
@@ -1272,5 +1327,6 @@ module.exports = {
     sendActivatedEmail,
     logActvity,
     logPopularEntities,
-    getRedirectUrl
+    getRedirectUrl,
+    getTreeUrl
 }

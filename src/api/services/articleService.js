@@ -845,7 +845,48 @@ module.exports = class articleService {
                                 label: region,
                                 levels: variations.slugs[region]
                             })
-                        }                       
+                        }
+                        let redierctResourse =  null
+                        if(result.categories && result.categories.length > 0)
+                        {
+                            let redierctUrl = await helperService.getTreeUrl('category', result.categories[0]);
+                            if(redierctUrl)
+                            {
+                                redierctResourse = {
+                                    title: `Expolre ${result.categories[0]} Category`,
+                                    Subtitle: `To know more on how to learn the skill required to be a ${result.categories[0]} expert`,
+                                    url: redierctUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_sub_categories && result.article_sub_categories.length > 0)
+                        {
+                            let redierctUrl =  await helperService.getTreeUrl('sub-category', result.article_sub_categories[0]);
+                            if(redierctUrl)
+                            {
+                                redierctResourse = {
+                                    title: `Expolre ${result.article_sub_categories[0]} Subcategory`,
+                                    Subtitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories[0]} expert`,
+                                    url: redierctUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_topics && result.article_topics.length > 0)
+                        {
+                            let redierctUrl =   await helperService.getTreeUrl('topic', result.article_topics[0]);
+                            if(redierctUrl)
+                            {
+                                redierctResourse = {
+                                    title: `Explore ${result.article_topics[0]} Topic`,
+                                    Subtitle: `To know more on how to learn the skill required to be a ${result.article_topics[0]} expert`,
+                                    url: redierctUrl
+                                }
+                            }
+                            
+                        }
+                        data.content.redierctResourse = redierctResourse
                     }
                     if(result.template== "LEARN_ADVICE"){
                         data.content.banner = result.banner || null;
