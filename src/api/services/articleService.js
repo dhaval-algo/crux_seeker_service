@@ -728,7 +728,49 @@ module.exports = class articleService {
                             data.content.advantages   = result.advantages || null;
                             data.content.faq     = result.faq || null;
                             data.content.conclusion    = result.conclusion || null;                             
-                        }                        
+                        } 
+                        
+                        let redirectResourse =  null
+                        if(result.categories)
+                        {
+                            let redirectUrl = await helperService.getTreeUrl('category', result.categories);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Expolre ${result.categories} Category`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.categories} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_sub_categories)
+                        {
+                            let redirectUrl =  await helperService.getTreeUrl('sub-category', result.article_sub_categories);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Expolre ${result.article_sub_categories} Subcategory`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_topics )
+                        {
+                            let redirectUrl =   await helperService.getTreeUrl('topic', result.article_topics);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.article_topics} Topic`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_topics} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        data.content.redirectResourse = redirectResourse
                     }
                     if(result.template== "CAREER_GUIDE"){
                         data.content.region = result.region || null;
