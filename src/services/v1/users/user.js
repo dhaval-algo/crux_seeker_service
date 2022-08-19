@@ -2662,7 +2662,7 @@ const uploadProfilePic =async (req,res) => {
     let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
   
-    await models.user.update({profilePicture:profilePicture},{where:{id:user.userId}})
+    await models.user.update({profilePicture:s3Path},{where:{id:user.userId}})
     
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
