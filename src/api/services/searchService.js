@@ -105,17 +105,20 @@ module.exports = class searchService {
             const result = [];
 
             if (!entity || (entity == 'all')) {
-                const searchResultPromises = [];
+                const indices = [];
+                const queries = [];
                 for (const entity in entitySearchSuggestionParams) {
 
                     const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
-                    const promise = elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchSuggestionParams[entity].maxResults }, entitySearchSuggestionParams[entity].sourceFields);
-                    searchResultPromises.push(promise);
+                    indices.push(entity);
+                    queries.push({ size: entitySearchSuggestionParams[entity].maxResults, query: entitySearchTemplate, _source: entitySearchSuggestionParams[entity].sourceFields });
                 }
 
-                const searchResults = await Promise.all(searchResultPromises);
+                const searchResults = await elasticService.multiSearch(indices, queries);
                 for (const searchResult of searchResults) {
-                    if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+                    if (searchResult && !searchResult.error && searchResult.hits && searchResult.hits.hits && searchResult.hits.hits.length) {
+                        result.push(...searchResult.hits.hits);
+                    }
                 }
 
             } else {
@@ -125,7 +128,6 @@ module.exports = class searchService {
                 if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
 
             }
-
 
             const data = result.map((hit) => {
                 const source = hit['_source'];
