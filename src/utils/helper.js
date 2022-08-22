@@ -1250,7 +1250,7 @@ const getRedirectUrl = async (req) => {
     }
 }
 
-const getTreeUrl = async (type, label) => {
+const getTreeUrl = async (type, label, onlySulg = false) => {
     let data = await CategoryService.getTreeV2();
     if(type =='category')
     {
@@ -1258,7 +1258,7 @@ const getTreeUrl = async (type, label) => {
         {
             if(label == category.label)
             {
-                return `courses/${category.slug}`
+                return onlySulg? category.slug : `courses/${category.slug}`
             }
         }
     }
@@ -1270,7 +1270,7 @@ const getTreeUrl = async (type, label) => {
                 for(let sub_category of category.child){
                     if(label == sub_category.label)
                     {
-                        return `courses/${category.slug}/${sub_category.slug}`
+                        return onlySulg? sub_category.slug : `courses/${category.slug}/${sub_category.slug}`
                     }
                 }
                 
@@ -1287,7 +1287,7 @@ const getTreeUrl = async (type, label) => {
                         for(let topic of sub_category.child){
                             if(label == topic.label)
                             {
-                                return `topic/${topic.slug}`
+                                return onlySulg? topic.slug :`topic/${topic.slug}`
                             }
                         }
                         

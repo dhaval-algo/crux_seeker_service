@@ -3,13 +3,13 @@ let LearnContentService = new learnContentService();
 const paymentService = new (require("../services/PaymentService"));
 const userService = require("../../services/v1/users/user");
 const axios = require("axios");
-const { helperService, logActvity} = require("../../utils/helper");
+const  helperService = require("../../utils/helper");
 const {formatResponseField } = require("../utils/general");
 
 module.exports = {
 
     getLearnContentList: async (req, res) => {
-        LearnContentService.getLearnContentList(req, (err, data) => {
+        LearnContentService.getLearnContentList(req, async(err, data) => {
             if (data) {
                 let finalData = {}
                 if(req.query['fields']){
@@ -26,7 +26,20 @@ module.exports = {
 
                             if(fields.includes("topics") && filter.field =="topics")
                             {
-                                data.data["topics"] = filter.options.map(item => item.label)
+                                data.data["topics"] = []
+                                let i= 0
+                                for(let option of filter.options){
+                                    if(i < 20)
+                                    {
+                                        let slug = await helperService.getTreeUrl('topic', option.label, true)
+                                        data.data["topics"].push({
+                                            label:option.label,
+                                            slug : slug
+                                        })
+                                    }
+
+                                    i++
+                                }                               
                             }
                         }
                     
@@ -302,7 +315,7 @@ module.exports = {
 
                 /** Add the data to Strapi */
                 await axios.post(process.env.API_BACKEND_URL + "/orders", orderData);
-                const activity_log =  await logActvity("COURSE_PURCHASED", req.user.userId, "LRN_CNT_PUB_"+course.id);
+                const activity_log =  await helperService.logActvity("COURSE_PURCHASED", req.user.userId, "LRN_CNT_PUB_"+course.id);
                 return res.status(200).send({
                     code: "success",
                     success: true,
