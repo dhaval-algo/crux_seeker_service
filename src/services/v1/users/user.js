@@ -3105,12 +3105,12 @@ const getUserPendingActions = async (req, res) => {
             }
         }
 
-        const userData = await models.user.findAll({
+        const userData = await models.user.findOne({
             where: {
                 id: userId
             }
         })
-        
+
         if(userData.fullName!= null){
             profileProgress += fields.fullName.weightage;
         }
@@ -3141,10 +3141,9 @@ const getUserPendingActions = async (req, res) => {
         
         const education = await models.user_education.findAll({
             where: {
-                id: userId
+                userId: userId
             }
         })
-
         if(education && education.length > 0){
             profileProgress += fields.education.weightage;
         }
@@ -3154,11 +3153,10 @@ const getUserPendingActions = async (req, res) => {
 
         const workExp = await models.user_experience.findAll({
             where: {
-                id: userId
+                userId: userId
             }
         })
-
-        if(workExp & workExp.length > 0){
+        if(workExp && workExp.length > 0){
             profileProgress += fields.workExp.weightage;
         }
         else {
