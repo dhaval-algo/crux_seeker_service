@@ -1515,11 +1515,27 @@ module.exports = class learnContentService {
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
-                data.course_details.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
+                data.course_details.pricing.indian_students_payment_deadline = new Date(result.indian_students_payment_deadline)
                 data.course_details.pricing.indian_students_GST = result.indian_students_GST
+                if(result.indian_student_installments && result.indian_student_installments.length > 0)
+                {
+                    result.indian_student_installments = result.indian_student_installments.map(installment =>{
+
+                        installment.payment_deadline = new Date(installment.payment_deadline)
+                        return installment
+                    })
+                }
                 data.course_details.pricing.indian_student_installments = result.indian_student_installments
                 data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
-                data.course_details.pricing.international_students_payment_deadline = result.international_students_payment_deadline
+                data.course_details.pricing.international_students_payment_deadline = new Date(result.international_students_payment_deadline)
+                if(result.international_student_installments && result.international_student_installments.length > 0)
+                {
+                    result.international_student_installments = result.international_student_installments.map(installment =>{
+
+                        installment.payment_deadline = new Date(installment.payment_deadline)
+                        return installment
+                    })
+                }
                 data.course_details.pricing.international_student_installments = result.international_student_installments
             }
             
@@ -1546,10 +1562,10 @@ module.exports = class learnContentService {
                         additional_batch.id = batch.id
                         additional_batch.batch = batch.batch
                         additional_batch.batch_size = batch.batch_size
-                        additional_batch.batch_start_date = batch.batch_start_date
-                        additional_batch.batch_end_date = batch.batch_end_date
-                        additional_batch.batch_enrollment_start_date = batch.batch_enrollment_start_date
-                        additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
+                        additional_batch.batch_start_date = new Date(batch.batch_start_date)
+                        additional_batch.batch_end_date = new Date(batch.batch_end_date)
+                        additional_batch.batch_enrollment_start_date = new Date(batch.batch_enrollment_start_date)
+                        additional_batch.batch_enrollment_end_date = new Date(batch.batch_enrollment_end_date)
                         additional_batch.total_duration = batch.total_duration
                         additional_batch.total_duration_unit = batch.total_duration_unit
                         additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
