@@ -1280,7 +1280,13 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
-        
+            //temp patch for old object format; scatter attributes 
+        if(result.providers_list == undefined){
+            let provider = {name: result.provider_name, slug: result.provider_slug,
+                        currency: result.provider_currency, url:result.provider_course_url}
+            result.providers_list = [provider]
+        }
+
         let data = {
             canBuy: canBuy,
             title: result.title,
