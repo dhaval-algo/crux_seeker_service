@@ -178,4 +178,23 @@ module.exports = {
     } 
   }, 
 
+  // each query in queries should be a complete query like :
+  //{ _source: ["field1", "field2", "fieldn"], size: size, query: query }
+  // the index and query must have same position in their respective array
+  multiSearch: async (indices, queries) => {
+
+    const searches = [];
+    indices.forEach((index, i) => {
+
+      searches.push({ index: index });
+      searches.push(queries[i]);
+
+    });
+
+    const client = elasticClient();
+    const { body } = await client.msearch({ body: searches });
+    return body.responses;
+
+  }
+
 };
