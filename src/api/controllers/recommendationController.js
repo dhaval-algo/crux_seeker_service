@@ -236,6 +236,9 @@ module.exports = {
             case "related-learning-path-for-course": 
                 response = await RecommendationService.getRelatedLearningPathForCourse(req);
                 break;
+            case "associated-learn-paths": 
+            response = await RecommendationService.getAssociatedLearningPathForCourse(req);
+            break;
            
             default:
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});

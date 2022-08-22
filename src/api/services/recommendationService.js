@@ -2151,6 +2151,52 @@ module.exports = class recommendationService {
         }
     }
 
+    async getAssociatedLearningPathForCourse(req){      
+        const { page = 1, limit = 5, currency} = req.query;
+        const offset = (page - 1) * limit
+        const courseId = req.query.courseId.toString();     
+        let learnpaths = [];
+        try {
+            let cacheKey = `sssociated-LearnPaths-For-Course-${courseId}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            
+            if (cachedData.noCacheData != true) {
+                learnpaths = cachedData;
+            } else {
+
+                let esQuery = {
+                    "bool": {
+                        "filter": [
+                            { "term": { "status.keyword": "approved" } },
+                            {"term" : {"courses.id.keyword":courseId}}
+                        ],
+
+                    }
+                }               
+                
+                let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, _source :learnPathFields});
+                console.log("result", result)
+                if(result.hits){
+                    for(const hit of result.hits){
+                        var data = await this.generateLearnPathFinalResponse(hit._source,currency)
+                        learnpaths.push(data);
+                    }
+                }
+                await RedisConnection.set(cacheKey, learnpaths);
+                RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_LEARN_PATH_RECOMMENDATION); 
+            }
+
+            return { success: true, message: "list fetched successfully", data: { list: learnpaths, mlList: [], show: "logic" } };
+
+
+        } catch (error) {
+            console.log("Error while processing data for related learnpath for course", error);
+            return { "success": false, message: "failed to fetch", data: { list: [] } };
+
+        }
+    }
+    
+
     async getLearnPathRecommendationForUser(req){
         const userId = req.user.userId;
         if(!userId){
