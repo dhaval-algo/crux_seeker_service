@@ -2,6 +2,8 @@ const elasticService = require("./elasticService");
 const { paginate } = require('../utils/general');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
+const recommendationService = require("./recommendationService");
+let RecommendationService = new recommendationService();
 module.exports = class homePageService {
 
   async getHomePageContent(req) {
@@ -23,6 +25,100 @@ module.exports = class homePageService {
 
       if (cacheData.noCacheData) {
         result = await elasticService.search('home-page', query, payload, ["top_categories", "top_partners_by_category", "top_institutes_by_region", "course_recommendation_categories", "learn_path_recommendation_categories", "", "most_popular_article_categories", "trending_article_categories", "meta_description", "meta_keywords"]);
+      
+        // check if course recomndation categories have courses 
+        if (result.hits[0]._source.course_recommendation_categories && result.hits[0]._source.course_recommendation_categories) {
+          result.hits[0]._source.course_recommendation_categories = await Promise.all(
+            result.hits[0]._source.course_recommendation_categories.filter(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularCourses(reqObj)
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+                return category
+              } else {
+                return null
+              }
+
+            })
+          )
+
+          result.hits[0]._source.course_recommendation_categories = result.hits[0]._source.course_recommendation_categories.filter(category => category != null)
+
+        }
+
+        // check if learn path  recomndation categories have learn paths 
+        if (result.hits[0]._source.learn_path_recommendation_categories && result.hits[0]._source.learn_path_recommendation_categories) {
+          result.hits[0]._source.learn_path_recommendation_categories = await Promise.all(
+            result.hits[0]._source.learn_path_recommendation_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularLearnPaths(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          result.hits[0]._source.learn_path_recommendation_categories = result.hits[0]._source.learn_path_recommendation_categories.filter(category => category != null)
+        }
+
+        // check if most popular article categories have articles
+        if (result.hits[0]._source.most_popular_article_categories && result.hits[0]._source.most_popular_article_categories) {
+          result.hits[0]._source.most_popular_article_categories = await Promise.all(
+            result.hits[0]._source.most_popular_article_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          result.hits[0]._source.most_popular_article_categories = result.hits[0]._source.most_popular_article_categories.filter(category => category != null)
+        }
+
+        // check if most trending article categories have articles
+        if (result.hits[0]._source.trending_article_categories && result.hits[0]._source.trending_article_categories) {
+          result.hits[0]._source.trending_article_categories = await Promise.all(
+            result.hits[0]._source.trending_article_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name,
+                  subType:'Trending'
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          result.hits[0]._source.trending_article_categories = result.hits[0]._source.trending_article_categories.filter(category => category != null)
+        }
+       
         await RedisConnection.set('home-page', result);
         RedisConnection.expire('home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
