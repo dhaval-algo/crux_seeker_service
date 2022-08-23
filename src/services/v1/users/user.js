@@ -147,22 +147,26 @@ const sendOtp = async (req, res, next) => {
             ]
         }
     
-        let user = await models.user.findOne({ where: where})
-       
-        let phone = user.phone.substring(2, 12);
-        if(user.phone.value.substring(0, 2) != '91'){
+        let user = await models.user.findOne({ where: where})        
+        let countryCode =  user.phone.split(" ")[0];    
+        let phoneWithoutcode =  user.phone.split(" ")[1];
+        if(process.env.PHONEVERIFICATION =='true' && countryCode =='+91' )
+        {
+            await sendSMSOTP (phoneWithoutcode, response.data.otp);
+            //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
+            return res.status(200).json({
+                'success': true,
+                'code': 'OTP_SENT',
+                'message':'Otp has been sent.'
+            });
+        }
+        else{
             return res.status(500).json({
                 'code': 'SERVER_ERROR',
                 'description': 'Only indian number are allowed'
-            });
-        }
-        await sendSMSOTP (phone, response.data.otp);
-        //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
-        return res.status(200).json({
-            'success': true,
-            'code': 'OTP_SENT',
-            'message':'Otp has been sent.'
-        });
+            });   
+        }        
+        
     } catch (error) {
         console.log(error);
         return res.status(500).json({
@@ -417,7 +421,7 @@ const signUp = async (req, res) => {
     if(phone){
         let countryCode =  phone.split(" ")[0];    
         let phoneWithoutcode =  phone.split(" ")[1];
-        if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='91' )
+        if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='+91' )
         {
             const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
             let userId = user.id
@@ -3181,7 +3185,9 @@ const getUserPendingActions = async (req, res) => {
         }
         else {
             if (userData.phone !=null) {
-                if (userData.phone.slice(0, 2) != '91') {
+                let countryCode =  userData.phone.split(" ")[0];  
+       
+                if (countryCode != '+91') {
                     response.verification.phoneVerified = true
                     profileProgress += verificationFields.phoneVerified.weightage
                 }
