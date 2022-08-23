@@ -834,7 +834,15 @@ module.exports = class articleService {
                                 })
                             }                            
                             data.content.skill_acquisition   = result.skill_acquisition || null;
-                            data.content.insights    = result.insights  || null;
+                            if(result.insights && result.insights.length > 0)
+                            {
+                                data.content.insights = {
+                                    title : "Insights",
+                                    content : result.insights
+                                }
+                            }else{
+                                data.content.insights = null
+                            }
                             data.content.summary   = result.summary || null;
                             data.content.reviews   = result.reviews || null;
                             if(data.content.reviews && data.content.reviews.length > 0)
