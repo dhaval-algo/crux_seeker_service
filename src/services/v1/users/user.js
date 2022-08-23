@@ -379,7 +379,7 @@ const signUp = async (req, res) => {
     let user = await models.user.create({
         fullName: fullName,
         email: email,
-        phone: false,
+        phone: phone,
         verified: false,
         phoneVerified:false,
         status: "active",
@@ -414,14 +414,17 @@ const signUp = async (req, res) => {
     tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
 
     // send OTP for phone verification
-    if(process.env.PHONEVERIFICATION =='true'&& country =="India" && phone.substring(0, 2) =='91' )
-    {
-        const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-        userId = user.id
-        const response = await generateOtp({ email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });       
-        let phone = phone.substring(2, 12);
-        await sendSMSOTP (phone, response.data.otp);
-        tokenRes.data.verifyPhone = true
+    if(phone){
+        let countryCode =  phone.split(" ")[0];    
+        let phoneWithoutcode =  phone.split(" ")[1];
+        if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='91' )
+        {
+            const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+            let userId = user.id
+            const response = await generateOtp({ email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+            await sendSMSOTP (phoneWithoutcode, response.data.otp);
+            tokenRes.data.verifyPhone = true
+        }
     }
 
     // send email varification link
