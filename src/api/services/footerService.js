@@ -5,6 +5,7 @@ const fetch = require("node-fetch");
 const RedisConnection = new redisConnection();
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const {formatImageResponse} = require('../../api/utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 
 module.exports = class FooterService {
     async getFooter(slug, callback,useCache = true){
@@ -84,7 +85,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('PARTNER_WITH_US', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -128,7 +129,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('LEARNERS', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -179,7 +180,8 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            
+            res.meta_information = await generateMetaInfo('ABOUT_US', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -223,7 +225,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('LEADERSHIP', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -267,7 +269,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('TEAM', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -311,7 +313,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('CAREER', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -348,7 +350,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('TERMS_AND_CONDITION', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {
@@ -385,7 +387,7 @@ module.exports = class FooterService {
                     res[key] = response[key];
                 }
             }
-
+            res.meta_information = await generateMetaInfo('PRIVACY_POLICY', response)
             RedisConnection.set(cacheKey, res);
             callback(null, {success: true, message: 'Fetched successfully!', data:res});
         } else {

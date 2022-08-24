@@ -17,10 +17,10 @@ const {
     updateSelectedFilters,
     getRankingFilter,
     getRankingBySlug,
-    sortFilterOptions,
-    generateMetaInfo,
+    sortFilterOptions,    
     formatImageResponse
 } = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 
 const redisConnection = require('../../services/v1/redis');
 
@@ -388,7 +388,7 @@ module.exports = class providerService {
                 sortOptions: Object.keys(sortOptions)
             };
 
-            let meta_information = await generateMetaInfo  ('provider-list', result, list);
+            let meta_information = await generateMetaInfo  ('PROVIDER_LIST', result, list);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
@@ -530,7 +530,7 @@ module.exports = class providerService {
         };
 
         if(!isList){
-            let meta_information = await generateMetaInfo  ('provider', result);
+            let meta_information = await generateMetaInfo  ('PROVIDER', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;

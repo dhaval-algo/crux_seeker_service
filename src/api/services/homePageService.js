@@ -4,6 +4,7 @@ const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const recommendationService = require("./recommendationService");
 let RecommendationService = new recommendationService();
+const {generateMetaInfo} = require('../utils/metaInfo');
 module.exports = class homePageService {
 
   async getHomePageContent(req) {
@@ -118,12 +119,13 @@ module.exports = class homePageService {
           )
           result.hits[0]._source.trending_article_categories = result.hits[0]._source.trending_article_categories.filter(category => category != null)
         }
-       
+        
         await RedisConnection.set('home-page', result);
         RedisConnection.expire('home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
       if (result.hits && result.hits.length) {
         data = result.hits[0]._source
+        data.meta_information = await generateMetaInfo('HOME_PAGE', data)
         return { success: true, data }
       }
       return { success: false, data: null }

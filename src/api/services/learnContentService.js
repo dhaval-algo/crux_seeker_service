@@ -3,7 +3,8 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const { getCurrencies, getCurrencyAmount, generateMetaInfo, isDateInRange } = require('../utils/general');
+const { getCurrencies, getCurrencyAmount, isDateInRange } = require('../utils/general');
+const { generateMetaInfo } = require('../utils/metainfo');
 const models = require("../../../models");
 const { 
     getFilterConfigs, 
@@ -774,11 +775,10 @@ module.exports = class learnContentService {
                 } catch (error) {
                     console.log("Error in addPopularEntities", error)
                 }
+                data.meta_information = slug_meta_information;
                
             }
-
-            result.page_details = data.page_details;
-            result.meta_information = slug_meta_information;
+            
 
             //TODO dont send data if filters are applied.
             
@@ -795,7 +795,7 @@ module.exports = class learnContentService {
             //     data.get_started.free = await this.getPopularCourses(param, (err, data) => { }, true)
             // }
 
-            let meta_information = await generateMetaInfo('learn-content-list', result);
+            let meta_information = await generateMetaInfo('LEARN_CONTENT_LIST', data);
             
             if (meta_information) {
                 data.meta_information = meta_information;
@@ -1466,11 +1466,14 @@ module.exports = class learnContentService {
 
 
         if(!isList){
-           
-            let meta_information = await generateMetaInfo  ('learn-content', result);
+            data.meta_description  = result.meta_description;
+            data.meta_keywords  = result.meta_keywords;
+            let meta_information = await generateMetaInfo  ('LEARN_CONTENT', data);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
+                delete(data.meta_description)
+                delete(data.meta_keywords)
             }            
         }
         else{

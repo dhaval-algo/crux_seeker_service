@@ -9,7 +9,8 @@ const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 const helperService = require("../../utils/helper");
 
-const {generateMetaInfo, formatImageResponse} = require('../utils/general');
+const {formatImageResponse} = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
@@ -339,7 +340,7 @@ module.exports = class partnerService {
                 }
             }
             
-            let meta_information = await generateMetaInfo  ('partner', result);
+            let meta_information = await generateMetaInfo  ('PARTNER', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;

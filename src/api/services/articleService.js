@@ -16,12 +16,12 @@ const {
     getMediaurl,
     getFilterAttributeName,
     updateSelectedFilters,
-    generateMetaInfo,
     compareRule,
     getCurrencies,
     getCurrencyAmount,
     formatImageResponse
 } = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
@@ -414,7 +414,7 @@ module.exports = class articleService {
             sortOptions: Object.keys(sortOptions)
           };
 
-          let meta_information = await generateMetaInfo  ('article-list', result.hits);
+          let meta_information = await generateMetaInfo  ('ARTICLE_LIST', result.hits);
           if(meta_information)
           {
               data.meta_information  = meta_information;
@@ -612,7 +612,8 @@ module.exports = class articleService {
         }
 
         if(!isList){
-            let meta_information = await generateMetaInfo  ('article', result);
+         
+            let meta_information = await generateMetaInfo  (result.template, result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
@@ -685,7 +686,7 @@ module.exports = class articleService {
                             }                            
                         }
                         data.content.technical_skills   =  null
-                        if(result.soft_skills_title)
+                        if(result.technical_skills_title)
                         {
                             data.content.technical_skills    = {
                                 title:  result.technical_skills_title,

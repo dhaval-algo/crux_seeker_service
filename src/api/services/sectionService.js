@@ -6,6 +6,7 @@ const helperService = require("../../utils/helper");
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
 const {formatImageResponse} = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
     try{
@@ -270,7 +271,7 @@ module.exports = class sectionService {
         let response = await buildSectionView(result.hits[0]._source)
         response.data.cover_image = formatImageResponse(response.data.cover_image)
         response.data.banner_image = formatImageResponse(response.data.banner_image)
-        
+        response.data.meta_information = await generateMetaInfo('SECTION_PAGE', result.hits[0]._source) 
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
         RedisConnection.set('section-page-'+slug, response.data);
@@ -309,13 +310,15 @@ module.exports = class sectionService {
       }
       };
 
-      const result = await elasticService.search('blog_home_page', query, { from: 0, size: 1000 }, ["meta_information", "ads_keywords", "most_popular_article_categories", "trending_article_categories"])
+      const result = await elasticService.search('blog_home_page', query, { from: 0, size: 1000 }, ["meta_information", "most_popular_article_categories", "trending_article_categories"])
+      
       if (result.hits && result.hits.length) {
-        let response = await buildSectionView(result.hits[0]._source)
-        RedisConnection.set('blog-home-page', response.data);
+        let data = result.hits[0]._source
+        data.meta_information = await generateMetaInfo('ADVICE_PAGE', data)       
+        RedisConnection.set('blog-home-page', data);
         RedisConnection.expire('blog-home-page', process.env.CACHE_EXPIRE_BLOG_HOME_PAGE);
-
-        return callback(null, { success: true, data: response.data })
+        
+        return callback(null, { success: true, data: data })
       }
       return callback(null, { success: true, data: data })
 
