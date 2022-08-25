@@ -974,7 +974,7 @@ const verifyAccount = async (req, res) => {
             });
           
             let userObj = await models.user.findOne({where:{id: user.userId}})
-            let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userType.fullName }
+            let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userObj.fullName }
             await invalidateTokens(newUserObj)
             await sendWelcomeEmail(newUserObj)
             const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
