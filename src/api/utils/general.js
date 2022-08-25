@@ -618,6 +618,18 @@ const formatImageResponse = (imageObject) => {
    }
    return image
 }
+const formatCount = (count) => {
+if(count > 1000){
+    count = Math.floor(count/1000)+'k';
+  }else if(count > 100){
+    count = Math.floor(count/100)*100;
+  }else if(count > 10){
+    count = Math.floor(count/10)*10;
+  }else if(count > 5){
+    count = Math.floor(count/5)*5;
+  }
+  return count
+}
 
 
   module.exports = {
@@ -643,7 +655,8 @@ const formatImageResponse = (imageObject) => {
     compareRule,
     paginate,
     formatResponseField,
-    formatImageResponse
+    formatImageResponse,
+    formatCount
 }
 
 
