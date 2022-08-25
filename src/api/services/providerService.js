@@ -486,6 +486,8 @@ module.exports = class providerService {
             id: `PVDR_${result.id}`,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
             logo:(result.logo)? formatImageResponse(result.logo):null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             overview: result.overview,
