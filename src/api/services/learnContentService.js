@@ -2353,7 +2353,7 @@ module.exports = class learnContentService {
 
       if(skipCache !=true) {
         cacheData = await RedisConnection.getValuesSync('course-home-page-popular-categories');
-        result = cacheData;
+        categories = cacheData;
       }
 
       if ((cacheData && cacheData.noCacheData) || skipCache) {
