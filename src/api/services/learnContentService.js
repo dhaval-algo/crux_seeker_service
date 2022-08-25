@@ -3,7 +3,7 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const { getCurrencies, getCurrencyAmount, isDateInRange } = require('../utils/general');
+const { getCurrencies, getCurrencyAmount, isDateInRange,formatCount } = require('../utils/general');
 const { generateMetaInfo } = require('../utils/metaInfo');
 const models = require("../../../models");
 const { 
@@ -2121,9 +2121,9 @@ module.exports = class learnContentService {
 
             let learn_types = []
             let learn_types_images = await this.getLearnTypeImages();
-
+           
             if (result.aggregations && result.aggregations.learn_type_count.buckets.length >0) {
-                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key]}))
+                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, count: formatCount(item.doc_count),images: learn_types_images[item.key]}))
                 
                 data = {
                     total: learn_types.length,

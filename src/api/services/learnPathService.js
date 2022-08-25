@@ -6,6 +6,7 @@ const fetch = require("node-fetch");
 const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
+const {formatCount} = require("../utils/general")
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
@@ -1166,7 +1167,7 @@ module.exports = class learnPathService {
             let learn_types_images = await LearnContentService.getLearnTypeImages();
 
             if (result.aggregations && result.aggregations.learn_type_count.buckets.length >0) {
-                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key],count:item.doc_count}))
+                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key],count:formatCount(item.doc_count)}))
                 
                 data = {
                     total: learn_types.length,
