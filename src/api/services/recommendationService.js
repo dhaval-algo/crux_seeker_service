@@ -11,9 +11,9 @@ const articleService = new ArticleService();
 const userService = require('../../services/v1/users/user');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take"]
-const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug"]
-const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile"]
+const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
+const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
 const FEATURED_RANK_LIMIT = 2;
 const currencyToRegion = {
     "INR" : "India",
@@ -1587,6 +1587,9 @@ module.exports = class recommendationService {
             },
             currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             cover_image: (result.images)? formatImageResponse(result.images) :null,
+            listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
@@ -1811,6 +1814,9 @@ module.exports = class recommendationService {
                 slug: result.slug,
                 id: `ARTCL_PUB_${result.id}`,          
                 cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,
+                listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
+                card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
+                card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
                 short_description: result.short_description,
                 author: (author)? author: [],
                 partners: (result.partners)? result.partners : [],
@@ -2175,7 +2181,6 @@ module.exports = class recommendationService {
                 }               
                 
                 let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, _source :learnPathFields});
-                console.log("result", result)
                 if(result.hits){
                     for(const hit of result.hits){
                         var data = await this.generateLearnPathFinalResponse(hit._source,currency)
@@ -2469,6 +2474,9 @@ module.exports = class recommendationService {
             slug: result.slug,
             description: result.description,
             cover_images: (result.images)? formatImageResponse(result.images) :null,
+            listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_iimagesmage)? formatImageResponse(result.images) : null),
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],          
             pricing: {
                 regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),
@@ -4626,6 +4634,8 @@ module.exports = class recommendationService {
             slug: result.slug,
             id: `PVDR_${result.id}`,
             cover_image: (result.cover_image) ? formatImageResponse(result.cover_image) : null,
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
             logo: (result.logo) ? formatImageResponse(result.logo) : null,
             programs: (result.programs) ? result.programs : [],
             institute_types: (result.institute_types) ? result.institute_types : [],

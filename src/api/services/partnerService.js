@@ -283,6 +283,8 @@ module.exports = class partnerService {
             offerings: (!isList) ? result.offerings : null,
             cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
             cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
+            listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
+            logo:(result.logo)? formatImageResponse(result.logo): null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
             establishment_year: result.establishment_year,
             corporate_partners: [],
