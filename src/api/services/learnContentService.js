@@ -4,7 +4,7 @@ const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
 const { getCurrencies, getCurrencyAmount, isDateInRange } = require('../utils/general');
-const { generateMetaInfo } = require('../utils/metainfo');
+const { generateMetaInfo } = require('../utils/metaInfo');
 const models = require("../../../models");
 const { 
     getFilterConfigs, 
