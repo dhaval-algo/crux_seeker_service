@@ -1694,7 +1694,7 @@ module.exports = class learnContentService {
             providers: data.providers,
             partner: data.partner,
             cover_image: data.cover_image,
-            sidebar_listing_image: data.listing_image,            
+            sidebar_listing_image: data.sidebar_listing_image,            
             card_image:data.card_image,
             card_image_mobile:data.card_image_mobile,
             currency: data.currency,
