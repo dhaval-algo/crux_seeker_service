@@ -2,7 +2,8 @@ const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const redisConnection = require('../../services/v1/redis');
 const helperService = require("../../utils/helper");
-
+const recommendationService = require("./recommendationService");
+let RecommendationService = new recommendationService();
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
 const {formatImageResponse} = require('../utils/general');
@@ -314,7 +315,55 @@ module.exports = class sectionService {
       
       if (result.hits && result.hits.length) {
         let data = result.hits[0]._source
-        data.meta_information = await generateMetaInfo('ADVICE_PAGE', data)       
+        // check if most popular article categories have minimum 6 articles
+        if (data.most_popular_article_categories && data.most_popular_article_categories) {
+          data.most_popular_article_categories = await Promise.all(
+            data.most_popular_article_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          data.most_popular_article_categories = data.most_popular_article_categories.filter(category => category != null)
+        }
+
+        // check if most trending article categories have minimum 6 articles
+        if (data.trending_article_categories && data.trending_article_categories) {
+          data.trending_article_categories = await Promise.all(
+            data.trending_article_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name,
+                  subType: 'Trending'
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          data.trending_article_categories = data.trending_article_categories.filter(category => category != null)
+
+          data.meta_information = await generateMetaInfo('ADVICE_PAGE', data)     
+       
+        }  
         RedisConnection.set('blog-home-page', data);
         RedisConnection.expire('blog-home-page', process.env.CACHE_EXPIRE_BLOG_HOME_PAGE);
         

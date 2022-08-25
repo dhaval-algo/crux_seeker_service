@@ -22,6 +22,9 @@ const redisConnection = require('../../services/v1/redis');
 
 const RedisConnection = new redisConnection();
 
+const recommendationService = require("./recommendationService");
+let RecommendationService = new recommendationService();
+
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const articleService = require("./articleService");
@@ -2234,8 +2237,53 @@ module.exports = class learnContentService {
         await RedisConnection.set('course-home-page', result);
         RedisConnection.expire('course-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
-      if (result.hits && result.hits.length) {
-        data = result.hits[0]._source
+        if (result.hits && result.hits.length) {
+            data = result.hits[0]._source
+            // check if course recomndation categories have minimum 4 courses 
+            if (data.course_recommendation_categories && data.course_recommendation_categories) {
+                data.course_recommendation_categories = await Promise.all(
+                    data.course_recommendation_categories.filter(async (category) => {
+                        let reqObj = {
+                            query: {
+                                category: category.name
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
+                            return category
+                        } else {
+                            return null
+                        }
+
+                    })
+
+                )
+                data.course_recommendation_categories = data.course_recommendation_categories.filter(category => category != null)
+            }
+
+            // check if Trending skill have minimum 6 courses 
+            if (data.trending_skillls && data.trending_skillls) {
+                data.trending_skillls = await Promise.all(
+                    data.trending_skillls.filter(async (skill) => {
+                        let reqObj = {
+                            query: {
+                                skill: skill.name,
+                                subType : 'Trending',
+                                priceType: 'Free'
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6) {
+                            return category
+                        } else {
+                            return null
+                        }
+
+                    })
+
+                )
+                data.trending_skillls = data.trending_skillls.filter(category => category != null)
+            }
         return { success: true, data }
       }
       return { success: false, data: null }
@@ -2310,6 +2358,26 @@ module.exports = class learnContentService {
             ]
 
         })
+         // check if course recomndation categories have minimum 4 courses 
+         if (result && result.length > 0) {
+            result = await Promise.all(
+                result.filter(async (category) => {
+                    let reqObj = {
+                        query: {
+                            category: category.name
+                        }
+                    }
+                    let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                    if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
+                        return category
+                    } else {
+                        return null
+                    }
+
+                })
+            )
+            result = result.filter(category => category != null)
+        }
 
         await RedisConnection.set('course-home-page-popular-categories', result);
       }

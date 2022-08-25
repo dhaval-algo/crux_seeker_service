@@ -27,7 +27,7 @@ module.exports = class homePageService {
       if (cacheData.noCacheData) {
         result = await elasticService.search('home-page', query, payload, ["top_categories", "top_partners_by_category", "top_institutes_by_region", "course_recommendation_categories", "learn_path_recommendation_categories", "", "most_popular_article_categories", "trending_article_categories", "meta_description", "meta_keywords"]);
       
-        // check if course recomndation categories have courses 
+        // check if course recomndation categories have minimum 4 courses 
         if (result.hits[0]._source.course_recommendation_categories && result.hits[0]._source.course_recommendation_categories) {
           result.hits[0]._source.course_recommendation_categories = await Promise.all(
             result.hits[0]._source.course_recommendation_categories.filter(async (category) => {
@@ -37,7 +37,7 @@ module.exports = class homePageService {
                 }
               }
               let recommendation = await RecommendationService.getPopularCourses(reqObj)
-              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
                 return category
               } else {
                 return null
@@ -50,7 +50,7 @@ module.exports = class homePageService {
 
         }
 
-        // check if learn path  recomndation categories have learn paths 
+        // check if learn path  recomndation categories have minimum 4 learn paths 
         if (result.hits[0]._source.learn_path_recommendation_categories && result.hits[0]._source.learn_path_recommendation_categories) {
           result.hits[0]._source.learn_path_recommendation_categories = await Promise.all(
             result.hits[0]._source.learn_path_recommendation_categories.map(async (category) => {
@@ -61,7 +61,7 @@ module.exports = class homePageService {
               }
               let recommendation = await RecommendationService.getPopularLearnPaths(reqObj)
 
-              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
                 return category
 
               } else {
@@ -73,7 +73,7 @@ module.exports = class homePageService {
           result.hits[0]._source.learn_path_recommendation_categories = result.hits[0]._source.learn_path_recommendation_categories.filter(category => category != null)
         }
 
-        // check if most popular article categories have articles
+        // check if most popular article categories have minimum 6 articles
         if (result.hits[0]._source.most_popular_article_categories && result.hits[0]._source.most_popular_article_categories) {
           result.hits[0]._source.most_popular_article_categories = await Promise.all(
             result.hits[0]._source.most_popular_article_categories.map(async (category) => {
@@ -84,7 +84,7 @@ module.exports = class homePageService {
               }
               let recommendation = await RecommendationService.getPopularArticles(reqObj)
 
-              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
                 return category
 
               } else {
@@ -96,7 +96,7 @@ module.exports = class homePageService {
           result.hits[0]._source.most_popular_article_categories = result.hits[0]._source.most_popular_article_categories.filter(category => category != null)
         }
 
-        // check if most trending article categories have articles
+        // check if most trending article categories have minimum 6 articles
         if (result.hits[0]._source.trending_article_categories && result.hits[0]._source.trending_article_categories) {
           result.hits[0]._source.trending_article_categories = await Promise.all(
             result.hits[0]._source.trending_article_categories.map(async (category) => {
@@ -108,7 +108,7 @@ module.exports = class homePageService {
               }
               let recommendation = await RecommendationService.getPopularArticles(reqObj)
 
-              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 0) {
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
                 return category
 
               } else {
