@@ -272,7 +272,56 @@ module.exports = class sectionService {
         let response = await buildSectionView(result.hits[0]._source)
         response.data.cover_image = formatImageResponse(response.data.cover_image)
         response.data.banner_image = formatImageResponse(response.data.banner_image)
-        response.data.meta_information = await generateMetaInfo('SECTION_PAGE', result.hits[0]._source) 
+        response.data.meta_information = await generateMetaInfo('SECTION_PAGE', result.hits[0]._source)
+
+         // check if most popular article skills have minimum 6 articles
+         if (result.hits[0]._source.popular_article_skills && result.hits[0]._source.popular_article_skills) {
+          result.hits[0]._source.popular_article_skills = await Promise.all(
+            result.hits[0]._source.popular_article_skills.map(async (skill) => {
+              let reqObj = {
+                query: {
+                  skill: skill.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return skill
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          response.data.popular_article_skills = result.hits[0]._source.popular_article_skills.filter(skill => skill != null)
+        }
+
+        // check if most trending article skills have minimum 6 articles
+        if (result.hits[0]._source.trending_article_skills && result.hits[0]._source.trending_article_skills) {
+          result.hits[0]._source.trending_article_skills = await Promise.all(
+            result.hits[0]._source.trending_article_skills.map(async (skill) => {
+              let reqObj = {
+                query: {
+                  skill: skill.name,
+                  subType:'Trending'
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return skill
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          response.data.trending_article_skills = result.hits[0]._source.trending_article_skills.filter(skill => skill != null)
+        }       
+  
+
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
         RedisConnection.set('section-page-'+slug, response.data);
