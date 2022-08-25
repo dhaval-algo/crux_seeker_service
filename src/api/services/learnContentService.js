@@ -2348,6 +2348,7 @@ module.exports = class learnContentService {
     let data = {};
     let result = null
     let cacheData = null
+    let categories = []
     try {
 
       if(skipCache !=true) {
@@ -2362,18 +2363,20 @@ module.exports = class learnContentService {
             order: [
                 ['count', 'DESC']
             ]
-
         })
          // check if course recomndation categories have minimum 4 courses 
+         
          if (result && result.length > 0) {
-            result = await Promise.all(
-                result.filter(async (category) => {
+            categories =  result.map(category => {return  {name:category.name}})
+            categories = await Promise.all(                
+                categories.map(async (category) => {
                     let reqObj = {
                         query: {
                             category: category.name
                         }
-                    }
+                    }                   
                     let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                   
                     if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
                         return category
                     } else {
@@ -2382,18 +2385,19 @@ module.exports = class learnContentService {
 
                 })
             )
-            result = result.filter(category => category != null)
+           
+            categories = categories.filter(category => category != null)
         }
 
-        await RedisConnection.set('course-home-page-popular-categories', result);
+        await RedisConnection.set('course-home-page-popular-categories', categories);
       }
 
-      if (result && result.length) {
+      if (categories && categories.length) {
         data = {
-          total: result.length,
+          total: categories.length,
           page,
           limit,
-          categories: await paginate(result, page, limit)
+          categories: await paginate(categories, page, limit)
         }
         return { success: true, data }
       }
