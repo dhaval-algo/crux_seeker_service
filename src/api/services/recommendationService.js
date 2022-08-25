@@ -1780,14 +1780,14 @@ module.exports = class recommendationService {
                         "should": [
                         {
                             "match": {
-                            "id": {"boost": 2, "query": result.partners[0] }
+                            "id": {"boost": 2, "query": result.partners[0].id }
                             
                             }
                             
                         },
                         {
                             "terms": {
-                            "id": result.partners 
+                            "id": result.partners.map(partner=>partner.id) 
                             }
                         }
                         ]
