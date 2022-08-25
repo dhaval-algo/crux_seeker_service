@@ -3000,6 +3000,20 @@ const updatePhone = async (req,res) => {
             }
         });
 
+       let userData =  await models.user.findOne({where: {id: user.userId}});
+        if(phone){
+            let countryCode =  phone.split(" ")[0];    
+            let phoneWithoutcode =  phone.split(" ")[1];
+            if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='+91' )
+            {
+                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+                let userId = user.id
+                let email = userData.email
+                const response = await generateOtp({ email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+                await sendSMSOTP (phoneWithoutcode, response.data.otp);
+               
+            }
+        }
         return res.status(200).json({
             'success': true,
             'message': 'Phone is updated',
