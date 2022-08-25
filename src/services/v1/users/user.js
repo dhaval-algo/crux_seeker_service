@@ -3111,10 +3111,10 @@ const getUserPendingActions = async (req, res) => {
             },
             workExp: {
                 weightage: 10,
+            },
+            goal: {
+                weightage: 10,
             }
-            // phone: {
-            //     weightage: 5,
-            // }
         }
 
         const verificationFields = {
@@ -3159,7 +3159,19 @@ const getUserPendingActions = async (req, res) => {
         else {
             response.pendingProfileActions.push("personalDetails")
         }
-        
+
+        if(userData.resumeFile!= null){
+            profileProgress += fields.resumeFile.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("resumeFile")
+        }
+        if(userData.profilePicture!= null){
+            profileProgress += fields.profilePicture.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("profilePicture")
+        }
         const education = await models.user_education.findAll({
             where: {
                 userId: userId
@@ -3191,6 +3203,7 @@ const getUserPendingActions = async (req, res) => {
         }
         else {
             response.verification.emailVerified = false
+            response.pendingProfileActions.push("emailVerification")
         }
 
         if (userData.phoneVerified) {
@@ -3226,7 +3239,22 @@ const getUserPendingActions = async (req, res) => {
         if(!goalObj.length){
             response.pendingProfileActions.push('goal') 
         }else{
-            profileProgress += 10
+            profileProgress += fields.goal.weightage;
+        }
+
+         /**
+         * Adding profile progress for profile Actions : 10%
+        */
+          const user_topic = await models.user_topic.findAll({
+            where:{
+                userId: userId
+            }
+        })
+
+        if(!user_topic.length){
+            response.pendingProfileActions.push('skills') 
+        }else{
+            profileProgress += verificationFields.skills.weightage
         }
 
         response.profileProgress=profileProgress
