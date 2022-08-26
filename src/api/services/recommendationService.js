@@ -6,9 +6,6 @@ const _ = require('underscore');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
-const ArticleService = require("./articleService");
-const articleService = new ArticleService();
-const userService = require('../../services/v1/users/user');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile"]
@@ -620,7 +617,7 @@ module.exports = class recommendationService {
         try {
             const userId = req.user.userId;
             const { profileType, category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
-            const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);           
+            const { skillsKeywords = [], workExpKeywords = [] } = await this.getUserProfileKeywords(userId);           
 
             const esQuery = {
                 bool: {
@@ -709,7 +706,7 @@ module.exports = class recommendationService {
                 }
             }
             else if(profileType == 'goal'  || (!profileType && courses.length < 1)){
-                const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+                const { highPriorityKeywords, lowPriorityKeywords } = await this.getKeywordsFromUsersGoal(userId);
 
                 esQuery.bool.should[0] = {
                     bool: {
@@ -830,7 +827,7 @@ module.exports = class recommendationService {
             const offset = (page - 1) * limit;
 
             const searchedArticles = [];
-            await userService.getUserLastSearch(req, (result) => {
+            await this.getUserLastSearch(req, (result) => {
                 searchedArticles.push(...result.data['article']);
 
             });
@@ -925,7 +922,7 @@ module.exports = class recommendationService {
 
         const userId = req.user.userId;
         const { page = 1, limit = 6, section } = req.query;
-        const { skillsKeywords = [], workExpKeywords = [] } = await userService.getUserProfileKeywords(userId);
+        const { skillsKeywords = [], workExpKeywords = [] } = await this.getUserProfileKeywords(userId);
         const articles = [];
         let limitForSkills = 0;
         let limitForWorkExp = 0;
@@ -1003,7 +1000,7 @@ module.exports = class recommendationService {
         const userId = req.user.userId;
         const { page = 1, limit = 6, section } = req.query;
         const offset = (page - 1) * limit;
-        const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+        const { highPriorityKeywords, lowPriorityKeywords } = await this.getKeywordsFromUsersGoal(userId);
         const articles = [];
         const esQuery = {
             bool: {
@@ -2218,7 +2215,7 @@ module.exports = class recommendationService {
         }
         try {
             let goalsKeywords = []
-            const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+            const { highPriorityKeywords, lowPriorityKeywords } = await this.getKeywordsFromUsersGoal(userId);
             goalsKeywords = [...highPriorityKeywords, ...lowPriorityKeywords];
 
             const learnPaths = [];
@@ -3065,7 +3062,7 @@ module.exports = class recommendationService {
         }
         try {
             let goalsKeywords = []
-            const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+            const { highPriorityKeywords, lowPriorityKeywords } = await this.getKeywordsFromUsersGoal(userId);
             goalsKeywords = [...highPriorityKeywords, ...lowPriorityKeywords];
 
             const learnContents = [];
@@ -4038,7 +4035,7 @@ module.exports = class recommendationService {
         }
         try {
             let goalsKeywords = []
-            const { highPriorityKeywords, lowPriorityKeywords } = await userService.getKeywordsFromUsersGoal(userId);
+            const { highPriorityKeywords, lowPriorityKeywords } = await this.getKeywordsFromUsersGoal(userId);
             goalsKeywords = [...highPriorityKeywords, ...lowPriorityKeywords];
 
             const articles = [];
@@ -5454,5 +5451,107 @@ module.exports = class recommendationService {
             let response = { success: false, message: "Failed to fetch", data: { list:[]} };            
             return response;
         }
+    }
+
+
+    getUserProfileKeywords = async (userId) => {
+        const skillsKeywords = [];
+        const workExpKeywords = [];
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId: req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill', 'isPrimary']
+                }
+            ],
+            attributes: ['topic']
+    
+        })
+        // Check if there are any primary(key) skills
+        if (userData && userData.length > 0) {
+            for (let data of userData) {
+                for (let user_skill of data.user_skills) {
+                    if (user_skill.isPrimary)
+                        skillsKeywords.push(user_skill.skill)
+                }
+            }
+        }
+        // else conside normal skills
+        if (skillsKeywords.length < 1) {
+            if (userData && userData.length > 0) {
+                for (let data of userData) {
+                    for (let user_skill of data.user_skills) {
+                        skillsKeywords.push(user_skill.skill)
+                    }
+                }
+            }
+        }
+    
+        const workExperience = await models.user_Work_experience.findAll({ attributes: ['jobTitle', 'industry'], where: { userId: userId } });
+        if (workExperience && workExperience.length > 0) {
+            for (let workExp of workExperience) {
+                if (workExp.jobTitle) {
+                    workExpKeywords.push(workExp.jobTitle);
+                }
+    
+                if (workExp.industry) {
+                    workExpKeywords.push(workExp.industry);
+                }
+            }
+        }
+    
+        return { skillsKeywords: skillsKeywords, workExpKeywords: workExpKeywords };
+    
+    }
+    
+    getKeywordsFromUsersGoal = async (userId) => {
+        const highPriorityKeywords = [];
+        const lowPriorityKeywords = [];
+        const goals = await models.goal.findAll({ where: { userId: userId } });
+        for (const goal of goals) {
+    
+            if (goal.currentRole) highPriorityKeywords.push(goal.currentRole);
+            if (goal.preferredRole) highPriorityKeywords.push(goal.preferredRole);
+            if (goal.industryChoice) highPriorityKeywords.push(goal.industryChoice);
+    
+            if (goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
+            if (goal.specialization) lowPriorityKeywords.push(goal.specialization);
+    
+            const goalSkills = await models.skill.findAll({ where: { goalId: goal.id } });
+            goalSkills.forEach((goalSkill) => {
+                if (goalSkill.name) highPriorityKeywords.push(goalSkill.name)
+            });
+    
+        };
+    
+        return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
+    
+    }
+
+    getUserLastSearch =async (req,callback) => {
+        
+        const { user} = req;
+        let userId = user.userId
+    
+         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
+    
+        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
+        if(!suggestionList['learn-path']){
+            suggestionList['learn-path'] = []
+        }
+        if(!suggestionList['learn-content']){
+            suggestionList['learn-content'] = []
+        }
+        if(!suggestionList['provider']){
+            suggestionList['provider'] = []
+        }
+        if(!suggestionList['article']){
+            suggestionList['article'] = []
+        }
+        callback({success:true,data:suggestionList}) 
+    
     }
 }

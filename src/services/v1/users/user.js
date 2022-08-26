@@ -3993,86 +3993,6 @@ const peopleAreAlsoViewing = async (req, callback) => {
     }
 }
 
-
-
-const getUserProfileKeywords = async (userId) => {
-    const skillsKeywords = [];
-    const workExpKeywords = [];
-    const userData = await models.user_topic.findAll({
-        where: {
-            userId: req.user.userId
-        },
-        include: [
-            {
-                model: models.user_skill,
-                attributes: ['skill', 'isPrimary']
-            }
-        ],
-        attributes: ['topic']
-
-    })
-    // Check if there are any primary(key) skills
-    if (userData && userData.length > 0) {
-        for (let data of userData) {
-            for (let user_skill of data.user_skills) {
-                if (user_skill.isPrimary)
-                    skillsKeywords.push(user_skill.skill)
-            }
-        }
-    }
-    // else conside normal skills
-    if (skillsKeywords.length < 1) {
-        if (userData && userData.length > 0) {
-            for (let data of userData) {
-                for (let user_skill of data.user_skills) {
-                    skillsKeywords.push(user_skill.skill)
-                }
-            }
-        }
-    }
-
-    const workExperience = await models.user_Work_experience.findAll({ attributes: ['jobTitle', 'industry'], where: { userId: userId } });
-    if (workExperience && workExperience.length > 0) {
-        for (let workExp of workExperience) {
-            if (workExp.jobTitle) {
-                workExpKeywords.push(workExp.jobTitle);
-            }
-
-            if (workExp.industry) {
-                workExpKeywords.push(workExp.industry);
-            }
-        }
-    }
-
-    return { skillsKeywords: skillsKeywords, workExpKeywords: workExpKeywords };
-
-}
-
-const getKeywordsFromUsersGoal = async (userId) => {
-    const highPriorityKeywords = [];
-    const lowPriorityKeywords = [];
-    const goals = await models.goal.findAll({ where: { userId: userId } });
-    for (const goal of goals) {
-
-        if (goal.currentRole) highPriorityKeywords.push(goal.currentRole);
-        if (goal.preferredRole) highPriorityKeywords.push(goal.preferredRole);
-        if (goal.industryChoice) highPriorityKeywords.push(goal.industryChoice);
-
-        if (goal.highestDegree) lowPriorityKeywords.push(goal.highestDegree);
-        if (goal.specialization) lowPriorityKeywords.push(goal.specialization);
-
-        const goalSkills = await models.skill.findAll({ where: { goalId: goal.id } });
-        goalSkills.forEach((goalSkill) => {
-            if (goalSkill.name) highPriorityKeywords.push(goalSkill.name)
-        });
-
-    };
-
-    return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
-
-}
-
-
 const addInstituteToWishList = async (req, res) => {
     try {
         const { user } = req;
@@ -4300,8 +4220,6 @@ module.exports = {
     peopleAreAlsoViewing,
     addCategoryToRecentlyViewed,
     addArticleToRecentlyViewed ,
-    getUserProfileKeywords,
-    getKeywordsFromUsersGoal ,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
