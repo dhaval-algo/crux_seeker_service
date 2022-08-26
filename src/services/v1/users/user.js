@@ -3254,7 +3254,7 @@ const getUserPendingActions = async (req, res) => {
         if(!user_topic.length){
             response.pendingProfileActions.push('skills') 
         }else{
-            profileProgress += verificationFields.skills.weightage
+            profileProgress += fields.skills.weightage
         }
 
         response.profileProgress=profileProgress
