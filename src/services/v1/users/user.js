@@ -51,6 +51,7 @@ const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
 const {saveSessionKPIs}=require("../../../utils/sessionActivity");
+const { Json } = require("sequelize/types/lib/utils");
 
 const login = async (req, res, next) => {
     try {
@@ -2716,7 +2717,7 @@ const uploadResumeFile = async (req,res) =>{
         uploadDate:today,
         size:size
     }
-    await models.user.update({resumeFile:s3Path},{where:{id:user.userId}})
+    await models.user.update({resumeFile: JSON.stringify(fileValue)},{where:{id:user.userId}})
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
@@ -3642,7 +3643,21 @@ const getUserProfile = async (req, res) => {
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
 
         })
+        if(user.resumeFile)
+        {
+            try {
+                user.resumeFile = JSON.parse(user.resumeFile)
 
+            } catch (error) {
+                
+                user.resumeFile ={
+                    filename:user.resumeFile,
+                    filepath:user.resumeFile,
+                    uploadDate:null,
+                    size:null
+                } 
+            }
+        }
         res.status(200).send({
             message: "User Profile fetched successfully",
             success: true,
