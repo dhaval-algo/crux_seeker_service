@@ -425,7 +425,7 @@ const signUp = async (req, res) => {
         {
             const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
             let userId = user.id
-            const response = await generateOtp({ email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+            const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
             await sendSMSOTP (phoneWithoutcode, response.data.otp);
             tokenRes.data.verifyPhone = true
         }
@@ -3009,7 +3009,7 @@ const updatePhone = async (req,res) => {
                 const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
                 let userId = user.id
                 let email = userData.email
-                const response = await generateOtp({ email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+                const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
                 await sendSMSOTP (phoneWithoutcode, response.data.otp);
                
             }
