@@ -78,7 +78,13 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
-
+            if(response.partnership_benefits  && response.partnership_benefits.length > 0)
+            {
+                response.partnership_benefits = response.partnership_benefits.map(benefit => {
+                    benefit.image = formatImageResponse(benefit.image)
+                    return benefit
+                })
+            }
             let res = {};
             for (let key in response) {
                 if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
