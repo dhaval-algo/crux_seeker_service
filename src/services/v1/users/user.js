@@ -2942,7 +2942,7 @@ const verifyPhone = async (email) =>{
                     phoneVerified: true,
                 }, {
                     where: {
-                        email: username
+                        email: email
                     }
                 });
             return resolve(true)
