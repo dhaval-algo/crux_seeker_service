@@ -3004,7 +3004,7 @@ const updatePhone = async (req,res) => {
         if(phone){
             let countryCode =  phone.split(" ")[0];    
             let phoneWithoutcode =  phone.split(" ")[1];
-            if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='+91' )
+            if(process.env.PHONEVERIFICATION =='true' && countryCode =='+91' )
             {
                 const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
                 let userId = user.id
