@@ -632,7 +632,7 @@ module.exports = class articleService {
                     data.content = {}
                     data.full_access= true;
                     if(result.template== "ARTICLE"){
-                        if( data.content){
+                        if( result.content){
                             data.content.description ={
                                 title: "Description",
                                 content : result.content
