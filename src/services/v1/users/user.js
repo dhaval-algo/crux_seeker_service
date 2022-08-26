@@ -51,7 +51,6 @@ const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
 const {saveSessionKPIs}=require("../../../utils/sessionActivity");
-const { Json } = require("sequelize/types/lib/utils");
 
 const login = async (req, res, next) => {
     try {
@@ -3649,7 +3648,7 @@ const getUserProfile = async (req, res) => {
                 user.resumeFile = JSON.parse(user.resumeFile)
 
             } catch (error) {
-                
+
                 user.resumeFile ={
                     filename:user.resumeFile,
                     filepath:user.resumeFile,
