@@ -207,8 +207,8 @@ const getLearnContentListMetaInfo = (result) => {
 
     if (result.page_details.pageType == 'category' || result.page_details.pageType == 'sub_category' || result.page_details.pageType == 'topic') {
         meta_title = `Top ${result.page_details.label} Courses in ${new Date().getFullYear()} | Careervira`;
-        meta_description = result.meta_information.meta_description
-        meta_keywords = result.meta_information.meta_keywords
+        meta_description = (result.meta_information) ? result.meta_information.meta_description : defaultLearnContentMetaInfo.meta_description
+        meta_keywords = (result.meta_information) ? result.meta_information.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
         let learn_type = []
         for (let filter of result.filters) {
             if (filter.field == 'learn_type') {
