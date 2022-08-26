@@ -2716,7 +2716,7 @@ const uploadResumeFile = async (req,res) =>{
         uploadDate:today,
         size:size
     }
-    await models.user.update({resumeFile:resumeFile},{where:{id:user.userId}})
+    await models.user.update({resumeFile:s3Path},{where:{id:user.userId}})
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
