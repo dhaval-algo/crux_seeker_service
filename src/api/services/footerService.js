@@ -424,10 +424,10 @@ module.exports = class FooterService {
                 }
             }
             await communication.sendEmail(emailPayload)
-            callback(null,true);
+            callback(null,{success: true, message: 'Successful!'});
         } catch (error) {
             console.log(error);
-            callback(error,null)
+            callback(null, {success: false, message: 'Something unexpected happend, we are looking into it.'});
         }
          
 
@@ -456,10 +456,10 @@ module.exports = class FooterService {
                 }
             }
             await communication.sendEmail(emailPayload)
-            callback(null,true);
+            callback(null,{success: true, message: 'Successful!'});
         } catch (error) {
             console.log(error);
-            callback(error,null)
+            callback(null, {success: false, message: 'Something unexpected happend, we are looking into it.'});
         }
          
 
