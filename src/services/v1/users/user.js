@@ -2824,15 +2824,10 @@ const bookmarkArticle = async (req,res) => {
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
             const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
 
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, articleIds: numericIds }
+        
+            //const data = { email: userinfo.value, articleIds: numericIds }
             await logActvity("ARTICLE_WISHLIST", userId, articleIds);
-            sendDataForStrapi(data, "profile-bookmark-article");
+           // sendDataForStrapi(data, "profile-bookmark-article");
             return res.status(200).json({
                 success: true,
                 data: {
