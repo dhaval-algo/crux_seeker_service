@@ -930,6 +930,7 @@ const resendVerificationLink = async (req, res) => {
     let userObj = {
         ...user,
         fullName:userData.fullName,
+        email:userData.email,
         audience: req.headers.origin
     }
     await sendVerifcationLink(userObj)
