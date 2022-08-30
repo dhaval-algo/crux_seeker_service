@@ -135,10 +135,11 @@ const sendOtp = async (req, res, next) => {
         /* 
         * Check if user exists or resgistered user
         */
-        const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL, otpType});
+        const response = await generateOtp({ username, audience, provider: null, otpType});
         if(!response.success){
             return res.status(500).json(response);
         }
+        email = username
         let where = {
             [Op.and]: [
                 {
@@ -603,8 +604,11 @@ const userExist = (email, provider) => {
                         }
                     })
                 }
-
-                const user_login = await models.user_login.findOne({ where: { userId: user.id, provider: provider} });
+                let where = { userId: user.id} 
+                if(provider){
+                    where = { userId: user.id, provider: provider} 
+                }
+                const user_login = await models.user_login.findOne({ where: where});
           
                if(user_login)
                {
