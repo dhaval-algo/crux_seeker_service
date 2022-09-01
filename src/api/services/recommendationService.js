@@ -826,11 +826,9 @@ module.exports = class recommendationService {
             const { limit = 5, page = 1 } = req.query;
             const offset = (page - 1) * limit;
 
-            const searchedArticles = [];
-            await this.getUserLastSearch(req, (result) => {
-                searchedArticles.push(...result.data['article']);
-
-            });
+            const searchedArticles = [];            
+            let suggestionList = await this.getUserLastSearch(req)            
+            searchedArticles.push(...suggestionList['article']);
 
             const articlesSlugs = searchedArticles.map((article) => article.slug);
 
@@ -5529,29 +5527,5 @@ module.exports = class recommendationService {
     
         return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
     
-    }
-
-    getUserLastSearch =async (req,callback) => {
-        
-        const { user} = req;
-        let userId = user.userId
-    
-         const existSearch = await models.user_meta.findOne({where:{userId:userId, key:'last_search'}})
-    
-        let suggestionList = (existSearch!=null && existSearch.value!="") ? JSON.parse(existSearch.value) : {'learn-path':[],'learn-content':[],'provider':[],'article':[]};
-        if(!suggestionList['learn-path']){
-            suggestionList['learn-path'] = []
-        }
-        if(!suggestionList['learn-content']){
-            suggestionList['learn-content'] = []
-        }
-        if(!suggestionList['provider']){
-            suggestionList['provider'] = []
-        }
-        if(!suggestionList['article']){
-            suggestionList['article'] = []
-        }
-        callback({success:true,data:suggestionList}) 
-    
-    }
+    }    
 }
