@@ -532,6 +532,15 @@ module.exports = class articleService {
 
         if(result.partners && result.partners.length > 0 )
         {
+            result.partners = result.partners.map(partner => { 
+                if(partner.id)
+                {
+                    return partner.id
+                }
+                else{
+                    return partner
+                }
+            })
             const partnerQuery = { 
                 "bool": {
                     "should": [
