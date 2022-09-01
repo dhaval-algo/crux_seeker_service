@@ -5459,7 +5459,7 @@ module.exports = class recommendationService {
         const workExpKeywords = [];
         const userData = await models.user_topic.findAll({
             where: {
-                userId: req.user.userId
+                userId: userId
             },
             include: [
                 {
