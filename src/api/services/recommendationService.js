@@ -5490,7 +5490,7 @@ module.exports = class recommendationService {
             }
         }
     
-        const workExperience = await models.user_Work_experience.findAll({ attributes: ['jobTitle', 'industry'], where: { userId: userId } });
+        const workExperience = await models.user_experience.findAll({ attributes: ['jobTitle', 'industry'], where: { userId: userId } });
         if (workExperience && workExperience.length > 0) {
             for (let workExp of workExperience) {
                 if (workExp.jobTitle) {
