@@ -591,7 +591,7 @@ module.exports = class recommendationService {
         if (result && result.length) {
             for (const courseElasticData of result.slice(offset, offset + limit)) {
                 const courseData = await this.generateCourseFinalResponse(courseElasticData._source, currency);                
-                optimisedCourse.similarity = courseIdSimilarityMap[courseData.id];
+                courseData.similarity = courseIdSimilarityMap[courseData.id];
                 courses.push(courseData);
             }
         }
