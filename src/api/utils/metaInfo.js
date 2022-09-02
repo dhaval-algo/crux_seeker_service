@@ -606,20 +606,7 @@ const generateMetaInfo = async (page, result, list) => {
             meta_information = {
                 meta_title: meta_title,
                 meta_description: await generateCourseMetaDescription(result),
-                meta_keywords: await generateCourseMetaKeywords(result),
-                add_type: result.add_type,
-                import_source: result.import_source,
-                external_source_id: result.external_source_id,
-                application_seat_ratio: result.application_seat_ratio,
-                bounce_rate: result.bounce_rate,
-                completion_ratio: result.completion_ratio,
-                enrollment_ratio: result.enrollment_ratio,
-                faculty_student_ratio: result.faculty_student_ratio,
-                gender_diversity: result.gender_diversity,
-                student_stream_diversity: result.student_stream_diversity,
-                student_nationality_diversity: result.student_nationality_diversity,
-                average_salary_hike: result.average_salary_hike,
-                instructor_citations: result.instructor_citations
+                meta_keywords: await generateCourseMetaKeywords(result)               
             }
             break;
         case 'LEARN_CONTENT_LIST':

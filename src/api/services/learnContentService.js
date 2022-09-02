@@ -1480,6 +1480,19 @@ module.exports = class learnContentService {
                 data.meta_information  = meta_information;
                 delete(data.meta_description)
                 delete(data.meta_keywords)
+                data.meta_information.add_type= result.add_type,
+                data.meta_information.import_source= result.import_source,
+                data.meta_information.external_source_id= result.external_source_id,
+                data.meta_information.application_seat_ratio= result.application_seat_ratio,
+                data.meta_information.bounce_rate= result.bounce_rate,
+                data.meta_information.completion_ratio= result.completion_ratio,
+                data.meta_information.enrollment_ratio= result.enrollment_ratio,
+                data.meta_information.faculty_student_ratio= result.faculty_student_ratio,
+                data.meta_information.gender_diversity= result.gender_diversity,
+                data.meta_information.student_stream_diversity= result.student_stream_diversity,
+                data.meta_information.student_nationality_diversity= result.student_nationality_diversity,
+                data.meta_information.average_salary_hike= result.average_salary_hike,
+                data.meta_information.instructor_citations= result.instructor_citations
             }            
         }
         else{
