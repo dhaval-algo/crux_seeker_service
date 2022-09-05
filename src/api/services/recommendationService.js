@@ -6,9 +6,10 @@ const _ = require('underscore');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
+const { isDateInRange } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
 const FEATURED_RANK_LIMIT = 2;
@@ -66,6 +67,20 @@ function formatQueryForCG (query, currency){
     
 }
 
+const getAllArticles = (articles_obj) => {
+    const {articles = [], learn_advices = [], learn_guides = [], career_guides = [] } = articles_obj;
+    let all_articles = [];
+    if(articles.length > 0)
+        articles.map(article => all_articles.push(article.id))
+    if(learn_advices.length > 0)
+        learn_advices.map(article => all_articles.push("LEARN_ADVICE_" + article.id))
+    if(learn_guides.length > 0)
+        learn_guides.map(article => all_articles.push("LEARN_GUIDE_" + article.id))
+    if(career_guides.length > 0)
+        career_guides.map(article => all_articles.push("CAREER_GUIDE" + article.id))
+    
+    return all_articles;
+}
 
 const getCurrencies = async (useCache = true) => {
 
@@ -1140,10 +1155,10 @@ module.exports = class recommendationService {
                           ]
                         }
                       };   
-                    result = await elasticService.search('section', query, { from: 0, size: 1, _source: ["featured_articles"] })
+                    result = await elasticService.search('section', query, { from: 0, size: 1, _source: ["all_featured_articles"] })
 
                     if (result.hits && result.hits.length) {
-                        featured_articles = result.hits[0]._source.featured_articles
+                        featured_articles = result.hits[0]._source.all_featured_articles
                     }
                     maxArticles = 3
                 break;
@@ -1151,38 +1166,28 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
-                        
-                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
-                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
-                        let json = await subCategoryResponse.json();                    
-                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
-                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        let json = await subCategoryResponse.json();
+                        featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     break
                 case "topicPage":
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
                         let json = await topicResponse.json();
-                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
-                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     break
                 case "learnPathPage":
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                    
-                        if(json && json.featured_articles && json.featured_articles.length > 0){
-                            json.featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     maxArticles = 2
                     break
@@ -1328,38 +1333,28 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
-                        
-                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
-                            json[0].article_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
                         let json = await subCategoryResponse.json();                    
-                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
-                            json[0].article_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "topicPage":
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
-                        let json = await topicResponse.json();
-                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
-                            json[0].article_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        const json = await topicResponse.json();
+                        article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "learnPathPage":
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                    
-                        if(json && json.careervira_advice && json.careervira_advice.length > 0){
-                            json.careervira_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 default:
@@ -1378,13 +1373,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.must = [
-                    {
-                    "ids": {
-                        "values": article_advice
-                    }
-                    }
-                ]
+                esQuery.bool.must = [{ "terms": { "id": article_advice } }]
 
                 let result = await elasticService.search("article", esQuery, {_source: articleFields});
 
@@ -1623,6 +1612,17 @@ module.exports = class recommendationService {
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
            
         };     
+
+        data.couponsCount = -1;
+        if(result.pricing_type == "Paid")
+        {
+            data.couponsCount = 0;
+            if(result.coupons && result.coupons.length > 0){
+                for(let coupon of result.coupons)
+                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                        data.couponsCount++
+            }
+        } 
         
         if(data.course_details.medium == 'Others'){
             data.course_details.medium = null;

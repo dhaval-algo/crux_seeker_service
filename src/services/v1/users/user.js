@@ -3350,6 +3350,12 @@ const editPersonalDetails = async (req, res) => {
     let {fullName, city, dob, gender } = req.body
     try {        
         
+        if(calcAge(dob) < 16)
+            return res.status(200).send({
+                message: "Age must be atleast 16 years",
+                success: false
+            })
+
         await models.user.update({
             fullName,
             city,
@@ -4147,6 +4153,18 @@ const removeInstituteFromWishList = async (req, res) => {
             wishlist:resMeta
         }
     })
+}
+
+const calcAge = (dob) => {
+
+    let today = new Date();
+    let birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    let m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate()))
+        age--;
+
+    return age;
 }
 
 module.exports = {

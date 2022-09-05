@@ -1720,7 +1720,8 @@ module.exports = class learnContentService {
             meta_information: data.meta_information,
             isTrending:data.isTrending,
             isPopular:data.isPopular,
-            isCvTake:data.isCvTake
+            isCvTake:data.isCvTake,
+            couponCount: coupons.length
         }
 
         return isList ? listData : data;
