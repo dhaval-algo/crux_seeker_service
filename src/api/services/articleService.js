@@ -495,7 +495,10 @@ module.exports = class articleService {
                     designation: auth.designation,
                     bio: auth.bio,
                     slug: auth.slug,
-                    image:auth.image
+                    image:auth.image,
+                    twitter_url: auth.twitter_url,
+                    linkedin_url: auth.linkedin_url,
+                    facebook_url: auth.facebook_url
                 }];
             }else{
                 author = [{
@@ -505,7 +508,11 @@ module.exports = class articleService {
                     lastname: result.last_name ? result.author_last_name.trim():"",
                     designation: result.author_designation,
                     bio: result.author_bio,
-                    slug: result.author_slug
+                    slug: result.author_slug,
+                    image:null,
+                    twitter_url: null,
+                    linkedin_url: null,
+                    facebook_url: null
                 }];
             }
         }
@@ -525,7 +532,10 @@ module.exports = class articleService {
                     designation: co_author.designation,
                     bio: co_author.bio,
                     slug: co_author.slug,
-                    image: (co_author.image) ? formatImageResponse(co_author.image) :  null
+                    image: (co_author.image) ? formatImageResponse(co_author.image) :  null,
+                    twitter_url: co_author.twitter_url,
+                    linkedin_url: co_author.linkedin_url,
+                    facebook_url: co_author.facebook_url
                 });
             }
         }
