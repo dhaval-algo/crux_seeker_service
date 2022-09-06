@@ -14,7 +14,6 @@ const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
 const footerController = require('../../../controllers/footerController');
-const trendingNowController = require('../../../controllers/trendingNowController');
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
@@ -24,6 +23,7 @@ const listUsersController = require("../../../controllers/listUsersController")
 const listEnquiriesController = require("../../../controllers/listEnquiriesController")
 const sessionKPIController = require("../../../controllers/sessionController")
 const graphController = require("../../../controllers/graphController")
+const trendingListController = require("../../../controllers/trendingListController")
 
 //course API
 router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
@@ -91,10 +91,7 @@ router.get('/articles/',injectTokenPayload, ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
-//trending now API
-router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
-router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
-router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);
+
 router.get('/author/:slug', ArticleController.getAuthor);
 
 router.get('/get-job-listing',jobController.getJobListing);
@@ -146,4 +143,12 @@ router.get('/data-table/:id', graphController.getDataTable)
 router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 
 router.get('/getIpDetails', geoIpController.getIpDetails )
+
+//Trending list API
+router.get('/trending-list',injectTokenPayload,trendingListController.getTrendingList);
+router.get('/trending-list/:slug',injectTokenPayload,trendingListController.getSingleTrendingList);
+router.get('/trending-list-top-learning-plateform/:slug',injectTokenPayload,trendingListController.getTopLearningplatform);
+router.get('/trending-list-courses/:slug',injectTokenPayload,trendingListController.getTrendingListCourses);
+router.get('/trending-list-navigation-dropdown/:slug',injectTokenPayload,trendingListController.getTrendingListNavigationDropdown);
+router.get('/navigate-to-trending-list',injectTokenPayload,trendingListController.navigateToTrendingList);
 module.exports = router;

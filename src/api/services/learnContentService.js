@@ -34,7 +34,7 @@ let ArticleService = new articleService();
 let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
-const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
+const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name','region'];
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
 const helperService = require("../../utils/helper");
@@ -284,9 +284,11 @@ module.exports = class learnContentService {
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+       // console.log("1st parsedFilter",  req.query['parsedFilters'])
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
+            && req.query['parsedFilters'] == undefined
             && (req.query['q'] == undefined || req.query['q'] == '')
             && req.query['rf'] == undefined
             && ((req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['pageType'] == "category" || req.query['pageType'] == "topic") && (req.query['page'] == "1" || req.query['page'] == undefined))
@@ -424,10 +426,29 @@ module.exports = class learnContentService {
         let parsedRangeFilters = [];       
         let filters = [];
         
-        if(req.query['f']){
-            parsedFilters = parseQueryFilters(req.query['f']);
-            for(const filter of parsedFilters){                
+        if(req.query['f'] || req.query['parsedFilters']){
+            if(req.query['f'])
+            {
+                parsedFilters = parseQueryFilters(req.query['f']);
+            }
+            if(req.query['parsedFilters']){
+               // parsedFilters.push.apply(req.query['parsedFilters'])
+               if(parsedFilters.length > 0)
+               {
+                parsedFilters =  parsedFilters.concat(req.query['parsedFilters'])
+               }
+               else{
+                parsedFilters =  req.query['parsedFilters']
+               }
+                //parsedFilters = [...parsedFilters, req.query['parsedFilters']]
+            }
+            //console.log("parsedFilters")
+            //console.dir( parsedFilters,{depth:null})
+           
+            for(const filter of parsedFilters){      
+                //console.log("filter", filter)          
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                //console.log("elasticAttribute", elasticAttribute)
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
                     let filter_object = {}
@@ -458,7 +479,7 @@ module.exports = class learnContentService {
             }            
         }
 
-
+        
 
 
         if(req.query['rf']){
@@ -568,9 +589,12 @@ module.exports = class learnContentService {
         queryPayload.aggs = aggs;
       
         // --Aggreation query build
-    
-        let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
 
+      
+        //console.dir( query,{depth:null})
+        
+        let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
+       
         /**
          * Aggregation object from elastic search
          */
@@ -729,6 +753,8 @@ module.exports = class learnContentService {
             if (result.total && result.total.value > 0) {
                 list = await this.generateListViewData(result.hits, req.query['currency'], useCache);
             }
+            //console.log("list", result.hits)
+            //console.dir( list,{depth:null})
 
 
             //Remove filters if requested by slug

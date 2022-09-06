@@ -11,6 +11,8 @@ const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
+const trendingListFields = ["id","title","slug","image","list_topic", "list_category", "short_description","region"]
+
 const FEATURED_RANK_LIMIT = 2;
 const currencyToRegion = {
     "INR" : "India",
@@ -5527,5 +5529,85 @@ module.exports = class recommendationService {
     
         return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
     
-    }    
+    } 
+    async getRelatedTrendingList(req){
+        try {
+            const trendingListId = req.query.trendingListId.toString();
+            const { page = 1, limit = 6 } = req.query;
+            const offset = (page - 1) * limit;
+
+            //priority 1 category list
+            let priorityList1 = ['list_topic.keyword, list_sub_category.keyword', 'skills.keyword', 'list_topic.keyword'];
+            let priorityList2 = ['region.keyword', 'level.keyword', 'price_type.keyword'];
+
+            const relationData = {
+                index: "trending-list",
+                id: trendingListId
+            }
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "approved" } }
+                    ],
+                    must_not: {
+                        term: {
+                            "_id": trendingListId
+                        }
+                    }
+                }
+            }
+
+            function buildQueryTerms(key, i) {
+                let termQuery = { "terms": {} };
+                termQuery.terms[key] = { ...relationData, "path": key };
+                termQuery.terms.boost = 5 - (i * 0.1);
+                return termQuery;
+            }
+
+            esQuery.bool.should = [{
+                bool: {
+                    boost: 1000,
+                    should: priorityList1.map(buildQueryTerms)
+                }
+            }];
+
+            esQuery.bool.should.push({
+                bool: {
+                    boost: 10,
+                    should: priorityList2.map(buildQueryTerms)
+                }
+            })
+
+            let result = await elasticService.search("trending-list", esQuery, { from: offset, size: limit ,_source: trendingListFields});
+
+            let trendingLists = [];
+            if (result && result.hits.length > 0) {
+                for (let hit of result.hits) {
+                    let data = {
+                        id: `TRND_LST_${hit._source.id}`,
+                        slug: hit._source.slug,
+                        region: hit._source.region,
+                        category: hit._source.list_category,
+                        sub_category: hit._source.list_sub_category,
+                        topic: hit._source.list_topic,
+                        short_description: hit._source.short_description,
+                        image: hit._source.image,
+                    }
+                    trendingLists.push(data);
+                }
+            }
+
+            let show = "logic";
+
+            const response = { success: true, message: "list fetched successfully", data:{list:trendingLists,mlList:[],show:show} };
+            
+            return response
+        } catch (error) {
+            console.log("Error while processing data for related trending list", error);
+            const response = { success: false, message: "list fetched successfully", data:{list:[]} };
+            
+            return response
+        }
+    }   
 }
