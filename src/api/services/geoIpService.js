@@ -13,28 +13,30 @@ const models = require("../../../models");
                 where network >> '${ip}'`)
                 if(details[0][0])
                 {
-                    if(details[0][0].country_name =="India")
+                    let data = details[0][0]
+                    if(data.country_name =="India")
                     {
-                        details[0][0].region ="India"
+                        data.region ="India"
                     }
-                    else if(details[0][0].country_name =="United Kingdom")
+                    else if(data.country_name =="United Kingdom")
                     {
-                        details[0][0].region ="UK"
+                        data.region ="UK"
                     }
-                    else if(details[0][0].country_name =="United States")
+                    else if(data.country_name =="United States")
                     {
-                        details[0][0].region ="USA"
+                        data.region ="USA"
                     }
-                    else if(details[0][0].continent_name =="Europe")
+                    else if(data.continent_name =="Europe")
                     {
-                        details[0][0].region ="Europe"
+                        data.region ="Europe"
                     }
                     else
                     {
-                        details[0][0].region ="Other"
+                        data.region ="USA"
                     }
+                    data.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6 = data.region
                 }
-                return {success:true, data: details[0][0] }
+                return {success:true, data: data }
             }
     
             catch(err) {

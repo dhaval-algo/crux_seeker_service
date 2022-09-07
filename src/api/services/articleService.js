@@ -75,7 +75,7 @@ module.exports = class articleService {
 
     async getArticleList(req, callback){
         let userCurrency= (req && req.query && req.query['currency'] )? req.query['currency']: process.env.DEFAULT_CURRENCY 
-        let region = currencyToRegion[userCurrency]
+        let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] )? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']:'India'
 
         const filterConfigs = await getFilterConfigs('Article');
         let searchTemplate = null;
