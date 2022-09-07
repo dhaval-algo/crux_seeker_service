@@ -1,35 +1,13 @@
 const elasticService = require("./elasticService");
-
 const helperService = require("../../utils/helper");
-const { formatCount } = require("../utils/general")
-
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
-
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
-
-const apiBackendUrl = process.env.API_BACKEND_URL;
-
-const {
-    getFilterConfigs,
-    parseQueryFilters,
-    getPaginationQuery,
-    getFilterAttributeName,
-    updateSelectedFilters,
-    getCurrencies,
-    getCurrencyAmount,
-    paginate,
-    formatImageResponse
-} = require('../utils/general');
-
-
-
+const {formatImageResponse} = require('../utils/general');
 module.exports = class trendingListService {
     async getTrendingList(req) {
         try {
-
-
             const { pageType, category, sub_category, topic, page = 1, limit = 6 } = req.query;
             let cacheName = `trending-list-${pageType}-${category}-${sub_category}-${topic}-${page}-${limit}`
             const offset = (page - 1) * limit;
@@ -95,9 +73,9 @@ module.exports = class trendingListService {
                         }
                     });
                 }
-                let sort = [{ "activity_count.last_x_days.trending_list_views": "desc" }]                
+                let sort = [{ "activity_count.last_x_days.trending_list_views": "desc" }]
 
-                let result = await elasticService.search('trending-list', query, { from: offset, size: limit ,sortObject: sort ,_source:["id","title","slug","image","list_topic", "list_category", "short_description","region"]});
+                let result = await elasticService.search('trending-list', query, { from: offset, size: limit, sortObject: sort, _source: ["id", "title", "slug", "image", "list_topic", "list_category", "short_description", "region"] });
                 if (result.hits && result.hits.length > 0) {
                     let finalData = {
                         list: []
@@ -536,6 +514,7 @@ module.exports = class trendingListService {
     async getTrendingListCourses(req, callback) {
         try {
             const slug = req.params.slug;
+            let currency = (req.query.currency) ? req.query.currency : 'USD'
             let cacheName = `trending-list-courses-${slug}_${req.query.currency}`
 
             let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -543,19 +522,14 @@ module.exports = class trendingListService {
                 return callback(null, { success: true, message: 'Fetched successfully!', data: cacheData })
             } else {
                 const signle_list = await this.fetchTrendingListBySlug(slug);
-                //console.dir(signle_list, {depth:null})
                 if (signle_list.list_type == 'Manual') {
                     let courseIds = signle_list.manual_courses.map(course => course.id)
                     req.query.courseIds = courseIds.join(',')
-                    // console.log("req.query['courseIds']", req.query.courseIds)
                     await LearnContentService.getLearnContentList(req, (error, data) => {
                         if (data) {
-                            // console.log("...here")                      
-                            //console.log("data",data)                      
                             return callback(null, { success: true, message: 'Fetched successfully!', data: { list: data.data.list } })
                         }
                         else {
-                            console.log("error fetching trending list courses", error)
                             return callback(null, { success: false, message: 'Error Fetching list!', data: null })
                         }
                     })
@@ -640,15 +614,10 @@ module.exports = class trendingListService {
                     }
 
 
-                    console.log("parsedFilters====>", parsedFilters)
                     req.query.parsedFilters = parsedFilters
                     let parsedFiltersKeys = parsedFilters.map(parsedFilter => parsedFilter.key)
-                    console.log("parsedFiltersKeys====>", parsedFiltersKeys)
                     await LearnContentService.getLearnContentList(req, (error, data) => {
                         if (data) {
-                            //    console.log("...here")                      
-                            //    console.log("data",data)
-
                             let filters = data.data.filters.filter(filter => {
                                 if (parsedFiltersKeys.includes(filter.label)) {
                                     return true
@@ -657,12 +626,257 @@ module.exports = class trendingListService {
                                     return false
                                 }
                             })
+
+                            //generate synposys data
+                            let self_paced = 0
+                            let instructor_paced = 0
+                            let capstone_project = 0
+                            let virtual_labs = 0
+                            let case_based_learning = 0
+                            let less_than_week = 0
+                            let more_than_month = 0
+                            let free = 0
+                            let low_price = 0
+                            let medium_price = 0
+                            let high_price = 0
+
+                            if (data.data.trending_list_synopsys_aggregation.instruction_type.buckets && data.data.trending_list_synopsys_aggregation.instruction_type.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.instruction_type.buckets) {
+                                    if (item.key == 'Self Paced') {
+                                        self_paced = Math.round((item.doc_count / data.data.pagination.totalCount) * 100)
+                                    }
+                                    if (item.key == 'Instructor Paced') {
+                                        instructor_paced = Math.round((item.doc_count / data.data.pagination.totalCount) * 100)
+                                    }
+                                }
+                            }
+                            if (data.data.trending_list_synopsys_aggregation.capstone_project && data.data.trending_list_synopsys_aggregation.capstone_project.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.capstone_project.buckets) {
+                                    if (item.key == 1) {
+                                        capstone_project = Math.round((item.doc_count / data.data.pagination.totalCount) * 100)
+                                    }
+
+                                }
+                            }
+                            if (data.data.trending_list_synopsys_aggregation.virtual_labs && data.data.trending_list_synopsys_aggregation.virtual_labs.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.virtual_labs.buckets) {
+                                    if (item.key == 1) {
+                                        virtual_labs = Math.round((item.doc_count / data.data.pagination.totalCount) * 100)
+                                    }
+
+                                }
+                            }
+                            if (data.data.trending_list_synopsys_aggregation.case_based_learning && data.data.trending_list_synopsys_aggregation.case_based_learning.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.case_based_learning.buckets) {
+                                    if (item.key == 1) {
+                                        case_based_learning = Math.round((item.doc_count / data.data.pagination.totalCount) * 100)
+                                    }
+
+                                }
+                            }
+                            if (data.data.trending_list_synopsys_aggregation.duration && data.data.trending_list_synopsys_aggregation.duration.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.duration.buckets) {
+                                    if (item.key == "*-56.0") {
+                                        less_than_week = item.doc_count
+                                    }
+                                    if (item.key == "255.0-*") {
+                                        more_than_month = item.doc_count
+                                    }
+
+                                }
+                            }
+                            if (data.data.trending_list_synopsys_aggregation.price_type && data.data.trending_list_synopsys_aggregation.price_type.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.price_type.buckets) {
+                                    if (item.key == "Free") {
+                                        free = item.doc_count
+                                    }
+
+                                }
+                            }
+                            if (data.data.trending_list_synopsys_aggregation.price_range && data.data.trending_list_synopsys_aggregation.price_range.buckets.length > 0) {
+                                for (let item of data.data.trending_list_synopsys_aggregation.price_range.buckets) {
+                                    if (item.key == "*-13.0") {
+                                        low_price = item.doc_count
+                                    }
+                                    if (item.key == "*13.0-130.0") {
+                                        medium_price = item.doc_count
+                                    }
+                                    if (item.key == "130.0-*") {
+                                        high_price = item.doc_count
+                                    }
+
+                                }
+                            }
+
+
+                            let synopsis = {
+                                type1:
+                                    [
+                                        {
+                                            label: "Course Count",
+                                            stats: data.data.pagination.totalCount || 0
+                                        },
+                                        {
+                                            label: "Topic Count",
+                                            stats: data.data.trending_list_synopsys_aggregation.topics.buckets.length || 0
+                                        },
+                                        {
+                                            label: "Partner Count",
+                                            stats: data.data.trending_list_synopsys_aggregation.partner.buckets.length || 0
+                                        },
+                                        {
+                                            label: "Self paced",
+                                            stats: `${self_paced}%` || `0%`
+                                        },
+
+                                        {
+                                            label: "Instructor Led",
+                                            stats: `${instructor_paced}%` || `0%`
+                                        },
+                                        {
+                                            label: "Capstone Project",
+                                            stats: `${capstone_project}%` || `0%`
+                                        },
+                                        {
+                                            label: "Capstone Project",
+                                            stats: `${capstone_project}%` || `0%`
+                                        },
+                                        {
+                                            label: "virtual Labs",
+                                            stats: `${virtual_labs}%` || `0%`
+                                        },
+                                        {
+                                            label: "Case Based Study",
+                                            stats: `${case_based_learning}%` || `0%`
+                                        },
+                                    ]
+                            }
+                            if (self_paced > 50) {
+                                synopsis.type2 = [{
+                                    label: "Learn Type",
+                                    stats: `${self_paced}%`,
+                                    statement: `Over ${self_paced}p% of the courses offer self-paced learning, while the rest offer instructor-led classes.`
+                                }]
+                            }
+                            else if (instructor_paced > 50) {
+                                synopsis.type2 = [{
+                                    label: "Learn Type",
+                                    stats: `${instructor_paced}%`,
+                                    statement: `Although some courses are self-paced, ${instructor_paced}% of the courses are instructor-paced at this level.`
+                                }]
+                            }
+                            else {
+                                synopsis.type2 = [{
+                                    label: "Learn Type",
+                                    stats: `${self_paced}%`,
+                                    statement: `${self_paced}% is the percentage of self based courses and ${instructor_paced}% is the percentage of instructor paced courses.`
+                                }]
+                            }
+
+                            synopsis.type2.push({
+                                label: "Course Summary",
+                                stats: data.data.pagination.totalCount,
+                                statement: `We offer ${data.data.pagination.totalCount} courses ranging from online to offline, self-paced and instructor-paced, in collaboration with top leading course providers.`
+                            })
+                            synopsis.type3 = []
+                            if (case_based_learning > 0) {
+                                synopsis.type3.push({
+                                    label: "Case Based Learning",
+                                    statement: [`More than ${case_based_learning}% of the courses incorporate case-based learning as a part of their curriculum, which is useful in encouraging them to research and reflect on solutions to real-life problems.`]
+                                })
+                            }
+                            if (capstone_project > 0) {
+                                synopsis.type3.push({
+                                    label: "Capstone Project",
+                                    statement: [`Around ${capstone_project}% of the courses require submission of Capstone Projects, which are projects learners must submit at the end of the course.`]
+                                })
+                            }
+
+                            if (virtual_labs > 0) {
+                                if (capstone_project == 0 && case_based_learning == 0) {
+                                    synopsis.type3.push({
+                                        label: "Virtual Labs",
+                                        statement: [`There are ${virtual_labs}% of courses that give the student the convenience of virtual labs, advancing their knowledge of the subject and bringing their knowledge into practicality through a series of experiments.`]
+                                    })
+                                }
+                                else {
+                                    synopsis.type3.push({
+                                        label: "Virtual Labs",
+                                        statement: [`Moreover, ${virtual_labs}% of courses provide learners with hands-on experience through virtual labs, advancing their knowledge of the subject.`]
+                                    })
+                                }
+                            }
+
+                            if (less_than_week > 0 || more_than_month > 0) {
+                                synopsis.type3.push({
+                                    label: "Duration Band",
+                                    statement: []
+                                })
+
+                                if (less_than_week > 0) {
+                                    synopsis.type3[synopsis.type3.length - 1].statement.push(`${less_than_week} courses are quick to finish, as they take less than a week. The skills are easy to learn, provide a solid base and help learners sharpen their technical abilities.`)
+                                }
+                                if (more_than_month > 0) {
+                                    synopsis.type3[synopsis.type3.length - 1].statement.push(`${more_than_month} courses are long-duration courses, taking more than a month to complete; these courses are perfect for learners who wish to understand and explore the skills and topics in detail.`)
+                                }
+                            }
+
+                            if (free > 0 || low_price > 0 || high_price > 0 || medium_price > 0) {
+                                synopsis.type3.push({
+                                    label: "Price Range",
+                                    statement: []
+                                })
+                                let low_price_limit, high_price_limit
+                                // set price limit for diffrence currencies for display purpose only
+                                switch (currency) {
+                                    case 'USD':
+                                        low_price_limit = '$13'
+                                        high_price_limit = '$130'
+                                        break;
+                                    case 'EUR':
+                                        low_price_limit = '€12'
+                                        high_price_limit = '€114'
+                                        break;
+                                    case 'GBP':
+                                        low_price_limit = '£10'
+                                        high_price_limit = '£105'
+                                        break;
+                                    case 'INR':
+                                        low_price_limit = '₹1K'
+                                        high_price_limit = '₹10K'
+                                        break;
+                                    default:
+                                        break;
+                                }
+
+                                if (low_price > 0) {
+                                    synopsis.type3[synopsis.type3.length - 1].statement.push(`We offer ${low_price} affordable online courses which cost less than ${low_price_limit} that can suit your budget.`)
+                                }
+                                if (medium_price > 0) {
+                                    synopsis.type3[synopsis.type3.length - 1].statement.push(`For individuals wanting courses with more affordable pricing but with more practical learning, the options for the same are available: ${low_price} courses are available in the price range of ${low_price_limit} - ${high_price_limit}.`)
+                                }
+                                if (high_price > 0) {
+                                    synopsis.type3[synopsis.type3.length - 1].statement.push(`We offer ${high_price} specialized courses by ${data.data.trending_list_synopsys_aggregation.partner.buckets.length} leading partners, which cost more than ${high_price_limit}.`)
+                                }
+                                if (free > 0) {
+                                    synopsis.type3[synopsis.type3.length - 1].statement.push(`We offer ${free} courses that are free of cost from ${data.data.trending_list_synopsys_aggregation.partner.buckets.length} leading partners for Higher ed Learners and professionals.`)
+                                }
+                            }
+                            if (signle_list.filters_number_of_courses) {
+                                if (signle_list.filters_number_of_courses < data.data.pagination.totalCount) {
+                                    data.data.pagination.totalCount = signle_list.filters_number_of_courses
+                                }
+                                data.data.sort = null,
+                                    data.data.sortOptions = null
+                            }
+
                             let finalData = {
                                 list: data.data.list,
                                 filters: filters,
                                 pagination: data.data.pagination,
                                 sort: data.data.sort,
                                 sortOptions: data.data.sortOptions,
+                                synopsis: synopsis
                             }
                             return callback(null, { success: true, message: 'Fetched successfully!', data: finalData })
                         }
