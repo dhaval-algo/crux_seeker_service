@@ -55,7 +55,7 @@ module.exports = {
             if (data) {
                // console.log("data",data)
                 if (req.query['fields']) {
-                    let finalData = formatResponseField(req.query['fields'], data)
+                    let finalData = formatResponseField(req.query['fields'], data.data)
                     res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
                 } else {
                     res.status(200).send(data);
