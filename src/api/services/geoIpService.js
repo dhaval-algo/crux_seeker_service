@@ -11,9 +11,10 @@ const models = require("../../../models");
                   and location.locale_code = 'en'
                 )
                 where network >> '${ip}'`)
+                let data = null 
                 if(details[0][0])
                 {
-                    let data = details[0][0]
+                    data = details[0][0]
                     if(data.country_name =="India")
                     {
                         data.region ="India"
