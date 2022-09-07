@@ -65,6 +65,7 @@ router.get('/terms-and-conditions', footerController.termandcondition);
 router.get('/privacy-policy', footerController.privacypolicy);
 router.get('/partner-with-us', footerController.partnerWithUs);
 router.get('/learners-page', footerController.learners);
+router.get('/rankings', footerController.ranking)
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
