@@ -137,7 +137,7 @@ module.exports = class trendingListService {
                         how_to_choose_course: signle_list.how_to_choose_course
                     }
 
-                    if (data.skills_section.skills && data.skills_section.skills.length > 0) {
+                    if (data.skills_section && data.skills_section.skills && data.skills_section.skills.length > 0) {
                         data.skills_section.skills = data.skills_section.skills.map(async skill => {
                             let skilldetails = await RedisConnection.getValuesSync(`skill_${skill}`);
                             if (skilldetails.noCacheData != true) {
@@ -527,7 +527,7 @@ module.exports = class trendingListService {
                     req.query.courseIds = courseIds.join(',')
                     await LearnContentService.getLearnContentList(req, (error, data) => {
                         if (data) {
-                            return callback(null, { success: true, message: 'Fetched successfully!', data: { list: data.data.list } })
+                            return callback(null, { success: true, message: 'Fetched successfully!', data: { list: data.data.list ,pagination: data.data.pagination, sort: data.data.sort, sortOptions: data.data.sortObject} })
                         }
                         else {
                             return callback(null, { success: false, message: 'Error Fetching list!', data: null })
