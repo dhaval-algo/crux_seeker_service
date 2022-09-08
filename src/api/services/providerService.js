@@ -460,6 +460,7 @@ module.exports = class providerService {
     }
 
 
+
     async generateListViewData(rows, rank){
         let datas = [];
         for(let row of rows){
@@ -736,5 +737,64 @@ module.exports = class providerService {
        } catch (error) {
            console.log("provider activity error",  error)
        }        
+    }
+
+    
+    async getSingleProviderRanking(req, callback){
+        const slug = req.params.slug;
+        let cacheName = `single-provider-ranking-${slug}}`
+        let useCache = false
+        
+        let cacheData = await RedisConnection.getValuesSync(cacheName);
+        if(cacheData.noCacheData != true) {
+            callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});           
+        }else
+        {
+            const query = { "bool": {
+                "must": [
+                {term: { "slug.keyword": slug }},
+                {term: { "status.keyword": 'approved' }}
+                ]
+            }};
+            const result = await elasticService.search('provider', query, { _source: ['ranks']});
+            if(result.hits && result.hits.length > 0){
+                let ranking = {}
+                let classifications = []
+                let years = []
+                if(result.hits[0]._source.ranks && result.hits[0]._source.ranks.length > 0)
+                {
+                    for(let rank of result.hits[0]._source.ranks)
+                    {
+                        if(rank.featured)
+                        {
+                            if(!ranking[rank.year])
+                            {
+                                ranking[rank.year] ={}
+                                years.push(rank.year)
+                            }
+                            if(!ranking[rank.year][rank.classification]) 
+                            {
+                                ranking[rank.year][rank.classification] = []
+                                classifications.push(rank.classification)
+                            }
+                            ranking[rank.year][rank.classification].push(rank)
+                        }
+                    }
+                    years = years.sort(function(a, b){return b - a});
+                    classifications = classifications.filter((x, i, a) => a.indexOf(x) == i);
+                }
+                
+                let finalData = {
+                    years,
+                    classifications,
+                    ranking
+                }
+                RedisConnection.set(cacheName, finalData);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
+                callback(null, {success: true, message: 'Fetched successfully!', data: finalData});
+            }else{               
+                return callback({success: false, message: 'Not found!'}, null);                  
+            }
+        }       
     }
 }

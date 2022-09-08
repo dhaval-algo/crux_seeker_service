@@ -72,8 +72,10 @@ router.get('/courses-by-ids/', learnContentController.getCourseByIds);
 router.get('/learnpaths-by-ids/', learnPathController.getLearnPathByIds);
 router.get('/course-option-by-categories/', learnContentController.getCourseOptionByCategories);
 
+//api for providers
 router.get('/providers/', providerController.getProviderList);
 router.get('/providers/:slug', providerController.getSingleProvider);
+router.get('/providers-ranking/:slug', providerController.getSingleProviderRanking);
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
