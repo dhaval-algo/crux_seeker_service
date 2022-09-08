@@ -1168,6 +1168,7 @@ module.exports = class recommendationService {
                         let json = await categoryResponse.json();
                         featured_articles = getAllArticles(json[0].featured_articles);
                     }
+                    maxArticles = 3
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
@@ -1175,6 +1176,7 @@ module.exports = class recommendationService {
                         let json = await subCategoryResponse.json();
                         featured_articles = getAllArticles(json[0].featured_articles);
                     }
+                    maxArticles = 3
                     break
                 case "topicPage":
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
@@ -1182,6 +1184,7 @@ module.exports = class recommendationService {
                         let json = await topicResponse.json();
                         featured_articles = getAllArticles(json[0].featured_articles);
                     }
+                    maxArticles = 3
                     break
                 case "learnPathPage":
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
