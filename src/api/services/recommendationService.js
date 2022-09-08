@@ -77,7 +77,7 @@ const getAllArticles = (articles_obj) => {
     if(learn_guides.length > 0)
         learn_guides.map(article => all_articles.push("LEARN_GUIDE_" + article.id))
     if(career_guides.length > 0)
-        career_guides.map(article => all_articles.push("CAREER_GUIDE" + article.id))
+        career_guides.map(article => all_articles.push("CAREER_GUIDE_" + article.id))
     
     return all_articles;
 }
@@ -1208,7 +1208,7 @@ module.exports = class recommendationService {
                     }
                 }
                 esQuery.bool.must = [
-                    { "terms": { "id": featured_articles }}                   
+                    { "terms": { "id.keyword": featured_articles }}                   
                 ]                
 
                 let result = await elasticService.search("article", esQuery, {_source: articleFields});
@@ -1373,7 +1373,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.must = [{ "terms": { "id": article_advice } }]
+                esQuery.bool.must = [{ "terms": { "id.keyword": article_advice } }]
 
                 let result = await elasticService.search("article", esQuery, {_source: articleFields});
 
