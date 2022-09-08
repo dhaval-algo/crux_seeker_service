@@ -472,13 +472,6 @@ module.exports = class providerService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, rank = null){
-        let courses = {
-            list: [],
-            total: 0
-        };
-        if(!isList){
-            courses = await this.getProviderCourses(result.name, currency);
-        }
 
         let data = {
             title: result.name,
@@ -521,8 +514,7 @@ module.exports = class providerService {
                 phone: result.phone,
                 email: result.email,
                 website_link: result.website_link
-            },
-            courses: courses,
+            },            
             course_count: (result.course_count) ? result.course_count : 0,
             featured_ranks: [],
             placements: {},
@@ -664,34 +656,6 @@ module.exports = class providerService {
         }
 
         return data;
-    }
-
-
-    async getProviderCourses(provider_name, currency){
-        let courses = {
-            list: [],
-            total: 0
-        };
-        const query = {
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }},
-                    {term: { "provider_name.keyword": provider_name }}
-                ]
-             }
-        };
-
-        let queryPayload = {};
-        queryPayload.from = 0;
-        queryPayload.size = 4;
-        queryPayload.sort = "published_date:desc";
-
-        const result = await elasticService.search('learn-content', query, queryPayload);
-        if(result.hits && result.hits.length > 0){
-            courses.list = await LearnContentService.generateListViewData(result.hits, currency);
-            courses.total = result.total.value;
-        }
-        return courses;        
     }
 
     async getInstituteLandingPage(req) {
