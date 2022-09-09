@@ -1417,14 +1417,14 @@ module.exports = class learnContentService {
         const COURSE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
 
         data.isPopular = false
-        if (COURSE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD))) {
+        if ( (COURSE_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD))) {
             data.isPopular = true
         }
 
         const COURSE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
 
         data.isTrending = false
-        if (COURSE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD))) {
+        if ( (COURSE_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD))) {
             data.isTrending = true
         }
        

@@ -711,18 +711,18 @@ module.exports = class learnPathService {
         }
 
         //SET popular and trending keys
-        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD");
+        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD"));
 
         data.isPopular  = false
-        if(LEARN_PATH_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(LEARN_PATH_POPULARITY_SCORE_THRESHOLD)))
+        if( (LEARN_PATH_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > LEARN_PATH_POPULARITY_SCORE_THRESHOLD))
         {
             data.isPopular  = true
         }
 
-        const LEARN_PATH_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_TRENDING_SCORE_THRESHOLD");
+        const LEARN_PATH_TRENDING_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("LEARN_PATH_TRENDING_SCORE_THRESHOLD"));
 
         data.isTrending  = false
-        if(LEARN_PATH_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(LEARN_PATH_TRENDING_SCORE_THRESHOLD)))
+        if( (LEARN_PATH_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > LEARN_PATH_TRENDING_SCORE_THRESHOLD))
         {
             data.isTrending  = true
         }

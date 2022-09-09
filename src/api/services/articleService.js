@@ -990,18 +990,18 @@ module.exports = class articleService {
         }
 
         //SET popular and trending keys
-        const ARTICLE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD");
+        const ARTICLE_POPULARITY_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD"));
 
         data.isPopular  = false
-        if(ARTICLE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(ARTICLE_POPULARITY_SCORE_THRESHOLD)))
+        if( (ARTICLE_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > ARTICLE_POPULARITY_SCORE_THRESHOLD))
         {
             data.isPopular  = true
         }
 
-        const ARTICLE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD");
+        const ARTICLE_TRENDING_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD"));
         
         data.isTrending  = false
-        if(ARTICLE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(ARTICLE_TRENDING_SCORE_THRESHOLD)))
+        if( (ARTICLE_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > ARTICLE_TRENDING_SCORE_THRESHOLD))
         {
             data.isTrending  = true
         }
@@ -1066,7 +1066,7 @@ module.exports = class articleService {
     }
 
 
-    async generateAuthorData(result, fetch_articles = false){
+    async generateAuthorData(result){
         let data = {
             id: result.id,
             user_id: result.user_id,
@@ -1085,11 +1085,7 @@ module.exports = class articleService {
         };
         if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
-        }
-
-        if(fetch_articles){
-            data.articles = await this.getArticleByAuthor(result.user_id);
-        }
+        }       
 
         return data;
     }
@@ -1120,7 +1116,7 @@ module.exports = class articleService {
 
         const result = await elasticService.search('author', query);
         if(result.hits && result.hits.length > 0){
-            author = await this.generateAuthorData(result.hits[0]._source, true);
+            author = await this.generateAuthorData(result.hits[0]._source);
         }
         if(callback){
             if(author){
@@ -1138,37 +1134,95 @@ module.exports = class articleService {
     }
 
 
-    async getArticleByAuthor(author_id, isListing = true){
-        let articles = [];
-        const queryBody = {
-            "query": {
-              "bool": {
-                "must": [
-                  {term: { "status.keyword": 'published' }},
-                  {
-                      "bool": {
-                        "should": [
-                            {term: { "author_id": author_id }},
-                            {term: {"co_authors.user_id": author_id}}
+    async getArticlesByAuthor(req) {
+        try {
+            let author_id = req.params.id
+            let { page = 1, limit = 10, } = req.query;
+
+            let cacheKey = `articles-by author-${author_id}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            let articles = [];
+            if (cachedData.noCacheData != true) {
+                articles = cachedData;
+            } else {
+                let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
+                const offset = (page - 1) * limit
+
+                const query = {
+
+                    "bool": {
+                        "must": [
+                            { term: { "status.keyword": 'published' } },
+                            {
+                                "bool": {
+                                    "should": [
+                                        { term: { "author_id": author_id } },
+                                        { term: { "co_authors.user_id": author_id } }
+                                    ]
+                                }
+                            }
                         ]
                     }
-                }
-                ]
-             }
-            }
-        };
 
-            const result = await elasticService.plainSearch('article', queryBody);
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        const article = await this.generateSingleViewData(hit._source, isListing);
-                        articles.push(article);
+                };
+                query.bool.must.push({
+                    "bool": {
+                        "should": [
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "terms": {
+                                                "template.keyword": [
+                                                    "ARTICLE",
+                                                    "LEARN_GUIDE",
+                                                    "LEARN_ADVICE"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "term": {
+                                                "template.keyword": "CAREER_GUIDE"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "career_level.keyword": "Level 1"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "region.keyword": region
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
                     }
-                }
-            } 
-        return articles;
-    }
+                })
 
+                let result = await elasticService.search("article", query, { from: offset, size: limit });
+                if (result.hits) {
+                    for (const hit of result.hits) {
+                        var data = await this.generateSingleViewData(hit._source, true)
+                        articles.push(data);
+                    }
+                    await RedisConnection.set(cacheKey, articles);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTCLE_SLUG);
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: { list: articles } };
+            return response;
+        } catch (error) {
+            return { success: false, message: "Error fetching list", data: null };
+        }
+    }
 
 }
