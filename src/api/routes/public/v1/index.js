@@ -96,8 +96,12 @@ router.get('/ranking-homepage',rankingController.getHomePageContent)
 router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
 router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
 router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);
-router.get('/author/:slug', ArticleController.getAuthor);
 
+// Author api
+router.get('/author/:slug', ArticleController.getAuthor);
+router.get('/articles-by-author/:id', ArticleController.getArticlesByAuthor);
+
+// Jobs api
 router.get('/get-job-listing',jobController.getJobListing);
 router.get('/get-job-data',jobController.getJobData);
 router.post('/save-job-application',jobController.saveJobApplication);
