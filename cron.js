@@ -11,7 +11,7 @@ const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeIma
     invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter,
     invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam,
     invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills,
-    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage} = require('./src/utils/cacheInvalidationCron');
+    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage, setLatestRankingYear} = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 
 Sentry.init({
@@ -126,6 +126,7 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidPopularCategories()
             await invalidatePartnerWithUs()
             await invalidateLearnersPage()
+            await setLatestRankingYear()
         } catch (error) {
             console.log("Error in cron", error);
         }

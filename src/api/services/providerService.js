@@ -704,61 +704,96 @@ module.exports = class providerService {
     }
 
     
-    async getSingleProviderRanking(req, callback){
-        const slug = req.params.slug;
-        let cacheName = `single-provider-ranking-${slug}}`
-        let useCache = false
-        
-        let cacheData = await RedisConnection.getValuesSync(cacheName);
-        if(cacheData.noCacheData != true) {
-            callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});           
-        }else
-        {
-            const query = { "bool": {
-                "must": [
-                {term: { "slug.keyword": slug }},
-                {term: { "status.keyword": 'approved' }}
-                ]
-            }};
-            const result = await elasticService.search('provider', query, { _source: ['ranks']});
-            if(result.hits && result.hits.length > 0){
-                let ranking = {}
-                let classifications = []
-                let years = []
-                if(result.hits[0]._source.ranks && result.hits[0]._source.ranks.length > 0)
-                {
-                    for(let rank of result.hits[0]._source.ranks)
-                    {
-                        if(rank.featured)
-                        {
-                            if(!ranking[rank.year])
-                            {
-                                ranking[rank.year] ={}
-                                years.push(rank.year)
-                            }
-                            if(!ranking[rank.year][rank.classification]) 
-                            {
-                                ranking[rank.year][rank.classification] = []
-                                classifications.push(rank.classification)
-                            }
-                            ranking[rank.year][rank.classification].push(rank)
-                        }
+    async getSingleProviderRanking(req, callback) {
+        try {
+
+
+            const slug = req.params.slug;
+            let cacheName = `single-provider-ranking-${slug}}`
+            let useCache = false
+
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if (cacheData.noCacheData != true) {
+                callback(null, { success: true, message: 'Fetched successfully!', data: cacheData });
+            } else {
+                const query = {
+                    "bool": {
+                        "must": [
+                            { term: { "slug.keyword": slug } },
+                            { term: { "status.keyword": 'approved' } }
+                        ]
                     }
-                    years = years.sort(function(a, b){return b - a});
-                    classifications = classifications.filter((x, i, a) => a.indexOf(x) == i);
+                };
+                const result = await elasticService.search('provider', query, { _source: ['ranks'] });
+                if (result.hits && result.hits.length > 0) {
+                    let ranking = {}
+                    let classifications = []
+                    let years = []
+                    if (result.hits[0]._source.ranks && result.hits[0]._source.ranks.length > 0) {
+                        for (let rank of result.hits[0]._source.ranks) {
+                            if (rank.featured) {
+                                if (!ranking[rank.year]) {
+                                    ranking[rank.year] = {}
+                                    years.push(rank.year)
+                                }
+                                if (!ranking[rank.year][rank.classification]) {
+                                    ranking[rank.year][rank.classification] = []
+                                    classifications.push(rank.classification)
+                                }
+                                ranking[rank.year][rank.classification].push(rank)
+                            }
+                        }
+                        years = years.sort(function (a, b) { return b - a });
+                        classifications = classifications.filter((x, i, a) => a.indexOf(x) == i);
+                    }
+
+                    let finalData = {
+                        years,
+                        classifications,
+                        ranking
+                    }
+                    RedisConnection.set(cacheName, finalData);
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER);
+                    callback(null, { success: true, message: 'Fetched successfully!', data: finalData });
+                } else {
+                    return callback({ success: false, message: 'Not found!' }, null);
                 }
-                
-                let finalData = {
-                    years,
-                    classifications,
-                    ranking
-                }
-                RedisConnection.set(cacheName, finalData);
-                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
-                callback(null, {success: true, message: 'Fetched successfully!', data: finalData});
-            }else{               
-                return callback({success: false, message: 'Not found!'}, null);                  
             }
-        }       
+        } catch (error) {
+            console.log("error getting ranking for single provider", error)
+            return callback({ success: false, message: 'Error!' }, null);
+        }
     }
+
+   async setLatestRankingYear(){
+    const query = {
+        "bool": {
+            "filter": [              
+                { term: { "status.keyword": 'approved' } }
+            ]
+        }
+    };
+    const result = await elasticService.search('provider', query, { size:1000,_source: ['ranks'] });
+   
+    if (result.hits && result.hits.length > 0) {
+        let rank_latest_year = {}
+        for(let hit of result.hits)
+        {
+           
+            for (let rank of hit._source.ranks) {
+                
+                if (rank.featured && rank.year) {
+                    if(rank_latest_year[rank.slug])
+                    {
+                        rank_latest_year[rank.slug] = (rank.year > rank_latest_year[rank.slug])? rank.year : rank_latest_year[rank.slug]
+                    }
+                    else{
+                        rank_latest_year[rank.slug] = rank.year
+                    }                    
+                }
+            }
+        }
+        RedisConnection.set("provider_raning_latest_year", rank_latest_year);
+    }
+   }
 }

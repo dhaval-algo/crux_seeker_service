@@ -4,6 +4,8 @@ const learnContentService = require("../api/services/learnContentService");
 let LearnContentService = new learnContentService();
 const  FooterService = require("../api/services/footerService")
 const footerService = new FooterService()
+const providerContentService = require("../api/services/providerService");
+let ProviderContentService = new providerContentService();
 
 
 const {
@@ -155,6 +157,14 @@ const invalidPopularCategories = async () => {
     }  
 }
 
+const setLatestRankingYear  = async () => {
+    try {
+        await ProviderContentService.setLatestRankingYear();
+    } catch (error) {
+        console.log("Error setting latest ranking year",error)
+    }  
+}
+
 
    
 module.exports = {
@@ -174,5 +184,6 @@ module.exports = {
     invalidateTNM,
     invalidatePP,
     invalidatSkills,
-    invalidPopularCategories
+    invalidPopularCategories,
+    setLatestRankingYear,
 }
