@@ -3499,6 +3499,15 @@ module.exports = class recommendationService {
                     );
                 }
                 if (partners) {
+                    partners = partners.map(partner => { 
+                        if(partner.id)
+                        {
+                            return partner.id
+                        }
+                        else{
+                            return partner
+                        }
+                    })
                     esQuery.bool.should.push(
                         {
                             "terms": {
