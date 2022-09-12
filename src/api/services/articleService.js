@@ -1138,12 +1138,12 @@ module.exports = class articleService {
         try {
             let author_id = req.params.id
             let { page = 1, limit = 10, } = req.query;
-
+            let finaldata  ={}
             let cacheKey = `articles-by author-${author_id}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             let articles = [];
             if (cachedData.noCacheData != true) {
-                articles = cachedData;
+                finaldata = cachedData;
             } else {
                 let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
                 const offset = (page - 1) * limit
@@ -1209,18 +1209,29 @@ module.exports = class articleService {
                 })
 
                 let result = await elasticService.search("article", query, { from: offset, size: limit });
+                
                 if (result.hits) {
+                    
                     for (const hit of result.hits) {
                         var data = await this.generateSingleViewData(hit._source, true)
                         articles.push(data);
                     }
-                    await RedisConnection.set(cacheKey, articles);
+                    let pagination = {
+                        page:page,
+                        count: result.hits.length,
+                        perPage: limit,
+                        totalCount: result.total.value,
+                        total: result.total.value
+                    }
+                    finaldata  = { list: articles, pagination:pagination } 
+                    await RedisConnection.set(cacheKey, finaldata);
                     RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTCLE_SLUG);
                 }
             }
-            let response = { success: true, message: "list fetched successfully", data: { list: articles } };
+            let response = { success: true, message: "list fetched successfully", data: finaldata };
             return response;
         } catch (error) {
+            console.log("error in article by id", error)
             return { success: false, message: "Error fetching list", data: null };
         }
     }
