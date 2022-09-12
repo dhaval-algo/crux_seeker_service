@@ -487,7 +487,6 @@ module.exports = class providerService {
             programs: (result.programs) ? result.programs : [],
             institute_types: (result.institute_types) ? result.institute_types : [],
             currency: result.currency,
-            facilities: result.facilities,
             gender_accepted: result.gender_accepted,
           //  establishment_year: result.establishment_year,
             study_modes: (result.study_modes) ? result.study_modes : [],
@@ -551,6 +550,12 @@ module.exports = class providerService {
             if(result.work_experience && result.work_experience.length > 0){
                 data.placements['work_experience'] = result.work_experience;
             }
+            
+            let facilitiesData = await RedisConnection.getValuesSync('provider-facilties');
+            if(facilitiesData.noCacheData != true && data.facilities && data.facilities.length) {
+                data.facilities = data.facilities.map(facility => facilitiesData[facility])
+            }
+            
         }
 
         if(result.awards && result.awards.length > 0){
@@ -700,5 +705,44 @@ module.exports = class providerService {
        } catch (error) {
            console.log("provider activity error",  error)
        }        
+    }
+
+    async invalidateFacilities(callback, useCache = true){
+        const cacheKey = "provider-facilties";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page provider-facilties: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/facilities`);
+        }catch(e){
+            console.log('Error while retriving facilities data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                res[ response[key].facility] = {
+                    label:  response[key].facility,
+                    description:  response[key].description,
+                    icon: ( response[key].icon &&  response[key].icon.url)? response[key].icon.url:null,
+                }
+                
+            }
+            RedisConnection.set(cacheKey, res);
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {success: false, message: 'No data available!', data: []});
+        }
     }
 }
