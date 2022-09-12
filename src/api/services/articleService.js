@@ -1145,10 +1145,29 @@ module.exports = class articleService {
             if (cachedData.noCacheData != true) {
                 finaldata = cachedData;
             } else {
+
+                // Find author user id 
+                let query = {
+
+                    "bool": {
+                        "must": [
+                            { term: { "id": author_id } }
+                            
+                        ]
+                    }
+
+                };
+               
+                let author_user_id = null
+                let result = await elasticService.search("author", query);
+               
+                if (result.hits) {
+                    author_user_id = result.hits[0]._source.user_id
+                }
                 let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
                 const offset = (page - 1) * limit
 
-                const query = {
+                query = {
 
                     "bool": {
                         "must": [
@@ -1156,7 +1175,7 @@ module.exports = class articleService {
                             {
                                 "bool": {
                                     "should": [
-                                        { term: { "author_id": author_id } },
+                                        { term: { "author_id": author_user_id } },
                                         { term: { "co_authors.user_id": author_id } }
                                     ]
                                 }
@@ -1207,8 +1226,8 @@ module.exports = class articleService {
                         ]
                     }
                 })
-
-                let result = await elasticService.search("article", query, { from: offset, size: limit });
+               
+                result = await elasticService.search("article", query, { from: offset, size: limit });
                 
                 if (result.hits) {
                     
