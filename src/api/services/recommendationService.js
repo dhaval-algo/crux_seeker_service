@@ -2494,7 +2494,7 @@ module.exports = class recommendationService {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
             },
-            course_count: result.courses.length,
+            course_count: (result.courses)? result.courses.length : 0,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         }       
 
