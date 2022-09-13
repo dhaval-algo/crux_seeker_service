@@ -73,6 +73,11 @@ const sendEnquiryEmail = async (email, data) =>{
     }
     await communication.sendEmail(emailPayload, false)
 
+   
+}
+
+const sendEnquiryEmailToAdmin = async (data) =>{    
+
     emailPayload = {
         fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
         toemail:  process.env.TO_EMAIL_ENQUIRY_ADMINS,
@@ -86,5 +91,6 @@ const sendEnquiryEmail = async (email, data) =>{
 module.exports = {
     buildEnquiry,
     buildLearnpathEnquiry,
-    sendEnquiryEmail
+    sendEnquiryEmail,
+    sendEnquiryEmailToAdmin
 }

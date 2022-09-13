@@ -208,7 +208,9 @@ const createEnquiry = async (req, res) => {
                 if(correspondence_email4 !=  null)
                     await enquiryService.sendEnquiryEmail(correspondence_email4, data)
 
+
             }}
+            await enquiryService.sendEnquiryEmailToAdmin(data)
             const activity_log =  await helperService.logActvity("COURSE_ENQUIRED",(user)? user.userId : null, courseId);
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
