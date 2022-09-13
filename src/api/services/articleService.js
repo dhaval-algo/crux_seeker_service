@@ -1033,12 +1033,12 @@ module.exports = class articleService {
                   "bool": {
                     "must": [
                       {term: { "status.keyword": 'published' }},
-                      {terms: { "id": articleIds }}
+                      {terms: { "id.keyword": articleIds }}
                     ]
                  }
                 }
             };
-
+           
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
