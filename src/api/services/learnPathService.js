@@ -40,7 +40,7 @@ const round = (value, step) => {
 let currencies = [];
 const ENTRY_PER_PAGE = 25;
 
-const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages'];
+const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages', 'learn_type_label'];
 
 const sortOptions = {
     'Highest Rated': ["ratings:desc"],
