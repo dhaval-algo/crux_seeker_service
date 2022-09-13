@@ -182,21 +182,21 @@ const createEnquiry = async (req, res) => {
                 let {  correspondence_email, correspondence_email1, correspondence_email2,
                     correspondence_email3, correspondence_email4, send_enquiry_updates, status } = partner.hits[0]._source
         
-        
+            let data = {
+                courseImgUrl: courseImgUrl,
+                course_name: enquiry.courseName,
+                provider: provider,
+                full_name: enquiry.fullName,
+                email: enquiry.email,
+                phone: enquiry.phone,
+                student: enquiry.student,
+                highestDegree: enquiry.highestDegree,
+                experience: enquiry.experience,
+                enquiryMessage: enquiry.enquiryMessage,
+            }
             if(send_enquiry_updates && status == "Active")
             {
-                let data = {
-                    courseImgUrl: courseImgUrl,
-                    course_name: enquiry.courseName,
-                    provider: provider,
-                    full_name: enquiry.fullName,
-                    email: enquiry.email,
-                    phone: enquiry.phone,
-                    student: enquiry.student,
-                    highestDegree: enquiry.highestDegree,
-                    experience: enquiry.experience,
-                    enquiryMessage: enquiry.enquiryMessage,
-                }
+                
                 if(correspondence_email !=  null)
                     await enquiryService.sendEnquiryEmail(correspondence_email, data)
                 if(correspondence_email1 !=  null)
