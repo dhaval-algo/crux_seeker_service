@@ -78,7 +78,7 @@ const sendEnquiryEmail = async (email, data) =>{
 
 const sendEnquiryEmailToAdmin = async (data) =>{    
 
-    emailPayload = {
+    let emailPayload = {
         fromemail: process.env.FROM_EMAIL_ENQUIRY_EMAIL,
         toemail:  process.env.TO_EMAIL_ENQUIRY_ADMINS,
         email_type: "enquiry_email_to_admins",
