@@ -65,7 +65,6 @@ router.get('/terms-and-conditions', footerController.termandcondition);
 router.get('/privacy-policy', footerController.privacypolicy);
 router.get('/partner-with-us', footerController.partnerWithUs);
 router.get('/learners-page', footerController.learners);
-router.get('/rankings', footerController.ranking)
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
@@ -75,6 +74,7 @@ router.get('/course-option-by-categories/', learnContentController.getCourseOpti
 //api for providers
 router.get('/providers/', providerController.getProviderList);
 router.get('/providers/:slug', providerController.getSingleProvider);
+router.get('/rankings', providerController.ranking)
 router.get('/providers-ranking/:slug', providerController.getSingleProviderRanking);
 
 router.get('/partners/', partnerController.getPartnerList);

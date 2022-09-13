@@ -92,5 +92,14 @@ module.exports = {
             res.status(200).send(result);
         }
     },
+    ranking(req,res){
+        ProviderService.ranking((err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
+    },
 
 };
