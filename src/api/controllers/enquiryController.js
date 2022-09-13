@@ -176,12 +176,6 @@ const createEnquiry = async (req, res) => {
                 "must": [{ term: { "_id": "PTNR_" + enquiry.partnerId }}]
             }};
             
-            //fetch partner's email  frm partner index 
-            const partner = await elasticService.search('partner', query);
-            if( partner.hits && partner.hits.length > 0 ){
-                let {  correspondence_email, correspondence_email1, correspondence_email2,
-                    correspondence_email3, correspondence_email4, send_enquiry_updates, status } = partner.hits[0]._source
-        
             let data = {
                 courseImgUrl: courseImgUrl,
                 course_name: enquiry.courseName,
@@ -194,22 +188,26 @@ const createEnquiry = async (req, res) => {
                 experience: enquiry.experience,
                 enquiryMessage: enquiry.enquiryMessage,
             }
-            if(send_enquiry_updates && status == "Active")
-            {
-                
-                if(correspondence_email !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email, data)
-                if(correspondence_email1 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email1, data)
-                if(correspondence_email2 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email2, data)
-                if(correspondence_email3 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email3, data)
-                if(correspondence_email4 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email4, data)
+            //fetch partner's email  frm partner index 
+            const partner = await elasticService.search('partner', query);
+            if (partner.hits && partner.hits.length > 0) {
+                let { correspondence_email, correspondence_email1, correspondence_email2,
+                    correspondence_email3, correspondence_email4, send_enquiry_updates, status } = partner.hits[0]._source
 
+                if (send_enquiry_updates && status == "Active") {
 
-            }}
+                    if (correspondence_email != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email, data)
+                    if (correspondence_email1 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email1, data)
+                    if (correspondence_email2 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email2, data)
+                    if (correspondence_email3 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email3, data)
+                    if (correspondence_email4 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email4, data)
+                }
+            }
             await enquiryService.sendEnquiryEmailToAdmin(data)
             const activity_log =  await helperService.logActvity("COURSE_ENQUIRED",(user)? user.userId : null, courseId);
             res.status(200).send({success:true,  message: "enquiry submitted"})
