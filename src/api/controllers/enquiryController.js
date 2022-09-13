@@ -215,6 +215,7 @@ const createEnquiry = async (req, res) => {
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
         .catch(err => {
+            console.log("error sending email", err)
             return res.status(500).send({error:true, message: err.message}) 
         })
 
