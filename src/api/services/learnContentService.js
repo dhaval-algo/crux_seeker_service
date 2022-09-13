@@ -2253,7 +2253,7 @@ module.exports = class learnContentService {
       let result = cacheData;
 
       if (cacheData.noCacheData) {
-        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls", "meta_description", "meta_keywords"]);
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls","free_trending_skills","meta_description", "meta_keywords"]);
         await RedisConnection.set('course-home-page', result);
         RedisConnection.expire('course-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
@@ -2288,8 +2288,7 @@ module.exports = class learnContentService {
                         let reqObj = {
                             query: {
                                 skill: skill.name,
-                                subType : 'Trending',
-                                priceType: 'Free'
+                                subType : 'Trending'
                             }
                         }
                         let recommendation = await RecommendationService.getPopularCourses(reqObj)
@@ -2303,6 +2302,28 @@ module.exports = class learnContentService {
 
                 )
                 data.trending_skillls = data.trending_skillls.filter(category => category != null)
+            }
+
+            // check if (Free) Trending skill have minimum 6 courses 
+            if (data.free_trending_skills && data.free_trending_skills) {
+                data.free_trending_skills = await Promise.all(
+                    data.free_trending_skills.filter(async (skill) => {
+                        let reqObj = {
+                            query: {
+                                skill: skill.name,
+                                subType : 'Trending',
+                                priceType: 'Free'
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj);
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6)
+                            return true;
+                        else
+                            return null
+                    })
+
+                )
+                data.free_trending_skills = data.free_trending_skills.filter(skill => skill);
             }
         return { success: true, data }
       }
