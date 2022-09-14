@@ -540,7 +540,7 @@ module.exports = class recommendationService {
                     esQuery.bool.filter.push(
                         {
                             "term": {
-                                "partner_name.keyword": decodeURIComponent(partners)
+                                "partner_name.keyword": decodeURIComponent(partner)
                             }
                         }
                     );
