@@ -138,7 +138,7 @@ const fetchEnquiry = async(req, res) => {
 }
 
 const createEnquiry = async (req, res) => {
-    const { user = null } = req.user
+    const { user = null } = req;
     let { courseId = "" } = req.body
     courseId = courseId.trim()
 
@@ -227,7 +227,7 @@ const createEnquiry = async (req, res) => {
 const createLearnpathEnquiry = async (req, res) => {
 
     try {
-        const { user = null } = req.user
+        const { user = null} = req;
         let { learnpathId = "" } = req.body
         learnpathId = learnpathId.trim()
     
