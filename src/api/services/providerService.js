@@ -261,8 +261,38 @@ module.exports = class providerService {
         let filterQuery = JSON.parse(JSON.stringify(query));
         let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
-        let filters = filterResponse.filters;      
-        
+        let filters = filterResponse.filters; 
+        let latestRankYear
+        if(req.query['rank'])
+        {
+            let cacheData = await RedisConnection.getValuesSync('provider_raning_latest_year');
+            if(cacheData.noCacheData != true) {
+                latestRankYear = cacheData
+            }
+            let yearOptions = []
+            let yearoption = latestRankYear[req.query['rank']]
+            for(let i =0; i< 11; i++ )  
+            {
+               
+                yearOptions.push (
+                    {
+                        "label": yearoption,
+                        "count": 0,
+                        "selected": false,
+                        "disabled": false
+                    }
+                )
+                yearoption --
+            }  
+            filters.push({
+                label: 'Year',
+                filterable: false,
+                filter_postion: 'horizontal',   
+                is_collapsed: true,
+                filter_type: 'Checkboxes',
+                options: yearOptions
+            })
+        }
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){  
@@ -290,7 +320,6 @@ module.exports = class providerService {
         }
 
         let rankYear = null
-        //console.log("filters", filters)
         if(req.query['rank'] && parsedFilters && parsedFilters.length > 0)
         {
             for (let  parsedFilter of parsedFilters)
@@ -314,14 +343,9 @@ module.exports = class providerService {
             }
         }
         if(!rankYear)
-        {
-            // get latest rank year
-            let cacheData = await RedisConnection.getValuesSync('provider_raning_latest_year');
-            if(cacheData.noCacheData != true) {
-                rankYear = cacheData
-            }
+        { 
+            rankYear = latestRankYear
         }        
-        console.log("rankYear", rankYear)
         if(!req.query['sort'] && !req.query['q']){
             if(req.query['rank']){   
                 req.query['sort'] = `rank:asc`
@@ -338,12 +362,9 @@ module.exports = class providerService {
                 let splitSort = sort.split(":");
                 let sortField = splitSort[0]; 
                 if((sortField == 'rank') && (req.query['rank'])){
-                    console.log("11111111111111111111111111111111111111111111111111111111111111111111111")
                     sort = `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}.keyword:${splitSort[1]}`;
                 }
                 else{
-                    console.log("222222222222222222222222222222222222222222222222222222222222222222222222")
-
                     sort = `ranking_${req.query['rank']}_${rankYear[req.query['rank']]}_${sortField}.keyword:${splitSort[1]}`;
                 }
                 queryPayload.sort.push(sort)               
@@ -385,11 +406,9 @@ module.exports = class providerService {
 
         let result = {};
         try{
-            console.dir(queryPayload,{depth:null})
             result = await elasticService.search('provider', query, queryPayload, queryString);
         }catch(e){
             console.log("Error fetching elastic data <> ", e);
-            console.dir(e,{depth:null})
         }
 
         if(result.total && result.total.value > 0){
@@ -682,8 +701,6 @@ module.exports = class providerService {
             data.featured_ranks = {}
             data.compare_ranks = {}
             for (let item of result.ranks) {
-               // console.log("item", item)
-                //console.log("rankYear[item.slug]", rankYear[item.slug])
 
                 if (item.featured && item.year == rankYear[item.slug]) {
                     data.featured_ranks[item.slug] = 
@@ -706,6 +723,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            rank_change : item.rank_change
                         }
                     }
                 }
