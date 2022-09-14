@@ -324,7 +324,7 @@ module.exports = class providerService {
         console.log("rankYear", rankYear)
         if(!req.query['sort'] && !req.query['q']){
             if(req.query['rank']){   
-                req.query['sort'] = `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}.keyword:asc`
+                req.query['sort'] = `rank:asc`
             }else{
                 req.query['sort'] = defaultSort;
             }            
@@ -336,9 +336,15 @@ module.exports = class providerService {
             if(req.query['rank']){
                 let sort = req.query['sort'] || 'rank:asc';
                 let splitSort = sort.split(":");
-                let sortField = splitSort[0];            
+                let sortField = splitSort[0]; 
                 if((sortField == 'rank') && (req.query['rank'])){
-                    sort = `ranking_${req.query['rank']}_${rankYear[req.query['rank']]}.keyword:${splitSort[1]}`;
+                    console.log("11111111111111111111111111111111111111111111111111111111111111111111111")
+                    sort = `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}.keyword:${splitSort[1]}`;
+                }
+                else{
+                    console.log("222222222222222222222222222222222222222222222222222222222222222222222222")
+
+                    sort = `ranking_${req.query['rank']}_${rankYear[req.query['rank']]}_${sortField}.keyword:${splitSort[1]}`;
                 }
                 queryPayload.sort.push(sort)               
              }
@@ -379,11 +385,11 @@ module.exports = class providerService {
 
         let result = {};
         try{
-            //console.dir(queryPayload,{depth:null})
+            console.dir(queryPayload,{depth:null})
             result = await elasticService.search('provider', query, queryPayload, queryString);
         }catch(e){
             console.log("Error fetching elastic data <> ", e);
-           // console.dir(e,{depth:null})
+            console.dir(e,{depth:null})
         }
 
         if(result.total && result.total.value > 0){
@@ -671,14 +677,16 @@ module.exports = class providerService {
                 }
             }
         }
+          // ranking data for list view on ranking page
         if(rank != null && isList && result.ranks && rankYear ){
+            data.featured_ranks = {}
+            data.compare_ranks = {}
             for (let item of result.ranks) {
                // console.log("item", item)
                 //console.log("rankYear[item.slug]", rankYear[item.slug])
 
                 if (item.featured && item.year == rankYear[item.slug]) {
-                    data.featured_ranks = {
-                        [item.slug]:
+                    data.featured_ranks[item.slug] = 
                         {
                             name: item.name,
                             slug: item.slug,
@@ -686,40 +694,26 @@ module.exports = class providerService {
                             logo: item.logo,
                             attributes: item.attributes
                         }
-                    };
-                }
-                else
-                {
-                    data.featured_ranks= null
                 }
             }
-        }
-        // if(rank !== null && result.ranks){
-        //     data.rank = result[`ranking_${rank}`];
-        //     data.rank_details = result.ranks.find(o => o.slug === rank);
-        // }
+            let compareYear = parseInt(rankYear[rank])
+            for (let i=1; i < 4 ; i++)
+            {
+                for (let item of result.ranks) {
+                    if (item.featured && item.year == compareYear && item.slug == rank) {
+                        data.compare_ranks[compareYear] = 
+                        {
+                            name: item.name,
+                            slug: item.slug,
+                            rank: item.rank,
+                        }
+                    }
+                }
+                compareYear--
+            }
 
-        // if(!isList){
-        //     data.institute_rankings = result.ranks;
-        // }
-        // if(result.ranks){
-        //     let sortedRanks = _.sortBy( result.ranks, 'rank' );
-        //     let featuredCount = 0;
-        //     for(const rank of sortedRanks){
-        //         if(!rank.featured){
-        //             continue;
-        //         }
-        //         data.featured_ranks.push({
-        //             name: rank.name,
-        //             slug: rank.slug,
-        //             rank: rank.rank
-        //         });
-        //         featuredCount++;
-        //         if(featuredCount == FEATURED_RANK_LIMIT && isList){
-        //             break;
-        //         }
-        //     }
-        // }
+        }
+        
 
         return data;
     }
