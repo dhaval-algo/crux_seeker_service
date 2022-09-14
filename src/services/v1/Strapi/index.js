@@ -96,7 +96,8 @@ const prepareStrapiData = (enquiry_id) => {
 
             if( learnContent.hits && learnContent.hits.length > 0 ){
                 strapiObj.source_url =  process.env.FRONTEND_URL+ "course/" + learnContent.hits[0]._source.slug
-                strapiObj.course_category = learnContent.hits[0]._source.categories.join()
+                if(learnContent.hits[0]._source.categories)
+                    strapiObj.course_category = learnContent.hits[0]._source.categories.join()
             }
 
             strapiObj = cleanObject(strapiObj)
@@ -172,7 +173,8 @@ const prepareStrapiDataforLearnPath = (enquiry_id) => {
             const learnPath = await elasticService.search('learn-path', query)
                 
             if( learnPath.hits && learnPath.hits.length > 0 ){
-                strapiObj.learn_path_category = learnPath.hits[0]._source.categories.join()
+                if(learnPath.hits[0]._source.categories)
+                    strapiObj.learn_path_category = learnPath.hits[0]._source.categories.join()
                 strapiObj.learn_path_url =  process.env.FRONTEND_URL+ "learnpath/" + learnPath.hits[0]._source.slug
             }
                 
