@@ -9,9 +9,9 @@ const mLService = require("./mLService");
 const { isDateInRange } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
-const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
+const learnPathFields = ["id","title","slug","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
 const FEATURED_RANK_LIMIT = 2;
 const currencyToRegion = {
     "INR" : "India",
@@ -1563,16 +1563,12 @@ module.exports = class recommendationService {
             id: `LRN_CNT_PUB_${result.id}`,
             provider: {
                 name: result.provider_name,
-                currency: result.provider_currency,
                 slug: result.provider_slug
             },
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
-                partner_url: result.partner_url,
-                currency: result.partner_currency
             },
-            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             cover_image: (result.images)? formatImageResponse(result.images) :null,
             sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
@@ -1585,32 +1581,19 @@ module.exports = class recommendationService {
                 medium: (result.medium) ? result.medium : null,
                 pricing: {                    
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
-                    pricing_type: result.pricing_type,
-                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
-                    base_currency: baseCurrency,
-                    user_currency: currency,
+                    pricing_type: result.pricing_type,                   
                     regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
                     sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
-                    free_condition_description: result.free_condition_description,
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
-                    pricing_additional_details: result.pricing_additional_details,
-                    course_financing_options: result.course_financing_options,
-                    partnerPrice: partnerPrice,
-                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
-                    partnerRegularPrice: roundOff(result.regular_price, 2),
-                    partnerSalePrice: roundOff(result.sale_price, 2),
-                    conversionRate: conversionRate,
-                    tax: tax
+                    user_currency: currency
                 },          
             },
-            provider_course_url: result.provider_course_url,
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
-                average_rating_actual: 0,
-                rating_distribution: []
+                average_rating_actual: 0                
             },
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
            
@@ -1633,11 +1616,8 @@ module.exports = class recommendationService {
         
         if(data.course_details.pricing.pricing_type == 'Others'){
             data.course_details.pricing.pricing_type = null;
-        }      
-     
-        if(result.partner_currency){
-            data.provider.currency = result.partner_currency.iso_code;
         }
+            
 
         const EARN_CONTENT_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD");
 
@@ -1671,24 +1651,8 @@ module.exports = class recommendationService {
 
             const average_rating = totalRating/result.reviews.length;            
             data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);            
-            let rating_distribution = [];
+            data.ratings.average_rating_actual = average_rating.toFixed(1);      
 
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
         }
 
         return data;
@@ -1819,7 +1783,6 @@ module.exports = class recommendationService {
                 author: (author)? author: [],
                 partners: (result.partners)? result.partners : [],
                 created_by_role: (result.created_by_role)? result.created_by_role:'author',            
-                published_date: result.published_date,                           
                 section_name: result.section_name,
                 section_slug: result.section_slug,
             };
@@ -2470,7 +2433,6 @@ module.exports = class recommendationService {
             id: `LRN_PTH_${result.id}`,
             title: result.title,
             slug: result.slug,
-            description: result.description,
             cover_images: (result.images)? formatImageResponse(result.images) :null,
             sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
@@ -2488,7 +2450,6 @@ module.exports = class recommendationService {
                 total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
                 average_rating_actual: 0,
-                rating_distribution: []
             },           
             duration: {
                 total_duration: result.total_duration,
@@ -2515,24 +2476,7 @@ module.exports = class recommendationService {
 
             const average_rating = totalRating / result.reviews.length;
             data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);
-            let rating_distribution = [];
-
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
-                }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                    });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+            data.ratings.average_rating_actual = average_rating.toFixed(1);           
         }
 
         //SET popular and trending keys
@@ -4643,17 +4587,7 @@ module.exports = class recommendationService {
             cover_image: (result.cover_image) ? formatImageResponse(result.cover_image) : null,
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
             card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
-            logo: (result.logo) ? formatImageResponse(result.logo) : null,
-            programs: (result.programs) ? result.programs : [],
-            institute_types: (result.institute_types) ? result.institute_types : [],
-            study_modes: (result.study_modes) ? result.study_modes : [],
-            reviews: [],
-            ratings: {
-                total_review_count: result.reviews ? result.reviews.length : 0,
-                average_rating: 0,
-                average_rating_actual: 0,
-                rating_distribution: []
-            },
+            study_modes: (result.study_modes) ? result.study_modes : [],           
             contact_details: {
                 address_line1: result.address_line1,
                 address_line2: result.address_line2,
@@ -4673,63 +4607,15 @@ module.exports = class recommendationService {
             let ratings = {};
             for (let review of result.reviews) {
                 totalRating += review.rating;
-
-
-                if (review.photo) {
-                    review.photo = getMediaurl(review.photo.thumbnail);
-                }
-                data.reviews.push(review);
-
-
                 if (ratings[review.rating]) {
                     ratings[review.rating] += 1;
                 } else {
                     ratings[review.rating] = 1;
                 }
             }
-
             const average_rating = totalRating / result.reviews.length;
             data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);
-            let rating_distribution = [];
-
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
-                }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                    });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
-        }
-
-        data.institute_rankings = result.ranks;
-        let ranking_images = await this.getRankingImages()        
-        if (result.ranks) {
-            let sortedRanks = _.sortBy(result.ranks, 'rank');
-            let featuredCount = 0;
-            for (const rank of sortedRanks) {
-                if (!rank.featured) {
-                    continue;
-                }
-                data.featured_ranks.push({
-                    name: rank.name,
-                    slug: rank.slug,
-                    rank: rank.rank,
-                    logo: ranking_images[rank.name]['logo']
-                });
-                featuredCount++;
-                if (featuredCount == FEATURED_RANK_LIMIT && isList) {
-                    break;
-                }
-            }
+            data.ratings.average_rating_actual = average_rating.toFixed(1);            
         }
 
         return data;
