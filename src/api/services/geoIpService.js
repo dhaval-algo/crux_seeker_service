@@ -1,5 +1,10 @@
 const models = require("../../../models");
-
+const regionToCurrency = {
+    "India" : "INR",
+    "Europe": "EUR",
+    "UK" : "GBP",
+    "USA" : "USD"
+}
     module.exports = {
         getIpDetails: async(ip) => {
 
@@ -36,6 +41,7 @@ const models = require("../../../models");
                         data.region ="USA"
                     }
                     data.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6 = data.region
+                    data.currency = regionToCurrency[data.region]
                 }
                 return {success:true, data: data }
             }
