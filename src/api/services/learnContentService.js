@@ -352,7 +352,7 @@ module.exports = class learnContentService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort'] && !req.query['q']){
+        if(!req.query['sort']){
             req.query['sort'] = defaultSort;
         }
 
