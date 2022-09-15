@@ -42,6 +42,7 @@ const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 const {saveSessionKPIs} = require("../../utils/sessionActivity");
 const {getSearchTemplate} = require("../../utils/searchTemplates");
+const { list } = require("../controllers/listUsersController");
 
 const sortOptions = {
     'Popular' : ["activity_count.last_x_days.course_views:desc","ratings:desc"],
@@ -1253,26 +1254,13 @@ module.exports = class learnContentService {
         if(result.recommended_effort_per_week){
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
-        }
-        //let coverImageSize = 'large';
-        //if(isList){
-           // coverImageSize = 'thumbnail';
-        //}
+        }      
 
         for(let i=0; i<result.reviews.length; i++){
             if(result.reviews[i]['reviewer_name'] == 'Other'){
                 result.reviews.splice(i, 1);
             }
-        }
-
-        // let cover_image = null;
-        // if(result.images){
-        //     if(result.images[coverImageSize]){
-        //         cover_image = getMediaurl(result.images[coverImageSize]);
-        //     }else{
-        //         cover_image = getMediaurl(result.images['thumbnail']);
-        //     }
-        // }
+        }      
 
         let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
@@ -1303,10 +1291,8 @@ module.exports = class learnContentService {
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
-                partner_url: result.partner_url,
-                currency: result.partner_currency
+                partner_url: result.partner_url
             },
-            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: (result.images)? formatImageResponse(result.images) :null,
@@ -1348,7 +1334,6 @@ module.exports = class learnContentService {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
-                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
                     base_currency: baseCurrency,
                     user_currency: currency,
                     regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
@@ -1358,12 +1343,7 @@ module.exports = class learnContentService {
                     free_condition_description: result.free_condition_description,
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
-                    course_financing_options: result.course_financing_options,
-                    partnerPrice: partnerPrice,
-                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
-                    partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
-                    partnerSalePrice: helperService.roundOff(result.sale_price, 2),
-                    conversionRate: conversionRate,
+                    course_financing_options: result.course_financing_options,                  
                     tax: tax
                 },
                 course_start_date: result.course_start_date || null,
@@ -1500,6 +1480,14 @@ module.exports = class learnContentService {
         }
 
         if(!isList){
+            // send prices in all currencies
+            data.course_details.pricing.regular_prices = {}
+            data.course_details.pricing.sale_prices = {}
+            currencies.map(currency => {
+                data.course_details.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency.iso_code)
+                data.course_details.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency.iso_code)
+            })
+            
             if(result.instructors && result.instructors.length > 0){
                 for(let instructor of result.instructors){
                     if(instructor.name == 'Other'){
@@ -1646,21 +1634,23 @@ module.exports = class learnContentService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
 
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
+            if(!list){
+                //add missing ratings
+                for(let i=0; i<5; i++){
+                    if(!ratings[i+1]){
+                        ratings[i+1] = 0;
+                    }                
+                }
+                Object.keys(ratings)
+                .sort()
+                .forEach(function(v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
                 });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         }
 
         //Ignore default values in ui
@@ -1711,13 +1701,11 @@ module.exports = class learnContentService {
             card_image:data.card_image,
             card_image_mobile:data.card_image_mobile,
             currency: data.currency,
-            description: data.description,
             course_details: data.course_details,
             ratings: data.ratings,
             categories_list: data.categories_list,
             sub_categories_list : data.sub_categories_list,
             topics_list : data.topics_list,
-            meta_information: data.meta_information,
             isTrending:data.isTrending,
             isPopular:data.isPopular,
             isCvTake:data.isCvTake,

@@ -556,26 +556,27 @@ module.exports = class providerService {
                 data.facilities = data.facilities.map(facility => facilitiesData[facility])
             }
             
-        }
+       
 
-        if(result.awards && result.awards.length > 0){
-            for(let award of result.awards){                
-                if(!isList){
-                    if(award.image){
-                        award.image = getMediaurl(award.image.thumbnail);                    
+            if(result.awards && result.awards.length > 0){
+                for(let award of result.awards){                
+                    if(!isList){
+                        if(award.image){
+                            award.image = getMediaurl(award.image.thumbnail);                    
+                        }
+                        data.awards.push(award);
                     }
-                    data.awards.push(award);
                 }
             }
-        }
 
-        if(result.accreditations && result.accreditations.length > 0){
-            for(let accr of result.accreditations){                
-                if(!isList){
-                    if(accr.logo){
-                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
+            if(result.accreditations && result.accreditations.length > 0){
+                for(let accr of result.accreditations){                
+                    if(!isList){
+                        if(accr.logo){
+                            accr.logo = getMediaurl(accr.logo.thumbnail);                    
+                        }
+                        data.accreditations.push(accr);
                     }
-                    data.accreditations.push(accr);
                 }
             }
         }
@@ -615,22 +616,23 @@ module.exports = class providerService {
             data.ratings.average_rating = round(average_rating, 0.5);
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];           
-
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
+            if(!isList){
+                //add missing ratings
+                for(let i=0; i<5; i++){
+                    if(!ratings[i+1]){
+                        ratings[i+1] = 0;
+                    }                
+                }
+                Object.keys(ratings)
+                .sort()
+                .forEach(function(v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
                 });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         } 
 
         if(rank !== null && result.ranks){

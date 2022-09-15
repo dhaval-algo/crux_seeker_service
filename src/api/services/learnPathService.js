@@ -30,6 +30,7 @@ const {
     paginate,
     formatImageResponse
 } = require('../utils/general');
+const { list } = require("../controllers/listUsersController");
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -697,6 +698,14 @@ module.exports = class learnPathService {
         }
 
         if (!isList) {
+            // send prices in all currencies
+            data.pricing.regular_prices = {}
+            data.pricing.sale_prices = {}
+            currencies.map(currency => {
+                data.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, result.currency, currency.iso_code)
+                data.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, result.currency, currency.iso_code)
+            })
+
             let reviews = await this.getReviews({ params: { learnPathId: data.id }, query: {} });
             if (reviews)
                 data.reviews_extended = reviews;
@@ -746,21 +755,24 @@ module.exports = class learnPathService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);
             let rating_distribution = [];
 
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
+            if(!isList)
+            {
+                //add missing ratings
+                for (let i = 0; i < 5; i++) {
+                    if (!ratings[i + 1]) {
+                        ratings[i + 1] = 0;
+                    }
                 }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                Object.keys(ratings)
+                    .sort()
+                    .forEach(function (v, i) {
+                        rating_distribution.push({
+                            rating: v,
+                            percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                        });
                     });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         }
 
 
