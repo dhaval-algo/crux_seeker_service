@@ -9,10 +9,10 @@ const learnPathFields = ["id","title","slug","images","images","total_duration",
 const providerFields = ["id","name","slug","cover_image","card_image","card_image_mobile","logo","programs","institute_types","study_modes","reviews","address_line1","address_line2","city","state","pincode","country","phone","email","course_count","rating","ranks"]
 
 const entitySearchParams = {
-    "learn-content": { maxResults: process.env.MAX_SEARCH_RESULT_COURSE || 10, sourceFields: courseFields },
-    "learn-path": { maxResults: process.env.MAX_SEARCH_RESULT_LP || 10, sourceFields: learnPathFields },
-    "article": { maxResults: process.env.MAX_SEARCH_RESULT_ARTICLE || 10, sourceFields: articleFields },
-    "provider": { maxResults: process.env.MAX_SEARCH_RESULT_PROVIDER || 10, sourceFields: providerFields}
+    "learn-content": { maxResults: process.env.MAX_SEARCH_RESULT_COURSE || 5, sourceFields: courseFields },
+    "learn-path": { maxResults: process.env.MAX_SEARCH_RESULT_LP || 5, sourceFields: learnPathFields },
+    "article": { maxResults: process.env.MAX_SEARCH_RESULT_ARTICLE || 5, sourceFields: articleFields },
+    "provider": { maxResults: process.env.MAX_SEARCH_RESULT_PROVIDER || 5, sourceFields: providerFields}
 
 }
 
