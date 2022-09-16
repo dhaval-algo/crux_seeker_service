@@ -698,6 +698,12 @@ module.exports = class learnPathService {
         }
 
         if (!isList) {
+            
+            if(result.cv_take && result.cv_take.display_cv_take)
+            {
+                data.cv_take = result.cv_take
+            }
+
             // send prices in all currencies
             data.pricing.regular_prices = {}
             data.pricing.sale_prices = {}
