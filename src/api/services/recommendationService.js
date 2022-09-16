@@ -4595,6 +4595,7 @@ module.exports = class recommendationService {
             },
             course_count: (result.course_count) ? result.course_count : 0,
             featured_ranks: [],
+            ratings:null
         };
         if (result.reviews && result.reviews.length > 0) {
             let totalRating = 0;
