@@ -152,7 +152,7 @@ module.exports = class learnPathService {
             queryPayload.size = paginationQuery.size;
 
 
-            if (!req.query['sort'] && !req.query['q']) {
+            if (!req.query['sort']) {
                 req.query['sort'] = defaultSort;
             }
 
@@ -698,7 +698,7 @@ module.exports = class learnPathService {
         }
 
         if (!isList) {
-            
+
             if(result.cv_take && result.cv_take.display_cv_take)
             {
                 data.cv_take = result.cv_take

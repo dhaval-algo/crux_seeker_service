@@ -161,7 +161,7 @@ module.exports = class articleService {
         queryPayload.size = paginationQuery.size;
         
 
-        if(!req.query['sort'] && !req.query['q']){
+        if(!req.query['sort']){
             req.query['sort'] = 'Newest';
         }
         if (req.query['sort']) {

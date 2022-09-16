@@ -37,6 +37,14 @@ const sortOptions = {
     'Z-A' :["name:desc"],
 }
 
+const ranksortOptions = {
+    'High To Low': ["rank:asc"],
+    'Low  To High': ["rank:asc"],
+    'A-Z': ["name:asc"],
+    'Z-A' :["name:desc"],
+}
+
+
 
 
 const getAllFilters = async (query, queryPayload, filterConfigs) => {
@@ -218,9 +226,9 @@ module.exports = class providerService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort'] && !req.query['q']){
+        if(!req.query['sort']){
             if(req.query['rank']){
-                req.query['sort'] = "rank:asc";
+                req.query['sort'] = "High To Low";
             }else{
                 req.query['sort'] = defaultSort;
             }            
@@ -230,7 +238,7 @@ module.exports = class providerService {
             queryPayload.sort = []
            
             if(req.query['rank']){
-                let sort = req.query['sort'];
+                let sort = ranksortOptions[req.query['sort']];
                 let splitSort = sort.split(":");
                  let sortField = splitSort[0];            
                 if((sortField == 'rank') && (req.query['rank'])){
@@ -385,7 +393,7 @@ module.exports = class providerService {
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort'],
-                sortOptions: Object.keys(sortOptions)
+                sortOptions:(req.query['rank']) ? Object.keys(ranksortOptions) :  Object.keys(sortOptions)
             };
 
             let meta_information = await generateMetaInfo  ('PROVIDER_LIST', result, list);
