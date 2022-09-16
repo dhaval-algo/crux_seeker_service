@@ -38,10 +38,10 @@ const sortOptions = {
 }
 
 const ranksortOptions = {
-    'High To Low': ["rank:asc"],
-    'Low  To High': ["rank:asc"],
-    'A-Z': ["name:asc"],
-    'Z-A' :["name:desc"],
+    'High To Low': "rank:asc",
+    'Low  To High': "rank:asc",
+    'A-Z': "name:asc",
+    'Z-A' :"name:desc",
 }
 
 
