@@ -2281,7 +2281,7 @@ module.exports = class learnContentService {
                         }
                         let recommendation = await RecommendationService.getPopularCourses(reqObj)
                         if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6) {
-                            return category
+                            return skill
                         } else {
                             return null
                         }
@@ -2289,7 +2289,7 @@ module.exports = class learnContentService {
                     })
 
                 )
-                data.trending_skillls = data.trending_skillls.filter(category => category != null)
+                data.trending_skillls = data.trending_skillls.filter(skill => skill != null)
             }
 
             // check if (Free) Trending skill have minimum 6 courses 
