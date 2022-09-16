@@ -143,7 +143,7 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
 
     if (entity == 'article') {
         let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
-        query.bool.must.push({
+        template.function_score.query.bool.must.push({
             "bool": {
                 "should": [
                     {
