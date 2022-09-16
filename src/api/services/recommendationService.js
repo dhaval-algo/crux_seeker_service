@@ -13,15 +13,9 @@ const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","i
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
 const FEATURED_RANK_LIMIT = 2;
-const currencyToRegion = {
-    "INR" : "India",
-    "EUR": "Europe",
-    "GBP" : "UK",
-    "USD" : "USA"
-}
-function formatQueryForCG (query, currency){
-    let userCurrency = (currency) ? currency : process.env.DEFAULT_CURRENCY
-    let region = currencyToRegion[userCurrency]
+
+function formatQueryForCG (req){  
+    let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] )? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']:'India'
     return({
         "bool": {
             "should": [
@@ -909,7 +903,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.must.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.must.push(formatQueryForCG (req))
 
                 const sort = [{ "activity_count.all_time.popularity_score": "desc" }];
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort });
@@ -978,7 +972,7 @@ module.exports = class recommendationService {
             }
         }
         
-        esQuery.bool.must.push(formatQueryForCG (esQuery, currency))
+        esQuery.bool.must.push(formatQueryForCG (req))
         if (skillsKeywords.length) {
             const offset = (page - 1) * limitForSkills;
             esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
@@ -1235,7 +1229,7 @@ module.exports = class recommendationService {
                     }
                 }
                 
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 //Exclude articles which are manually added
                 if(articles.length >  0){
                     esQuery.bool.must_not = [
@@ -1399,7 +1393,7 @@ module.exports = class recommendationService {
                     }
                 }
                 
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
 
                 // exclude manually added articles and featured articles
                 let exclude_articles = []
@@ -2347,7 +2341,7 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-            esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+            esQuery.bool.filter.push(formatQueryForCG (req))
 
             if (category) {
                 esQuery.bool.filter.push(
@@ -3524,7 +3518,7 @@ module.exports = class recommendationService {
                     );
     
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
 
                 function buildQueryTerms(key, i) {
                     let termQuery = { "terms": {} };
@@ -3624,7 +3618,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 
                 if (categories) {
                     esQuery.bool.filter.push(
@@ -3757,7 +3751,7 @@ module.exports = class recommendationService {
                         "should":[]
                     }
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 if (topics) {
                     esQuery.bool.should.push(
                         {
@@ -3897,7 +3891,7 @@ module.exports = class recommendationService {
                         "should":[]
                     }
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 if (section) {
                     esQuery.bool.filter.push(
                         {
@@ -4086,7 +4080,7 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-            esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+            esQuery.bool.filter.push(formatQueryForCG (req))
             if (section) {
                 esQuery.bool.filter.push(
                     {

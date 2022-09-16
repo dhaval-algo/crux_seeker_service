@@ -62,7 +62,7 @@ const getFunctionScoreFunction = (entity, kpiKey, kpis, weight = weightForKeywor
 
 
 
-const getSearchTemplate = async (entity, query, userId = null) => {
+const getSearchTemplate = async (entity, query, userId = null, req = null) => {
 
     if (entity == 'provider') return getProviderSearchTemplate(query);
 
@@ -139,6 +139,52 @@ const getSearchTemplate = async (entity, query, userId = null) => {
                 "status.keyword": entityQueryFields.status
             }
         });
+    }
+
+    if (entity == 'article') {
+        let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
+        query.bool.must.push({
+            "bool": {
+                "should": [
+                    {
+                        "bool": {
+                            "filter": [
+                                {
+                                    "terms": {
+                                        "template.keyword": [
+                                            "ARTICLE",
+                                            "LEARN_GUIDE",
+                                            "LEARN_ADVICE"
+                                        ]
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "bool": {
+                            "filter": [
+                                {
+                                    "term": {
+                                        "template.keyword": "CAREER_GUIDE"
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "career_level.keyword": "Level 1"
+                                    }
+                                },
+                                {
+                                    "term": {
+                                        "region.keyword": region
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        })
     }
 
     if (userId) {

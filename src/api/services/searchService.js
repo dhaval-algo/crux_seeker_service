@@ -39,7 +39,7 @@ module.exports = class searchService {
                 const queries = [];
                 for (const entity in entitySearchParams) {
 
-                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
+                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
 
                     indices.push(entity);
                     queries.push({ size: entitySearchParams[entity].maxResults, query: entitySearchTemplate, _source: entitySearchParams[entity].sourceFields });
@@ -57,7 +57,7 @@ module.exports = class searchService {
 
             } else {
 
-                const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
+                const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
                 const searchResult = await elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchParams[entity].maxResults }, entitySearchParams[entity].sourceFields);
 
                 if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
@@ -116,7 +116,7 @@ module.exports = class searchService {
                 const queries = [];
                 for (const entity in entitySearchSuggestionParams) {
 
-                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
+                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
                     indices.push(entity);
                     queries.push({ size: entitySearchSuggestionParams[entity].maxResults, query: entitySearchTemplate, _source: entitySearchSuggestionParams[entity].sourceFields });
                 }
@@ -130,7 +130,7 @@ module.exports = class searchService {
 
             } else {
 
-                const entitySearchTemplate = await getSearchTemplate(entity, query, userId);
+                const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
                 const searchResult = await elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchSuggestionParams[entity].maxResults }, entitySearchSuggestionParams[entity].sourceFields);
                 if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
 
