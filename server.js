@@ -58,7 +58,13 @@ const setRegion = async function (req, res, next) {
             req.query['currency'] = locationData.currency
             next()
         }
+        else{
+            req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = 'USA'
+            req.query['currency'] = 'USD'
+            next()
+        }
     } catch (error) {
+        console.log("Error detecting location",error )
         req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = 'USA'
         req.query['currency'] = 'USD'
         next()
