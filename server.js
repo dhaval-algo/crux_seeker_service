@@ -47,37 +47,37 @@ const renameHeaderOrigin = (req, res, next)=>{
 
 app.use(renameHeaderOrigin);
 
-const setRegion = async function (req, res, next) {
-   if(!req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'])
-   {
-    try {
-        let locationData = await geoIpService.getIpDetails(req.ip)
-        if(locationData.success)
-        {
-            req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = locationData.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6
-            req.query['currency'] = locationData.currency
-            next()
-        }
-        else{
-            req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = 'USA'
-            req.query['currency'] = 'USD'
-            next()
-        }
-    } catch (error) {
-        console.log("Error detecting location",error )
-        req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = 'USA'
-        req.query['currency'] = 'USD'
-        next()
-    }    
-    
-   }
-   else
-   {
-    next()
-   }
-  }
-  
-  app.use(setRegion)
+
+// if region/currency is not send set it  
+  app.use(async function (req, res, next) {
+    if(!req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'])
+    {
+     try {
+         let locationData = await geoIpService.getIpDetails(req.ip)
+         if(locationData.success)
+         {
+             req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = locationData.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6
+             req.query['currency'] = locationData.currency
+             next()
+         }
+         else{
+             req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = 'USA'
+             req.query['currency'] = 'USD'
+             next()
+         }
+     } catch (error) {
+         console.log("Error detecting location",error )
+         req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = 'USA'
+         req.query['currency'] = 'USD'
+         next()
+     }    
+     
+    }
+    else
+    {
+     next()
+    }
+   })
 
 app.use("/api", require("./src/api/routes"));
 
