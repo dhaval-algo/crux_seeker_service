@@ -56,8 +56,8 @@ app.use(renameHeaderOrigin);
          let locationData = await geoIpService.getIpDetails(req.ip)
          if(locationData.success)
          {
-             req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = locationData.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6
-             req.query['currency'] = locationData.currency
+             req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = locationData.data.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6
+             req.query['currency'] = locationData.data.currency
              next()
          }
          else{
