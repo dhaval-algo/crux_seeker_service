@@ -135,6 +135,8 @@ module.exports = {
                 return emailTemplate.enquiryEmailToPartner(templateData)
             case 'enquiry_email_to_admins':
                 return emailTemplate.enquiryEmailToAdmins(templateData)
+            case 'job_application_email':
+                return emailTemplate.jobApplicationEmail(templateData)
             default:
                 return false
                 break;
