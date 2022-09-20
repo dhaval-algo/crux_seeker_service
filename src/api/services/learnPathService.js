@@ -7,6 +7,7 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
 const {formatCount} = require("../utils/general")
+const {generateMetaInfo} = require("../utils/metaInfo")
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
@@ -527,7 +528,7 @@ module.exports = class learnPathService {
                 sortOptions: Object.keys(sortOptions)
             };
 
-            let meta_information = null; //TODO once reules are given. await generateMetaInfo('learn-path-list', result);
+            let meta_information = await generateMetaInfo('LEARN_PATH_LIST', result);
 
             if (meta_information) {
                 data.meta_information = meta_information;
@@ -682,12 +683,7 @@ module.exports = class learnPathService {
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
-            },
-            meta_information: {
-                meta_keywords: result.meta_keywords,
-                meta_description: result.meta_description,
-                meta_title: `${result.title} | Learn Path | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
-            },
+            },           
             duration: {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
@@ -698,6 +694,8 @@ module.exports = class learnPathService {
         }
 
         if (!isList) {
+            data.meta_information = await generateMetaInfo('LEARN_PATH', result);         
+
 
             if(result.cv_take && result.cv_take.display_cv_take)
             {

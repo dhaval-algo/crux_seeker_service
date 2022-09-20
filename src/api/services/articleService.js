@@ -1083,6 +1083,7 @@ module.exports = class articleService {
             facebook_url: result.facebook_url,
             city: result.city
         };
+        data.meta_information = await generateMetaInfo  ('AUTHOR', data);
         if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
         }       

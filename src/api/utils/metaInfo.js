@@ -612,6 +612,35 @@ const generateMetaInfo = async (page, result, list) => {
         case 'LEARN_CONTENT_LIST':
             meta_information = getLearnContentListMetaInfo(result);
             break;
+        case 'LEARN_PATH':
+            meta_title = `${result.title} | Learn Path | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
+
+            meta_information = {
+                meta_title: meta_title,
+                meta_description: result.meta_description || '',
+                meta_keywords: result.meta_keywords || ''     
+            }
+            break;
+         case 'AUTHOR':
+                meta_title = `${result.firstname} ${result.lastname} | Author | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
+                let bio = result.bio.replace(/<[^>]*>?/gm, "");
+                let position = bio.indexOf(".")
+                if (position > 0) {
+                    bio = bio.substring(0, position);
+                }
+                meta_information = {
+                    meta_title: meta_title,
+                    meta_description: bio || '',
+                    meta_keywords: ''     
+                }
+            break;            
+        case 'LEARN_PATH_LIST':
+                meta_information = {
+                    meta_title : `Top Learn paths in ${new Date().getFullYear()} | Careervira`,
+                    meta_description: 'Find top Learn paths, degrees and certifications here. See our comprehensive collection of management, software, finance and big data courses from top Institutes and Partners. Start learning now.',
+                    meta_keywords: 'online courses, learning courses, paid courses, degrees, certifications, offline courses, instructor courses, courses near me, top courses' 
+                };
+                break;
         case 'PROVIDER':
             meta_information = getProviderMetaInfo(result);
             break;
