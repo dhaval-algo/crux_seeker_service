@@ -599,6 +599,9 @@ const generateMetaInfo = async (page, result, list) => {
     let meta_title = null;
     let meta_description = null;
 
+    result.meta_description = (result.meta_description)? result.meta_description : ''
+    result.meta_keywords = (result.meta_keywords)? result.meta_keywords : ''
+    
     switch (page) {
         case 'LEARN_CONTENT':
             meta_title = `${result.title} | ${result.partner_name}`;
