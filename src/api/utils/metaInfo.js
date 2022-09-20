@@ -623,16 +623,20 @@ const generateMetaInfo = async (page, result, list) => {
             break;
          case 'AUTHOR':
                 meta_title = `${result.firstname} ${result.lastname} | Author | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
-                let bio = result.bio.replace(/<[^>]*>?/gm, "");
-                let position = bio.indexOf(".")
-                if (position > 0) {
-                    bio = bio.substring(0, position);
+                let bio = ''
+                if(result.bio)
+                {
+                    bio = result.bio.replace(/<[^>]*>?/gm, "");
+                    let position = bio.indexOf(".")
+                    if (position > 0) {
+                        bio = bio.substring(0, position);
+                    }
                 }
                 meta_information = {
                     meta_title: meta_title,
                     meta_description: bio || '',
                     meta_keywords: ''     
-                }
+                }                
             break;            
         case 'LEARN_PATH_LIST':
                 meta_information = {
