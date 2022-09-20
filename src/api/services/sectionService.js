@@ -119,7 +119,7 @@ module.exports = class sectionService {
             ]
           }
         },
-        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "banner_image","short_description"]
+        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "banner_image","short_description","position"]
       }
       
       const result = await elasticService.plainSearch('section', query);
@@ -149,6 +149,7 @@ module.exports = class sectionService {
             let secR = {
               label: hit._source.default_display_label,
               slug: hit._source.slug,
+              position: hit._source.position,
               type: "category",
               count: section.doc_count,
               short_description: hit._source.short_description,
@@ -156,7 +157,8 @@ module.exports = class sectionService {
               banner_image: (hit._source.banner_image) ?((hit._source.banner_image['large']) ?hit._banner.cover_image['large'] : hit._source.banner_image['thumbnail']) : null,
               child: []
             }
-            data.push(secR)
+            console.log("hit._source", hit._source)
+            data[ hit._source.position -1] = secR
           }
         }
         //return callback(null, { success: true, data })

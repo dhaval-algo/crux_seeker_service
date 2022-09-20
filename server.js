@@ -50,11 +50,12 @@ app.use(renameHeaderOrigin);
 
 // if region/currency is not send set it  
   app.use(async function (req, res, next) {
-    if(!req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'])
+    if(!req.query || (req.query && !req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']))
     {
      try {
+        if(!req.query) req.query = {}
          let locationData = await geoIpService.getIpDetails(req.ip)
-         if(locationData.success)
+         if( locationData && locationData.success && locationData.data)
          {
              req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] = locationData.data.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6
              req.query['currency'] = locationData.data.currency
