@@ -2,6 +2,7 @@ const { getFileBuffer } = require("../../utils/helper");
 const elasticService = require("./elasticService");
 const { uploadResumeToS3 } = require("../../services/v1/AWS")
 const models = require("../../../models");
+const communication = require('../../communication/v1/communication');
 const getJobListing = async (req, callback) => {
 
     try {
@@ -81,13 +82,29 @@ const getJobData = async (req, callback) => {
 const saveJobApplication = async (req, callback) => {
     try {
 
-        const { buffer, fileName, jobId, firstName, lastName, email } = req.body;
+        const { buffer, fileName = '.pdf', jobId, firstName, lastName, email } = req.body;
         const resumeBuffer =  getFileBuffer(buffer);
-        const resumeName = (new Date().getTime()) + fileName;
+        const resumeName =  firstName + (new Date().getTime()) + fileName;
         const path = `job-resume/${resumeName}`;
         const s3Path = await uploadResumeToS3(path,resumeBuffer);
-
         await models.job_applications.create({ firstName: firstName, lastName: lastName, email: email, jobId: jobId, resume: s3Path });
+        
+        let esQuery = {
+            query:{ 'bool' : {'filter': {'term': {'id': jobId}}}},
+            _source : ['job_title','job_type','job_department','job_department', 'city']
+        }
+        const result = await elasticService.plainSearch('job-opening', esQuery);
+        const {job_title = "", job_department = "", job_type = "", city = ""} = result.hits.hits[0]._source;
+        const data = {fullName : firstName + " " + lastName, email, jobId, resumeUrl: s3Path,
+                    jobTitle: job_title, jobDepartment: job_department, jobType: job_type, jobCity: city};
+        const emailPayload = {
+            fromemail: process.env.FROM_EMAIL_CAREERS_APPLICATION,
+            toemail:  process.env.TO_EMAIL_CAREERS_APPLICATION,
+            email_type: "job_application_email",
+            email_data: data 
+        }
+
+        await communication.sendEmail(emailPayload);
         callback(null, { success: true, message: "job application is saved successfully" });
 
     } catch (error) {
