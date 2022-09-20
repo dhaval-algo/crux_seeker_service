@@ -179,6 +179,27 @@ module.exports = {
  
         return templateData 
          
+    },
+
+    jobApplicationEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/jobApplication.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({
+            fullName: messagData.fullName,
+            email: messagData.email,
+            resumeUrl: messagData.resumeUrl,
+            jobId: messagData.jobId,
+            jobTitle: messagData.jobTitle,
+            jobType: messagData.jobType,
+            jobDepartment: messagData.jobDepartment,
+            jobCity:messagData.jobCity
+        });         
+        let templateData = {subject:`Careers: Job Application from ${messagData.fullName}`,message:emailTemplate};
+ 
+        return templateData 
+         
     }
 
 
