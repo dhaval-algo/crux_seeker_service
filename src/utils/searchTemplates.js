@@ -11,7 +11,11 @@ const entityQueryMapping = {
 
 
 const weightForKeywordBoosting = process.env.KEYWORD_BOOST_WEIGHT || 1.5;
-
+const boostForMultiMatchPrefix = process.env.MULTI_MATCH_PREFIX_BOOST|| 150;
+const boostForMatchPhrasePrefix = process.env.MATCH_PHRASE_PREFIX_BOOST || 50;
+const boostForMultiMatchAndOp = process.env.MULTI_MATCH_AND_OP_BOOST || 30;
+const boostForMultiMatchOrOp = process.env.MULTI_MATCH_OR_OP_BOOST || 5;
+const boostForFuzzinessField = process.env.FUZZINESS_FIELD_BOOST || 5;
 
 const entityKPIKeyElasticFieldMap = {
 
@@ -92,7 +96,7 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                                         multi_match: {
                                             query: query,
                                             type: "bool_prefix",
-                                            boost: 50,
+                                            boost: boostForMultiMatchPrefix,
                                             fields: [
                                                 entityQueryFields.prefix_field
                                             ]
@@ -102,7 +106,7 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                                         match_phrase_prefix: {
                                             [entityQueryFields.prefix_field]: {
                                                 query: query,
-                                                boost: 30
+                                                boost: boostForMatchPhrasePrefix
                                             }
                                         }
                                     },
@@ -110,7 +114,15 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                                         multi_match: {
                                             fields: entityQueryFields.fields,
                                             query: query,
-                                            boost: 35
+                                            boost: boostForMultiMatchAndOp,
+                                            operator: "AND"
+                                        }
+                                    },
+                                    {
+                                        multi_match: {
+                                            fields: entityQueryFields.fields,
+                                            query: query,
+                                            boost: boostForMultiMatchOrOp
                                         }
                                     },
                                     {
@@ -119,7 +131,7 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                                             query: query,
                                             fuzziness: "AUTO",
                                             prefix_length: 0,
-                                            boost: 5
+                                            boost: boostForFuzzinessField
                                         }
                                     }
                                 ]
