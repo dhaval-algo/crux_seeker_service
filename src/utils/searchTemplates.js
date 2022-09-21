@@ -175,8 +175,6 @@ const getSearchTemplate = async (entity, query, userId = null) => {
 
     }
 
-    console.log(JSON.stringify(template))
-
     return template;
 
 }
