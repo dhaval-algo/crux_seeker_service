@@ -3331,7 +3331,11 @@ const getPersonalDetails = async (req, res) => {
     
     try {       
          const user = await models.user.findOne({where:{id:req.user.userId},attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country']})       
-        
+        let countryCode = user.phone.split(" ")[0];
+        if (countryCode != '+91') {
+            user.phoneVerified = true
+        }
+
         res.status(200).send({
             message: "personal details updated successfully",
             data: user,
@@ -3662,6 +3666,10 @@ const getUserProfile = async (req, res) => {
                     size:null
                 } 
             }
+        }
+        let countryCode = user.phone.split(" ")[0];
+        if (countryCode != '+91') {
+            user.phoneVerified = true
         }
         res.status(200).send({
             message: "User Profile fetched successfully",
