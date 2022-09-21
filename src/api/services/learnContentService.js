@@ -2204,8 +2204,14 @@ module.exports = class learnContentService {
             let topics = []
            
             if (result.aggregations && result.aggregations.topics_count.buckets.length >0) {
-                result.aggregations.topics_count.buckets.map(item => topics.push( item.key))
-                
+                result.aggregations.topics_count.buckets.map(item => topics.push( item.key))               
+                topics = topics.map( async topic =>{
+                    let slug = await helperService.getTreeUrl('topic', topic, true)
+                    return({
+                        label:topic,
+                        slug : slug
+                    })
+                })               
                 data = {
                     total: topics.length,
                     page,
