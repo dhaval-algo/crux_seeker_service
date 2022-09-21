@@ -1334,13 +1334,15 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
+                        if(json && json[0])
                         article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
-                        let json = await subCategoryResponse.json();                    
+                        let json = await subCategoryResponse.json();  
+                        if(json && json[0])                  
                         article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
@@ -1348,6 +1350,7 @@ module.exports = class recommendationService {
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
                         const json = await topicResponse.json();
+                        if(json && json[0])
                         article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
@@ -1355,6 +1358,7 @@ module.exports = class recommendationService {
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
+                        if(json && json[0])
                         article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
