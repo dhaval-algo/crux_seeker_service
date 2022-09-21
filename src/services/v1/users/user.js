@@ -309,6 +309,7 @@ const verifyOtp = async (req, res, next) => {
                     )
                 }
             }
+            await invalidateTokens(userObj)
            // let data = {old_email:username, new_email:email}
             //sendDataForStrapi(data, "update-email");
         }
@@ -2653,8 +2654,7 @@ const updateEmail =async (req,res) => {
             email_data: {
                 otp: response.data.otp
             }
-        }
-        await invalidateTokens(user)
+        }        
         await sendEmail(emailPayload);
         return res.status(200).json({
             success: true
