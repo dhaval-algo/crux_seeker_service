@@ -2654,6 +2654,7 @@ const updateEmail =async (req,res) => {
                 otp: response.data.otp
             }
         }
+        await invalidateTokens(user)
         await sendEmail(emailPayload);
         return res.status(200).json({
             success: true
