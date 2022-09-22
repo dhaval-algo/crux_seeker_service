@@ -1020,7 +1020,7 @@ const forgotPassword = async (req,res) => {
             })
         }
     }
-    const userRes = await userExist(email, LOGIN_TYPES.LOCAL)
+    const userRes = await userExist(email)
     if(!userRes.success) {
         return res.status(200).json(userRes)
     }
