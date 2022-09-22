@@ -3728,11 +3728,11 @@ const getUserProfile = async (req, res) => {
         }
 
         // Get key skills
-        user.keyskill = await this.getKeySkills(req)
+        user.keyskill = await getKeySkills(req)
 
         // Get goals
 
-        user.goals = await this.getGoals(req)
+        user.goals = await getGoals(req)
 
         if(user.goals)
         {
