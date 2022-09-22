@@ -546,7 +546,7 @@ const socialSignIn = async (req, res, next) => {
             email: user.email || "",
             name:  user.fullName || "",
             userId: user.id,
-            provider: user_login.provider || "",
+            provider: provider || "",
             userType: user.userType,
             isVerified: user.verified || false,
             profilePicture: user.profilePicture,
