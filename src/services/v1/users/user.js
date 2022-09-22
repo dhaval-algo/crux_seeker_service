@@ -556,7 +556,7 @@ const socialSignIn = async (req, res, next) => {
         const tokenRes = await getLoginToken(payload);
         
         //Add entry in login activity table 
-        models.user_login_activity.create({userId: user.id, provider: user_login.provider})
+        models.user_login_activity.create({userId: user.id, provider: provider})
         return res.status(200).json(tokenRes);
 
     } catch (error) {
