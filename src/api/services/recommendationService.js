@@ -2736,7 +2736,7 @@ module.exports = class recommendationService {
                     }
                     if(hit._source.provider_name)
                     {
-                        if(hit._source.provider_name.isArray())
+                        if(Array.isArray(hit._source.provider_name))
                         {
                             providers.concat(hit._source.provider_name)
                         }else{
@@ -2906,7 +2906,7 @@ module.exports = class recommendationService {
                     }
                     if(hit._source.provider_name)
                     {
-                        if(hit._source.provider_name.isArray())
+                        if(Array.isArray(hit._source.provider_name))
                         {
                             providers.concat(hit._source.provider_name)
                         }else{
