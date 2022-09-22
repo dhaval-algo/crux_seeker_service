@@ -3688,8 +3688,7 @@ const getUserProfile = async (req, res) => {
                 }
             ],
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile'],
-            raw : true,
-            nest:true
+            raw : true
         })
         if(user.resumeFile)
         {
