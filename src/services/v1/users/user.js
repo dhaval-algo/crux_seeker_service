@@ -3681,12 +3681,14 @@ const getUserProfile = async (req, res) => {
                 {
                     model: models.user_education,
                     attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade'],
-                    raw: true
+                    raw: true,
+                    nest:true
                 },
                 {
                     model: models.user_experience,
                     attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience'],
-                    raw: true
+                    raw: true,
+                    nest:true
                 }
             ],
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile'],
