@@ -67,7 +67,7 @@ const login = async (req, res, next) => {
         }
         
         // check if user exist
-        const verificationRes = await userExist(email, LOGIN_TYPES.LOCAL);
+        const verificationRes = await userExist(email);
         if (!verificationRes.success) {
             return res.status(200).json(verificationRes);
         }
@@ -569,7 +569,7 @@ const socialSignIn = async (req, res, next) => {
     }
 }
 
-const userExist = (email, provider) => {
+const userExist = (email, provider = null) => {
 
     return new Promise(async (resolve, reject) => {
         
