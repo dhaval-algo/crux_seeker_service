@@ -3680,20 +3680,14 @@ const getUserProfile = async (req, res) => {
             include: [
                 {
                     model: models.user_education,
-                    attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade'],
-                    raw: true,
-                    nest:true
+                    attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade']
                 },
                 {
                     model: models.user_experience,
-                    attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience'],
-                    raw: true,
-                    nest:true
+                    attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
                 }
             ],
-            attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile'],
-            raw : true,
-            nest:true
+            attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
         })
         if(user.resumeFile)
         {
@@ -3724,29 +3718,34 @@ const getUserProfile = async (req, res) => {
             {
                 if(experience.jobTitle)
                 {
-                    user.designation =  experience.jobTitle                    
+                   
+                    user.setDataValue('designation', experience.jobTitle);                    
                 }
             }
         }
         else{
-            user.designation=  null
+            user.setDataValue('designation', null); 
         }
 
         // Get key skills
-        user.keyskill =  await getKeySkills(req); 
+        let keyskill =  await getKeySkills(req); 
+        user.setDataValue('keyskill', keyskill);
 
         // Get goals
 
-        user.goals = await getGoals(req)
+        let goals = await getGoals(req)
+        user.setDataValue('goals', goals);
 
-        if(user.goals)
+        if(goals)
         {
-            user.isGoals = true
+            user.setDataValue('isGoals', true);
         }else{
-            user.isGoals = false
+            user.setDataValue('isGoals', false);
         }
         // get user profileProgress
-        user.pendingActions = await  getUserPendingActions(req)
+        let pendingActions = await  getUserPendingActions(req)
+
+        user.setDataValue('pendingActions', pendingActions);
 
         res.status(200).send({
             message: "User Profile fetched successfully",
