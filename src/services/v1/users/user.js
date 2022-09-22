@@ -3713,9 +3713,9 @@ const getUserProfile = async (req, res) => {
         }
 
         //set desgination
-        if(user.user_experience && user.user_experience.length > 0)
+        if(user.user_experiences && user.user_experiences.length > 0)
         {
-            for (let experience of user.user_experience )
+            for (let experience of user.user_experiences )
             {
                 if(experience.currentCompany)
                 {
