@@ -440,7 +440,7 @@ module.exports = class learnContentService {
                             job_asis.toLowerCase() == 'yes' ? job_asis = true : job_asis = false;
                             filter_object = {"term": {[attribute_name]: job_asis}};
                         }
-                        if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
+                        else if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
                         {
                             let offer = filter.value[0]
             
@@ -1271,6 +1271,12 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
+        let regular_price = null, sale_price = null;
+        if(result.pricing_type == "Paid" )
+        {
+            regular_price = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency);
+            sale_price = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency);
+        }
             //temp patch for old object format; scatter attributes 
         if(result.providers_list == undefined){
             let provider = {name: result.provider_name, slug: result.provider_slug,
@@ -1336,8 +1342,8 @@ module.exports = class learnContentService {
                     pricing_type: result.pricing_type,
                     base_currency: baseCurrency,
                     user_currency: currency,
-                    regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
-                    sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
+                    regular_price,
+                    sale_price,
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
                     free_condition_description: result.free_condition_description,
