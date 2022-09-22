@@ -3717,7 +3717,7 @@ const getUserProfile = async (req, res) => {
         {
             for (let experience of user.user_experiences )
             {
-                if(experience.currentCompany)
+                if(experience.jobTitle)
                 {
                     user.designation = experience.jobTitle
                 }
