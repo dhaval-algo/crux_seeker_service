@@ -3728,7 +3728,7 @@ const getUserProfile = async (req, res) => {
         }
 
         // Get key skills
-        user.keyskill = await getKeySkills(req)
+        user.setDataValue('keyskill', await getKeySkills(req)); 
 
         // Get goals
 
