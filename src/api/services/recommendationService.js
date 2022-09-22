@@ -2736,7 +2736,12 @@ module.exports = class recommendationService {
                     }
                     if(hit._source.provider_name)
                     {
-                        providers.push(hit._source.provider_name)
+                        if(hit._source.provider_name.isArray())
+                        {
+                            providers.concat(hit._source.provider_name)
+                        }else{
+                            providers.push(hit._source.provider_name)
+                        }  
                     }                            
                 }
             }
@@ -2901,7 +2906,13 @@ module.exports = class recommendationService {
                     }
                     if(hit._source.provider_name)
                     {
-                        providers.push(hit._source.provider_name)
+                        if(hit._source.provider_name.isArray())
+                        {
+                            providers.concat(hit._source.provider_name)
+                        }else{
+                            providers.push(hit._source.provider_name)
+                        }                        
+                       
                     }                            
                 }
             }
@@ -2982,7 +2993,7 @@ module.exports = class recommendationService {
                     }
                 );
             }
-        
+            console.dir(esQuery, {depth:null})
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
@@ -2995,7 +3006,7 @@ module.exports = class recommendationService {
             return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
         } catch (error) {
     
-            console.log("Error occured while fetching enquiry based recommendation : ", error);
+            console.log("Error occured while fetching wishlist based recommendation : ", error);
             return { "success": false, message: "failed to fetch", data: { list: [] } }
         }
     }
