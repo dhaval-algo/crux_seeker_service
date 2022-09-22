@@ -3741,7 +3741,7 @@ const getUserProfile = async (req, res) => {
             user.isGoals = false
         }
         // get user profileProgress
-        user.PendingActions = await  getUserPendingActions(res)
+        user.pendingActions = await  getUserPendingActions(req)
 
         res.status(200).send({
             message: "User Profile fetched successfully",
