@@ -3687,8 +3687,9 @@ const getUserProfile = async (req, res) => {
                     attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
                 }
             ],
-            attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
-
+            attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile'],
+            raw : true,
+            nest:true
         })
         if(user.resumeFile)
         {
@@ -3719,16 +3720,16 @@ const getUserProfile = async (req, res) => {
             {
                 if(experience.jobTitle)
                 {
-                    user.setDataValue('designation', experience.jobTitle);                    
+                    user.designation =  experience.jobTitle                    
                 }
             }
         }
         else{
-            user.setDataValue('designation', null); 
+            user.designation=  null
         }
 
         // Get key skills
-        user.setDataValue('keyskill', await getKeySkills(req)); 
+        user.keyskill =  await getKeySkills(req); 
 
         // Get goals
 
