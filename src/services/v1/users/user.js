@@ -3680,15 +3680,18 @@ const getUserProfile = async (req, res) => {
             include: [
                 {
                     model: models.user_education,
-                    attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade']
+                    attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade'],
+                    raw: true
                 },
                 {
                     model: models.user_experience,
-                    attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+                    attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience'],
+                    raw: true
                 }
             ],
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile'],
-            raw : true
+            raw : true,
+            nest:true
         })
         if(user.resumeFile)
         {
