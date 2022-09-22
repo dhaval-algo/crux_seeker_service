@@ -1091,23 +1091,32 @@ const resetPassword = async (req,res) => {
     }  
 }
 
-const getProfileProgress = async (req,res) => {
+const getProfileProgress = async (req,res =null) => {
     const { user } = req
     const profileRes = await calculateProfileCompletion(user)
     if(profileRes){
-        return res.status(200).json({
-            success:true,
-            data: {
-                profileProgress:profileRes
-            }
-        })
+        if (res) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    profileProgress: profileRes
+                }
+            })
+        } else {
+            return profileRes
+        }
+
 
     }
     else{
-        return res.status(500).json({
-            success:false,
-            message:"internal server error"
-        })
+        if (res) {
+            return res.status(500).json({
+                success: false,
+                message: "internal server error"
+            })
+        }else{
+            return null
+        }
     }
 }
 
@@ -1201,7 +1210,7 @@ const addCourseToWishList = async (req, res) => {
     }
 }
 
-const getGoals = async (req, res) => {
+const getGoals = async (req, res=null) => {
     try {
         const { user } = req;
         const userId = user.userId
@@ -1249,17 +1258,29 @@ const getGoals = async (req, res) => {
             goalList.push(obj);
         }
 
-        return res.status(200).json({
-            success: true,
-            result: goalList
-        })
+        if(res)
+        {
+            return res.status(200).json({
+                success: true,
+                result: goalList
+            })
+        }
+        else{
+            return goalList
+        }
         
     } catch (error) {
         console.log(error)
-        return res.status(500).json({
-            success: false,
-            message:"internal server error"
-        })
+        if(res)
+        {
+            return res.status(500).json({
+                success: false,
+                message:"internal server error"
+            })
+        }else{
+            return null
+        }
+        
     }
 }
 
@@ -3072,7 +3093,7 @@ const reactivateAccount = async (req, res) => {
     }
 }
 
-const getUserPendingActions = async (req, res) => {
+const getUserPendingActions = async (req, res = null) => {
     try {
         const { user } = req
         const userId = user.userId
@@ -3262,15 +3283,29 @@ const getUserPendingActions = async (req, res) => {
         if(response.pendingProfileActions && response.pendingProfileActions.length > 0)
         {
             response.pendingProfileActions = response.pendingProfileActions.filter((v, i, a) => a.indexOf(v) === i)
-        }        
-        res.send({ success: true, data: response })
+        } 
+        if(res){
+            res.send({ success: true, data: response })
+        } 
+        else
+        {
+            return response
+        } 
+        
     } catch (error) {
         console.log(error)
-        res.status(500).send({
-            success: false,
-            message: "internal server error",
-            error: error
-        })
+        if(res)
+        {
+            res.status(500).send({
+                success: false,
+                message: "internal server error",
+                error: error
+            })
+        }
+        else
+        {
+            return null
+        }
     }
 }
 
@@ -3676,6 +3711,38 @@ const getUserProfile = async (req, res) => {
                 user.phoneVerified = true
             }
         }
+
+        //set desgination
+        if(user.user_experience && user.user_experience.length > 0)
+        {
+            for (let experience of user.user_experience )
+            {
+                if(experience.currentCompany)
+                {
+                    user.designation = experience.jobTitle
+                }
+            }
+        }
+        else{
+            user.designation = null
+        }
+
+        // Get key skills
+        user.keyskill = await this.getKeySkills(req)
+
+        // Get goals
+
+        user.goals = await this.getGoals(req)
+
+        if(user.goals)
+        {
+            user.isGoals = true
+        }else{
+            user.isGoals = false
+        }
+        // get user profileProgress
+        user.PendingActions = await  getUserPendingActions(res)
+
         res.status(200).send({
             message: "User Profile fetched successfully",
             success: true,
@@ -3720,7 +3787,7 @@ const getSkills = async (req, res) => {
     }
 }
 
-const getKeySkills = async (req, res) => {    
+const getKeySkills = async (req, res=null) => {    
     try {        
         let keySkill = []
         const userData = await models.user_topic.findAll({
@@ -3748,17 +3815,26 @@ const getKeySkills = async (req, res) => {
                 }   
             }
          }
-        res.status(200).send({
-            message: "User Key skills fetched successfully",
-            success: true,
-            data: keySkill             
-        })
+        if (res) {
+            res.status(200).send({
+                message: "User Key skills fetched successfully",
+                success: true,
+                data: keySkill
+            })
+        }
+        else {
+            return keySkill
+        }
     } catch (error) {
         console.log('getKeySkills err ',error);
-        res.status(200).send({
-            message: "Error fetching KeySkills",
-            success: false
-        })
+        if (res) {
+            res.status(200).send({
+                message: "Error fetching KeySkills",
+                success: false
+            })
+        } else {
+            return null
+        }
     }
 }
 
