@@ -3719,12 +3719,12 @@ const getUserProfile = async (req, res) => {
             {
                 if(experience.jobTitle)
                 {
-                    user.designation = experience.jobTitle
+                    user.setDataValue('designation', experience.jobTitle);                    
                 }
             }
         }
         else{
-            user.designation = null
+            user.setDataValue('designation', null); 
         }
 
         // Get key skills
