@@ -764,7 +764,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.categories} Category`,
+                                    title: `Explore ${result.categories} Category`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.categories} expert`,
                                     url: redirectUrl
                                 }
@@ -777,7 +777,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.article_sub_categories} Subcategory`,
+                                    title: `Explore ${result.article_sub_categories} Subcategory`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories} expert`,
                                     url: redirectUrl
                                 }
@@ -930,7 +930,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.categories[0]} Category`,
+                                    title: `Explore ${result.categories[0]} Category`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.categories[0]} expert`,
                                     url: redirectUrl
                                 }
@@ -943,7 +943,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.article_sub_categories[0]} Subcategory`,
+                                    title: `Explore ${result.article_sub_categories[0]} Subcategory`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories[0]} expert`,
                                     url: redirectUrl
                                 }
