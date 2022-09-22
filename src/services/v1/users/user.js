@@ -3331,10 +3331,12 @@ const isUserEmailExist = async (req, res) => {
 const getPersonalDetails = async (req, res) => {
     
     try {       
-         const user = await models.user.findOne({where:{id:req.user.userId},attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country']})       
-        let countryCode = user.phone.split(" ")[0];
-        if (countryCode != '+91') {
-            user.phoneVerified = true
+        const user = await models.user.findOne({ where: { id: req.user.userId }, attributes: ['fullName', 'email', 'verified', 'phone', 'phoneVerified', 'status', 'gender', 'dob', 'city', 'country'] })
+        if (user.phone) {
+            let countryCode = user.phone.split(" ")[0];
+            if (countryCode != '+91') {
+                user.phoneVerified = true
+            }
         }
 
         res.status(200).send({
@@ -3668,9 +3670,11 @@ const getUserProfile = async (req, res) => {
                 } 
             }
         }
-        let countryCode = user.phone.split(" ")[0];
-        if (countryCode != '+91') {
-            user.phoneVerified = true
+        if(user.phone){
+            let countryCode = user.phone.split(" ")[0];
+            if (countryCode != '+91') {
+                user.phoneVerified = true
+            }
         }
         res.status(200).send({
             message: "User Profile fetched successfully",
