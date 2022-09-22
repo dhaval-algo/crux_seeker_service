@@ -2680,6 +2680,10 @@ module.exports = class recommendationService {
             const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
             const offset = (page - 1) * limit;
             const courseValues = await models.enquiry.findAll({ where: { userId: userId} });
+            if(!courseValues)
+            {
+                return { "success": false, message: "No list", data: { list: [] } }
+            }
             const courseIds = courseValues.map((course) => course.courseId)
             // Course Ids -> Now it is used for getting topics out of them.
 
@@ -2841,6 +2845,10 @@ module.exports = class recommendationService {
             const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
             const offset = (page - 1) * limit;
             const courseValues = await models.user_meta.findAll({ where: { userId: userId,key:"course_wishlist"} });
+            if(!courseValues)
+            {
+                return { "success": false, message: "No list", data: { list: [] } }
+            }
             const courseIds = courseValues.map((course) => course.value)
             // Course Ids -> Now it is used for getting topics out of them.
 
