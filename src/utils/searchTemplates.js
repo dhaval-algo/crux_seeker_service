@@ -2,19 +2,18 @@ const { getAllTimeSessionKPIs, getRecentSessionKPIs } = require("../utils/sessio
 
 
 const entityQueryMapping = {
-    'learn-content': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.course_views", fuzziness_fields: ["title^16", "skills^4", "topics^3", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], fields: ["title^18", "skills^4", "topics^4", "what_will_learn^3", "categories^3", "sub_categories^3", "provider_name^2"], kpis: ["topics", "skills", "categories", "sub_categories"] },
-    'learn-path': { status: 'approved', prefix_field: "title", total_view_field: "activity_count.all_time.learnpath_views", fuzziness_fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6"], fields: ["title^13.5", "courses.title^12", "topics^10", "categories^8", "sub_categories^6", "description^4"], kpis: ["topics", "categories", "sub_categories"] },
-    'provider': { status: 'approved', prefix_field: "name", fuzziness_fields: ["name^7"], fields: ['name^7'] },
-    'article': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.article_views", fuzziness_fields: ["title^14", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8"], fields: ["title^14.5", "article_skills^13", "article_topics^12", "categories^10", "article_sub_categories^8", "content^4"], kpis: ["topics", "skills", "categories", "sub_categories"] },
-    'keyword-suggestion': { prefix_field: 'suggestion', total_view_field: 'clicks', fuzziness_fields: ['suggestion'], fields: ['suggestion'], kpis: ["topics", "categories", "sub_categories"] }
+    'learn-content': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.course_views", fields: ["title^10", "subtitle^8", "categories^6", "sub_categories^6", "topics^5", "skills^4", "what_will_learn^3", "content^3", "description^2"], kpis: ["topics", "skills", "categories", "sub_categories"] },
+    'learn-path': { status: 'approved', prefix_field: "title", total_view_field: "activity_count.all_time.learnpath_views", fuzziness_fields: ["title^10", "courses.title^4"], fields: ["title^10", "categories^8", "sub_categories^8", "topics^6", "courses.title^4", "description^2"], kpis: ["topics", "categories", "sub_categories"] },
+    'provider': { status: 'approved', prefix_field: "name", fuzziness_fields: ["name^4"], fields: ["name^4", "overview^2"] },
+    'article': { status: 'published', prefix_field: "title", total_view_field: "activity_count.all_time.article_views", fuzziness_fields: ["title^10"], fields: ["title^10", "short_description^6", "article_skills^6", "article_topics^6", "categories^6", "article_sub_categories^6", "content^2"], kpis: ["topics", "skills", "categories", "sub_categories"] },
+    'keyword-suggestion': { prefix_field: 'suggestion', total_view_field: 'clicks', fuzziness_fields: ["suggestion^6"], fields: ["suggestion^6", "sub_categories^4", "categories^4", "topics^2"], kpis: ["topics", "categories", "sub_categories"] }
 };
 
 
 const weightForKeywordBoosting = process.env.KEYWORD_BOOST_WEIGHT || 1.5;
-const boostForMultiMatchPrefix = process.env.MULTI_MATCH_PREFIX_BOOST|| 150;
-const boostForMatchPhrasePrefix = process.env.MATCH_PHRASE_PREFIX_BOOST || 50;
-const boostForMultiMatchAndOp = process.env.MULTI_MATCH_AND_OP_BOOST || 30;
-const boostForMultiMatchOrOp = process.env.MULTI_MATCH_OR_OP_BOOST || 5;
+const boostForMultiMatchPrefix = process.env.MULTI_MATCH_PREFIX_BOOST || 50;
+const boostForMatchPhrasePrefix = process.env.MATCH_PHRASE_PREFIX_BOOST || 30;
+const boostForMultiMatchAndOp = process.env.MULTI_MATCH_AND_OP_BOOST || 40;
 const boostForFuzzinessField = process.env.FUZZINESS_FIELD_BOOST || 5;
 
 const entityKPIKeyElasticFieldMap = {
@@ -78,7 +77,7 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                     field_value_factor: {
                         field: entityQueryFields.total_view_field,
                         modifier: "log2p",
-                        missing: 0
+                        missing: 8
                     }
                 }
             ],
@@ -117,23 +116,8 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                                             boost: boostForMultiMatchAndOp,
                                             operator: "AND"
                                         }
-                                    },
-                                    {
-                                        multi_match: {
-                                            fields: entityQueryFields.fields,
-                                            query: query,
-                                            boost: boostForMultiMatchOrOp
-                                        }
-                                    },
-                                    {
-                                        multi_match: {
-                                            fields: entityQueryFields.fuzziness_fields,
-                                            query: query,
-                                            fuzziness: "AUTO",
-                                            prefix_length: 0,
-                                            boost: boostForFuzzinessField
-                                        }
                                     }
+
                                 ]
                             }
                         }
@@ -151,6 +135,22 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
                 "status.keyword": entityQueryFields.status
             }
         });
+    }
+
+    if (entity == 'learn-path' || entity == 'article') {
+        template.function_score.query.bool.must[0].bool.should.push(
+            {
+                multi_match: {
+                    fields: entityQueryFields.fuzziness_fields,
+                    query: query,
+                    fuzziness: "AUTO",
+                    prefix_length: 0,
+                    boost: boostForFuzzinessField
+                }
+            }
+
+        );
+
     }
 
     if (entity == 'article') {
@@ -244,7 +244,7 @@ const getProviderSearchTemplate = (query) => {
                                 multi_match: {
                                     query: query,
                                     type: "bool_prefix",
-                                    boost: 50,
+                                    boost: boostForMultiMatchPrefix,
                                     fields: [
                                         providerQueryMapping.prefix_field
                                     ]
@@ -254,7 +254,7 @@ const getProviderSearchTemplate = (query) => {
                                 match_phrase_prefix: {
                                     [providerQueryMapping.prefix_field]: {
                                         query: query,
-                                        boost: 30
+                                        boost: boostForMatchPhrasePrefix
                                     }
                                 }
                             },
@@ -262,7 +262,8 @@ const getProviderSearchTemplate = (query) => {
                                 multi_match: {
                                     fields: providerQueryMapping.fields,
                                     query: query,
-                                    boost: 35
+                                    boost: boostForMultiMatchAndOp,
+                                    operator: "AND",
                                 }
                             },
                             {
@@ -271,7 +272,7 @@ const getProviderSearchTemplate = (query) => {
                                     query: query,
                                     fuzziness: "AUTO",
                                     prefix_length: 0,
-                                    boost: 5
+                                    boost: boostForFuzzinessField
                                 }
                             }
                         ]

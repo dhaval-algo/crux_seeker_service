@@ -83,7 +83,7 @@ router.get('/topics', categoryController.getTopics);
 router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', injectTokenPayload,searchController.getSearchResult);
-router.get('/search-suggestions/:word', searchController.getSearchSuggestions);
+router.get('/search-suggestions/:word', injectTokenPayload,searchController.getSearchSuggestions);
 
 router.get('/count-page',sectionController.countPage)
 router.get('/section/tree',sectionController.getCategoryTree)
