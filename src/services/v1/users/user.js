@@ -67,7 +67,7 @@ const login = async (req, res, next) => {
         }
         
         // check if user exist
-        const verificationRes = await userExist(email);
+        const verificationRes = await userExist(email,LOGIN_TYPES.LOCAL);
         if (!verificationRes.success) {
             return res.status(200).json(verificationRes);
         }
