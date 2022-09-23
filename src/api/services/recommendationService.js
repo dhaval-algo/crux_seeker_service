@@ -1187,7 +1187,7 @@ module.exports = class recommendationService {
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                        if(json && json && json.featured_articles)
+                        if(json && json.featured_articles)
                             featured_articles = getAllArticles(json.featured_articles);
                     }
                     maxArticles = 2
