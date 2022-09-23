@@ -1160,8 +1160,8 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
-                        if(json && json[0])
-                        featured_articles = getAllArticles(json[0].featured_articles);
+                        if(json && json[0].featured_articles)
+                            featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     maxArticles = 3
                     break
@@ -1169,8 +1169,8 @@ module.exports = class recommendationService {
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
                         let json = await subCategoryResponse.json();
-                        if(json && json[0])
-                        featured_articles = getAllArticles(json[0].featured_articles);
+                        if(json && json[0].featured_articles)
+                            featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     maxArticles = 3
                     break
@@ -1178,8 +1178,8 @@ module.exports = class recommendationService {
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
                         let json = await topicResponse.json();
-                        if(json && json[0])
-                        featured_articles = getAllArticles(json[0].featured_articles);
+                        if(json && json[0].featured_articles)
+                            featured_articles = getAllArticles(json[0].featured_articles);
                     }
                     maxArticles = 3
                     break
@@ -1187,8 +1187,8 @@ module.exports = class recommendationService {
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                        if(json && json[0])
-                        featured_articles = getAllArticles(json[0].featured_articles);
+                        if(json && json.featured_articles)
+                            featured_articles = getAllArticles(json.featured_articles);
                     }
                     maxArticles = 2
                     break
@@ -1334,32 +1334,32 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
-                        if(json && json[0])
-                        article_advice = getAllArticles(json[0].article_advice);
+                        if(json && json[0].article_advice)
+                            article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
-                        let json = await subCategoryResponse.json();  
-                        if(json && json[0])                  
-                        article_advice = getAllArticles(json[0].article_advice);
+                        let json = await subCategoryResponse.json();
+                        if(json && json[0].article_advice)                    
+                            article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "topicPage":
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
                         const json = await topicResponse.json();
-                        if(json && json[0])
-                        article_advice = getAllArticles(json[0].article_advice);
+                        if(json && json[0].article_advice)
+                            article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "learnPathPage":
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                        if(json && json[0])
-                        article_advice = getAllArticles(json[0].article_advice);
+                        if(json && json.article_advice)
+                            article_advice = getAllArticles(json.article_advice);
                     }
                     break
                 default:
