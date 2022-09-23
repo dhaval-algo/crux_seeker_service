@@ -1283,6 +1283,14 @@ module.exports = class learnContentService {
                         currency: result.provider_currency, url:result.provider_course_url}
             result.providers_list = [provider]
         }
+        const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
+        let desktop_course_image = null , mobile_course_image = null, partner_logo = null;
+        if(partnerCourseImage.noCacheData != true)
+        {
+            desktop_course_image = partnerCourseImage.desktop_course_image;
+            mobile_course_image = partnerCourseImage.mobile_course_image;
+            partner_logo = partnerCourseImage.logo;
+        }
 
         let data = {
             canBuy: canBuy,
@@ -1301,10 +1309,10 @@ module.exports = class learnContentService {
             },
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images)? formatImageResponse(result.images) :null,
-            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
-            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
-            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),
+            cover_image: partner_logo ? partner_logo : ((result.images)? formatImageResponse(result.images) :null),
+            sidebar_listing_image: desktop_course_image ? desktop_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),            
+            card_image:desktop_course_image ? desktop_course_image : ((result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image_mobile:mobile_course_image ? mobile_course_image : ((result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null)),
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
@@ -1702,7 +1710,7 @@ module.exports = class learnContentService {
             id: data.id,
             providers: data.providers,
             partner: data.partner,
-            cover_image: data.cover_image,
+            cover_image: desktop_course_image ? desktop_course_image: data.cover_image,
             sidebar_listing_image: data.sidebar_listing_image,            
             card_image:data.card_image,
             card_image_mobile:data.card_image_mobile,
