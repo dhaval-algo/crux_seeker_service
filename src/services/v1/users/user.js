@@ -1061,7 +1061,7 @@ const resetPassword = async (req,res) => {
             const {passwordHash, userSalt} = hashPassword(password);
             let userres = await models.user_login.update({
                 password: passwordHash,
-                userSalt: userSalt
+                passwordSalt: userSalt
             }, {
                 where: {
                     userId: user.userId,
