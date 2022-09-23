@@ -353,13 +353,20 @@ const getLoginToken = async (userObj) => {
     }
 }
 
-const invalidateTokens = (userObj) => {
+const invalidateTokens = (userObj, tokenType= null) => {
     return new Promise(async (resolve,reject) => {
-
-        await models.auth_token.destroy({
-            where: {
-               userId:userObj.userId
+        let where = {
+            userId:userObj.userId
+        }
+        if(type)
+        {
+            where = {
+                userId:userObj.userId,
+                tokenType:tokenType
             }
+        }
+        await models.auth_token.destroy({
+            where: where
         });
         resolve(true)
     })

@@ -308,8 +308,8 @@ const verifyOtp = async (req, res, next) => {
                         }
                     )
                 }
-            }
-            await invalidateTokens(userObj)
+            }            
+            await invalidateTokens(userObj,'verification')
            // let data = {old_email:username, new_email:email}
             //sendDataForStrapi(data, "update-email");
         }
@@ -938,6 +938,7 @@ const resendVerificationLink = async (req, res) => {
         email:userData.email,
         audience: req.headers.origin
     }
+    await invalidateTokens(userObj,'verification')
     await sendVerifcationLink(userObj)
     return res.status(200).json({
         success: true,
@@ -981,7 +982,7 @@ const verifyAccount = async (req, res) => {
           
             let userObj = await models.user.findOne({where:{id: user.userId}})
             let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userObj.fullName }
-            await invalidateTokens(newUserObj)
+            await invalidateTokens(newUserObj,'verification')
             await sendWelcomeEmail(userObj)
             const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
             return res.status(200).send(tokenRes)
