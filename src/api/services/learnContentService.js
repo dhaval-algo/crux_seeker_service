@@ -766,7 +766,7 @@ module.exports = class learnContentService {
                 label: slugLabel || null,
                 description: slug_description || null,
                 logo : (slug_logo)? formatImageResponse(slug_logo) : null,
-                course_count: result.hits.length
+                course_count: result.total.value
             }
             data.faq = slug_faq
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
