@@ -358,7 +358,7 @@ const invalidateTokens = (userObj, tokenType= null) => {
         let where = {
             userId:userObj.userId
         }
-        if(type)
+        if(tokenType)
         {
             where = {
                 userId:userObj.userId,
