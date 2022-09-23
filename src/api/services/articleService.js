@@ -33,6 +33,7 @@ const sortOptions = {
     'Newest' :["created_at:desc"],
     'A-Z': ["title:asc"],
     'Z-A' :["title:desc"],
+    'Most Relevant' : []
 }
 
 const currencyToRegion = {
@@ -162,20 +163,22 @@ module.exports = class articleService {
         
 
         if(!req.query['sort']){
-            req.query['sort'] = 'Newest';
+            req.query['sort'] = (req.query['q']) ? 'Most Relevant': 'Newest';
         }
         if (req.query['sort']) {
             queryPayload.sort = []
             const keywordFields = ['title'];
             let sort = sortOptions[req.query['sort']];
-            for(let field of sort){
-        
-                let splitSort = field.split(":");
-                if(keywordFields.includes(splitSort[0])){
-                    field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            if (sort && sort.length > 0) {
+                for (let field of sort) {
+
+                    let splitSort = field.split(":");
+                    if (keywordFields.includes(splitSort[0])) {
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                    queryPayload.sort.push(field)
                 }
-                queryPayload.sort.push(field)
-            }                
+            }               
 
         }
        

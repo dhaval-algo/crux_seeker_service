@@ -49,7 +49,8 @@ const sortOptions = {
     'Highest Rated': ["ratings:desc"],
     'Newest' :["published_date:desc"],
     'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"]
+    'Price High To Low': ["basePrice:desc"],
+    'Most Relevant' : []
 }
 
 const getBaseCurrency = (result) => {
@@ -281,7 +282,7 @@ module.exports = class learnContentService {
         try{
         let searchTemplate = null;
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = 'Popular'
+        let defaultSort = req.query['q']? 'Most Relevant' : 'Popular';
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -361,14 +362,16 @@ module.exports = class learnContentService {
             queryPayload.sort = []
             const keywordFields = ['title'];
             let sort = sortOptions[req.query['sort']];
-            for(let field of sort){
-            
-                let splitSort = field.split(":");
-                if(keywordFields.includes(splitSort[0])){
-                    field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                if(sort && sort.length > 0){
+                for(let field of sort){
+                
+                    let splitSort = field.split(":");
+                    if(keywordFields.includes(splitSort[0])){
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                queryPayload.sort.push(field)
                 }
-            queryPayload.sort.push(field)
-        }
+            }
         }
         
         if(req.query['courseIds']){

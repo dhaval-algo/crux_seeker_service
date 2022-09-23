@@ -48,7 +48,9 @@ const sortOptions = {
     'Highest Rated': ["ratings:desc"],
     'Newest' :["created_at:desc"],
     'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"]
+    'Price High To Low': ["basePrice:desc"],
+    'Most Relevant' : []
+
 }
 
 
@@ -90,7 +92,7 @@ module.exports = class learnPathService {
         try {
             let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = "Highest Rated";
+            let defaultSort = req.query['q']? 'Most Relevant' :"Highest Rated";
             let useCache = false;
             let cacheName = "learnpath";
             const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -161,14 +163,16 @@ module.exports = class learnPathService {
                 queryPayload.sort = []
                 const keywordFields = ['title'];
                 let sort = sortOptions[req.query['sort']];
-                for(let field of sort){
-            
-                    let splitSort = field.split(":");
-                    if(keywordFields.includes(splitSort[0])){
-                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                if (sort && sort.length > 0) {
+                    for (let field of sort) {
+
+                        let splitSort = field.split(":");
+                        if (keywordFields.includes(splitSort[0])) {
+                            field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                        }
+                        queryPayload.sort.push(field)
                     }
-                queryPayload.sort.push(field)
-                }                
+                }         
 
             }
 

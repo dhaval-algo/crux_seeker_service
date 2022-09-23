@@ -35,6 +35,7 @@ const FEATURED_RANK_LIMIT = 2;
 const sortOptions = {
     'A-Z': ["name:asc"],
     'Z-A' :["name:desc"],
+    'Most Relevant' : []
 }
 
 const ranksortOptions = {
@@ -172,7 +173,7 @@ module.exports = class providerService {
 
     async getProviderList(req, callback, skipCache){
         let useCache = false;
-        let defaultSort = 'A-Z';
+        let defaultSort = (req.query['q']) ? 'Most Relevant':'A-Z';
         let cacheName = "";
         if(
             req.query['instituteIds'] == undefined
@@ -251,13 +252,15 @@ module.exports = class providerService {
              else{
                 let sort = sortOptions[req.query['sort']];
                 let keywordFields = ['name']
-                for(let field of sort){
-            
-                    let splitSort = field.split(":");
-                    if(keywordFields.includes(splitSort[0])){
-                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                if (sort && sort.length > 0) {
+                    for (let field of sort) {
+
+                        let splitSort = field.split(":");
+                        if (keywordFields.includes(splitSort[0])) {
+                            field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                        }
+                        queryPayload.sort.push(field)
                     }
-                    queryPayload.sort.push(field)
                 }
             }
         }
