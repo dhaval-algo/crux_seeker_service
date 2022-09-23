@@ -1059,16 +1059,35 @@ const resetPassword = async (req,res) => {
         if (verifiedToken) {
             let { user } = verifiedToken;
             const {userSalt, passwordHash} = await hashPassword(password);
-            let userres = await models.user_login.update({
-                password: passwordHash,
-                passwordSalt: userSalt
-            }, {
+
+            //check if local type is present 
+           let user_login =  await models.user_login.findOne({
                 where: {
                     userId: user.userId,
                     provider:LOGIN_TYPES.LOCAL
 
                 }
             });
+            if(user_login.id){
+                let userres = await models.user_login.update({
+                    password: passwordHash,
+                    passwordSalt: userSalt
+                }, {
+                    where: {
+                        userId: user.userId,
+                        provider:LOGIN_TYPES.LOCAL
+
+                    }
+                });
+            }
+            else{
+                let user_login=  await models.user_login.create({
+                    userId: user.userId,
+                    provider: LOGIN_TYPES.LOCAL,
+                    password: passwordHash,
+                    passwordSalt: userSalt
+                });  
+            }
             await invalidateTokens(user)
             return res.status(200).send({
                 success:true
