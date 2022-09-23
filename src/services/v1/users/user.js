@@ -1068,7 +1068,7 @@ const resetPassword = async (req,res) => {
 
                 }
             });
-            if(user_login.id){
+            if(user_login.userId){
                 let userres = await models.user_login.update({
                     password: passwordHash,
                     passwordSalt: userSalt
