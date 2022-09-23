@@ -1558,6 +1558,14 @@ module.exports = class recommendationService {
             canBuy = true;
             tax = roundOff(0.18 * partnerPrice, 2);
         }
+        const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
+        let desktop_course_image = null , mobile_course_image = null, partner_logo = null;
+        if(partnerCourseImage.noCacheData != true)
+        {
+            desktop_course_image = partnerCourseImage.desktop_course_image;
+            mobile_course_image = partnerCourseImage.mobile_course_image;
+        }
+
         let data = {
             canBuy: canBuy,
             title: result.title,
@@ -1571,10 +1579,10 @@ module.exports = class recommendationService {
                 name: result.partner_name,
                 slug: result.partner_slug,
             },
-            cover_image: (result.images)? formatImageResponse(result.images) :null,
-            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
-            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
-            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),
+            cover_image: desktop_course_image ? desktop_course_image : ((result.images)? formatImageResponse(result.images) :null),
+            sidebar_listing_image: desktop_course_image ? desktop_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image: desktop_course_image ? desktop_course_image : ((result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image_mobile: mobile_course_image ? mobile_course_image : ((result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null)),
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
