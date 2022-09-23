@@ -1058,7 +1058,7 @@ const resetPassword = async (req,res) => {
         const verifiedToken = await require("../auth/auth").verifyToken(reset_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
-            const {passwordHash, userSalt} = hashPassword(password);
+            const {userSalt, passwordHash} = hashPassword(password);
             let userres = await models.user_login.update({
                 password: passwordHash,
                 passwordSalt: userSalt
