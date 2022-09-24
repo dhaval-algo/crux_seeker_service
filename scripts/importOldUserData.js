@@ -149,18 +149,20 @@ const UpdateUserFields = async () => {
 
         for (let user of usersSkillsData) {
             let skills = JSON.parse(user.value);
-            for (const [key, value] of Object.entries(skills)) {
-                console.log("key", key);
-                console.log("value", value);
-                let user_topic = await models.user_topic.create({
-                    userId: user.userId,
-                    topic: (key) ? key : null
-                })
-                for (let skill of value) {
-                    let user_skill = await models.user_skill.create({
-                        userTopicId: user_topic.id,
-                        skill: (skill) ? skill : null
+            if(skills){
+                for (const [key, value] of Object.entries(skills)) {
+                    console.log("key", key);
+                    console.log("value", value);
+                    let user_topic = await models.user_topic.create({
+                        userId: user.userId,
+                        topic: (key) ? key : null
                     })
+                    for (let skill of value) {
+                        let user_skill = await models.user_skill.create({
+                            userTopicId: user_topic.id,
+                            skill: (skill) ? skill : null
+                        })
+                    }
                 }
             }
         }
