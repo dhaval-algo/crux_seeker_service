@@ -15,7 +15,13 @@ const crypt = new Cryptr(process.env.CRYPT_SALT);
 const decryptStr = (str) => {
     return crypt.decrypt(str);
 };
-
+const hashPassword = async (password) => {
+    const userSalt = crypto.randomBytes(16).toString('hex');
+    const finalSalt = process.env.PASSWORD_SALT + userSalt
+    const passwordHash = crypto.pbkdf2Sync(password, finalSalt, 
+       parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+    return {userSalt, passwordHash}
+};
 const UpdateUserFields = async () => {
     try {
 
@@ -68,10 +74,11 @@ const UpdateUserFields = async () => {
         for (let userLogin of userLogins) {
             if (userLogin.password != null) {
                 let password = decryptStr(userLogin.password)
-                const userSalt = crypto.randomBytes(16).toString('hex');
-                const finalSalt = process.env.PASSWORD_SALT + userSalt
-                const passwordHash = crypto.pbkdf2Sync(password, finalSalt,
-                    parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+                // const userSalt = crypto.randomBytes(16).toString('hex');
+                // const finalSalt = process.env.PASSWORD_SALT + userSalt
+                // const passwordHash = crypto.pbkdf2Sync(password, finalSalt,
+                //     parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+            const {userSalt, passwordHash} = await hashPassword(password);
                 await models.user_login.update(
                     {
                         password: passwordHash,
