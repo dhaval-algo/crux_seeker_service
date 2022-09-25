@@ -157,7 +157,6 @@ module.exports = class sectionService {
               banner_image: (hit._source.banner_image) ?((hit._source.banner_image['large']) ?hit._banner.cover_image['large'] : hit._source.banner_image['thumbnail']) : null,
               child: []
             }
-            console.log("hit._source", hit._source)
             data[ hit._source.position -1] = secR
           }
         }
