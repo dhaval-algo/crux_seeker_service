@@ -9,6 +9,10 @@ const regionToCurrency = {
         getIpDetails: async(ip) => {
 
             try {
+                //differntiating ipv4 and ipv6 address
+                if (ip.substr(0, 7) == "::ffff:") {
+                    ip = ip.substr(7)
+                }
                 let details = await models.sequelize.query(`select latitude, longitude, accuracy_radius, continent_name, country_name,country_iso_code as country_code, subdivision_1_name, city_name
                 from geoip2_networks net
                 left join geoip2_locations location on (
