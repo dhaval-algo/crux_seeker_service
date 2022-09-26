@@ -248,6 +248,7 @@ module.exports = class providerService {
                 if(keywordFields.includes(splitSort[0])){
                     sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
                 }
+                queryPayload.sort.push(sort)
              }
              else{
                 let sort = sortOptions[req.query['sort']];
