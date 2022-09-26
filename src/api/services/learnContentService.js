@@ -1548,7 +1548,7 @@ module.exports = class learnContentService {
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
-                data.course_details.pricing.indian_students_payment_deadline = new Date(result.indian_students_payment_deadline)
+                data.course_details.pricing.indian_students_payment_deadline = (result.indian_students_payment_deadline)? new Date(result.indian_students_payment_deadline) : null
                 data.course_details.pricing.indian_students_GST = result.indian_students_GST
                 if(result.indian_student_installments && result.indian_student_installments.length > 0)
                 {
@@ -1560,7 +1560,7 @@ module.exports = class learnContentService {
                 }
                 data.course_details.pricing.indian_student_installments = result.indian_student_installments
                 data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
-                data.course_details.pricing.international_students_payment_deadline = new Date(result.international_students_payment_deadline)
+                data.course_details.pricing.international_students_payment_deadline = (result.international_students_payment_deadline)? new Date(result.international_students_payment_deadline) : null
                 if(result.international_student_installments && result.international_student_installments.length > 0)
                 {
                     result.international_student_installments = result.international_student_installments.map(installment =>{
