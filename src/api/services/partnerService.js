@@ -283,7 +283,7 @@ module.exports = class partnerService {
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
-            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
+            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : ((result.embedded_video_url) ? result.embedded_video_url : null),
             cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
             sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
             logo:(result.logo)? formatImageResponse(result.logo): null,
