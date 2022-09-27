@@ -4481,7 +4481,7 @@ module.exports = class recommendationService {
                 }
             }
             for (let course of courses) {
-                req.query.courseId = course.id
+                req.query.courseId = course.id.replace('LRN_CNT_PUB_','')
                 let related_courses = await this.getRelatedCourses(req)
                 if (course.course_details.pricing.pricing_type == "FREE") course.course_details.pricing.sale_price = 0
 
