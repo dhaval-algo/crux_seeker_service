@@ -401,12 +401,12 @@ module.exports = class recommendationService {
             ];
 
             //priority 1 category list
-            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
-            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
+            let priorityList1 = ['skills.keyword', 'topics.keyword', 'sub_categories.keyword'];
+            let priorityList2 = [ 'categories.keyword' ];
 
             const relationData = {
                 index: "learn-content",
-                id: courseId
+                id: 'LRN_CNT_PUB_'+courseId
             }
 
             let esQuery = {
@@ -416,7 +416,7 @@ module.exports = class recommendationService {
                     ],
                     must_not: {
                         term: {
-                            "_id": courseId
+                            "_id": 'LRN_CNT_PUB_'+courseId
                         }
                     }
                 }
@@ -424,8 +424,8 @@ module.exports = class recommendationService {
 
             function buildQueryTerms(key, i) {
                 let termQuery = { "terms": {} };
-                termQuery.terms[key] = { ...relationData, "path": key };
-                termQuery.terms.boost = 5 - (i * 0.1);
+                termQuery.terms[key] = { ...relationData, "path": key.replace('.keyword','') };
+                termQuery.terms.boost = 30 - (i * 5);
                 return termQuery;
             }
 
@@ -442,7 +442,6 @@ module.exports = class recommendationService {
                     should: priorityList2.map(buildQueryTerms)
                 }
             })
-
             let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
 
             let courses = [];
