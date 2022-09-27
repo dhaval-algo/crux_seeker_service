@@ -1313,7 +1313,7 @@ module.exports = class learnContentService {
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
             cover_image: partner_logo ? partner_logo : ((result.images)? formatImageResponse(result.images) :null),
-            sidebar_listing_image: desktop_course_image ? desktop_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),            
+            sidebar_listing_image: mobile_course_image ? mobile_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),            
             card_image:desktop_course_image ? desktop_course_image : ((result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null)),
             card_image_mobile:mobile_course_image ? mobile_course_image : ((result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null)),
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
