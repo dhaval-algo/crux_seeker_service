@@ -2045,8 +2045,8 @@ module.exports = class recommendationService {
                         ],
                         "should":[
                         {
-                            "term": {
-                                "courses.id.keyword": 'LRN_CNT_PUB_'+courseId,
+                            "terms": {
+                                "courses.id.keyword": ['LRN_CNT_PUB_'+courseId],
                                 "boost":10
                             }
                         }
