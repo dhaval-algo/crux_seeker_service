@@ -1180,7 +1180,7 @@ module.exports = class articleService {
                                 "bool": {
                                     "should": [
                                         { term: { "author_id": author_user_id } },
-                                        { term: { "co_authors.user_id": author_id } }
+                                        { term: { "co_authors.user_id": author_user_id } }
                                     ]
                                 }
                             }
