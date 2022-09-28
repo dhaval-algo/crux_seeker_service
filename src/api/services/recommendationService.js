@@ -2045,9 +2045,9 @@ module.exports = class recommendationService {
                         ],
                         "should":[
                         {
-                            "terms": {
-                                "courses.id.keyword": [courseId],
-                                "boost":2
+                            "term": {
+                                "courses.id.keyword": 'LRN_CNT_PUB_'+courseId,
+                                "boost":10
                             }
                         }
                         ]
@@ -2073,16 +2073,6 @@ module.exports = class recommendationService {
                         }
                     );
                 }
-                if (categories) {
-                    esQuery.bool.should.push(
-                        {
-                            "terms": {
-                                "categories.keyword": categories,
-                                boost:3
-                            }
-                        }
-                    );
-                }
                 if (skills) {
                     esQuery.bool.should.push(
                         {
@@ -2091,16 +2081,18 @@ module.exports = class recommendationService {
                                 boost:3
                             }
                         }
-                    );
+                    );                   
+                }
+                if (categories) {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "description.keyword": skills,
-                                boost:3
+                                "categories.keyword": categories,
+                                boost:2
                             }
                         }
                     );
-                }
+                }                
             
                 let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
                 
@@ -3283,7 +3275,7 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "topics.keyword": topics,
-                                "boost":5
+                                "boost":10
                             }
                         }
                     );
@@ -3293,21 +3285,23 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "sub_categories.keyword": sub_categories,
+                                boost:5
+                            }
+                        }
+                    );
+                }
+
+                if (skills) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "skills.keyword": skills,
                                 boost:4
                             }
                         }
                     );
                 }
-                if (categories) {
-                    esQuery.bool.should.push(
-                        {
-                            "terms": {
-                                "categories.keyword": categories,
-                                boost:3
-                            }
-                        }
-                    );
-                }
+
                 if (skills) {
                     esQuery.bool.should.push(
                         {
@@ -3316,16 +3310,20 @@ module.exports = class recommendationService {
                                 boost:3
                             }
                         }
-                    );
+                    );                    
+                }
+
+                if (categories) {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "description.keyword": skills,
-                                boost:3
+                                "categories.keyword": categories,
+                                boost:2
                             }
                         }
                     );
                 }
+               
             
                 let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
                 
@@ -3426,7 +3424,7 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "topics.keyword": topics,
-                                "boost":5
+                                "boost":10
                             }
                         }
                     );
@@ -3436,17 +3434,7 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "sub_categories.keyword": sub_categories,
-                                boost:4
-                            }
-                        }
-                    );
-                }
-                if (categories) {
-                    esQuery.bool.should.push(
-                        {
-                            "terms": {
-                                "categories.keyword": categories,
-                                boost:3
+                                boost:5
                             }
                         }
                     );
@@ -3455,15 +3443,28 @@ module.exports = class recommendationService {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "title.keyword": skills,
-                                boost:2
+                                "skills.keyword": skills,
+                                boost:4
                             }
                         }
                     );
+                }
+               
+                if (skills) {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "description.keyword": skills,
+                                "title.keyword": skills,
+                                boost:3
+                            }
+                        }
+                    );                    
+                }
+                if (categories) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories,
                                 boost:2
                             }
                         }
@@ -3516,7 +3517,7 @@ module.exports = class recommendationService {
     async getRelatedArticle(req) {
         try {
             const articleId = req.query.articleId.toString();
-            const { page = 1, limit = 6 ,currency,section} = req.query;
+            const { page = 1, limit = 6 ,section} = req.query;
             const offset = (page - 1) * limit;
             let articles = [];
             let cacheKey = `Recommendation-For-Article-${articleId}-${section}`;
