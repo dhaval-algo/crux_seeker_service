@@ -45,7 +45,8 @@ const {getSearchTemplate} = require("../../utils/searchTemplates");
 const { list } = require("../controllers/listUsersController");
 
 const sortOptions = {
-    'Popular' : ["activity_count.last_x_days.course_views:desc","ratings:desc"],
+    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["published_date:desc"],
     'Price Low To High': ["basePrice:asc"],

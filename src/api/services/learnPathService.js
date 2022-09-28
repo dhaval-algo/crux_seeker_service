@@ -45,6 +45,8 @@ const ENTRY_PER_PAGE = 25;
 const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages', 'learn_type_label'];
 
 const sortOptions = {
+    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["created_at:desc"],
     'Price Low To High': ["basePrice:asc"],
