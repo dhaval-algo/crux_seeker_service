@@ -137,7 +137,7 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
         });
     }
 
-    if (entity == 'learn-path' || entity == 'article') {
+    if (entity == 'learn-path' || entity == 'article' || entity == 'keyword-suggestion') {
         template.function_score.query.bool.must[0].bool.should.push(
             {
                 multi_match: {
