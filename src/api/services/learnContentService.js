@@ -427,7 +427,14 @@ module.exports = class learnContentService {
         let parsedFilters = [];
         let parsedRangeFilters = [];       
         let filters = [];
+        let hardparsedFilters = []
+        if(req.query['hardFilter'])
+        {
+            req.query['f'] = (req.query['f'])? `${req.query['f']}::${req.query['hardFilter']}`: req.query['hardFilter']
+            hardparsedFilters = parseQueryFilters(req.query['hardFilter']);
+        }
         
+
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){                
@@ -743,16 +750,19 @@ module.exports = class learnContentService {
                 }
             }
 
-            //remove filter if pagetype is partner or institute
-            if(req.query['pageType'] == "partner")
-            {
-                filters = filters.filter(o => o.label !== 'Partner');
-            }
-            else if(req.query['pageType'] == "institute")
-            {
-                filters = filters.filter(o => o.label !== 'Institute');
 
+            //remove filter if pagetype is partner or institute
+            if(req.query['hardFilter'])
+            {
+                if(hardparsedFilters && hardparsedFilters.length > 0)
+                {
+                    for (let hardfilter of hardparsedFilters)
+                    {
+                        filters = filters.filter(o => o.label !== hardfilter.key);
+                    }
+                }
             }
+            
 
             let data = {
                 list: list,
