@@ -465,7 +465,7 @@ module.exports = class recommendationService {
             return response
         } catch (error) {
             console.log("Error while processing data for related courses", error);
-            const response = { success: false, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
+            const response = { success: false, message: "Failed to fetch", data: { list: [], mlList: [], show: null } };
             
             return response
         }
@@ -593,13 +593,12 @@ module.exports = class recommendationService {
 
     async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6) {
 
-        const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId);
+        const result = await mLService.getSimilarCoursesDataML(courseId);
         let courses = [];
         const offset = (page - 1) * limit;
         if (result && result.length) {
             for (const courseElasticData of result.slice(offset, offset + limit)) {
                 const courseData = await this.generateCourseFinalResponse(courseElasticData._source, currency);                
-                courseData.similarity = courseIdSimilarityMap[courseData.id];
                 courses.push(courseData);
             }
         }

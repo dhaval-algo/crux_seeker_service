@@ -85,9 +85,9 @@ const getSimilarCoursesDataML = async (courseId) => {
 
                 let scores = {};
                 const course_ids = [];
-                response.data["data"].forEach((course) => {
+                response.data["data"].forEach((course,i) => {
 
-                    scores[`LRN_CNT_PUB_${course.course_id}`] = course.similarity;
+                    scores[`LRN_CNT_PUB_${course.course_id}`] = i;
                     course_ids.push(`LRN_CNT_PUB_${course.course_id}`);
 
                 });
@@ -98,7 +98,7 @@ const getSimilarCoursesDataML = async (courseId) => {
                     "sort": [
                         {
                             "_script": {
-                                "order": "desc",
+                                "order": "asc",
                                 "type": "number",
                                 "script": {
                                     "lang": "painless",
@@ -134,8 +134,7 @@ const getSimilarCoursesDataML = async (courseId) => {
                 }
                 const result = await elasticService.plainSearch("learn-content", esQuery);
                 if (result && result.hits && result.hits.hits && result.hits.hits.length) {
-
-                    const data = { result: result.hits.hits, courseIdSimilarityMap: scores };
+                    const data = result.hits.hits;
                     RedisConnection.set(cacheName, data);
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
                     return data;
@@ -144,7 +143,7 @@ const getSimilarCoursesDataML = async (courseId) => {
             }
         }
 
-        return { result: [], courseIdSimilarityMap: {} };
+        return [];
 
     } catch (error) {
         console.log("Error occured while fetching data from ML Server: ");
@@ -154,7 +153,7 @@ const getSimilarCoursesDataML = async (courseId) => {
         else {
             console.log(error);
         }
-        return { result: [], courseIdSimilarityMap: {} };
+        return [];
 
     }
 
