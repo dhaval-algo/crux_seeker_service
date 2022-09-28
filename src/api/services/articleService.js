@@ -31,8 +31,8 @@ const allowZeroCountFields = ['section_name','categories','levels','tags', 'auth
 const {getSearchTemplate} = require("../../utils/searchTemplates");
 const sortOptions = {
     'Newest' :["created_at:desc"],
-    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
-    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
+    'Popular' : ["activity_count.all_time.popularity_score:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc"],
     'A-Z': ["title:asc"],
     'Z-A' :["title:desc"],
     'Most Relevant' : []
