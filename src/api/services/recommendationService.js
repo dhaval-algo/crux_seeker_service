@@ -2094,7 +2094,7 @@ module.exports = class recommendationService {
                     );
                 }                
             
-                let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
+                let  sort =null
                 
                 let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort, _source :learnPathFields});
 
@@ -2991,7 +2991,7 @@ module.exports = class recommendationService {
                     }
                 );
             }
-            console.dir(esQuery, {depth:null})
+            
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
@@ -3837,7 +3837,7 @@ module.exports = class recommendationService {
                     );
                 }
             
-                let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
+                let  sort = null
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });
                 if (result.hits) {
                     for (const hit of result.hits) {
