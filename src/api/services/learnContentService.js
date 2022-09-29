@@ -313,6 +313,10 @@ module.exports = class learnContentService {
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
                 cacheName = "listing-search_"+apiCurrency;                
             }
+            if(req.query['hardFilter'])
+            {
+                cacheName += `_${req.query['hardFilter']}`;
+            }
 
             cacheName += `_${defaultSort}`;
 
