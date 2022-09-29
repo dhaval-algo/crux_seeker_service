@@ -2288,7 +2288,7 @@ module.exports = class learnContentService {
             // check if course recomndation categories have minimum 4 courses 
             if (data.course_recommendation_categories && data.course_recommendation_categories) {
                 data.course_recommendation_categories = await Promise.all(
-                    data.course_recommendation_categories.filter(async (category) => {
+                    data.course_recommendation_categories.map(async (category) => {
                         let reqObj = {
                             query: {
                                 category: category.name
@@ -2310,7 +2310,7 @@ module.exports = class learnContentService {
             // check if Trending skill have minimum 6 courses 
             if (data.trending_skillls && data.trending_skillls) {
                 data.trending_skillls = await Promise.all(
-                    data.trending_skillls.filter(async (skill) => {
+                    data.trending_skillls.map(async (skill) => {
                         let reqObj = {
                             query: {
                                 skill: skill.name,
@@ -2333,7 +2333,7 @@ module.exports = class learnContentService {
             // check if (Free) Trending skill have minimum 6 courses 
             if (data.free_trending_skills && data.free_trending_skills) {
                 data.free_trending_skills = await Promise.all(
-                    data.free_trending_skills.filter(async (skill) => {
+                    data.free_trending_skills.map(async (skill) => {
                         let reqObj = {
                             query: {
                                 skill: skill.name,
@@ -2343,7 +2343,7 @@ module.exports = class learnContentService {
                         }
                         let recommendation = await RecommendationService.getPopularCourses(reqObj);
                         if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6)
-                            return true;
+                            return skill;
                         else
                             return null
                     })
