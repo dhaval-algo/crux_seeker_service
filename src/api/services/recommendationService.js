@@ -1984,7 +1984,7 @@ module.exports = class recommendationService {
     async getRelatedLearningPathForCourse(req){      
         const { page = 1, limit = 5, currency} = req.query;
         const offset = (page - 1) * limit
-        const courseId = req.query.courseId.toString();
+        const courseId = req.query.courseId;
         let topics = null
         let sub_categories = null
         let categories = null
@@ -2001,17 +2001,11 @@ module.exports = class recommendationService {
                 let esQuery = {
                     "bool": {
                         "filter": [
-                            { "term": { "status.keyword": "published" } }
+                            { "term": { "status.keyword": "published" } },
+                            {"term": { "id":  courseId}}
                         ]
                     }
-                }
-                esQuery.bool.must = [
-                    {
-                    "ids": {
-                        "values": [courseId]
-                    }
-                    }
-                ]
+                }             
                 
                 let courseData = await elasticService.search("learn-content", esQuery, {_source: ['topics','sub_categories','categories','skills']});
                 
@@ -2046,7 +2040,7 @@ module.exports = class recommendationService {
                         "should":[
                         {
                             "terms": {
-                                "courses.id.keyword": ['LRN_CNT_PUB_'+courseId],
+                                "courses.id.keyword": [`LRN_CNT_PUB_${courseId}`],
                                 "boost":10
                             }
                         }
