@@ -1627,15 +1627,15 @@ module.exports = class recommendationService {
         }
             
 
-        const EARN_CONTENT_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD");
+        const LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
 
         data.isPopular  = false
-        if(EARN_CONTENT_POPULARITY_SCORE_THRESHOLD  && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(EARN_CONTENT_POPULARITY_SCORE_THRESHOLD)))
+        if(LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD  && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD)))
         {
             data.isPopular  = true
         }
 
-        const LEARN_CONTENT_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_TRENDING_SCORE_THRESHOLD");
+        const LEARN_CONTENT_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
         
         data.isTrending  = false
         if(LEARN_CONTENT_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(LEARN_CONTENT_TRENDING_SCORE_THRESHOLD)))
