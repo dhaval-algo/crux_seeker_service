@@ -343,7 +343,7 @@ module.exports = class learnContentService {
 
                 searchTemplate = await getSearchTemplate('learn-content',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
                 query = searchTemplate.function_score.query;
-                esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
                 
             } else {
                 query = {
