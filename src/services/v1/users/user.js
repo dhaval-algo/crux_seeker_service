@@ -2664,7 +2664,14 @@ const updateEmail =async (req,res) => {
                 data: {}
             })
         }
-        let email_already_exist = await models.user.findOne({where:{email:email}})
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        let email_already_exist = await models.user.findOne({where:where})
         if(email_already_exist != null){
             return res.status(200).json({
                 code: "EMAIL ALREADY EXIST",
