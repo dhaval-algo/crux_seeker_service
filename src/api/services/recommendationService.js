@@ -1742,9 +1742,14 @@ module.exports = class recommendationService {
                     });
                 }
             }
-
             if(result.partners && result.partners.length > 0 )
             {
+                result.partners = result.partners.filter(partner=>partner.id != null)
+            }
+            
+            if(result.partners && result.partners.length > 0 )
+            {
+
                 const partnerQuery = { 
                     "bool": {
                         "should": [
