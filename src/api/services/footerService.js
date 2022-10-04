@@ -218,6 +218,9 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.who_we_are && response.who_we_are.image)
+                response.who_we_are.image = formatImageResponse(response.who_we_are.image)
+
             if(response.content_section && response.content_section.length > 0)
             {
                 response.content_section = response.content_section.map(content_section => {
