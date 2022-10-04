@@ -206,7 +206,28 @@ module.exports = class sectionService {
     };
     try{
       const query_courses = await elasticService.count('learn-content')
-      const query_partner = await elasticService.count('partner')
+
+      const query = {
+        "bool": {
+            "filter": [
+                { "term": { "status.keyword": "published" } }
+            ]
+        }
+    }
+      const aggs = {
+        "partner_count": {
+          "terms": {
+            "field": "partner_name.keyword"
+          }
+        }
+      }
+
+      const payload = {
+        "size": 0,
+        aggs
+      };
+     let query_partner = await elasticService.searchWithAggregate('learn-content', query, payload);
+  
       const query_institute = await elasticService.count('provider')
       if(query_courses.count){
         if(query_courses.count < 100){
@@ -218,15 +239,16 @@ module.exports = class sectionService {
         }
         result['course'] = query_courses['count']+''
       }
-      if(query_partner.count){
-        if(query_partner.count < 100){
-          query_partner.count = Math.floor(query_partner.count/10)*10;
-        }else if(query_partner.count < 1000){
-          query_partner.count = Math.floor(query_partner.count/100)*100;
-        }else if(query_partner.count > 1000){
-          query_partner.count = Math.floor(query_partner.count/1000)+'k';
+      if (query_partner.aggregations.partner_count.buckets && query_partner.aggregations.partner_count.buckets) {
+        let partner_count = query_partner.aggregations.partner_count.buckets.length
+        if (partner_count < 100) {
+          partner_count = Math.floor(partner_count / 10) * 10;
+        } else if (partner_count < 1000) {
+          partner_count = Math.floor(partner_count / 100) * 100;
+        } else if (partner_count > 1000) {
+          partner_count = Math.floor(partner_count / 1000) + 'k';
         }
-        result['partner'] = query_partner['count']+''
+        result['partner'] = partner_count + ''
       }
       if(query_institute.count){
         if(query_institute.count < 100){
@@ -240,7 +262,7 @@ module.exports = class sectionService {
       }
         
       RedisConnection.set('count-page', result);
-      RedisConnection.expire('count-page', process.env.CACHE_EXPIRE_COUNT_PAGE);
+      //RedisConnection.expire('count-page', process.env.CACHE_EXPIRE_COUNT_PAGE);
 
       return callback(null, { success: true, data:result })
     }catch(e){
