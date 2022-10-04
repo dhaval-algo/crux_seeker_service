@@ -3424,7 +3424,9 @@ const editPersonalDetails = async (req, res) => {
                 message: "Age must be atleast 16 years",
                 success: false
             })
-
+        city = (city == "")? null: city;
+        dob = (dob == "")? null: dob;
+        gender = (gender == "")? null: gender;
         await models.user.update({
             fullName,
             city,
