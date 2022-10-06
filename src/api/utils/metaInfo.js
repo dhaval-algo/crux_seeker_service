@@ -604,7 +604,7 @@ const generateMetaInfo = async (page, result, list) => {
     
     switch (page) {
         case 'LEARN_CONTENT':
-            if(partner_name)
+            if(result.partner_name)
             {
                 meta_title = `${result.title} | ${result.partner_name}`;
             }
@@ -679,7 +679,15 @@ const generateMetaInfo = async (page, result, list) => {
                     meta_description = result.meta_description.replace(/{short_description}/g, short_description)
                 }
                 else {
-                    meta_description = short_description
+                    if(short_description)
+                    {
+                        meta_description = short_description
+                    }
+                    else{
+                        meta_description = ""
+
+                    }
+                    
                 }
             }
 
