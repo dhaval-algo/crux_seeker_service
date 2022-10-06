@@ -604,8 +604,14 @@ const generateMetaInfo = async (page, result, list) => {
     
     switch (page) {
         case 'LEARN_CONTENT':
-            meta_title = `${result.title} | ${result.partner_name}`;
-
+            if(partner_name)
+            {
+                meta_title = `${result.title} | ${result.partner_name}`;
+            }
+            else{
+                meta_title = `${result.title}`;
+            }
+           
             meta_information = {
                 meta_title: meta_title,
                 meta_description: await generateCourseMetaDescription(result),
