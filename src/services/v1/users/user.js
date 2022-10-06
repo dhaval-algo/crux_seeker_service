@@ -938,7 +938,8 @@ const resendVerificationLink = async (req, res) => {
         email:userData.email,
         audience: req.headers.origin
     }
-    await invalidateTokens(userObj,'verification')
+    //intentional token type 'verfication' is not passed here, to avoid bug [temp fix];
+    await invalidateTokens(userObj)
     await sendVerifcationLink(userObj)
     return res.status(200).json({
         success: true,
@@ -982,7 +983,8 @@ const verifyAccount = async (req, res) => {
           
             let userObj = await models.user.findOne({where:{id: user.userId}})
             let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userObj.fullName }
-            await invalidateTokens(newUserObj,'verification')
+            //intentional token type 'verfication' is not passed here, to avoid bug [temp fix];
+            await invalidateTokens(newUserObj)
             await sendWelcomeEmail(userObj)
             const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
             return res.status(200).send(tokenRes)
