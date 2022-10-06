@@ -674,22 +674,26 @@ const generateMetaInfo = async (page, result, list) => {
                 if (position > 0) {
                     short_description = short_description.substring(0, position);
                 }
-
-                if (result.meta_description) {
-                    meta_description = result.meta_description.replace(/{short_description}/g, short_description)
-                }
-                else {
-                    if(short_description)
-                    {
-                        meta_description = short_description
-                    }
-                    else{
-                        meta_description = ""
-
-                    }
-                    
+            }
+            else if(result.description)
+            {
+                short_description = result.description.replace(/<[^>]*>?/gm, "");
+                let position = short_description.indexOf(".")
+                if (position > 0) {
+                    short_description = short_description.substring(0, position);
                 }
             }
+            else
+            {
+                short_description = result.title
+            }
+
+            if (result.meta_description) {
+                meta_description = result.meta_description.replace(/{short_description}/g, short_description)
+            }
+            else 
+            meta_description = short_description                
+            
 
             if (result.meta_keywords) {
                 result.meta_keywords = result.meta_keywords.replace(/{title}/g, result.title)
