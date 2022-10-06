@@ -1666,7 +1666,7 @@ module.exports = class learnContentService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
 
-            if(!list){
+            if(!isList){
                 //add missing ratings
                 for(let i=0; i<5; i++){
                     if(!ratings[i+1]){
