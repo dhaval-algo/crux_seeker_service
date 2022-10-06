@@ -667,17 +667,17 @@ const generateMetaInfo = async (page, result, list) => {
 
         case 'ARTICLE':
             meta_title = `${result.title} | ${process.env.SITE_URL_FOR_META_DATA}`;
-
+            let short_description =  result.title
             if (result.short_description) {
-                short_description = result.short_description;
+               let  short_description = result.short_description;
                 let position = short_description.indexOf(".")
                 if (position > 0) {
                     short_description = short_description.substring(0, position);
                 }
             }
-            else if(result.description)
+            else if(result.content)
             {
-                short_description = result.description.replace(/<[^>]*>?/gm, "");
+                short_description = result.content.replace(/<[^>]*>?/gm, "");
                 let position = short_description.indexOf(".")
                 if (position > 0) {
                     short_description = short_description.substring(0, position);
