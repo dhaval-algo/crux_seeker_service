@@ -2798,6 +2798,27 @@ const addSkills = async (req,res) => {
     const { user} = req;
     let responseData = null;
     try {
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary']
+                }
+            ],
+            attributes: ['id','topic']
+
+        })
+        if(userData )
+        {
+            for(let topicData of userData)
+            {
+                await models.user_skill.destroy({where: {userTopicId: topicData.id}})
+            }
+        }
+        
         await models.user_topic.destroy({where: {userId: user.userId}})
 
         for (const [key, value] of Object.entries(data)) {
