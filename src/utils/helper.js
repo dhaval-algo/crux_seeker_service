@@ -207,7 +207,8 @@ const createToken = async (userObj, tokenType) => {
                  */
                 // email: userObj.email || "",
                 userId: userObj.userId
-            }
+            },
+            tokenType
         }
 
 
@@ -311,7 +312,8 @@ const getLoginToken = async (userObj) => {
                 // userType: userObj.userType,
                 // isVerified: userObj.isVerified || userObj.verified || false,
                 // profilePicture: userObj.profilePicture
-            }
+            },
+            tokenType:TOKEN_TYPES.SIGNIN
         }
         const token = signToken(payload, signOptions);
         let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
