@@ -2437,7 +2437,7 @@ module.exports = class recommendationService {
             title: result.title,
             slug: result.slug,
             cover_images: (result.images)? formatImageResponse(result.images) :null,
-            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
+            sidebar_listing_image: (result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),            
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
             card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_iimagesmage)? formatImageResponse(result.images) : null),
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],          
