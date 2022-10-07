@@ -2167,7 +2167,7 @@ module.exports = class recommendationService {
         if(!userId){
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
-        const { page = 1, limit = 4 } = req.query;
+        const { page = 1, limit = 4 ,currency} = req.query;
         const offset = (page - 1) * limit;
 
         let cacheKey = `learn-paths-recommendations-${userId}`;
@@ -2314,7 +2314,7 @@ module.exports = class recommendationService {
             
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
-                    const data = await this.generateLearnPathFinalResponse(hit._source);
+                    const data = await this.generateLearnPathFinalResponse(hit._source, currency);
                     learnPaths.push(data);
                 }
             }
