@@ -333,7 +333,7 @@ module.exports = class learnContentService {
 
 
         currencies = await getCurrencies();
-        slugMapping = getSlugMapping(req);
+        var slugMapping = getSlugMapping(req);
 
 
         const filterConfigs = await getFilterConfigs('Learn_Content');
