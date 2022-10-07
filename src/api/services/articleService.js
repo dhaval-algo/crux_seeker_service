@@ -588,7 +588,10 @@ module.exports = class articleService {
             }
             result.partners = partners
         }                
-
+        if(author && author.length > 0)  
+        {
+            author = author.filter(entity => entity.slug !=null )
+        } 
         let data = {
             title: result.title,
             premium: (result.premium)? result.premium:false,

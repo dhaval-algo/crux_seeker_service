@@ -1719,7 +1719,7 @@ module.exports = class recommendationService {
                     author = [{
                         firstname: result.author_first_name ? result.author_first_name.trim(): "",
                         lastname: result.last_name ? result.author_last_name.trim():"",
-                        slug: result.author_slug || '404',
+                        slug: null,
                         image:null
                     }];
                 }
@@ -1780,8 +1780,12 @@ module.exports = class recommendationService {
                     }
                 }
                 result.partners = partners
-            }                
-
+            }     
+            if(author && author.length > 0)  
+            {
+                author = author.filter(entity => entity.slug !=null )
+            }         
+            
             let data = {
                 title: result.title,
                 premium: (result.premium)? result.premium:false,
