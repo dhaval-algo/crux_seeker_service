@@ -1676,7 +1676,7 @@ module.exports = class recommendationService {
                     {term: { "user_id": id }}
                     ]
                 }};
-                const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
+                const result = await elasticService.search('author', query, {_source: ['first_name','last_name','slug','image']});
                 if(result.hits && result.hits.length > 0){
                     author = await this.generateAuthorData(result.hits[0]._source);
                 }
