@@ -97,12 +97,15 @@ const generateCourseMetaDescription = async (result) => {
         }
         if (skills && skills.length > 0) {
             for (let i = skills.length - 1; i >= 0; i--) {
-                let re = new RegExp("," + skills[i], "g");
-                let recount = countCheck(format);
-                if (recount > max_char_count) {
-                    format = format.replace(re, '')
-                } else {
-                    break
+                if(!skills[i].includes("/"))
+                {
+                    let re = new RegExp("," + skills[i], "g");
+                    let recount = countCheck(format);
+                    if (recount > max_char_count) {
+                        format = format.replace(re, '')
+                    } else {
+                        break
+                    }
                 }
             }
         }
