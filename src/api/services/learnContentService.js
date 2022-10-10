@@ -49,8 +49,8 @@ const sortOptions = {
     'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["published_date:desc"],
-    'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"],
+    'Price Low To High': ["basePriceRound:asc"],
+    'Price High To Low': ["basePriceRound:desc"],
     'Most Relevant' : []
 }
 
@@ -586,7 +586,7 @@ module.exports = class learnContentService {
         // --Aggreation query build
     
         let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
-
+       console.dir(result, {depth:null})
         /**
          * Aggregation object from elastic search
          */
