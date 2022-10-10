@@ -586,7 +586,6 @@ module.exports = class learnContentService {
         // --Aggreation query build
     
         let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
-       console.dir(result, {depth:null})
         /**
          * Aggregation object from elastic search
          */
