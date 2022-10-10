@@ -349,93 +349,104 @@ const verifyUserToken = async (req, res) => {
 }
 
 const signUp = async (req, res) => {
-    const audience = req.headers.origin;
-    // check if input fields are now empty
-    let { fullName = "", password = "", phone ="", email ="" , country=""} = req.body;
-    if (fullName.trim() == '' || password.trim() == '' || phone.trim() == '' || email.trim() == '' || country =="") {
-        return res.status(200).json({
-            'success': false,
-            'message': 'Mandatory fields are missing',
-            'data': {}
-        });
-    }
+    try {
 
-    //check if email is already exist
-    let where = {
-        [Op.and]: [
-            {
-                [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+        const audience = req.headers.origin;
+        // check if input fields are now empty
+        let { fullName = "", password = "", phone = "", email = "", country = "" } = req.body;
+        if (fullName.trim() == '' || password.trim() == '' || phone.trim() == '' || email.trim() == '' || country == "") {
+            return res.status(200).json({
+                'success': false,
+                'message': 'Mandatory fields are missing',
+                'data': {}
+            });
+        }
+
+        //check if email is already exist
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where(Sequelize.fn('lower', Sequelize.col('email')), Sequelize.fn('lower', email))
+                }
+            ]
+        }
+
+        let isEmailExist = await models.user.findOne({ where: where })
+
+        if (isEmailExist != null) {
+            return res.status(200).json({
+                'success': false,
+                'message': DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+                'code': DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+                'data': {}
+            });
+
+        }
+
+        //Create new user 
+        let user = await models.user.create({
+            fullName: fullName,
+            email: email,
+            phone: phone,
+            verified: false,
+            phoneVerified: false,
+            status: "active",
+            userType: "registered",
+            country: country
+        });
+        //Hash password
+        const { userSalt, passwordHash } = await hashPassword(password);
+
+        //create login for user
+        let user_login = await models.user_login.create({
+            userId: user.id,
+            provider: LOGIN_TYPES.LOCAL,
+            password: passwordHash,
+            passwordSalt: userSalt
+        });
+
+        //create token
+        const payload = {
+            email: user.email || "",
+            name: user.fullName || "",
+            userId: user.id,
+            provider: LOGIN_TYPES.LOCAL,
+            userType: user.userType,
+            isVerified: false,
+            profilePicture: user.profilePicture,
+            audience: req.headers.origin
+
+        }
+        const tokenRes = await getLoginToken(payload);
+        tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
+        tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
+
+        // send OTP for phone verification
+        if (phone) {
+            let countryCode = phone.split(" ")[0];
+            let phoneWithoutcode = phone.split(" ")[1];
+            if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
+                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+                let userId = user.id
+                const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
+                await sendSMSOTP(phoneWithoutcode, response.data.otp);
+                tokenRes.data.verifyPhone = true
             }
-        ]
-    }
+        }
 
-    let isEmailExist = await models.user.findOne({ where: where})
-
-    if(isEmailExist !=null) {
+        // send email varification link
+        await sendVerifcationLink(payload)
+        res.status(200).send(tokenRes)
+    } catch (error) {
+        console.dir(error, {depth:null})
         return res.status(200).json({
             'success': false,
-            'message':DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
-            'code':DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+            'message': DEFAULT_CODES.SYSTEM_ERROR.message,
+            'code': DEFAULT_CODES.SYSTEM_ERROR.code,
             'data': {}
         });
-       
-    }
-
-    //Create new user 
-    let user = await models.user.create({
-        fullName: fullName,
-        email: email,
-        phone: phone,
-        verified: false,
-        phoneVerified:false,
-        status: "active",
-        userType: "registered",
-        country: country
-    });
-     //Hash password
-     const {userSalt, passwordHash} =  await hashPassword (password);
-    
-     //create login for user
-     let user_login=  await models.user_login.create({
-        userId: user.id,
-        provider: LOGIN_TYPES.LOCAL,
-        password: passwordHash,
-        passwordSalt: userSalt
-    });    
-
-     //create token
-     const payload = {           
-        email: user.email || "",
-        name:  user.fullName || "",
-        userId: user.id,
-        provider: LOGIN_TYPES.LOCAL,
-        userType: user.userType,
-        isVerified: false,
-        profilePicture: user.profilePicture,
-        audience: req.headers.origin
         
     }
-    const tokenRes = await getLoginToken(payload);
-    tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
-    tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
-
-    // send OTP for phone verification
-    if(phone){
-        let countryCode =  phone.split(" ")[0];    
-        let phoneWithoutcode =  phone.split(" ")[1];
-        if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='+91' )
-        {
-            const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-            let userId = user.id
-            const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
-            await sendSMSOTP (phoneWithoutcode, response.data.otp);
-            tokenRes.data.verifyPhone = true
-        }
-    }
-
-    // send email varification link
-    await sendVerifcationLink(payload)
-    res.status(200).send(tokenRes)
 }
 /* 
     {
