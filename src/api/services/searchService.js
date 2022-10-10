@@ -142,7 +142,7 @@ module.exports = class searchService {
                 if (hit['_index'].includes('keyword-suggestion')) return { type: 'keyword-suggestion', suggestion: source['suggestion'] }
                 if (hit['_index'].includes('learn-content')) return { type: 'learn-content', suggestion: source['title'], slug: source['slug'] }
                 if (hit['_index'].includes('learn-path')) return { type: 'learn-path', suggestion: source['title'], slug: source['slug'] }
-                if (hit['_index'].includes('article')) return { type: 'article', suggestion: source['title'], slug: `${source['section_slug']}/${$source['slug']}` }
+                if (hit['_index'].includes('article')) return { type: 'article', suggestion: source['title'], slug: `${source['section_slug']}/${source['slug']}` }
                 if (hit['_index'].includes('provider')) return { type: 'provider', suggestion: source['name'], slug: source['slug'] }
             });
 
