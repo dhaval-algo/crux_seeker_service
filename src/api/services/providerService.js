@@ -564,7 +564,7 @@ module.exports = class providerService {
             }
             
             let facilitiesData = await RedisConnection.getValuesSync('provider-facilties');
-            if(facilitiesData.noCacheData != true && data.facilities && data.facilities.length > 0) {
+            if(facilitiesData.noCacheData != true && data.facilities && Array.isArray(data.facilities) && data.facilities.length > 0) {
                 data.facilities = data.facilities.map(facility => facilitiesData[facility])
             }
             
