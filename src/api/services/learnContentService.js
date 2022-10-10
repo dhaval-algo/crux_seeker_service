@@ -782,7 +782,7 @@ module.exports = class learnContentService {
                 slug: req.query['slug'] || null,
                 label: slugLabel || null,
                 description: slug_description || null,
-                logo : (slug_logo)? formatImageResponse(slug_logo) : null,
+                logo : (slug_logo && slug_logo.url)? (slug_logo.url) :((slug_logo)? formatImageResponse(slug_logo) : null),
                 course_count: result.total.value
             }
             data.faq = slug_faq
