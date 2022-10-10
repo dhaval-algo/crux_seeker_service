@@ -21,7 +21,7 @@ const entitySearchSuggestionParams = {
     'keyword-suggestion': { maxResults: process.env.MAX_SEARCH_SUGGESTION_KEYWORD || 6, sourceFields: ['suggestion'] },
     "learn-content": { maxResults: process.env.MAX_SEARCH_SUGGESTION_COURSE || 5, sourceFields: ['title', 'slug'] },
     "learn-path": { maxResults: process.env.MAX_SEARCH_SUGGESTION_LP || 4, sourceFields: ['title', 'slug'] },
-    "article": { maxResults: process.env.MAX_SEARCH_SUGGESTION_ARTICLE || 4, sourceFields: ['title', 'slug',] },
+    "article": { maxResults: process.env.MAX_SEARCH_SUGGESTION_ARTICLE || 4, sourceFields: ['title', 'slug','section_slug'] },
     "provider": { maxResults: process.env.MAX_SEARCH_SUGGESTION_PROVIDER || 3, sourceFields: ['name', 'slug'] }
 }
 
