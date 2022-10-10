@@ -438,13 +438,13 @@ const signUp = async (req, res) => {
         await sendVerifcationLink(payload)
         res.status(200).send(tokenRes)
     } catch (error) {
-        console.dir(error, {depth:null})
-        return res.status(200).json({
-            'success': false,
-            'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-            'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-            'data': {}
-        });
+        console.log(error)
+         return res.status(200).json({
+                'success': false,
+                'message': DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+                'code': DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+                'data': {}
+            });
         
     }
 }
