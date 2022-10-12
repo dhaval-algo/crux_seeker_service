@@ -567,6 +567,8 @@ module.exports = class providerService {
             if(facilitiesData.noCacheData != true && data.facilities && Array.isArray(data.facilities) && data.facilities.length > 0) {
                 data.facilities = data.facilities.map(facility => facilitiesData[facility])
             }
+            else
+                data.facilities = data.facilities.map(facility => { return {label: facility, description: null, icon:null}});
             
        
 
