@@ -1641,6 +1641,8 @@ module.exports = class learnContentService {
                             additional_batch.pricing_type = batch.pricing_type
                             additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
                             additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
+                            additional_batch.offer_percent = (batch.sale_price) ? (Math.round(((batch.regular_price-batch.sale_price) * 100) / batch.regular_price)) : null
+
                         }
                         data.additional_batches.push(additional_batch);
                     }
