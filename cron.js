@@ -130,6 +130,7 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidateLearnersPage()
             await invalidateFacilities()
             await partnerService.cachePartnersCourseImages();
+            await setTrendingPopularityThreshold()
         } catch (error) {
             console.log("Error in cron", error);
         }
