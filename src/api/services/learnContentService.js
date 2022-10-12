@@ -27,9 +27,8 @@ let RecommendationService = new recommendationService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
-const articleService = require("./articleService");
 const mLService = require("./mLService");
-let ArticleService = new articleService();
+
 
 let slugMapping = [];
 let currencies = [];
@@ -1307,6 +1306,22 @@ module.exports = class learnContentService {
             desktop_course_image = partnerCourseImage.desktop_course_image;
             mobile_course_image = partnerCourseImage.mobile_course_image;
             partner_logo = partnerCourseImage.logo;
+        }
+        else
+        {
+            const query = {
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} },{term: { "slug.keyword": result.partner_slug }}]
+                }
+            };
+            
+            const imageResult = await elasticService.search('partner', query, {size:2000}, ["mobile_course_image", "desktop_course_image", "logo"]);
+
+            if(imageResult.hits && imageResult.hits.length > 0){                
+                desktop_course_image = (imageResult.hits[0]._source.desktop_course_image)? imageResult.hits[0]._source.desktop_course_image : desktop_course_image ;
+                mobile_course_image = (imageResult.hits[0]._source.mobile_course_image) ? imageResult.hits[0]._source.mobile_course_image : mobile_course_image;
+                partner_logo = (imageResult.hits[0]._source.logo)? formatImageResponse(imageResult.hits[0]._source.logo): partner_logo; 
+            }
         }
 
         let data = {
