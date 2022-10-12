@@ -41,9 +41,8 @@ module.exports = class sectionPageService {
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
                         
-                        let sectionSlug = queueData.slug
-                        console.log("sectionSQSConsumer->",sectionSlug)
-                        let req = {params : {slug :sectionslug}}
+                        let sectionSlug = queueData.slug                        
+                        let req = {params : {slug :sectionSlug}}
                         SectionService.getSectionContent(req, (err, data) => {}, true); 
                          
                     },

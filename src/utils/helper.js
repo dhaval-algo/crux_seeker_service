@@ -207,7 +207,8 @@ const createToken = async (userObj, tokenType) => {
                  */
                 // email: userObj.email || "",
                 userId: userObj.userId
-            }
+            },
+            tokenType
         }
 
 
@@ -311,7 +312,8 @@ const getLoginToken = async (userObj) => {
                 // userType: userObj.userType,
                 // isVerified: userObj.isVerified || userObj.verified || false,
                 // profilePicture: userObj.profilePicture
-            }
+            },
+            tokenType:TOKEN_TYPES.SIGNIN
         }
         const token = signToken(payload, signOptions);
         let validTill = moment().format("YYYY/MM/DD HH:mm:ss");
@@ -353,13 +355,20 @@ const getLoginToken = async (userObj) => {
     }
 }
 
-const invalidateTokens = (userObj) => {
+const invalidateTokens = (userObj, tokenType= null) => {
     return new Promise(async (resolve,reject) => {
-
-        await models.auth_token.destroy({
-            where: {
-               userId:userObj.userId
+        let where = {
+            userId:userObj.userId
+        }
+        if(tokenType)
+        {
+            where = {
+                userId:userObj.userId,
+                tokenType:tokenType
             }
+        }
+        await models.auth_token.destroy({
+            where: where
         });
         resolve(true)
     })

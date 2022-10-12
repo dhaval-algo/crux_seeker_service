@@ -31,8 +31,11 @@ const allowZeroCountFields = ['section_name','categories','levels','tags', 'auth
 const {getSearchTemplate} = require("../../utils/searchTemplates");
 const sortOptions = {
     'Newest' :["created_at:desc"],
+    'Popular' : ["activity_count.all_time.popularity_score:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc"],
     'A-Z': ["title:asc"],
     'Z-A' :["title:desc"],
+    'Most Relevant' : []
 }
 
 const currencyToRegion = {
@@ -90,7 +93,7 @@ module.exports = class articleService {
 
             searchTemplate = await getSearchTemplate('article', decodeURIComponent(req.query['q']).replace("+", "//+").trim(), userId);
             query = searchTemplate.function_score.query;
-            esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+            esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
 
         } else {
             query = {
@@ -161,21 +164,23 @@ module.exports = class articleService {
         queryPayload.size = paginationQuery.size;
         
 
-        if(!req.query['sort'] && !req.query['q']){
-            req.query['sort'] = 'Newest';
+        if(!req.query['sort']){
+            req.query['sort'] = (req.query['q']) ? 'Most Relevant': 'Newest';
         }
         if (req.query['sort']) {
             queryPayload.sort = []
             const keywordFields = ['title'];
             let sort = sortOptions[req.query['sort']];
-            for(let field of sort){
-        
-                let splitSort = field.split(":");
-                if(keywordFields.includes(splitSort[0])){
-                    field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            if (sort && sort.length > 0) {
+                for (let field of sort) {
+
+                    let splitSort = field.split(":");
+                    if (keywordFields.includes(splitSort[0])) {
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                    queryPayload.sort.push(field)
                 }
-                queryPayload.sort.push(field)
-            }                
+            }               
 
         }
        
@@ -583,7 +588,10 @@ module.exports = class articleService {
             }
             result.partners = partners
         }                
-
+        if(author && author.length > 0)  
+        {
+            author = author.filter(entity => entity.slug !=null )
+        } 
         let data = {
             title: result.title,
             premium: (result.premium)? result.premium:false,
@@ -764,7 +772,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.categories} Category`,
+                                    title: `Explore ${result.categories} Category`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.categories} expert`,
                                     url: redirectUrl
                                 }
@@ -777,7 +785,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.article_sub_categories} Subcategory`,
+                                    title: `Explore ${result.article_sub_categories} Subcategory`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories} expert`,
                                     url: redirectUrl
                                 }
@@ -930,7 +938,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.categories[0]} Category`,
+                                    title: `Explore ${result.categories[0]} Category`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.categories[0]} expert`,
                                     url: redirectUrl
                                 }
@@ -943,7 +951,7 @@ module.exports = class articleService {
                             if(redirectUrl)
                             {
                                 redirectResourse = {
-                                    title: `Expolre ${result.article_sub_categories[0]} Subcategory`,
+                                    title: `Explore ${result.article_sub_categories[0]} Subcategory`,
                                     subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories[0]} expert`,
                                     url: redirectUrl
                                 }
@@ -1033,12 +1041,12 @@ module.exports = class articleService {
                   "bool": {
                     "must": [
                       {term: { "status.keyword": 'published' }},
-                      {terms: { "id": articleIds }}
+                      {terms: { "id.keyword": articleIds }}
                     ]
                  }
                 }
             };
-
+           
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
@@ -1083,6 +1091,7 @@ module.exports = class articleService {
             facebook_url: result.facebook_url,
             city: result.city
         };
+        data.meta_information = await generateMetaInfo  ('AUTHOR', data);
         if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
         }       
@@ -1138,17 +1147,36 @@ module.exports = class articleService {
         try {
             let author_id = req.params.id
             let { page = 1, limit = 10, } = req.query;
-
+            let finaldata  ={}
             let cacheKey = `articles-by author-${author_id}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             let articles = [];
             if (cachedData.noCacheData != true) {
-                articles = cachedData;
+                finaldata = cachedData;
             } else {
+
+                // Find author user id 
+                let query = {
+
+                    "bool": {
+                        "must": [
+                            { term: { "id": author_id } }
+                            
+                        ]
+                    }
+
+                };
+               
+                let author_user_id = null
+                let result = await elasticService.search("author", query);
+               
+                if (result.hits) {
+                    author_user_id = result.hits[0]._source.user_id
+                }
                 let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
                 const offset = (page - 1) * limit
 
-                const query = {
+                query = {
 
                     "bool": {
                         "must": [
@@ -1156,8 +1184,8 @@ module.exports = class articleService {
                             {
                                 "bool": {
                                     "should": [
-                                        { term: { "author_id": author_id } },
-                                        { term: { "co_authors.user_id": author_id } }
+                                        { term: { "author_id": author_user_id } },
+                                        { term: { "co_authors.user_id": author_user_id } }
                                     ]
                                 }
                             }
@@ -1207,20 +1235,31 @@ module.exports = class articleService {
                         ]
                     }
                 })
-
-                let result = await elasticService.search("article", query, { from: offset, size: limit });
+               
+                result = await elasticService.search("article", query, { from: offset, size: limit });
+                
                 if (result.hits) {
+                    
                     for (const hit of result.hits) {
                         var data = await this.generateSingleViewData(hit._source, true)
                         articles.push(data);
                     }
-                    await RedisConnection.set(cacheKey, articles);
+                    let pagination = {
+                        page:page,
+                        count: result.hits.length,
+                        perPage: limit,
+                        totalCount: result.total.value,
+                        total: result.total.value
+                    }
+                    finaldata  = { list: articles, pagination:pagination } 
+                    await RedisConnection.set(cacheKey, finaldata);
                     RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTCLE_SLUG);
                 }
             }
-            let response = { success: true, message: "list fetched successfully", data: { list: articles } };
+            let response = { success: true, message: "list fetched successfully", data: finaldata };
             return response;
         } catch (error) {
+            console.log("error in article by id", error)
             return { success: false, message: "Error fetching list", data: null };
         }
     }

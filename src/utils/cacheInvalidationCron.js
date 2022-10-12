@@ -2,6 +2,8 @@ const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const learnContentService = require("../api/services/learnContentService");
 let LearnContentService = new learnContentService();
+const providerService = require("../api/services/providerService");
+let ProviderService = new providerService();
 const  FooterService = require("../api/services/footerService")
 const footerService = new FooterService()
 const providerContentService = require("../api/services/providerService");
@@ -165,6 +167,16 @@ const setLatestRankingYear  = async () => {
     }  
 }
 
+const invalidateFacilities = async () => {
+    try {
+        await ProviderService.invalidateFacilities( (err, data) => {}, false);
+    } catch (error) {
+        console.log("Facilities cache invalidation Error",error)
+    }  
+}
+
+
+
 
    
 module.exports = {
@@ -184,6 +196,7 @@ module.exports = {
     invalidateTNM,
     invalidatePP,
     invalidatSkills,
-    invalidPopularCategories,
     setLatestRankingYear,
+    invalidPopularCategories,
+    invalidateFacilities
 }

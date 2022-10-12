@@ -49,6 +49,9 @@ module.exports = {
             case "related-courses-for-learn-path": 
                 response = await RecommendationService.relatedCoursesForLearnPath(req);
                 break;
+            case "related-courses-for-article": 
+            response = await RecommendationService.relatedCoursesForArticle(req);
+            break;
             case "jobTitle-based-recommendation": 
                 response = await RecommendationService.jobTitleBasedRecommendation(req);
                 break;

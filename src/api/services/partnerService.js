@@ -8,6 +8,8 @@ let ArticleService = new articleService();
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 const helperService = require("../../utils/helper");
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
 
 const {formatImageResponse} = require('../utils/general');
 const {generateMetaInfo} = require('../utils/metaInfo');
@@ -281,7 +283,7 @@ module.exports = class partnerService {
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
-            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
+            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : ((result.embedded_video_url) ? result.embedded_video_url : null),
             cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
             sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
             logo:(result.logo)? formatImageResponse(result.logo): null,
@@ -468,6 +470,32 @@ module.exports = class partnerService {
         }
        
         return articles;        
+    }
+
+    async cachePartnersCourseImages(){
+
+        try {
+
+            const query = {
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} }]
+                }
+            };
+            
+            const result = await elasticService.search('partner', query, {size:2000}, ["slug","mobile_course_image", "desktop_course_image", "logo"]);
+
+            if(result.hits && result.hits.length > 0){
+                for(let h of result.hits)
+                {
+                    h._source.logo = formatImageResponse(h._source.logo);
+                    RedisConnection.set("partner-course-image-" + h._source.slug, h._source);
+
+                }
+            }
+        } catch (error) {
+                console.log("partner course image caching error", error)
+        }
+
     }
     
 

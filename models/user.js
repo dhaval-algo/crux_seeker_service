@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     dob: DataTypes.DATE,
     city: DataTypes.STRING,
     country: DataTypes.STRING,
-    resumeFile: DataTypes.STRING,
+    resumeFile: DataTypes.STRING(2048),
     profilePicture: DataTypes.STRING
 
   }, {});

@@ -7,6 +7,7 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
 const {formatCount} = require("../utils/general")
+const {generateMetaInfo} = require("../utils/metaInfo")
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
@@ -30,6 +31,7 @@ const {
     paginate,
     formatImageResponse
 } = require('../utils/general');
+const { list } = require("../controllers/listUsersController");
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -40,13 +42,17 @@ const round = (value, step) => {
 let currencies = [];
 const ENTRY_PER_PAGE = 25;
 
-const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages'];
+const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages', 'learn_type_label'];
 
 const sortOptions = {
+    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["created_at:desc"],
     'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"]
+    'Price High To Low': ["basePrice:desc"],
+    'Most Relevant' : []
+
 }
 
 
@@ -88,7 +94,7 @@ module.exports = class learnPathService {
         try {
             let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = "Highest Rated";
+            let defaultSort = req.query['q']? 'Most Relevant' :"Highest Rated";
             let useCache = false;
             let cacheName = "learnpath";
             const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -133,7 +139,7 @@ module.exports = class learnPathService {
 
                 searchTemplate = await getSearchTemplate('learn-path',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
                 query = searchTemplate.function_score.query;
-                esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
                 
             } else {
                 query = {
@@ -151,7 +157,7 @@ module.exports = class learnPathService {
             queryPayload.size = paginationQuery.size;
 
 
-            if (!req.query['sort'] && !req.query['q']) {
+            if (!req.query['sort']) {
                 req.query['sort'] = defaultSort;
             }
 
@@ -159,14 +165,16 @@ module.exports = class learnPathService {
                 queryPayload.sort = []
                 const keywordFields = ['title'];
                 let sort = sortOptions[req.query['sort']];
-                for(let field of sort){
-            
-                    let splitSort = field.split(":");
-                    if(keywordFields.includes(splitSort[0])){
-                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                if (sort && sort.length > 0) {
+                    for (let field of sort) {
+
+                        let splitSort = field.split(":");
+                        if (keywordFields.includes(splitSort[0])) {
+                            field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                        }
+                        queryPayload.sort.push(field)
                     }
-                queryPayload.sort.push(field)
-                }                
+                }         
 
             }
 
@@ -526,7 +534,7 @@ module.exports = class learnPathService {
                 sortOptions: Object.keys(sortOptions)
             };
 
-            let meta_information = null; //TODO once reules are given. await generateMetaInfo('learn-path-list', result);
+            let meta_information = await generateMetaInfo('LEARN_PATH_LIST', result);
 
             if (meta_information) {
                 data.meta_information = meta_information;
@@ -681,12 +689,7 @@ module.exports = class learnPathService {
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
-            },
-            meta_information: {
-                meta_keywords: result.meta_keywords,
-                meta_description: result.meta_description,
-                meta_title: `${result.title} | Learn Path | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
-            },
+            },           
             duration: {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
@@ -697,6 +700,22 @@ module.exports = class learnPathService {
         }
 
         if (!isList) {
+            data.meta_information = await generateMetaInfo('LEARN_PATH', result);         
+
+
+            if(result.cv_take && result.cv_take.display_cv_take)
+            {
+                data.cv_take = result.cv_take
+            }
+
+            // send prices in all currencies
+            data.pricing.regular_prices = {}
+            data.pricing.sale_prices = {}
+            currencies.map(currency => {
+                data.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, result.currency, currency.iso_code)
+                data.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, result.currency, currency.iso_code)
+            })
+
             let reviews = await this.getReviews({ params: { learnPathId: data.id }, query: {} });
             if (reviews)
                 data.reviews_extended = reviews;
@@ -746,21 +765,24 @@ module.exports = class learnPathService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);
             let rating_distribution = [];
 
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
+            if(!isList)
+            {
+                //add missing ratings
+                for (let i = 0; i < 5; i++) {
+                    if (!ratings[i + 1]) {
+                        ratings[i + 1] = 0;
+                    }
                 }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                Object.keys(ratings)
+                    .sort()
+                    .forEach(function (v, i) {
+                        rating_distribution.push({
+                            rating: v,
+                            percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                        });
                     });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         }
 
 
@@ -1247,7 +1269,13 @@ module.exports = class learnPathService {
            
             if (result.aggregations && result.aggregations.topics_count.buckets.length >0) {
                 result.aggregations.topics_count.buckets.map(item => topics.push( item.key))
-                
+                // topics = topics.map( async topic =>{
+                //     let slug = await helperService.getTreeUrl('topic', topic, true)
+                //     return({
+                //         label:topic,
+                //         slug : slug
+                //     })
+                // })
                 data = {
                     total: topics.length,
                     page,

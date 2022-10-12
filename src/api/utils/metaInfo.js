@@ -97,12 +97,15 @@ const generateCourseMetaDescription = async (result) => {
         }
         if (skills && skills.length > 0) {
             for (let i = skills.length - 1; i >= 0; i--) {
-                let re = new RegExp("," + skills[i], "g");
-                let recount = countCheck(format);
-                if (recount > max_char_count) {
-                    format = format.replace(re, '')
-                } else {
-                    break
+                if(!skills[i].includes("/"))
+                {
+                    let re = new RegExp("," + skills[i], "g");
+                    let recount = countCheck(format);
+                    if (recount > max_char_count) {
+                        format = format.replace(re, '')
+                    } else {
+                        break
+                    }
                 }
             }
         }
@@ -599,10 +602,19 @@ const generateMetaInfo = async (page, result, list) => {
     let meta_title = null;
     let meta_description = null;
 
+    result.meta_description = (result.meta_description)? result.meta_description : ''
+    result.meta_keywords = (result.meta_keywords)? result.meta_keywords : ''
+    
     switch (page) {
         case 'LEARN_CONTENT':
-            meta_title = `${result.title} | ${result.partner_name}`;
-
+            if(result.partner_name)
+            {
+                meta_title = `${result.title} | ${result.partner_name}`;
+            }
+            else{
+                meta_title = `${result.title}`;
+            }
+           
             meta_information = {
                 meta_title: meta_title,
                 meta_description: await generateCourseMetaDescription(result),
@@ -612,6 +624,39 @@ const generateMetaInfo = async (page, result, list) => {
         case 'LEARN_CONTENT_LIST':
             meta_information = getLearnContentListMetaInfo(result);
             break;
+        case 'LEARN_PATH':
+            meta_title = `${result.title} | Learn Path | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
+
+            meta_information = {
+                meta_title: meta_title,
+                meta_description: result.meta_description || '',
+                meta_keywords: result.meta_keywords || ''     
+            }
+            break;
+         case 'AUTHOR':
+                meta_title = `${result.firstname} ${result.lastname} | Author | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
+                let bio = ''
+                if(result.bio)
+                {
+                    bio = result.bio.replace(/<[^>]*>?/gm, "");
+                    let position = bio.indexOf(".")
+                    if (position > 0) {
+                        bio = bio.substring(0, position);
+                    }
+                }
+                meta_information = {
+                    meta_title: meta_title,
+                    meta_description: bio || '',
+                    meta_keywords: ''     
+                }                
+            break;            
+        case 'LEARN_PATH_LIST':
+                meta_information = {
+                    meta_title : `Top Learn paths in ${new Date().getFullYear()} | Careervira`,
+                    meta_description: 'Find top Learn paths, degrees and certifications here. See our comprehensive collection of management, software, finance and big data courses from top Institutes and Partners. Start learning now.',
+                    meta_keywords: 'online courses, learning courses, paid courses, degrees, certifications, offline courses, instructor courses, courses near me, top courses' 
+                };
+                break;
         case 'PROVIDER':
             meta_information = getProviderMetaInfo(result);
             break;
@@ -625,21 +670,33 @@ const generateMetaInfo = async (page, result, list) => {
 
         case 'ARTICLE':
             meta_title = `${result.title} | ${process.env.SITE_URL_FOR_META_DATA}`;
-
+            let short_description =  result.title
             if (result.short_description) {
-                short_description = result.short_description;
+               let  short_description = result.short_description;
                 let position = short_description.indexOf(".")
                 if (position > 0) {
                     short_description = short_description.substring(0, position);
                 }
-
-                if (result.meta_description) {
-                    meta_description = result.meta_description.replace(/{short_description}/g, short_description)
-                }
-                else {
-                    meta_description = short_description
+            }
+            else if(result.content)
+            {
+                short_description = result.content.replace(/<[^>]*>?/gm, "");
+                let position = short_description.indexOf(".")
+                if (position > 0) {
+                    short_description = short_description.substring(0, position);
                 }
             }
+            else
+            {
+                short_description = result.title
+            }
+
+            if (result.meta_description) {
+                meta_description = result.meta_description.replace(/{short_description}/g, short_description)
+            }
+            else 
+            meta_description = short_description                
+            
 
             if (result.meta_keywords) {
                 result.meta_keywords = result.meta_keywords.replace(/{title}/g, result.title)

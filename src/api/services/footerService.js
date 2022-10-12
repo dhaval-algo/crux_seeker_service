@@ -93,7 +93,7 @@ module.exports = class FooterService {
             if(response.partnership_benefits  && response.partnership_benefits.length > 0)
             {
                 response.partnership_benefits = response.partnership_benefits.map(benefit => {
-                    benefit.image = formatImageResponse(benefit.image)
+                    benefit.image = (benefit.image.url)? benefit.image.url : formatImageResponse(benefit.image)
                     return benefit
                 })
             }
@@ -178,6 +178,9 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.who_we_are && response.who_we_are.image)
+                response.who_we_are.image = formatImageResponse(response.who_we_are.image)
+
             if(response.content_section && response.content_section.length > 0)
             {
                 response.content_section = response.content_section.map(content_section => {
@@ -321,7 +324,7 @@ module.exports = class FooterService {
             if(response.content_section && response.content_section.length > 0)
             {
                 response.content_section = response.content_section.map(content_section => {
-                    content_section.image = formatImageResponse(content_section.image)
+                    content_section.image = (content_section.image.url)? content_section.image.url: formatImageResponse(content_section.image)
                     return content_section
                 })
             }
