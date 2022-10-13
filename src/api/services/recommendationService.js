@@ -3034,7 +3034,7 @@ module.exports = class recommendationService {
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
         const userId = user.userId
-        const { page = 1, limit = 4, partner_slug=null } = req.query;
+        const { page = 1, limit = 4, partner_slug=null, currency } = req.query;
         const offset = (page - 1) * limit;
 
         let cacheKey = `learn-content-recommendations-${userId}`;
@@ -3205,7 +3205,7 @@ module.exports = class recommendationService {
             
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
-                    const data = await this.generateCourseFinalResponse(hit._source);
+                    const data = await this.generateCourseFinalResponse(hit._source,currency);
                     learnContents.push(data);
                 }
             }
@@ -4236,7 +4236,7 @@ module.exports = class recommendationService {
                 user_experiences.map(user_experience => jobTitles.push(user_experience.jobTitle))
                 //console.log("user_experiences", user_experiences);
 
-                const { page = 1, limit = 4 } = req.query;
+                const { page = 1, limit = 4 , currency} = req.query;
                 const offset = (page - 1) * limit;
 
                 let cacheKey = `jobTitleBasedRecommendation-${userId}`;
@@ -4271,7 +4271,7 @@ module.exports = class recommendationService {
 
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await this.generateCourseFinalResponse(hit._source);
+                        const data = await this.generateCourseFinalResponse(hit._source,currency);
                         learnContents.push(data);
                     }
                 }
