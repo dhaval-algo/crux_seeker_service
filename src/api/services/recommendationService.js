@@ -4799,34 +4799,15 @@ module.exports = class recommendationService {
                     );
                 }
 
-                esQuery.bool.should =  [
+                esQuery.bool.must.push(
                     {
-                        bool: {
-                            must: [
-                                {
-                                    query_string: {
-                                        fields: ["title"],
-                                        query: skill
-                                    }
-                                }
-                            ],
-                            boost: 1000
-                        }
-                    },
-                    {
-                        bool: {
-                            must: [
-                                {
-                                    "term": {
-                                        "skills.keyword": skill,
+                        "term": {
+                            "skills.keyword": skill,
 
-                                    }
-                                }
-                            ],
-                            boost: 10
                         }
                     }
-                ]
+                );               
+               
                
                 let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
                 sort = null
