@@ -616,7 +616,6 @@ const formatImageResponse = (imageObject) => {
         else if (imageObject.formats.small && imageObject.formats.small.url) image = imageObject.formats.small.url
         else if (imageObject.formats.thumbnail && imageObject.formats.thumbnail.url) image = imageObject.formats.thumbnail.url
    }
-   else if(imageObject.url) image = image = imageObject.url;
    return image
 }
 const formatCount = (count) => {
