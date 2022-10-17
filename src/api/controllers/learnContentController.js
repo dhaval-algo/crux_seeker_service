@@ -112,7 +112,8 @@ module.exports = {
                 let finalData = {}
                 if(data.data && data.data.status=='unpublished')
                 {
-                    res.status(302).send({success: false, message: 'unpublished', data: data.data});
+                    //res.status(302).send({success: false, message: 'unpublished', data: data.data});
+                    res.status(200).send( { success: false, message: 'Not found!' })
                 }
                 else if(req.query['fields']){                    
                     finalData =  formatResponseField(req.query['fields'], data.data )                    
