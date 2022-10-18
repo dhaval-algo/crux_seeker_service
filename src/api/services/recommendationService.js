@@ -6,23 +6,17 @@ const _ = require('underscore');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
+const { isDateInRange } = require('../utils/general');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","partner_url","sale_price","provider_course_url","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","pricing_additional_details","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","free_condition_description","course_financing_options","activity_count","cv_take","listing_image", "card_image", "card_image_mobile"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
 const trendingListFields = ["id","title","slug","image","list_topic", "list_category", "short_description","region"]
-
 const FEATURED_RANK_LIMIT = 2;
-const currencyToRegion = {
-    "INR" : "India",
-    "EUR": "Europe",
-    "GBP" : "UK",
-    "USD" : "USA"
-}
-function formatQueryForCG (query, currency){
-    let userCurrency = (currency) ? currency : process.env.DEFAULT_CURRENCY
-    let region = currencyToRegion[userCurrency]
+
+function formatQueryForCG (req){  
+    let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] )? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']:'India'
     return({
         "bool": {
             "should": [
@@ -68,6 +62,20 @@ function formatQueryForCG (query, currency){
     
 }
 
+const getAllArticles = (articles_obj) => {
+    const {articles = [], learn_advices = [], learn_guides = [], career_guides = [] } = articles_obj;
+    let all_articles = [];
+    if(articles.length > 0)
+        articles.map(article => all_articles.push(article.id))
+    if(learn_advices.length > 0)
+        learn_advices.map(article => all_articles.push("LEARN_ADVICE_" + article.id))
+    if(learn_guides.length > 0)
+        learn_guides.map(article => all_articles.push("LEARN_GUIDE_" + article.id))
+    if(career_guides.length > 0)
+        career_guides.map(article => all_articles.push("CAREER_GUIDE_" + article.id))
+    
+    return all_articles;
+}
 
 const getCurrencies = async (useCache = true) => {
 
@@ -394,12 +402,12 @@ module.exports = class recommendationService {
             ];
 
             //priority 1 category list
-            let priorityList1 = ['sub_categores.keyword', 'skills.keyword', 'topics.keyword'];
-            let priorityList2 = ['regular_price', 'partner_id', 'provider_slug.keyword', 'level.keyword', 'learn_type.keyword', 'instruction_type.keyword', 'medium.keyword', 'internship', 'job_assistance'];
+            let priorityList1 = ['skills.keyword', 'topics.keyword', 'sub_categories.keyword'];
+            let priorityList2 = [ 'categories.keyword' ];
 
             const relationData = {
                 index: "learn-content",
-                id: courseId
+                id: 'LRN_CNT_PUB_'+courseId
             }
 
             let esQuery = {
@@ -409,7 +417,7 @@ module.exports = class recommendationService {
                     ],
                     must_not: {
                         term: {
-                            "_id": courseId
+                            "_id": 'LRN_CNT_PUB_'+courseId
                         }
                     }
                 }
@@ -417,8 +425,8 @@ module.exports = class recommendationService {
 
             function buildQueryTerms(key, i) {
                 let termQuery = { "terms": {} };
-                termQuery.terms[key] = { ...relationData, "path": key };
-                termQuery.terms.boost = 5 - (i * 0.1);
+                termQuery.terms[key] = { ...relationData, "path": key.replace('.keyword','') };
+                termQuery.terms.boost = 30 - (i * 5);
                 return termQuery;
             }
 
@@ -435,7 +443,6 @@ module.exports = class recommendationService {
                     should: priorityList2.map(buildQueryTerms)
                 }
             })
-
             let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
 
             let courses = [];
@@ -459,7 +466,7 @@ module.exports = class recommendationService {
             return response
         } catch (error) {
             console.log("Error while processing data for related courses", error);
-            const response = { success: false, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
+            const response = { success: false, message: "Failed to fetch", data: { list: [], mlList: [], show: null } };
             
             return response
         }
@@ -527,7 +534,7 @@ module.exports = class recommendationService {
                     esQuery.bool.filter.push(
                         {
                             "term": {
-                                "partner_name.keyword": decodeURIComponent(partners)
+                                "partner_name.keyword": decodeURIComponent(partner)
                             }
                         }
                     );
@@ -587,13 +594,12 @@ module.exports = class recommendationService {
 
     async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6) {
 
-        const { result, courseIdSimilarityMap } = await mLService.getSimilarCoursesDataML(courseId);
+        const result = await mLService.getSimilarCoursesDataML(courseId);
         let courses = [];
         const offset = (page - 1) * limit;
         if (result && result.length) {
             for (const courseElasticData of result.slice(offset, offset + limit)) {
                 const courseData = await this.generateCourseFinalResponse(courseElasticData._source, currency);                
-                courseData.similarity = courseIdSimilarityMap[courseData.id];
                 courses.push(courseData);
             }
         }
@@ -896,7 +902,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.must.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.must.push(formatQueryForCG (req))
 
                 const sort = [{ "activity_count.all_time.popularity_score": "desc" }];
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort });
@@ -965,7 +971,7 @@ module.exports = class recommendationService {
             }
         }
         
-        esQuery.bool.must.push(formatQueryForCG (esQuery, currency))
+        esQuery.bool.must.push(formatQueryForCG (req))
         if (skillsKeywords.length) {
             const offset = (page - 1) * limitForSkills;
             esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
@@ -1142,10 +1148,10 @@ module.exports = class recommendationService {
                           ]
                         }
                       };   
-                    result = await elasticService.search('section', query, { from: 0, size: 1, _source: ["featured_articles"] })
+                    result = await elasticService.search('section', query, { from: 0, size: 1, _source: ["all_featured_articles"] })
 
                     if (result.hits && result.hits.length) {
-                        featured_articles = result.hits[0]._source.featured_articles
+                        featured_articles = result.hits[0]._source.all_featured_articles
                     }
                     maxArticles = 3
                 break;
@@ -1153,38 +1159,35 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
-                        
-                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
-                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        if(json && json[0].featured_articles)
+                            featured_articles = getAllArticles(json[0].featured_articles);
                     }
+                    maxArticles = 3
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
-                        let json = await subCategoryResponse.json();                    
-                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
-                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        let json = await subCategoryResponse.json();
+                        if(json && json[0].featured_articles)
+                            featured_articles = getAllArticles(json[0].featured_articles);
                     }
+                    maxArticles = 3
                     break
                 case "topicPage":
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
                         let json = await topicResponse.json();
-                        if(json && json.length > 0 && json[0].featured_articles && json[0].featured_articles.length > 0){
-                            json[0].featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        if(json && json[0].featured_articles)
+                            featured_articles = getAllArticles(json[0].featured_articles);
                     }
+                    maxArticles = 3
                     break
                 case "learnPathPage":
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                    
-                        if(json && json.featured_articles && json.featured_articles.length > 0){
-                            json.featured_articles.map(article => featured_articles.push(article.id))                        
-                        }
+                        if(json && json.featured_articles)
+                            featured_articles = getAllArticles(json.featured_articles);
                     }
                     maxArticles = 2
                     break
@@ -1205,7 +1208,7 @@ module.exports = class recommendationService {
                     }
                 }
                 esQuery.bool.must = [
-                    { "terms": { "id": featured_articles }}                   
+                    { "terms": { "id.keyword": featured_articles }}                   
                 ]                
 
                 let result = await elasticService.search("article", esQuery, {_source: articleFields});
@@ -1229,7 +1232,7 @@ module.exports = class recommendationService {
                     }
                 }
                 
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 //Exclude articles which are manually added
                 if(articles.length >  0){
                     esQuery.bool.must_not = [
@@ -1330,38 +1333,32 @@ module.exports = class recommendationService {
                     let categoryResponse = await fetch(`${apiBackendUrl}/categories?default_display_label=${category}`);
                     if (categoryResponse.ok) {
                         let json = await categoryResponse.json();
-                        
-                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
-                            json[0].article_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        if(json && json[0].article_advice)
+                            article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "subCategoryPage":
                     let subCategoryResponse = await fetch(`${apiBackendUrl}/sub-categories?default_display_label=${sub_category}`);
                     if (subCategoryResponse.ok) {
-                        let json = await subCategoryResponse.json();                    
-                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
-                            json[0].article_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        let json = await subCategoryResponse.json();
+                        if(json && json[0].article_advice)                    
+                            article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "topicPage":
                     let topicResponse = await fetch(`${apiBackendUrl}/topics?default_display_label=${topic}`);
                     if (topicResponse.ok) {
-                        let json = await topicResponse.json();
-                        if(json && json.length > 0 && json[0].article_advice && json[0].article_advice.length > 0){
-                            json[0].article_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        const json = await topicResponse.json();
+                        if(json && json[0].article_advice)
+                            article_advice = getAllArticles(json[0].article_advice);
                     }
                     break
                 case "learnPathPage":
                     let learnPathResponse = await fetch(`${apiBackendUrl}/learning-path-landing-page`);
                     if (learnPathResponse.ok) {
                         let json = await learnPathResponse.json();
-                    
-                        if(json && json.careervira_advice && json.careervira_advice.length > 0){
-                            json.careervira_advice.map(article => article_advice.push(article.id))                        
-                        }
+                        if(json && json.article_advice)
+                            article_advice = getAllArticles(json.article_advice);
                     }
                     break
                 default:
@@ -1380,13 +1377,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.must = [
-                    {
-                    "ids": {
-                        "values": article_advice
-                    }
-                    }
-                ]
+                esQuery.bool.must = [{ "terms": { "id.keyword": article_advice } }]
 
                 let result = await elasticService.search("article", esQuery, {_source: articleFields});
 
@@ -1409,7 +1400,7 @@ module.exports = class recommendationService {
                     }
                 }
                 
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
 
                 // exclude manually added articles and featured articles
                 let exclude_articles = []
@@ -1566,6 +1557,30 @@ module.exports = class recommendationService {
             canBuy = true;
             tax = roundOff(0.18 * partnerPrice, 2);
         }
+        const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
+        let desktop_course_image = null , mobile_course_image = null, partner_logo = null;
+        if(partnerCourseImage.noCacheData != true)
+        {
+            desktop_course_image = partnerCourseImage.desktop_course_image;
+            mobile_course_image = partnerCourseImage.mobile_course_image;
+        }
+        else
+        {
+            const query = {
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} },{term: { "slug.keyword": result.partner_slug }}]
+                }
+            };
+            
+            const imageResult = await elasticService.search('partner', query, {size:2000}, ["mobile_course_image", "desktop_course_image", "logo"]);
+
+            if(imageResult.hits && imageResult.hits.length > 0){                
+                desktop_course_image = (imageResult.hits[0]._source.desktop_course_image)? imageResult.hits[0]._source.desktop_course_image : desktop_course_image ;
+                mobile_course_image = (imageResult.hits[0]._source.mobile_course_image) ? imageResult.hits[0]._source.mobile_course_image : mobile_course_image;
+            }
+        }
+
+
         let data = {
             canBuy: canBuy,
             title: result.title,
@@ -1573,20 +1588,16 @@ module.exports = class recommendationService {
             id: `LRN_CNT_PUB_${result.id}`,
             provider: {
                 name: result.provider_name,
-                currency: result.provider_currency,
                 slug: result.provider_slug
             },
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
-                partner_url: result.partner_url,
-                currency: result.partner_currency
             },
-            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
-            cover_image: (result.images)? formatImageResponse(result.images) :null,
-            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
-            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
-            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),
+            cover_image: desktop_course_image ? desktop_course_image : ((result.images)? formatImageResponse(result.images) :null),
+            sidebar_listing_image: desktop_course_image ? desktop_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image: desktop_course_image ? desktop_course_image : ((result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image_mobile: mobile_course_image ? mobile_course_image : ((result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null)),
             course_details: {
                 //duration: (result.total_duration_in_hrs) ? Math.floor(result.total_duration_in_hrs/duration_divider)+" "+duration_unit : null,
                 duration: getDurationText(result.total_duration, result.total_duration_unit),
@@ -1595,36 +1606,34 @@ module.exports = class recommendationService {
                 medium: (result.medium) ? result.medium : null,
                 pricing: {                    
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
-                    pricing_type: result.pricing_type,
-                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
-                    base_currency: baseCurrency,
-                    user_currency: currency,
+                    pricing_type: result.pricing_type,                   
                     regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
                     sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
-                    free_condition_description: result.free_condition_description,
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
-                    pricing_additional_details: result.pricing_additional_details,
-                    course_financing_options: result.course_financing_options,
-                    partnerPrice: partnerPrice,
-                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
-                    partnerRegularPrice: roundOff(result.regular_price, 2),
-                    partnerSalePrice: roundOff(result.sale_price, 2),
-                    conversionRate: conversionRate,
-                    tax: tax
+                    user_currency: currency
                 },          
             },
-            provider_course_url: result.provider_course_url,
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
-                average_rating_actual: 0,
-                rating_distribution: []
+                average_rating_actual: 0                
             },
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
            
         };     
+
+        data.couponsCount = -1;
+        if(result.pricing_type == "Paid")
+        {
+            data.couponsCount = 0;
+            if(result.coupons && result.coupons.length > 0){
+                for(let coupon of result.coupons)
+                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                        data.couponsCount++
+            }
+        } 
         
         if(data.course_details.medium == 'Others'){
             data.course_details.medium = null;
@@ -1632,21 +1641,18 @@ module.exports = class recommendationService {
         
         if(data.course_details.pricing.pricing_type == 'Others'){
             data.course_details.pricing.pricing_type = null;
-        }      
-     
-        if(result.partner_currency){
-            data.provider.currency = result.partner_currency.iso_code;
         }
+            
 
-        const EARN_CONTENT_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD");
+        const LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
 
         data.isPopular  = false
-        if(EARN_CONTENT_POPULARITY_SCORE_THRESHOLD  && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(EARN_CONTENT_POPULARITY_SCORE_THRESHOLD)))
+        if(LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD  && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(LEARN_CONTENT_POPULARITY_SCORE_THRESHOLD)))
         {
             data.isPopular  = true
         }
 
-        const LEARN_CONTENT_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_CONTENT_TRENDING_SCORE_THRESHOLD");
+        const LEARN_CONTENT_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
         
         data.isTrending  = false
         if(LEARN_CONTENT_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(LEARN_CONTENT_TRENDING_SCORE_THRESHOLD)))
@@ -1670,24 +1676,8 @@ module.exports = class recommendationService {
 
             const average_rating = totalRating/result.reviews.length;            
             data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);            
-            let rating_distribution = [];
+            data.ratings.average_rating_actual = average_rating.toFixed(1);      
 
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
         }
 
         return data;
@@ -1703,7 +1693,7 @@ module.exports = class recommendationService {
                     {term: { "user_id": id }}
                     ]
                 }};
-                const result = await elasticService.search('author', query, {_source: ['firstname','lastname','slug','image']});
+                const result = await elasticService.search('author', query, {_source: ['first_name','last_name','slug','image']});
                 if(result.hits && result.hits.length > 0){
                     author = await this.generateAuthorData(result.hits[0]._source);
                 }
@@ -1746,7 +1736,7 @@ module.exports = class recommendationService {
                     author = [{
                         firstname: result.author_first_name ? result.author_first_name.trim(): "",
                         lastname: result.last_name ? result.author_last_name.trim():"",
-                        slug: result.author_slug || '404',
+                        slug: null,
                         image:null
                     }];
                 }
@@ -1769,9 +1759,14 @@ module.exports = class recommendationService {
                     });
                 }
             }
-
             if(result.partners && result.partners.length > 0 )
             {
+                result.partners = result.partners.filter(partner=>partner.id != null)
+            }
+            
+            if(result.partners && result.partners.length > 0 )
+            {
+
                 const partnerQuery = { 
                     "bool": {
                         "should": [
@@ -1802,8 +1797,12 @@ module.exports = class recommendationService {
                     }
                 }
                 result.partners = partners
-            }                
-
+            }     
+            if(author && author.length > 0)  
+            {
+                author = author.filter(entity => entity.slug !=null )
+            }         
+            
             let data = {
                 title: result.title,
                 premium: (result.premium)? result.premium:false,
@@ -1818,24 +1817,23 @@ module.exports = class recommendationService {
                 author: (author)? author: [],
                 partners: (result.partners)? result.partners : [],
                 created_by_role: (result.created_by_role)? result.created_by_role:'author',            
-                published_date: result.published_date,                           
                 section_name: result.section_name,
                 section_slug: result.section_slug,
             };
 
             //SET popular and trending keys
-            const ARTICLE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD");
+            const ARTICLE_POPULARITY_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD"));
 
             data.isPopular  = false
-            if(ARTICLE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(ARTICLE_POPULARITY_SCORE_THRESHOLD)))
+            if( (ARTICLE_POPULARITY_SCORE_THRESHOLD >= 0 ) && result.activity_count && (result.activity_count.all_time.popularity_score > ARTICLE_POPULARITY_SCORE_THRESHOLD))
             {
                 data.isPopular  = true
             }
 
-            const ARTICLE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD");
+            const ARTICLE_TRENDING_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD"));
             
             data.isTrending  = false
-            if(ARTICLE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(ARTICLE_TRENDING_SCORE_THRESHOLD)))
+            if( (ARTICLE_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > ARTICLE_TRENDING_SCORE_THRESHOLD))
             {
                 data.isTrending  = true
             }
@@ -2012,7 +2010,7 @@ module.exports = class recommendationService {
     async getRelatedLearningPathForCourse(req){      
         const { page = 1, limit = 5, currency} = req.query;
         const offset = (page - 1) * limit
-        const courseId = req.query.courseId.toString();
+        const courseId = req.query.courseId;
         let topics = null
         let sub_categories = null
         let categories = null
@@ -2029,17 +2027,11 @@ module.exports = class recommendationService {
                 let esQuery = {
                     "bool": {
                         "filter": [
-                            { "term": { "status.keyword": "published" } }
+                            { "term": { "status.keyword": "published" } },
+                            {"term": { "id":  courseId}}
                         ]
                     }
-                }
-                esQuery.bool.must = [
-                    {
-                    "ids": {
-                        "values": [courseId]
-                    }
-                    }
-                ]
+                }             
                 
                 let courseData = await elasticService.search("learn-content", esQuery, {_source: ['topics','sub_categories','categories','skills']});
                 
@@ -2074,8 +2066,8 @@ module.exports = class recommendationService {
                         "should":[
                         {
                             "terms": {
-                                "courses.id.keyword": [courseId],
-                                "boost":2
+                                "courses.id.keyword": [`LRN_CNT_PUB_${courseId}`],
+                                "boost":10
                             }
                         }
                         ]
@@ -2101,16 +2093,6 @@ module.exports = class recommendationService {
                         }
                     );
                 }
-                if (categories) {
-                    esQuery.bool.should.push(
-                        {
-                            "terms": {
-                                "categories.keyword": categories,
-                                boost:3
-                            }
-                        }
-                    );
-                }
                 if (skills) {
                     esQuery.bool.should.push(
                         {
@@ -2119,18 +2101,20 @@ module.exports = class recommendationService {
                                 boost:3
                             }
                         }
-                    );
+                    );                   
+                }
+                if (categories) {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "description.keyword": skills,
-                                boost:3
+                                "categories.keyword": categories,
+                                boost:2
                             }
                         }
                     );
-                }
+                }                
             
-                let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
+                let  sort =null
                 
                 let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort, _source :learnPathFields});
 
@@ -2204,7 +2188,7 @@ module.exports = class recommendationService {
         if(!userId){
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
-        const { page = 1, limit = 4 } = req.query;
+        const { page = 1, limit = 4 ,currency} = req.query;
         const offset = (page - 1) * limit;
 
         let cacheKey = `learn-paths-recommendations-${userId}`;
@@ -2351,7 +2335,7 @@ module.exports = class recommendationService {
             
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
-                    const data = await this.generateLearnPathFinalResponse(hit._source);
+                    const data = await this.generateLearnPathFinalResponse(hit._source, currency);
                     learnPaths.push(data);
                 }
             }
@@ -2383,7 +2367,7 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-            esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+            esQuery.bool.filter.push(formatQueryForCG (req))
 
             if (category) {
                 esQuery.bool.filter.push(
@@ -2469,9 +2453,8 @@ module.exports = class recommendationService {
             id: `LRN_PTH_${result.id}`,
             title: result.title,
             slug: result.slug,
-            description: result.description,
             cover_images: (result.images)? formatImageResponse(result.images) :null,
-            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
+            sidebar_listing_image: (result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),            
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
             card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_iimagesmage)? formatImageResponse(result.images) : null),
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],          
@@ -2487,13 +2470,12 @@ module.exports = class recommendationService {
                 total_review_count: result.reviews ? result.reviews.length : 0,
                 average_rating: 0,
                 average_rating_actual: 0,
-                rating_distribution: []
             },           
             duration: {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
             },
-            course_count: result.courses.length,
+            course_count: (result.courses)? result.courses.length : 0,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         }       
 
@@ -2514,38 +2496,21 @@ module.exports = class recommendationService {
 
             const average_rating = totalRating / result.reviews.length;
             data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);
-            let rating_distribution = [];
-
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
-                }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                    });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+            data.ratings.average_rating_actual = average_rating.toFixed(1);           
         }
 
         //SET popular and trending keys
-        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD");
+        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD"));
 
         data.isPopular = false
-        if (LEARN_PATH_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(LEARN_PATH_POPULARITY_SCORE_THRESHOLD))) {
+        if ( (LEARN_PATH_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > LEARN_PATH_POPULARITY_SCORE_THRESHOLD)) {
             data.isPopular = true
         }
 
-        const LEARN_PATH_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("LEARN_PATH_TRENDING_SCORE_THRESHOLD");
+        const LEARN_PATH_TRENDING_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("LEARN_PATH_TRENDING_SCORE_THRESHOLD"));
 
         data.isTrending = false
-        if (LEARN_PATH_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(LEARN_PATH_TRENDING_SCORE_THRESHOLD))) {
+        if ( (LEARN_PATH_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > LEARN_PATH_TRENDING_SCORE_THRESHOLD)) {
             data.isTrending = true
         }
 
@@ -2733,6 +2698,10 @@ module.exports = class recommendationService {
             const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
             const offset = (page - 1) * limit;
             const courseValues = await models.enquiry.findAll({ where: { userId: userId} });
+            if(!courseValues)
+            {
+                return { "success": false, message: "No list", data: { list: [] } }
+            }
             const courseIds = courseValues.map((course) => course.courseId)
             // Course Ids -> Now it is used for getting topics out of them.
 
@@ -2785,7 +2754,12 @@ module.exports = class recommendationService {
                     }
                     if(hit._source.provider_name)
                     {
-                        providers.push(hit._source.provider_name)
+                        if(Array.isArray(hit._source.provider_name))
+                        {
+                            providers.concat(hit._source.provider_name)
+                        }else{
+                            providers.push(hit._source.provider_name)
+                        }  
                     }                            
                 }
             }
@@ -2894,6 +2868,10 @@ module.exports = class recommendationService {
             const { page = 1, limit = 5, currency = process.env.DEFAULT_CURRENCY} = req.query;
             const offset = (page - 1) * limit;
             const courseValues = await models.user_meta.findAll({ where: { userId: userId,key:"course_wishlist"} });
+            if(!courseValues)
+            {
+                return { "success": false, message: "No list", data: { list: [] } }
+            }
             const courseIds = courseValues.map((course) => course.value)
             // Course Ids -> Now it is used for getting topics out of them.
 
@@ -2946,7 +2924,13 @@ module.exports = class recommendationService {
                     }
                     if(hit._source.provider_name)
                     {
-                        providers.push(hit._source.provider_name)
+                        if(Array.isArray(hit._source.provider_name))
+                        {
+                            providers.concat(hit._source.provider_name)
+                        }else{
+                            providers.push(hit._source.provider_name)
+                        }                        
+                       
                     }                            
                 }
             }
@@ -3027,7 +3011,7 @@ module.exports = class recommendationService {
                     }
                 );
             }
-        
+            
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
@@ -3040,7 +3024,7 @@ module.exports = class recommendationService {
             return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
         } catch (error) {
     
-            console.log("Error occured while fetching enquiry based recommendation : ", error);
+            console.log("Error occured while fetching wishlist based recommendation : ", error);
             return { "success": false, message: "failed to fetch", data: { list: [] } }
         }
     }
@@ -3051,7 +3035,7 @@ module.exports = class recommendationService {
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
         const userId = user.userId
-        const { page = 1, limit = 4, partner_slug=null } = req.query;
+        const { page = 1, limit = 4, partner_slug=null, currency } = req.query;
         const offset = (page - 1) * limit;
 
         let cacheKey = `learn-content-recommendations-${userId}`;
@@ -3222,7 +3206,7 @@ module.exports = class recommendationService {
             
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
-                    const data = await this.generateCourseFinalResponse(hit._source);
+                    const data = await this.generateCourseFinalResponse(hit._source,currency);
                     learnContents.push(data);
                 }
             }
@@ -3311,7 +3295,7 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "topics.keyword": topics,
-                                "boost":5
+                                "boost":10
                             }
                         }
                     );
@@ -3321,21 +3305,23 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "sub_categories.keyword": sub_categories,
+                                boost:5
+                            }
+                        }
+                    );
+                }
+
+                if (skills) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "skills.keyword": skills,
                                 boost:4
                             }
                         }
                     );
                 }
-                if (categories) {
-                    esQuery.bool.should.push(
-                        {
-                            "terms": {
-                                "categories.keyword": categories,
-                                boost:3
-                            }
-                        }
-                    );
-                }
+
                 if (skills) {
                     esQuery.bool.should.push(
                         {
@@ -3344,16 +3330,20 @@ module.exports = class recommendationService {
                                 boost:3
                             }
                         }
-                    );
+                    );                    
+                }
+
+                if (categories) {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "description.keyword": skills,
-                                boost:3
+                                "categories.keyword": categories,
+                                boost:2
                             }
                         }
                     );
                 }
+               
             
                 let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
                 
@@ -3454,7 +3444,7 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "topics.keyword": topics,
-                                "boost":5
+                                "boost":10
                             }
                         }
                     );
@@ -3464,17 +3454,7 @@ module.exports = class recommendationService {
                         {
                             "terms": {
                                 "sub_categories.keyword": sub_categories,
-                                boost:4
-                            }
-                        }
-                    );
-                }
-                if (categories) {
-                    esQuery.bool.should.push(
-                        {
-                            "terms": {
-                                "categories.keyword": categories,
-                                boost:3
+                                boost:5
                             }
                         }
                     );
@@ -3483,21 +3463,43 @@ module.exports = class recommendationService {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "title.keyword": skills,
-                                boost:2
+                                "skills.keyword": skills,
+                                boost:4
                             }
                         }
                     );
+                }
+               
+                if (skills) {
                     esQuery.bool.should.push(
                         {
                             "terms": {
-                                "description.keyword": skills,
+                                "title.keyword": skills,
+                                boost:3
+                            }
+                        }
+                    );                    
+                }
+                if (categories) {
+                    esQuery.bool.should.push(
+                        {
+                            "terms": {
+                                "categories.keyword": categories,
                                 boost:2
                             }
                         }
                     );
                 }
                 if (partners) {
+                    partners = partners.map(partner => { 
+                        if(partner.id)
+                        {
+                            return partner.id
+                        }
+                        else{
+                            return partner
+                        }
+                    })
                     esQuery.bool.should.push(
                         {
                             "terms": {
@@ -3535,7 +3537,7 @@ module.exports = class recommendationService {
     async getRelatedArticle(req) {
         try {
             const articleId = req.query.articleId.toString();
-            const { page = 1, limit = 6 ,currency,section} = req.query;
+            const { page = 1, limit = 6 ,section} = req.query;
             const offset = (page - 1) * limit;
             let articles = [];
             let cacheKey = `Recommendation-For-Article-${articleId}-${section}`;
@@ -3570,7 +3572,7 @@ module.exports = class recommendationService {
                     );
     
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
 
                 function buildQueryTerms(key, i) {
                     let termQuery = { "terms": {} };
@@ -3670,7 +3672,7 @@ module.exports = class recommendationService {
                         ]
                     }
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 
                 if (categories) {
                     esQuery.bool.filter.push(
@@ -3803,7 +3805,7 @@ module.exports = class recommendationService {
                         "should":[]
                     }
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 if (topics) {
                     esQuery.bool.should.push(
                         {
@@ -3855,7 +3857,7 @@ module.exports = class recommendationService {
                     );
                 }
             
-                let  sort = [{ "activity_count.all_time.popularity_score": "desc" }]
+                let  sort = null
                 const result = await elasticService.search("article", esQuery, { from: offset, size: limit, sortObject: sort, _source: articleFields });
                 if (result.hits) {
                     for (const hit of result.hits) {
@@ -3943,7 +3945,7 @@ module.exports = class recommendationService {
                         "should":[]
                     }
                 }
-                esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+                esQuery.bool.filter.push(formatQueryForCG (req))
                 if (section) {
                     esQuery.bool.filter.push(
                         {
@@ -4132,7 +4134,7 @@ module.exports = class recommendationService {
                     ]
                 }
             }
-            esQuery.bool.filter.push(formatQueryForCG (esQuery, currency))
+            esQuery.bool.filter.push(formatQueryForCG (req))
             if (section) {
                 esQuery.bool.filter.push(
                     {
@@ -4235,7 +4237,7 @@ module.exports = class recommendationService {
                 user_experiences.map(user_experience => jobTitles.push(user_experience.jobTitle))
                 //console.log("user_experiences", user_experiences);
 
-                const { page = 1, limit = 4 } = req.query;
+                const { page = 1, limit = 4 , currency} = req.query;
                 const offset = (page - 1) * limit;
 
                 let cacheKey = `jobTitleBasedRecommendation-${userId}`;
@@ -4270,7 +4272,7 @@ module.exports = class recommendationService {
 
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await this.generateCourseFinalResponse(hit._source);
+                        const data = await this.generateCourseFinalResponse(hit._source,currency);
                         learnContents.push(data);
                     }
                 }
@@ -4499,7 +4501,7 @@ module.exports = class recommendationService {
                 }
             }
             for (let course of courses) {
-                req.query.courseId = course.id
+                req.query.courseId = course.id.replace('LRN_CNT_PUB_','')
                 let related_courses = await this.getRelatedCourses(req)
                 if (course.course_details.pricing.pricing_type == "FREE") course.course_details.pricing.sale_price = 0
 
@@ -4633,17 +4635,7 @@ module.exports = class recommendationService {
             cover_image: (result.cover_image) ? formatImageResponse(result.cover_image) : null,
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
             card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
-            logo: (result.logo) ? formatImageResponse(result.logo) : null,
-            programs: (result.programs) ? result.programs : [],
-            institute_types: (result.institute_types) ? result.institute_types : [],
-            study_modes: (result.study_modes) ? result.study_modes : [],
-            reviews: [],
-            ratings: {
-                total_review_count: result.reviews ? result.reviews.length : 0,
-                average_rating: 0,
-                average_rating_actual: 0,
-                rating_distribution: []
-            },
+            study_modes: (result.study_modes) ? result.study_modes : [],           
             contact_details: {
                 address_line1: result.address_line1,
                 address_line2: result.address_line2,
@@ -4657,69 +4649,22 @@ module.exports = class recommendationService {
             },
             course_count: (result.course_count) ? result.course_count : 0,
             featured_ranks: [],
+            ratings:{}
         };
         if (result.reviews && result.reviews.length > 0) {
             let totalRating = 0;
             let ratings = {};
             for (let review of result.reviews) {
                 totalRating += review.rating;
-
-
-                if (review.photo) {
-                    review.photo = getMediaurl(review.photo.thumbnail);
-                }
-                data.reviews.push(review);
-
-
                 if (ratings[review.rating]) {
                     ratings[review.rating] += 1;
                 } else {
                     ratings[review.rating] = 1;
                 }
             }
-
             const average_rating = totalRating / result.reviews.length;
             data.ratings.average_rating = round(average_rating, 0.5);
-            data.ratings.average_rating_actual = average_rating.toFixed(1);
-            let rating_distribution = [];
-
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
-                }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
-                    });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
-        }
-
-        data.institute_rankings = result.ranks;
-        let ranking_images = await this.getRankingImages()        
-        if (result.ranks) {
-            let sortedRanks = _.sortBy(result.ranks, 'rank');
-            let featuredCount = 0;
-            for (const rank of sortedRanks) {
-                if (!rank.featured) {
-                    continue;
-                }
-                data.featured_ranks.push({
-                    name: rank.name,
-                    slug: rank.slug,
-                    rank: rank.rank,
-                    logo: ranking_images[rank.name]['logo']
-                });
-                featuredCount++;
-                if (featuredCount == FEATURED_RANK_LIMIT && isList) {
-                    break;
-                }
-            }
+            data.ratings.average_rating_actual = average_rating.toFixed(1);            
         }
 
         return data;
@@ -4855,34 +4800,15 @@ module.exports = class recommendationService {
                     );
                 }
 
-                esQuery.bool.should =  [
+                esQuery.bool.must.push(
                     {
-                        bool: {
-                            must: [
-                                {
-                                    query_string: {
-                                        fields: ["title"],
-                                        query: skill
-                                    }
-                                }
-                            ],
-                            boost: 1000
-                        }
-                    },
-                    {
-                        bool: {
-                            must: [
-                                {
-                                    "term": {
-                                        "skills.keyword": skill,
+                        "term": {
+                            "skills.keyword": skill,
 
-                                    }
-                                }
-                            ],
-                            boost: 10
                         }
                     }
-                ]
+                );               
+               
                
                 let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
                 sort = null

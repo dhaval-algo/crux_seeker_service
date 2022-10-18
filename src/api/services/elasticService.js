@@ -10,9 +10,13 @@ const elasticClient = () => {
   if(process.env.ELASTIC_CONNECTION_TYPE == 'server'){
     let clientProperties = {
       node: process.env.ELASTIC_NODE_URL,
+      auth:{
+        username:process.env.ELASTIC_USERNAME,
+        password :process.env.ELASTIC_PASSWORD
+      },
       maxRetries: 5,
-      requestTimeout: 60000,
-      sniffOnStart: true
+      requestTimeout: 60000
+     
     };
     return new Client(clientProperties) 
   }else{

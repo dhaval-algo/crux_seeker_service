@@ -65,6 +65,7 @@ router.get('/terms-and-conditions', footerController.termandcondition);
 router.get('/privacy-policy', footerController.privacypolicy);
 router.get('/partner-with-us', footerController.partnerWithUs);
 router.get('/learners-page', footerController.learners);
+router.get('/rankings', footerController.ranking)
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
@@ -82,7 +83,7 @@ router.get('/topics', categoryController.getTopics);
 router.get('/skills', categoryController.getSkills);
 
 router.get('/search/:keyword', injectTokenPayload,searchController.getSearchResult);
-router.get('/search-suggestions/:word', searchController.getSearchSuggestions);
+router.get('/search-suggestions/:word', injectTokenPayload,searchController.getSearchSuggestions);
 
 router.get('/count-page',sectionController.countPage)
 router.get('/section/tree',sectionController.getCategoryTree)
@@ -91,9 +92,10 @@ router.get('/articles/',injectTokenPayload, ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
-
 router.get('/author/:slug', ArticleController.getAuthor);
+router.get('/articles-by-author/:id', ArticleController.getArticlesByAuthor);
 
+// Jobs api
 router.get('/get-job-listing',jobController.getJobListing);
 router.get('/get-job-data',jobController.getJobData);
 router.post('/save-job-application',jobController.saveJobApplication);

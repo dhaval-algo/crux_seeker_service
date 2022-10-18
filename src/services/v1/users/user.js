@@ -67,7 +67,7 @@ const login = async (req, res, next) => {
         }
         
         // check if user exist
-        const verificationRes = await userExist(email, LOGIN_TYPES.LOCAL);
+        const verificationRes = await userExist(email,LOGIN_TYPES.LOCAL);
         if (!verificationRes.success) {
             return res.status(200).json(verificationRes);
         }
@@ -308,7 +308,8 @@ const verifyOtp = async (req, res, next) => {
                         }
                     )
                 }
-            }
+            }            
+            await invalidateTokens({userId},'verification');
            // let data = {old_email:username, new_email:email}
             //sendDataForStrapi(data, "update-email");
         }
@@ -348,93 +349,104 @@ const verifyUserToken = async (req, res) => {
 }
 
 const signUp = async (req, res) => {
-    const audience = req.headers.origin;
-    // check if input fields are now empty
-    let { fullName = "", password = "", phone ="", email ="" , country=""} = req.body;
-    if (fullName.trim() == '' || password.trim() == '' || phone.trim() == '' || email.trim() == '' || country =="") {
-        return res.status(200).json({
-            'success': false,
-            'message': 'Mandatory fields are missing',
-            'data': {}
-        });
-    }
+    try {
 
-    //check if email is already exist
-    let where = {
-        [Op.and]: [
-            {
-                [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+        const audience = req.headers.origin;
+        // check if input fields are now empty
+        let { fullName = "", password = "", phone = "", email = "", country = "" } = req.body;
+        if (fullName.trim() == '' || password.trim() == '' || phone.trim() == '' || email.trim() == '' || country == "") {
+            return res.status(200).json({
+                'success': false,
+                'message': 'Mandatory fields are missing',
+                'data': {}
+            });
+        }
+
+        //check if email is already exist
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where(Sequelize.fn('lower', Sequelize.col('email')), Sequelize.fn('lower', email))
+                }
+            ]
+        }
+
+        let isEmailExist = await models.user.findOne({ where: where })
+
+        if (isEmailExist != null) {
+            return res.status(200).json({
+                'success': false,
+                'message': DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+                'code': DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+                'data': {}
+            });
+
+        }
+
+        //Create new user 
+        let user = await models.user.create({
+            fullName: fullName,
+            email: email,
+            phone: phone,
+            verified: false,
+            phoneVerified: false,
+            status: "active",
+            userType: "registered",
+            country: country
+        });
+        //Hash password
+        const { userSalt, passwordHash } = await hashPassword(password);
+
+        //create login for user
+        let user_login = await models.user_login.create({
+            userId: user.id,
+            provider: LOGIN_TYPES.LOCAL,
+            password: passwordHash,
+            passwordSalt: userSalt
+        });
+
+        //create token
+        const payload = {
+            email: user.email || "",
+            name: user.fullName || "",
+            userId: user.id,
+            provider: LOGIN_TYPES.LOCAL,
+            userType: user.userType,
+            isVerified: false,
+            profilePicture: user.profilePicture,
+            audience: req.headers.origin
+
+        }
+        const tokenRes = await getLoginToken(payload);
+        tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
+        tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
+
+        // send OTP for phone verification
+        if (phone) {
+            let countryCode = phone.split(" ")[0];
+            let phoneWithoutcode = phone.split(" ")[1];
+            if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
+                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+                let userId = user.id
+                const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
+                await sendSMSOTP(phoneWithoutcode, response.data.otp);
+                tokenRes.data.verifyPhone = true
             }
-        ]
-    }
+        }
 
-    let isEmailExist = await models.user.findOne({ where: where})
-
-    if(isEmailExist !=null) {
-        return res.status(200).json({
-            'success': false,
-            'message':DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
-            'code':DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
-            'data': {}
-        });
-       
-    }
-
-    //Create new user 
-    let user = await models.user.create({
-        fullName: fullName,
-        email: email,
-        phone: phone,
-        verified: false,
-        phoneVerified:false,
-        status: "active",
-        userType: "registered",
-        country: country
-    });
-     //Hash password
-     const {userSalt, passwordHash} =  await hashPassword (password);
-    
-     //create login for user
-     let user_login=  await models.user_login.create({
-        userId: user.id,
-        provider: LOGIN_TYPES.LOCAL,
-        password: passwordHash,
-        passwordSalt: userSalt
-    });    
-
-     //create token
-     const payload = {           
-        email: user.email || "",
-        name:  user.fullName || "",
-        userId: user.id,
-        provider: LOGIN_TYPES.LOCAL,
-        userType: user.userType,
-        isVerified: false,
-        profilePicture: user.profilePicture,
-        audience: req.headers.origin
+        // send email varification link
+        await sendVerifcationLink(payload)
+        res.status(200).send(tokenRes)
+    } catch (error) {
+        console.log(error)
+         return res.status(200).json({
+                'success': false,
+                'message': DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+                'code': DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+                'data': {}
+            });
         
     }
-    const tokenRes = await getLoginToken(payload);
-    tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
-    tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
-
-    // send OTP for phone verification
-    if(phone){
-        let countryCode =  phone.split(" ")[0];    
-        let phoneWithoutcode =  phone.split(" ")[1];
-        if(process.env.PHONEVERIFICATION =='true'&& country =="India" && countryCode =='+91' )
-        {
-            const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-            let userId = user.id
-            const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
-            await sendSMSOTP (phoneWithoutcode, response.data.otp);
-            tokenRes.data.verifyPhone = true
-        }
-    }
-
-    // send email varification link
-    await sendVerifcationLink(payload)
-    res.status(200).send(tokenRes)
 }
 /* 
     {
@@ -545,7 +557,7 @@ const socialSignIn = async (req, res, next) => {
             email: user.email || "",
             name:  user.fullName || "",
             userId: user.id,
-            provider: user_login.provider || "",
+            provider: provider || "",
             userType: user.userType,
             isVerified: user.verified || false,
             profilePicture: user.profilePicture,
@@ -555,7 +567,7 @@ const socialSignIn = async (req, res, next) => {
         const tokenRes = await getLoginToken(payload);
         
         //Add entry in login activity table 
-        models.user_login_activity.create({userId: user.id, provider: user_login.provider})
+        models.user_login_activity.create({userId: user.id, provider: provider})
         return res.status(200).json(tokenRes);
 
     } catch (error) {
@@ -568,7 +580,7 @@ const socialSignIn = async (req, res, next) => {
     }
 }
 
-const userExist = (email, provider) => {
+const userExist = (email, provider = null) => {
 
     return new Promise(async (resolve, reject) => {
         
@@ -934,8 +946,10 @@ const resendVerificationLink = async (req, res) => {
     let userObj = {
         ...user,
         fullName:userData.fullName,
+        email:userData.email,
         audience: req.headers.origin
     }
+    await invalidateTokens(userObj,'verification')
     await sendVerifcationLink(userObj)
     return res.status(200).json({
         success: true,
@@ -979,8 +993,8 @@ const verifyAccount = async (req, res) => {
           
             let userObj = await models.user.findOne({where:{id: user.userId}})
             let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userObj.fullName }
-            await invalidateTokens(newUserObj)
-            await sendWelcomeEmail(newUserObj)
+            await invalidateTokens(newUserObj,'verification')
+            await sendWelcomeEmail(userObj)
             const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
             return res.status(200).send(tokenRes)
         } else {
@@ -1018,7 +1032,7 @@ const forgotPassword = async (req,res) => {
             })
         }
     }
-    const userRes = await userExist(email, LOGIN_TYPES.LOCAL)
+    const userRes = await userExist(email)
     if(!userRes.success) {
         return res.status(200).json(userRes)
     }
@@ -1055,17 +1069,36 @@ const resetPassword = async (req,res) => {
         const verifiedToken = await require("../auth/auth").verifyToken(reset_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
-            const {passwordHash, userSalt} = hashPassword(password);
-            let userres = await models.user_login.update({
-                password: passwordHash,
-                userSalt: userSalt
-            }, {
+            const {userSalt, passwordHash} = await hashPassword(password);
+
+            //check if local type is present 
+           let user_login =  await models.user_login.findOne({
                 where: {
                     userId: user.userId,
                     provider:LOGIN_TYPES.LOCAL
 
                 }
             });
+            if(user_login){
+                let userres = await models.user_login.update({
+                    password: passwordHash,
+                    passwordSalt: userSalt
+                }, {
+                    where: {
+                        userId: user.userId,
+                        provider:LOGIN_TYPES.LOCAL
+
+                    }
+                });
+            }
+            else{
+                await models.user_login.create({
+                    userId: user.userId,
+                    provider: LOGIN_TYPES.LOCAL,
+                    password: passwordHash,
+                    passwordSalt: userSalt
+                });  
+            }
             await invalidateTokens(user)
             return res.status(200).send({
                 success:true
@@ -1089,23 +1122,32 @@ const resetPassword = async (req,res) => {
     }  
 }
 
-const getProfileProgress = async (req,res) => {
+const getProfileProgress = async (req,res =null) => {
     const { user } = req
     const profileRes = await calculateProfileCompletion(user)
     if(profileRes){
-        return res.status(200).json({
-            success:true,
-            data: {
-                profileProgress:profileRes
-            }
-        })
+        if (res) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    profileProgress: profileRes
+                }
+            })
+        } else {
+            return profileRes
+        }
+
 
     }
     else{
-        return res.status(500).json({
-            success:false,
-            message:"internal server error"
-        })
+        if (res) {
+            return res.status(500).json({
+                success: false,
+                message: "internal server error"
+            })
+        }else{
+            return null
+        }
     }
 }
 
@@ -1199,7 +1241,7 @@ const addCourseToWishList = async (req, res) => {
     }
 }
 
-const getGoals = async (req, res) => {
+const getGoals = async (req, res=null) => {
     try {
         const { user } = req;
         const userId = user.userId
@@ -1247,17 +1289,29 @@ const getGoals = async (req, res) => {
             goalList.push(obj);
         }
 
-        return res.status(200).json({
-            success: true,
-            result: goalList
-        })
+        if(res)
+        {
+            return res.status(200).json({
+                success: true,
+                result: goalList
+            })
+        }
+        else{
+            return goalList
+        }
         
     } catch (error) {
         console.log(error)
-        return res.status(500).json({
-            success: false,
-            message:"internal server error"
-        })
+        if(res)
+        {
+            return res.status(500).json({
+                success: false,
+                message:"internal server error"
+            })
+        }else{
+            return null
+        }
+        
     }
 }
 
@@ -2621,7 +2675,14 @@ const updateEmail =async (req,res) => {
                 data: {}
             })
         }
-        let email_already_exist = await models.user.findOne({where:{email:email}})
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        let email_already_exist = await models.user.findOne({where:where})
         if(email_already_exist != null){
             return res.status(200).json({
                 code: "EMAIL ALREADY EXIST",
@@ -2652,7 +2713,7 @@ const updateEmail =async (req,res) => {
             email_data: {
                 otp: response.data.otp
             }
-        }
+        }        
         await sendEmail(emailPayload);
         return res.status(200).json({
             success: true
@@ -2748,6 +2809,27 @@ const addSkills = async (req,res) => {
     const { user} = req;
     let responseData = null;
     try {
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary']
+                }
+            ],
+            attributes: ['id','topic']
+
+        })
+        if(userData )
+        {
+            for(let topicData of userData)
+            {
+                await models.user_skill.destroy({where: {userTopicId: topicData.id}})
+            }
+        }
+        
         await models.user_topic.destroy({where: {userId: user.userId}})
 
         for (const [key, value] of Object.entries(data)) {
@@ -2827,15 +2909,10 @@ const bookmarkArticle = async (req,res) => {
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
             const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
 
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, articleIds: numericIds }
+        
+            //const data = { email: userinfo.value, articleIds: numericIds }
             await logActvity("ARTICLE_WISHLIST", userId, articleIds);
-            sendDataForStrapi(data, "profile-bookmark-article");
+           // sendDataForStrapi(data, "profile-bookmark-article");
             return res.status(200).json({
                 success: true,
                 data: {
@@ -3013,7 +3090,7 @@ const updatePhone = async (req,res) => {
                 const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
                 let userId = user.id
                 let email = userData.email
-                const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+                const response = await generateOtp({ username:email, userId, provider: null, otpType:OTP_TYPE });
                 await sendSMSOTP (phoneWithoutcode, response.data.otp);
                
             }
@@ -3075,7 +3152,7 @@ const reactivateAccount = async (req, res) => {
     }
 }
 
-const getUserPendingActions = async (req, res) => {
+const getUserPendingActions = async (req, res = null) => {
     try {
         const { user } = req
         const userId = user.userId
@@ -3265,15 +3342,29 @@ const getUserPendingActions = async (req, res) => {
         if(response.pendingProfileActions && response.pendingProfileActions.length > 0)
         {
             response.pendingProfileActions = response.pendingProfileActions.filter((v, i, a) => a.indexOf(v) === i)
-        }        
-        res.send({ success: true, data: response })
+        } 
+        if(res){
+            res.send({ success: true, data: response })
+        } 
+        else
+        {
+            return response
+        } 
+        
     } catch (error) {
         console.log(error)
-        res.status(500).send({
-            success: false,
-            message: "internal server error",
-            error: error
-        })
+        if(res)
+        {
+            res.status(500).send({
+                success: false,
+                message: "internal server error",
+                error: error
+            })
+        }
+        else
+        {
+            return null
+        }
     }
 }
 
@@ -3334,8 +3425,14 @@ const isUserEmailExist = async (req, res) => {
 const getPersonalDetails = async (req, res) => {
     
     try {       
-         const user = await models.user.findOne({where:{id:req.user.userId},attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country']})       
-        
+        const user = await models.user.findOne({ where: { id: req.user.userId }, attributes: ['fullName', 'email', 'verified', 'phone', 'phoneVerified', 'status', 'gender', 'dob', 'city', 'country'] })
+        if (user.phone) {
+            let countryCode = user.phone.split(" ")[0];
+            if (countryCode != '+91') {
+                user.phoneVerified = true
+            }
+        }
+
         res.status(200).send({
             message: "personal details updated successfully",
             data: user,
@@ -3354,6 +3451,14 @@ const editPersonalDetails = async (req, res) => {
     let {fullName, city, dob, gender } = req.body
     try {        
         
+        if(calcAge(dob) < 16)
+            return res.status(200).send({
+                message: "Age must be atleast 16 years",
+                success: false
+            })
+        city = (city == "")? null: city;
+        dob = (dob == "")? null: dob;
+        gender = (gender == "")? null: gender;
         await models.user.update({
             fullName,
             city,
@@ -3644,7 +3749,6 @@ const getUserProfile = async (req, res) => {
                 }
             ],
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
-
         })
         if(user.resumeFile)
         {
@@ -3661,6 +3765,50 @@ const getUserProfile = async (req, res) => {
                 } 
             }
         }
+        if(user.phone){
+            let countryCode = user.phone.split(" ")[0];
+            if (countryCode != '+91') {
+                user.phoneVerified = true
+            }
+        }
+
+        //set desgination
+        if(user.user_experiences && user.user_experiences.length > 0)
+        {
+            for (let experience of user.user_experiences )
+            {
+                if(experience.jobTitle)
+                {
+                   
+                    user.setDataValue('designation', experience.jobTitle);                    
+                }
+            }
+        }
+        else{
+            user.setDataValue('designation', null); 
+        }
+
+        // Get key skills
+        let keyskill =  await getKeySkills(req); 
+        user.setDataValue('keyskill', keyskill);
+
+        // Get goals
+
+        let goals = await getGoals(req)
+        user.setDataValue('goals', goals);
+
+        if(goals)
+        {
+            user.setDataValue('isGoals', true);
+        }else{
+            user.setDataValue('isGoals', false);
+        }
+        // get user profileProgress
+        let pendingActions = await  getUserPendingActions(req)
+
+        user.setDataValue('pendingActions', pendingActions);
+        user.setDataValue('profileProgress', pendingActions.profileProgress);
+
         res.status(200).send({
             message: "User Profile fetched successfully",
             success: true,
@@ -3705,7 +3853,7 @@ const getSkills = async (req, res) => {
     }
 }
 
-const getKeySkills = async (req, res) => {    
+const getKeySkills = async (req, res=null) => {    
     try {        
         let keySkill = []
         const userData = await models.user_topic.findAll({
@@ -3733,17 +3881,26 @@ const getKeySkills = async (req, res) => {
                 }   
             }
          }
-        res.status(200).send({
-            message: "User Key skills fetched successfully",
-            success: true,
-            data: keySkill             
-        })
+        if (res) {
+            res.status(200).send({
+                message: "User Key skills fetched successfully",
+                success: true,
+                data: keySkill
+            })
+        }
+        else {
+            return keySkill
+        }
     } catch (error) {
         console.log('getKeySkills err ',error);
-        res.status(200).send({
-            message: "Error fetching KeySkills",
-            success: false
-        })
+        if (res) {
+            res.status(200).send({
+                message: "Error fetching KeySkills",
+                success: false
+            })
+        } else {
+            return null
+        }
     }
 }
 
@@ -4151,6 +4308,18 @@ const removeInstituteFromWishList = async (req, res) => {
             wishlist:resMeta
         }
     })
+}
+
+const calcAge = (dob) => {
+
+    let today = new Date();
+    let birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    let m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate()))
+        age--;
+
+    return age;
 }
 
 module.exports = {

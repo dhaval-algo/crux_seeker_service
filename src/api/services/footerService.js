@@ -7,6 +7,18 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 const {formatImageResponse} = require('../../api/utils/general');
 const {generateMetaInfo} = require('../utils/metaInfo');
 
+const getData  = (entry) => {
+
+    let finalObj = {};
+    for (let key in entry) {
+        if(typeof entry[key] === "object")
+            finalObj[key] = getData(entry[key])
+        else if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by"){
+            finalObj[key] = entry[key];
+        }
+    }
+    return finalObj;
+}
 module.exports = class FooterService {
     async getFooter(slug, callback,useCache = true){
 
@@ -54,6 +66,46 @@ module.exports = class FooterService {
 
     }
 
+    async ranking(callback, useCache = true){
+        const cacheKey = "ranking-list";
+
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for : "+cacheKey, error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/rankings`);
+        }catch(e){
+            console.log('Error while retriving data: '+cacheKey,e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
+            
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let list = []
+            for(const rank of response){
+                let entry = getData(rank);
+                if(entry.image )
+                    entry.image =  formatImageResponse(entry.image);
+                if(entry.logo )
+                    entry.logo =  formatImageResponse(entry.logo);
+                list.push(entry)
+            }
+            RedisConnection.set(cacheKey, list);
+            callback(null, {success: true, message: 'Fetched successfully!', data:list});
+        } else {
+            callback(null, {success: false, message: 'No data available!', data: []});
+        }
+    }
+
     async partnerWithUs(callback, useCache = true){
         const cacheKey = "partner-with-us";
 
@@ -81,7 +133,7 @@ module.exports = class FooterService {
             if(response.partnership_benefits  && response.partnership_benefits.length > 0)
             {
                 response.partnership_benefits = response.partnership_benefits.map(benefit => {
-                    benefit.image = formatImageResponse(benefit.image)
+                    benefit.image = (benefit.image.url)? benefit.image.url : formatImageResponse(benefit.image)
                     return benefit
                 })
             }
@@ -166,6 +218,9 @@ module.exports = class FooterService {
         }
         if(result.ok) {
             let response = await result.json();
+            if(response.who_we_are && response.who_we_are.image)
+                response.who_we_are.image = formatImageResponse(response.who_we_are.image)
+
             if(response.content_section && response.content_section.length > 0)
             {
                 response.content_section = response.content_section.map(content_section => {
@@ -309,7 +364,7 @@ module.exports = class FooterService {
             if(response.content_section && response.content_section.length > 0)
             {
                 response.content_section = response.content_section.map(content_section => {
-                    content_section.image = formatImageResponse(content_section.image)
+                    content_section.image = (content_section.image.url)? content_section.image.url: formatImageResponse(content_section.image)
                     return content_section
                 })
             }
@@ -424,10 +479,10 @@ module.exports = class FooterService {
                 }
             }
             await communication.sendEmail(emailPayload)
-            callback(null,true);
+            callback(null,{success: true, message: 'Successful!'});
         } catch (error) {
             console.log(error);
-            callback(error,null)
+            callback(null, {success: false, message: 'Something unexpected happend, we are looking into it.'});
         }
          
 
@@ -456,10 +511,10 @@ module.exports = class FooterService {
                 }
             }
             await communication.sendEmail(emailPayload)
-            callback(null,true);
+            callback(null,{success: true, message: 'Successful!'});
         } catch (error) {
             console.log(error);
-            callback(error,null)
+            callback(null, {success: false, message: 'Something unexpected happend, we are looking into it.'});
         }
          
 

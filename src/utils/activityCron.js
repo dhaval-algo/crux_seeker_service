@@ -7,7 +7,9 @@ const moment = require("moment");
 const redisConnection = require('../services/v1/redis');
 
 const RedisConnection = new redisConnection();
-const POPULAR_TRENDING_PERCENTAGE = 20
+const COURSE_POPULAR_TRENDING_PERCENTAGE = process.env.COURSE_POPULAR_TRENDING_PERCENTAGE || 4
+const LEARN_PATH_POPULAR_TRENDING_PERCENTAGE = process.env.LEARN_PATH_POPULAR_TRENDING_PERCENTAGE || 15
+const ARTICLE_POPULAR_TRENDING_PERCENTAGE = process.env.ARTICLE_POPULAR_TRENDING_PERCENTAGE || 10
 
 const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -775,7 +777,7 @@ const setTrendingPopularityThreshold = async () => {
     if(count)
     {
         //calculate popular/trending number of cources
-        let thresholdCount = Math.ceil((count.count*POPULAR_TRENDING_PERCENTAGE)/100)        
+        let thresholdCount = Math.ceil((count.count*COURSE_POPULAR_TRENDING_PERCENTAGE)/100)        
         let result = await elasticService.search("learn-content", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.all_time.popularity_score": "desc" } ,_source: ["activity_count"]});
          if (result.hits) {      
             RedisConnection.set("COURSE_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
@@ -799,7 +801,7 @@ const setTrendingPopularityThreshold = async () => {
     if(count)
     {
         //calculate popular/trending number of Learnpaths
-        let thresholdCount = Math.ceil((count.count*POPULAR_TRENDING_PERCENTAGE)/100)        
+        let thresholdCount = Math.ceil((count.count*LEARN_PATH_POPULAR_TRENDING_PERCENTAGE)/100)        
         let result = await elasticService.search("learn-path", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.all_time.popularity_score": "desc" } ,_source: ["activity_count"]});
          if (result.hits) {      
             RedisConnection.set("LEARN_PATH_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
@@ -824,7 +826,7 @@ const setTrendingPopularityThreshold = async () => {
     if(count)
     {
         //calculate popular/trending number of cources
-        let thresholdCount = Math.ceil((count.count*POPULAR_TRENDING_PERCENTAGE)/100)        
+        let thresholdCount = Math.ceil((count.count*ARTICLE_POPULAR_TRENDING_PERCENTAGE)/100)        
         let result = await elasticService.search("article", esQuery, { from: thresholdCount, size: 1, sortObject: { "activity_count.all_time.popularity_score": "desc" } ,_source: ["activity_count"]});
          if (result.hits) {      
             RedisConnection.set("ARTICLE_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 

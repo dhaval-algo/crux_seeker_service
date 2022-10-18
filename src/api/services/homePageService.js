@@ -30,7 +30,7 @@ module.exports = class homePageService {
         // check if course recomndation categories have minimum 4 courses 
         if (result.hits[0]._source.course_recommendation_categories && result.hits[0]._source.course_recommendation_categories) {
           result.hits[0]._source.course_recommendation_categories = await Promise.all(
-            result.hits[0]._source.course_recommendation_categories.filter(async (category) => {
+            result.hits[0]._source.course_recommendation_categories.map(async (category) => {
               let reqObj = {
                 query: {
                   category: category.name

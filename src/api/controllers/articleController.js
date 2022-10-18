@@ -39,5 +39,11 @@ module.exports = {
             }
         });        
     },
+    
+    getArticlesByAuthor: async (req, res) => { 
+        let result = await  ArticleService.getArticlesByAuthor(req);
+        res.status(200).send(result);     
+             
+    }
 
 };

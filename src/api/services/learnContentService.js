@@ -27,9 +27,8 @@ let RecommendationService = new recommendationService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
-const articleService = require("./articleService");
 const mLService = require("./mLService");
-let ArticleService = new articleService();
+
 
 let slugMapping = [];
 let currencies = [];
@@ -42,13 +41,16 @@ const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 const {saveSessionKPIs} = require("../../utils/sessionActivity");
 const {getSearchTemplate} = require("../../utils/searchTemplates");
+const { list } = require("../controllers/listUsersController");
 
 const sortOptions = {
-    'Popular' : ["activity_count.last_x_days.course_views:desc","ratings:desc"],
+    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["published_date:desc"],
-    'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"]
+    'Price Low To High': ["basePriceRound:asc"],
+    'Price High To Low': ["basePriceRound:desc"],
+    'Most Relevant' : []
 }
 
 const getBaseCurrency = (result) => {
@@ -280,7 +282,7 @@ module.exports = class learnContentService {
         try{
         let searchTemplate = null;
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = 'Popular'
+        let defaultSort = req.query['q']? 'Most Relevant' : 'Popular';
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
@@ -312,6 +314,10 @@ module.exports = class learnContentService {
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
                 cacheName = "listing-search_"+apiCurrency;                
             }
+            if(req.query['hardFilter'])
+            {
+                cacheName += `_${req.query['hardFilter']}`;
+            }
 
             cacheName += `_${defaultSort}`;
 
@@ -328,7 +334,7 @@ module.exports = class learnContentService {
 
 
         currencies = await getCurrencies();
-        slugMapping = getSlugMapping(req);
+        var slugMapping = getSlugMapping(req);
 
 
         const filterConfigs = await getFilterConfigs('Learn_Content');
@@ -338,7 +344,7 @@ module.exports = class learnContentService {
 
                 searchTemplate = await getSearchTemplate('learn-content',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
                 query = searchTemplate.function_score.query;
-                esFilters['q'] = searchTemplate.function_score.query.bool.must[1];
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
                 
             } else {
                 query = {
@@ -354,7 +360,7 @@ module.exports = class learnContentService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort'] && !req.query['q']){
+        if(!req.query['sort']){
             req.query['sort'] = defaultSort;
         }
 
@@ -362,14 +368,16 @@ module.exports = class learnContentService {
             queryPayload.sort = []
             const keywordFields = ['title'];
             let sort = sortOptions[req.query['sort']];
-            for(let field of sort){
-            
-                let splitSort = field.split(":");
-                if(keywordFields.includes(splitSort[0])){
-                    field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                if(sort && sort.length > 0){
+                for(let field of sort){
+                
+                    let splitSort = field.split(":");
+                    if(keywordFields.includes(splitSort[0])){
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                queryPayload.sort.push(field)
                 }
-            queryPayload.sort.push(field)
-        }
+            }
         }
         
         if(req.query['courseIds']){
@@ -426,6 +434,15 @@ module.exports = class learnContentService {
         let parsedRangeFilters = [];       
         let filters = [];
 
+        
+        let hardparsedFilters = []
+        if(req.query['hardFilter'])
+        {
+            req.query['f'] = (req.query['f'])? `${req.query['f']}::${req.query['hardFilter']}`: req.query['hardFilter']
+            hardparsedFilters = parseQueryFilters(req.query['hardFilter']);
+        }
+        
+
         //req.query['parsedFilters'] is passed to fetch trending list
 
         if(req.query['f'] || req.query['parsedFilters']){
@@ -434,16 +451,16 @@ module.exports = class learnContentService {
                 parsedFilters = parseQueryFilters(req.query['f']);
             }
             if(req.query['parsedFilters']){
-               if(parsedFilters.length > 0)
-               {
+            if(parsedFilters.length > 0)
+            {
                 parsedFilters =  parsedFilters.concat(req.query['parsedFilters'])
-               }
-               else{
+            }
+            else{
                 parsedFilters =  req.query['parsedFilters']
-               }
+            }
             }           
-           
-            for(const filter of parsedFilters){      
+        
+            for(const filter of parsedFilters){                    
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
@@ -456,7 +473,7 @@ module.exports = class learnContentService {
                             job_asis.toLowerCase() == 'yes' ? job_asis = true : job_asis = false;
                             filter_object = {"term": {[attribute_name]: job_asis}};
                         }
-                        if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
+                        else if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
                         {
                             let offer = filter.value[0]
             
@@ -810,16 +827,19 @@ module.exports = class learnContentService {
                 }
             }
 
-            //remove filter if pagetype is partner or institute
-            if(req.query['pageType'] == "partner")
-            {
-                filters = filters.filter(o => o.label !== 'Partner');
-            }
-            else if(req.query['pageType'] == "institute")
-            {
-                filters = filters.filter(o => o.label !== 'Institute');
 
+            //remove filter if pagetype is partner or institute
+            if(req.query['hardFilter'])
+            {
+                if(hardparsedFilters && hardparsedFilters.length > 0)
+                {
+                    for (let hardfilter of hardparsedFilters)
+                    {
+                        filters = filters.filter(o => o.label !== hardfilter.key);
+                    }
+                }
             }
+            
 
             let data = {
                 list: list,
@@ -835,8 +855,8 @@ module.exports = class learnContentService {
                 slug: req.query['slug'] || null,
                 label: slugLabel || null,
                 description: slug_description || null,
-                logo : (slug_logo)? formatImageResponse(slug_logo) : null,
-                course_count: result.hits.length
+                logo : (slug_logo && slug_logo.url)? (slug_logo.url) :((slug_logo)? formatImageResponse(slug_logo) : null),
+                course_count: result.total.value
             }
             data.faq = slug_faq
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
@@ -1339,26 +1359,13 @@ module.exports = class learnContentService {
         if(result.recommended_effort_per_week){
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
-        }
-        //let coverImageSize = 'large';
-        //if(isList){
-           // coverImageSize = 'thumbnail';
-        //}
+        }      
 
         for(let i=0; i<result.reviews.length; i++){
             if(result.reviews[i]['reviewer_name'] == 'Other'){
                 result.reviews.splice(i, 1);
             }
-        }
-
-        // let cover_image = null;
-        // if(result.images){
-        //     if(result.images[coverImageSize]){
-        //         cover_image = getMediaurl(result.images[coverImageSize]);
-        //     }else{
-        //         cover_image = getMediaurl(result.images['thumbnail']);
-        //     }
-        // }
+        }      
 
         let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
@@ -1369,11 +1376,41 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
+        let regular_price = null, sale_price = null;
+        if(result.pricing_type == "Paid" )
+        {
+            regular_price = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency);
+            sale_price = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency);
+        }
             //temp patch for old object format; scatter attributes 
         if(result.providers_list == undefined){
             let provider = {name: result.provider_name, slug: result.provider_slug,
                         currency: result.provider_currency, url:result.provider_course_url}
             result.providers_list = [provider]
+        }
+        const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
+        let desktop_course_image = null , mobile_course_image = null, partner_logo = null;
+        if(partnerCourseImage.noCacheData != true)
+        {
+            desktop_course_image = partnerCourseImage.desktop_course_image;
+            mobile_course_image = partnerCourseImage.mobile_course_image;
+            partner_logo = partnerCourseImage.logo;
+        }
+        else
+        {
+            const query = {
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} },{term: { "slug.keyword": result.partner_slug }}]
+                }
+            };
+            
+            const imageResult = await elasticService.search('partner', query, {size:2000}, ["mobile_course_image", "desktop_course_image", "logo"]);
+
+            if(imageResult.hits && imageResult.hits.length > 0){                
+                desktop_course_image = (imageResult.hits[0]._source.desktop_course_image)? imageResult.hits[0]._source.desktop_course_image : desktop_course_image ;
+                mobile_course_image = (imageResult.hits[0]._source.mobile_course_image) ? imageResult.hits[0]._source.mobile_course_image : mobile_course_image;
+                partner_logo = (imageResult.hits[0]._source.logo)? formatImageResponse(imageResult.hits[0]._source.logo): partner_logo; 
+            }
         }
 
         let data = {
@@ -1389,16 +1426,14 @@ module.exports = class learnContentService {
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
-                partner_url: result.partner_url,
-                currency: result.partner_currency
+                partner_url: result.partner_url
             },
-            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images)? formatImageResponse(result.images) :null,
-            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
-            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
-            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null),
+            cover_image: partner_logo ? partner_logo : ((result.images)? formatImageResponse(result.images) :null),
+            sidebar_listing_image: mobile_course_image ? mobile_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),            
+            card_image:desktop_course_image ? desktop_course_image : ((result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image_mobile:mobile_course_image ? mobile_course_image : ((result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null)),
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
@@ -1434,22 +1469,16 @@ module.exports = class learnContentService {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
-                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
                     base_currency: baseCurrency,
                     user_currency: currency,
-                    regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
-                    sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
+                    regular_price,
+                    sale_price,
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
                     free_condition_description: result.free_condition_description,
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
-                    course_financing_options: result.course_financing_options,
-                    partnerPrice: partnerPrice,
-                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
-                    partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
-                    partnerSalePrice: helperService.roundOff(result.sale_price, 2),
-                    conversionRate: conversionRate,
+                    course_financing_options: result.course_financing_options,                  
                     tax: tax
                 },
                 course_start_date: result.course_start_date || null,
@@ -1503,14 +1532,14 @@ module.exports = class learnContentService {
         const COURSE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
 
         data.isPopular = false
-        if (COURSE_POPULARITY_SCORE_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD))) {
+        if ( (COURSE_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD))) {
             data.isPopular = true
         }
 
         const COURSE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
 
         data.isTrending = false
-        if (COURSE_TRENDING_SCORE_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD))) {
+        if ( (COURSE_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD))) {
             data.isTrending = true
         }
        
@@ -1566,6 +1595,19 @@ module.exports = class learnContentService {
                 data.meta_information  = meta_information;
                 delete(data.meta_description)
                 delete(data.meta_keywords)
+                data.meta_information.add_type= result.add_type,
+                data.meta_information.import_source= result.import_source,
+                data.meta_information.external_source_id= result.external_source_id,
+                data.meta_information.application_seat_ratio= result.application_seat_ratio,
+                data.meta_information.bounce_rate= result.bounce_rate,
+                data.meta_information.completion_ratio= result.completion_ratio,
+                data.meta_information.enrollment_ratio= result.enrollment_ratio,
+                data.meta_information.faculty_student_ratio= result.faculty_student_ratio,
+                data.meta_information.gender_diversity= result.gender_diversity,
+                data.meta_information.student_stream_diversity= result.student_stream_diversity,
+                data.meta_information.student_nationality_diversity= result.student_nationality_diversity,
+                data.meta_information.average_salary_hike= result.average_salary_hike,
+                data.meta_information.instructor_citations= result.instructor_citations
             }            
         }
         else{
@@ -1573,6 +1615,14 @@ module.exports = class learnContentService {
         }
 
         if(!isList){
+            // send prices in all currencies
+            data.course_details.pricing.regular_prices = {}
+            data.course_details.pricing.sale_prices = {}
+            currencies.map(currency => {
+                data.course_details.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency.iso_code)
+                data.course_details.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency.iso_code)
+            })
+            
             if(result.instructors && result.instructors.length > 0){
                 for(let instructor of result.instructors){
                     if(instructor.name == 'Other'){
@@ -1616,7 +1666,7 @@ module.exports = class learnContentService {
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
-                data.course_details.pricing.indian_students_payment_deadline = new Date(result.indian_students_payment_deadline)
+                data.course_details.pricing.indian_students_payment_deadline = (result.indian_students_payment_deadline)? new Date(result.indian_students_payment_deadline) : null
                 data.course_details.pricing.indian_students_GST = result.indian_students_GST
                 if(result.indian_student_installments && result.indian_student_installments.length > 0)
                 {
@@ -1628,7 +1678,7 @@ module.exports = class learnContentService {
                 }
                 data.course_details.pricing.indian_student_installments = result.indian_student_installments
                 data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
-                data.course_details.pricing.international_students_payment_deadline = new Date(result.international_students_payment_deadline)
+                data.course_details.pricing.international_students_payment_deadline = (result.international_students_payment_deadline)? new Date(result.international_students_payment_deadline) : null
                 if(result.international_student_installments && result.international_student_installments.length > 0)
                 {
                     result.international_student_installments = result.international_student_installments.map(installment =>{
@@ -1663,10 +1713,10 @@ module.exports = class learnContentService {
                         additional_batch.id = batch.id
                         additional_batch.batch = batch.batch
                         additional_batch.batch_size = batch.batch_size
-                        additional_batch.batch_start_date = new Date(batch.batch_start_date)
-                        additional_batch.batch_end_date = new Date(batch.batch_end_date)
-                        additional_batch.batch_enrollment_start_date = new Date(batch.batch_enrollment_start_date)
-                        additional_batch.batch_enrollment_end_date = new Date(batch.batch_enrollment_end_date)
+                        additional_batch.batch_start_date = (batch.batch_start_date) ? new Date(batch.batch_start_date) : null
+                        additional_batch.batch_end_date =(batch.batch_end_date)? new Date(batch.batch_end_date) :null
+                        additional_batch.batch_enrollment_start_date = (batch.batch_enrollment_start_dat)? new Date(batch.batch_enrollment_start_date) :null
+                        additional_batch.batch_enrollment_end_date = (batch.batch_enrollment_end_date)? new Date(batch.batch_enrollment_end_date) : null
                         additional_batch.total_duration = batch.total_duration
                         additional_batch.total_duration_unit = batch.total_duration_unit
                         additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
@@ -1680,6 +1730,8 @@ module.exports = class learnContentService {
                             additional_batch.pricing_type = batch.pricing_type
                             additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
                             additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
+                            additional_batch.offer_percent = (batch.sale_price) ? (Math.round(((batch.regular_price-batch.sale_price) * 100) / batch.regular_price)) : null
+
                         }
                         data.additional_batches.push(additional_batch);
                     }
@@ -1719,21 +1771,23 @@ module.exports = class learnContentService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
 
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
+            if(!isList){
+                //add missing ratings
+                for(let i=0; i<5; i++){
+                    if(!ratings[i+1]){
+                        ratings[i+1] = 0;
+                    }                
+                }
+                Object.keys(ratings)
+                .sort()
+                .forEach(function(v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
                 });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         }
 
         //Ignore default values in ui
@@ -1779,21 +1833,20 @@ module.exports = class learnContentService {
             id: data.id,
             providers: data.providers,
             partner: data.partner,
-            cover_image: data.cover_image,
+            cover_image: desktop_course_image ? desktop_course_image: data.cover_image,
             sidebar_listing_image: data.sidebar_listing_image,            
             card_image:data.card_image,
             card_image_mobile:data.card_image_mobile,
             currency: data.currency,
-            description: data.description,
             course_details: data.course_details,
             ratings: data.ratings,
             categories_list: data.categories_list,
             sub_categories_list : data.sub_categories_list,
             topics_list : data.topics_list,
-            meta_information: data.meta_information,
             isTrending:data.isTrending,
             isPopular:data.isPopular,
-            isCvTake:data.isCvTake
+            isCvTake:data.isCvTake,
+            couponCount: coupons.length
         }
 
         return isList ? listData : data;
@@ -2288,8 +2341,14 @@ module.exports = class learnContentService {
             let topics = []
            
             if (result.aggregations && result.aggregations.topics_count.buckets.length >0) {
-                result.aggregations.topics_count.buckets.map(item => topics.push( item.key))
-                
+                await Promise.all(result.aggregations.topics_count.buckets.map(async item => {
+                    let slug = await helperService.getTreeUrl('topic', item.key, true)                    
+                    topics.push( {
+                                label:item.key,
+                                slug : slug
+                            })
+                }))
+                        
                 data = {
                     total: topics.length,
                     page,
@@ -2325,7 +2384,7 @@ module.exports = class learnContentService {
       let result = cacheData;
 
       if (cacheData.noCacheData) {
-        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls", "meta_description", "meta_keywords"]);
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls","free_trending_skills","meta_description", "meta_keywords"]);
         await RedisConnection.set('course-home-page', result);
         RedisConnection.expire('course-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
       }
@@ -2334,7 +2393,7 @@ module.exports = class learnContentService {
             // check if course recomndation categories have minimum 4 courses 
             if (data.course_recommendation_categories && data.course_recommendation_categories) {
                 data.course_recommendation_categories = await Promise.all(
-                    data.course_recommendation_categories.filter(async (category) => {
+                    data.course_recommendation_categories.map(async (category) => {
                         let reqObj = {
                             query: {
                                 category: category.name
@@ -2356,17 +2415,16 @@ module.exports = class learnContentService {
             // check if Trending skill have minimum 6 courses 
             if (data.trending_skillls && data.trending_skillls) {
                 data.trending_skillls = await Promise.all(
-                    data.trending_skillls.filter(async (skill) => {
+                    data.trending_skillls.map(async (skill) => {
                         let reqObj = {
                             query: {
                                 skill: skill.name,
-                                subType : 'Trending',
-                                priceType: 'Free'
+                                subType : 'Trending'
                             }
                         }
                         let recommendation = await RecommendationService.getPopularCourses(reqObj)
                         if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6) {
-                            return category
+                            return skill
                         } else {
                             return null
                         }
@@ -2374,7 +2432,29 @@ module.exports = class learnContentService {
                     })
 
                 )
-                data.trending_skillls = data.trending_skillls.filter(category => category != null)
+                data.trending_skillls = data.trending_skillls.filter(skill => skill != null)
+            }
+
+            // check if (Free) Trending skill have minimum 6 courses 
+            if (data.free_trending_skills && data.free_trending_skills) {
+                data.free_trending_skills = await Promise.all(
+                    data.free_trending_skills.map(async (skill) => {
+                        let reqObj = {
+                            query: {
+                                skill: skill.name,
+                                subType : 'Trending',
+                                priceType: 'Free'
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj);
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6)
+                            return skill;
+                        else
+                            return null
+                    })
+
+                )
+                data.free_trending_skills = data.free_trending_skills.filter(skill => skill);
             }
         return { success: true, data }
       }

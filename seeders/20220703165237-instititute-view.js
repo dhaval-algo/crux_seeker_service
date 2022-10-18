@@ -4,6 +4,7 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.bulkInsert('activities', [
       { type: "INSTITUTE_VIEW",createdAt: new Date(),updatedAt: new Date() },
+      { type: "INSTITUTE_WISHLIST",createdAt: new Date(),updatedAt: new Date() }
     ], {});
   },
 
