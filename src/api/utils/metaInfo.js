@@ -989,9 +989,13 @@ const generateMetaInfo = async (page, result, list) => {
                 meta_keywords: (result.meta_keywords) ? result.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
             }
             break;
-            
-
-
+        case 'SINGLE_TRENDING_LIST':
+            meta_information = {
+                meta_title : `${result.title} | ${process.env.SITE_URL_FOR_META_DATA}`,
+                meta_description: (result.meta_description) ? result.meta_description : defaultLearnContentMetaInfo.meta_description,
+                meta_keywords: (result.meta_keywords) ? result.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
+            }
+            break;
         default:
             break;
     }
