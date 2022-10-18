@@ -33,7 +33,7 @@ const mLService = require("./mLService");
 let slugMapping = [];
 let currencies = [];
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
-const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name'];
+const filterFields = ['topics','categories','sub_categories','title','level','learn_type','languages','medium','instruction_type','pricing_type','provider_name','skills', 'partner_name','region'];
 const allowZeroCountFields = ['level','categories','sub_categories'];
 
 const helperService = require("../../utils/helper");
@@ -286,9 +286,11 @@ module.exports = class learnContentService {
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+       // console.log("1st parsedFilter",  req.query['parsedFilters'])
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
+            && req.query['parsedFilters'] == undefined
             && (req.query['q'] == undefined || req.query['q'] == '')
             && req.query['rf'] == undefined
             && ((req.query['pageType'] == undefined || req.query['pageType'] == "search" || req.query['pageType'] == "category" || req.query['pageType'] == "topic") && (req.query['page'] == "1" || req.query['page'] == undefined))
@@ -436,12 +438,25 @@ module.exports = class learnContentService {
         {
             req.query['f'] = (req.query['f'])? `${req.query['f']}::${req.query['hardFilter']}`: req.query['hardFilter']
             hardparsedFilters = parseQueryFilters(req.query['hardFilter']);
-        }
-        
+        }        
 
-        if(req.query['f']){
-            parsedFilters = parseQueryFilters(req.query['f']);
-            for(const filter of parsedFilters){                
+
+        if(req.query['f'] || req.query['parsedFilters']){
+            if(req.query['f'])
+            {
+                parsedFilters = parseQueryFilters(req.query['f']);
+            }
+            if(req.query['parsedFilters']){
+               if(parsedFilters.length > 0)
+               {
+                parsedFilters =  parsedFilters.concat(req.query['parsedFilters'])
+               }
+               else{
+                parsedFilters =  req.query['parsedFilters']
+               }
+            }           
+           
+            for(const filter of parsedFilters){      
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
@@ -473,7 +488,7 @@ module.exports = class learnContentService {
             }            
         }
 
-
+        
 
 
         if(req.query['rf']){
@@ -579,11 +594,66 @@ module.exports = class learnContentService {
             }
             aggs.course_filters.aggs[filter.elastic_attribute_name] = aggs_object;
         }
+            //This is for trending list
+            if (req.query['parsedFilters']) {
+                aggs.trending_list_synopsys_topics =
+                {
+                    terms: { field: 'topics.keyword' }
+                }
+                aggs.trending_list_synopsys_partner =
+                {
+                    terms: { field: 'partner_name.keyword' }
+                }
+                aggs.trending_list_synopsys_instruction_type =
+                {
+                    terms: { field: 'instruction_type.keyword' }
+                }
+                aggs.trending_list_synopsys_capstone_project =
+                {
+                    terms: { field: 'capstone_project' }
+                }
+                aggs.trending_list_synopsys_virtual_labs =
+                {
+                    terms: { field: 'virtual_labs' }
+                }
+                aggs.trending_list_synopsys_case_based_learning =
+                {
+                    terms: { field: 'case_based_learning' }
+                }
+                aggs.trending_list_synopsys_price_type =
+                {
+                    terms: { field: 'pricing_type.keyword' }
+                },
+
+                    aggs.trending_list_synopsys_duration =
+                    {
+                        range: {
+                            field: "total_duration_in_hrs",
+                            ranges: [
+                                { to: 56 },
+                                { from: 255 }
+                            ]
+                        }
+                    },
+                    aggs.trending_list_synopsys_price_range =
+                    {
+                        range: {
+                            field: "basePriceRound",
+                            ranges: [
+                                { to: 13 },
+                                { from: 13, to: 130 },
+                                { from: 130 }
+                            ]
+                        }
+                    }
+
+            }
 
         queryPayload.aggs = aggs;
       
         // --Aggreation query build
-    
+     
+        
         let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
         /**
          * Aggregation object from elastic search
@@ -744,7 +814,6 @@ module.exports = class learnContentService {
                 list = await this.generateListViewData(result.hits, req.query['currency'], useCache);
             }
 
-
             //Remove filters if requested by slug
             for (let i = 0; i < slugs.length; i++) {
                 const config = filterConfigs.find(o => o.elastic_attribute_name === slugMapping[i].elastic_key);
@@ -797,6 +866,21 @@ module.exports = class learnContentService {
                 }
                 data.meta_information = slug_meta_information;
                
+            }
+            //This is for trending list
+            if(req.query['parsedFilters'])
+            {
+                data.trending_list_synopsys_aggregation = {
+                    topics : aggs_result.trending_list_synopsys_topics,
+                    instruction_type : aggs_result.trending_list_synopsys_instruction_type,
+                    capstone_project : aggs_result.trending_list_synopsys_capstone_project,
+                    virtual_labs : aggs_result.trending_list_synopsys_virtual_labs,
+                    case_based_learning: aggs_result.trending_list_synopsys_case_based_learning,
+                    partner: aggs_result.trending_list_synopsys_partner,
+                    duration: aggs_result.trending_list_synopsys_duration,
+                    price_type:aggs_result.trending_list_synopsys_price_type,
+                    price_range:aggs_result.trending_list_synopsys_price_range,
+                }
             }
             
 

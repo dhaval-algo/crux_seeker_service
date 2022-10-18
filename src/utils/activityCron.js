@@ -1041,11 +1041,161 @@ const providerActivity = async () => {
         }
     }
 }
+
+const trendingListActivity = async () => {
+    let activity_types = {}
+    let activity_count = {}
+    let activity_ids = []
+    const activities =  await models.activity.findAll({
+        attributes: ["id","type"],     
+        where:{
+            "type": ["TRENDING_LIST_VIEW"]
+        },   
+        raw:true
+    })
+    
+    for (activity_type of activities)
+    {
+        activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
+    }
+    
+    // All time counts for logged in user 
+    const activity_logs_all =  await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+    
+    const activity_log_x_days = await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+
+    for (let activity of activity_logs_all)
+    {
+        if(activity.resource){
+            if(!activity_count[activity.resource])
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    trending_list_views:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    trending_list_views:0
+                }
+            }           
+            
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].all_time.trending_list_views= Number(activity.count)              
+                    break;               
+                default:
+                    break;
+            }
+        }  
+    }
+
+    for (let activity of activity_log_x_days)
+    {
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].last_x_days.trending_list_views= Number(activity.count)
+                    break; 
+                default:
+                break;             
+            }
+        }
+    }
+
+    // All time counts for non-logged in user 
+    const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+
+    const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+    
+    for (let activity of activity_logs_loggedout_all)
+    {
+        if(activity.resource){
+            if(!activity_count[activity.resource] )
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    trending_list_views:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    trending_list_views:0
+                }
+            }            
+
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].all_time.trending_list_views += Number(activity.count)             
+                    break;
+               
+                default:
+                    break;
+            }
+        }   
+    }
+
+    for (let activity of activity_logs_loggedout_x_days)
+    {
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].last_x_days.trending_list_views += Number(activity.count)
+                    break;               
+                default:
+                    break;
+            }
+        }
+    }   
+    if(Object.keys(activity_count).length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            let payload = {
+                trending_list_id:key,
+                activity_count:value,
+            }
+            publishToSNS(process.env.TRENDING_LIST_ACTIVITY_TOPIC_ARN, payload, "TRENDING_LIST_ACTIVITY_COUNT")
+        }
+    }
+}
    
 module.exports = {
     storeActivity,
     learnpathActivity,
     articleActivity,
     providerActivity,
+    trendingListActivity,
     setTrendingPopularityThreshold
 }

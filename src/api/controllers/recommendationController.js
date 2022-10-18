@@ -306,4 +306,27 @@ module.exports = {
             res.status(200).send(response);
         }
     },
+    getRecommendedTrendingList : async (req, res) => {
+        const { type } = req.query;
+        let response
+        switch (type) {         
+
+            case "related-trending-list": 
+                response = await RecommendationService.getRelatedTrendingList(req);
+                break;            
+            default:
+                res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
+                break;           
+        }
+
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
+        }
+    },
 };
