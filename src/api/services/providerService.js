@@ -682,36 +682,46 @@ module.exports = class providerService {
     async getInstituteLandingPage(req) {
         let data = {};
         try {
-          const query = {
-            "bool": {
-                "filter": [
-                    { "term": { "id": 1 } }
-                ]
+            const query = {
+                "bool": {
+                    "filter": [
+                        { "term": { "id": 1 } }
+                    ]
+                }
+            };
+            const payload = {
+                "size": 1
+            };
+
+            let cacheData = await RedisConnection.getValuesSync('institute-home-page');
+            data = cacheData;
+
+            if (cacheData.noCacheData) {
+               let result = await elasticService.search('institute-home-page', query, payload, ["category_recommendations", "program_recommendations", "region_recommendations", "meta_description", "meta_keywords"]);
+
+                if (result.hits && result.hits.length) {
+                    data = result.hits[0]._source
+                    let meta_information = await generateMetaInfo('INSTITUTE_HOME_PAGE', result);
+
+                    if (meta_information) {
+                        data.meta_information = meta_information;
+                    }
+                    await RedisConnection.set('institute-home-page', data);
+                    RedisConnection.expire('institute-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
+                    return { success: true, data }
+                }
+                else {
+                    return { success: false, data: null }
+                }
             }
-          };
-          const payload = {
-            "size": 1
-          };
-    
-          let cacheData = await RedisConnection.getValuesSync('institute-home-page');
-          let result = cacheData;
-    
-          if (cacheData.noCacheData) {
-            result = await elasticService.search('institute-home-page', query, payload, ["category_recommendations", "program_recommendations", "region_recommendations", "meta_description", "meta_keywords"]);
-            await RedisConnection.set('institute-home-page', result);
-            RedisConnection.expire('institute-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
-          }
-          if (result.hits && result.hits.length) {
-            data = result.hits[0]._source
-            return { success: true, data }
-          }
-          return { success: false, data: null }
-    
+
+            return { success: false, data: data }
+
         } catch (error) {
-          console.log("Error fetching top categories in institute-home-page", error);
-          return { success: false, data: null }
+            console.log("Error fetching top categories in institute-home-page", error);
+            return { success: false, data: null }
         }
-      }
+    }
     
       async addActivity(req){
        try {           

@@ -982,6 +982,14 @@ const generateMetaInfo = async (page, result, list) => {
                 meta_keywords: (result.meta_information.meta_keywords) ? result.meta_information.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
             }
             break;
+        case 'INSTITUTE_HOME_PAGE':
+            meta_information = {
+                meta_title: `Top Institutes | Careervira | Careervira.com`,
+                meta_description: (result.meta_description) ? result.meta_description : defaultLearnContentMetaInfo.meta_description,
+                meta_keywords: (result.meta_keywords) ? result.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
+            }
+            break;
+            
 
 
         default:
