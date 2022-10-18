@@ -447,13 +447,13 @@ module.exports = class learnContentService {
                 parsedFilters = parseQueryFilters(req.query['f']);
             }
             if(req.query['parsedFilters']){
-               if(parsedFilters.length > 0)
-               {
+            if(parsedFilters.length > 0)
+            {
                 parsedFilters =  parsedFilters.concat(req.query['parsedFilters'])
-               }
-               else{
+            }
+            else{
                 parsedFilters =  req.query['parsedFilters']
-               }
+            }
             }           
            
             for(const filter of parsedFilters){      

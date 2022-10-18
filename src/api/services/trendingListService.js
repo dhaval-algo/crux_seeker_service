@@ -5,6 +5,7 @@ const RedisConnection = new redisConnection();
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
 const {formatImageResponse} = require('../utils/general');
+const {generateMetaInfo} = require("../utils/metaInfo")
 module.exports = class trendingListService {
     async getTrendingList(req) {
         try {
@@ -136,20 +137,51 @@ module.exports = class trendingListService {
                         skills_section: (signle_list.skills_section) ? signle_list.skills_section : null,
                         how_to_choose_course: signle_list.how_to_choose_course
                     }
+                    if(data.category)
+                    {
+                        data.list_type = {
+                            label: data.category,
+                            type:"category",
+                            slug: null,
+                            source: signle_list.list_type
+                        }
+                    }else if (data.sub_category)
+                    {
+                        data.list_type = {
+                            label: data.sub_category,
+                            type:"sub_category",
+                            slug: null,
+                            source: signle_list.list_type
+                        }
+                    }else if (data.topic)
+                    {
+                        data.list_type = {
+                            label: data.topic,
+                            type:"topic",
+                            slug: null,
+                            source: signle_list.list_type
+                        }
+                    }
 
-                    if (data.skills_section && data.skills_section.skills && data.skills_section.skills.length > 0) {
-                        data.skills_section.skills = await Promise.all(data.skills_section.skills.map(async skill => {
+                    if (data.skills_section && data.skills_section.skills && data.skills_section.skills.length > 0) {                        
+                        data.skills_section.skills = await Promise.all(data.skills_section.skills.map(async (skill, index) => {
                             let skilldetails = await RedisConnection.getValuesSync(`skill_${skill}`);
-                            if (skilldetails.noCacheData != true) {
-                                return skilldetails
-                            }
-                            else {
-                                return null
+                            return {
+                                label: skill,
+                                logo: skilldetails.logo ? formatImageResponse(skilldetails.logo) : null,
+                                description: skilldetails.description || null,
                             }
                         })
                         )
                     }
-
+                    data.meta_information = await generateMetaInfo  ('SINGLE_TRENDING_LIST', signle_list);                   
+                    await this.getTrendingListCourses (req, async (err, listData) => {
+                            if (listData) {                                                     
+                                data.course_count = listData.data.pagination.totalCount
+                            } else {
+                                data.course_count = 0
+                            }
+                        });   
                     RedisConnection.set(cacheName, data);
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TRENDING_LIST || 86400);
                     req.body = { trendingListId: data.id }
@@ -247,6 +279,7 @@ module.exports = class trendingListService {
                         };
 
                         const partnerResult = await elasticService.search("partner", query, { _source: ['id', 'logo', 'name', 'slug'] });
+                        
                         let partner_info = {}
                         if (partnerResult.hits && partnerResult.hits.length > 0) {
                             for (let hit of partnerResult.hits) {
@@ -257,15 +290,24 @@ module.exports = class trendingListService {
                                 }
                             }
                         }
-                        finalResponse.list = result.aggregations.partner_id_count.buckets.map(item => {
-                            return {
-                                id: item.key,
-                                name: partner_info[item.key].name,
-                                logo: partner_info[item.key].logo,
-                                slug: partner_info[item.key].slug,
-                                course_count: item.doc_count,
+                        finalResponse =await Promise.all( result.aggregations.partner_id_count.buckets.map(item => {
+                            
+                            if(typeof (partner_info[item.key]) != 'undefined' && partner_info[item.key])
+                            {                                
+                                return {
+                                    id: item.key,
+                                    name: partner_info[item.key].name,
+                                    logo: partner_info[item.key].logo,
+                                    slug: partner_info[item.key].slug,
+                                    course_count: item.doc_count,
+                                }
                             }
-                        })
+                            else{
+                                return null
+                            }
+                           
+                        }))
+                        finalResponse = finalResponse.filter(e =>{ return e != null } )                       
                     }
                     RedisConnection.set(cacheName, finalResponse);
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_TRENDING_LIST || 86400);

@@ -13,7 +13,6 @@ const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","i
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","pricing_additional_details","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
 const trendingListFields = ["id","title","slug","image","list_topic", "list_category", "short_description","region"]
-
 const FEATURED_RANK_LIMIT = 2;
 
 function formatQueryForCG (req){  

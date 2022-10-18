@@ -92,7 +92,6 @@ router.get('/articles/',injectTokenPayload, ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
-
 router.get('/author/:slug', ArticleController.getAuthor);
 router.get('/articles-by-author/:id', ArticleController.getArticlesByAuthor);
 
@@ -151,6 +150,7 @@ router.get('/getIpDetails', geoIpController.getIpDetails )
 router.get('/trending-list',injectTokenPayload,trendingListController.getTrendingList);
 router.get('/trending-list/:slug',injectTokenPayload,trendingListController.getSingleTrendingList);
 router.get('/trending-list-top-learning-plateform/:slug',injectTokenPayload,trendingListController.getTopLearningplatform);
+router.get('/trending-list-synopsis/:slug',injectTokenPayload,trendingListController.getTrendingListSynopsis);
 router.get('/trending-list-courses/:slug',injectTokenPayload,trendingListController.getTrendingListCourses);
 router.get('/trending-list-navigation-dropdown/:slug',injectTokenPayload,trendingListController.getTrendingListNavigationDropdown);
 router.get('/navigate-to-trending-list',injectTokenPayload,trendingListController.navigateToTrendingList);
