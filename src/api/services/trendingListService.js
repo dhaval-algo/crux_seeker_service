@@ -138,7 +138,7 @@ module.exports = class trendingListService {
                     }
 
                     if (data.skills_section && data.skills_section.skills && data.skills_section.skills.length > 0) {
-                        data.skills_section.skills = data.skills_section.skills.map(async skill => {
+                        data.skills_section.skills = await Promise.all(data.skills_section.skills.map(async skill => {
                             let skilldetails = await RedisConnection.getValuesSync(`skill_${skill}`);
                             if (skilldetails.noCacheData != true) {
                                 return skilldetails
@@ -147,6 +147,7 @@ module.exports = class trendingListService {
                                 return null
                             }
                         })
+                        )
                     }
 
                     RedisConnection.set(cacheName, data);
