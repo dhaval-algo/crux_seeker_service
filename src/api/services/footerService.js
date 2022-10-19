@@ -64,47 +64,7 @@ module.exports = class FooterService {
             callback(null, {success: false, message: 'No data available!', data: []});
         }
 
-    }
-
-    async ranking(callback, useCache = true){
-        const cacheKey = "ranking-list";
-
-        if(useCache){
-            try {
-                let cacheData = await RedisConnection.getValuesSync(cacheKey);
-                if(cacheData.noCacheData != true) {
-                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
-                }
-            }catch(error){
-                console.warn("Redis cache failed for : "+cacheKey, error);
-            }
-        }
-
-        let result = null;
-        try{
-            result = await fetch(`${apiBackendUrl}/rankings`);
-        }catch(e){
-            console.log('Error while retriving data: '+cacheKey,e);
-            return callback(null, {success: false, message: 'backend server failed!', data: []});
-            
-        }
-        if(result.ok) {
-            let response = await result.json();
-            let list = []
-            for(const rank of response){
-                let entry = getData(rank);
-                if(entry.image )
-                    entry.image =  formatImageResponse(entry.image);
-                if(entry.logo )
-                    entry.logo =  formatImageResponse(entry.logo);
-                list.push(entry)
-            }
-            RedisConnection.set(cacheKey, list);
-            callback(null, {success: true, message: 'Fetched successfully!', data:list});
-        } else {
-            callback(null, {success: false, message: 'No data available!', data: []});
-        }
-    }
+    }   
 
     async partnerWithUs(callback, useCache = true){
         const cacheKey = "partner-with-us";
