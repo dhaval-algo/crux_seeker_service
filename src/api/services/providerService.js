@@ -23,6 +23,7 @@ const {
 const {generateMetaInfo} = require('../utils/metaInfo');
 
 const redisConnection = require('../../services/v1/redis');
+const { rankings } = require("match-sorter");
 
 const RedisConnection = new redisConnection();
 
@@ -41,6 +42,8 @@ const sortOptions = {
 const ranksortOptions = {
     'High To Low': "rank:asc",
     'Low To High': "rank:desc",
+    'High To Low Attr': "rank-attr:asc",
+    'Low To High Attr': "rank-attr:desc",
     'A-Z': "name:asc",
     'Z-A' :"name:desc",
 }
@@ -209,14 +212,7 @@ module.exports = class providerService {
             }
         };
 
-        if(req.query['rank']){
-            /* query.bool.filter.push({
-                "exists" : { "field" : `ranking_${req.query['rank']}` }
-            }); */
-            query.bool.must.push({
-                "exists" : { "field" : `ranking_${req.query['rank']}` }
-            });
-        }
+
 
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
@@ -234,7 +230,7 @@ module.exports = class providerService {
         if(req.query['sort']){
             queryPayload.sort = []
            
-            if(req.query['rank']){
+            if(false && req.query['rank']){ // NOTE SURE WHY DELETE IT IF NOT REQURIED
                 let sort = ranksortOptions[req.query['sort']];
                 let splitSort = sort.split(":");
                  let sortField = splitSort[0];            
@@ -310,14 +306,16 @@ module.exports = class providerService {
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
         let filters = filterResponse.filters; 
         let latestRankYear
+
         if(req.query['rank'])
         {
-            let cacheData = await RedisConnection.getValuesSync('provider_raning_latest_year');
+            await this.setLatestRankingYear();  //re-move this function later;
+            let cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
             if(cacheData.noCacheData != true) {
                 latestRankYear = cacheData
             }
             let yearOptions = []
-            let yearoption = latestRankYear[req.query['rank']]
+            let yearoption = parseInt(latestRankYear[req.query['rank']]);
             for(let i =0; i< 11; i++ )  
             {
                
@@ -339,6 +337,8 @@ module.exports = class providerService {
                 filter_type: 'Checkboxes',
                 options: yearOptions
             })
+
+            useCache = true; // enable cache for ranks
         }
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -385,14 +385,14 @@ module.exports = class providerService {
                             
                         }
                     }
+                    cacheName = `listing-providers_${req.query['rank']}_${rankYear[req.query['rank']]}`; // ranking + year level cache
                     
                 }
             }
         }
         if(!rankYear)
-        { 
-            rankYear = latestRankYear
-        }        
+            rankYear = latestRankYear;
+
         if(!req.query['sort'] && !req.query['q']){
             if(req.query['rank']){   
                 req.query['sort'] = `rank:asc`
@@ -402,18 +402,27 @@ module.exports = class providerService {
         }
 
         if(req.query['sort']){
-            queryPayload.sort = []
+            queryPayload.sort = [];
+            let rank_query = req.query['rank'];
            
-            if(req.query['rank']){
-                let sort = req.query['sort'] || 'rank:asc';
+            if(rank_query){
+                let sort = ranksortOptions[req.query['sort']] || 'rank:asc';
                 let splitSort = sort.split(":");
                 let sortField = splitSort[0]; 
-                if((sortField == 'rank') && (req.query['rank'])){
-                    sort = `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}.keyword:${splitSort[1]}`;
+                if((sortField == 'rank') && rank_query){
+                            //rank + sort order level cache
+                    sort = `ranking_${rankYear[rank_query]}_${rank_query}:${splitSort[1]}`;
+                    cacheName = `listing-providers_${rank_query}_${rankYear[rank_query]}_${splitSort[1]}`;
+
                 }
-                else{
-                    sort = `ranking_${req.query['rank']}_${rankYear[req.query['rank']]}_${sortField}.keyword:${splitSort[1]}`;
+                else if(sortField == 'rank-attr' && rank_query && req.query['rank-attr']){
+                    sort = `ranking_${rankYear[rank_query]}_${rank_query}_${req.query['rank-attr']}:${splitSort[1]}`;
+                            //rank + year + rank attr + sort order level cache
+                    cacheName = `listing-providers_${rank_query}_${rankYear[rank_query]}_${req.query['rank-attr']}_${splitSort[1]}`;
                 }
+                else
+                    sort = `ranking_${rank_query}_${rankYear[rank_query]}_${sortField}:${splitSort[1]}`;
+
                 queryPayload.sort.push(sort)               
              }
              else{
@@ -432,6 +441,10 @@ module.exports = class providerService {
 
         if(req.query['rank']){
             ranking = await getRankingBySlug(req.query['rank']);
+            ranking.image = formatImageResponse(ranking.image);
+            ranking.logo = formatImageResponse(ranking.logo);
+            ranking.program =ranking.program.default_display_label;
+
             if(ranking){
                 parsedFilters.push({
                     key: 'Ranking',
@@ -440,9 +453,20 @@ module.exports = class providerService {
                 /* query.bool.filter.push({
                     "exists" : { "field" : `ranking_${req.query['rank']}` }
                 }); */
-            }            
+            }
+                    //handles both the query for rank-attr and just rank also
+            query.bool.must.push({
+                "exists" : { "field" : `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}${ req.query['rank']? `_${req.query['rank-attr']}` :'' }` }
+            });
         }
-        
+
+        if(useCache)
+        {
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            if(cacheData.noCacheData != true)
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+        }
+
         
         let queryString = null;        
 
@@ -742,11 +766,26 @@ module.exports = class providerService {
         // ranking data for list view on institute listing 
         if(rank == null && isList && result.ranks && rankYear ){
             for (let item of result.ranks) {
-                if (item.featured && item.year == rankYear[item.slug]) {                    
-                    data.featured_ranks.push({
+                
+                if ( item.year == rankYear[item.slug]) {
+                    
+                        //get image/logo from cache
+                    let image, logo, cacheData = await RedisConnection.getValuesSync(`ranking-list`);
+                    if(cacheData.noCacheData != true){
+                        for(const eachRank of cacheData)
+                            if(eachRank.slug === item.slug)
+                            {
+                                image = eachRank.image; 
+                                logo = eachRank.logo;
+                            }
+                        
+                    }
+
+                    data.ranks.push({
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
+                        image: item.image,
                         logo: item.logo
                     });
                 }
@@ -754,17 +793,32 @@ module.exports = class providerService {
         }
           // ranking data for list view on ranking page
         if(rank != null && isList && result.ranks && rankYear ){
-            data.featured_ranks = {}
+
+                //get image/logo from cache
+            let image, logo, cacheData = await RedisConnection.getValuesSync(`ranking-list`);
+            if(cacheData.noCacheData != true)
+            {
+                for(const eachRank of cacheData)
+                    if(eachRank.slug === rank)
+                    {
+                        image = eachRank.image; 
+                        logo = eachRank.logo;
+                    }
+                
+            }
+
+            data.ranks = {}
             data.compare_ranks = {}
             for (let item of result.ranks) {
 
-                if (item.featured && item.year == rankYear[item.slug]) {
-                    data.featured_ranks[item.slug] = 
+                if (item.year == rankYear[item.slug]) {
+                    data.ranks[item.slug] = 
                         {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
-                            logo: item.logo,
+                            logo: logo,
+                            image: image,
                             attributes: item.attributes
                         }
                 }
@@ -773,17 +827,36 @@ module.exports = class providerService {
             for (let i=1; i < 4 ; i++)
             {
                 for (let item of result.ranks) {
-                    if (item.featured && item.year == compareYear && item.slug == rank) {
+
+                    if (item.year == compareYear && item.slug == rank) {
                         data.compare_ranks[compareYear] = 
                         {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
-                            rank_change : item.rank_change
+                            rank_change : 0
                         }
                     }
                 }
                 compareYear--
+            }
+                //cacl rank change
+            if(Object.keys(data.compare_ranks).length >= 2)
+            {
+                let year = parseInt(Object.keys(data.compare_ranks).sort()[0]); //get base year
+
+                let r1 = data.compare_ranks[year].rank;
+                let r2 = data.compare_ranks[year +1].rank
+                data.compare_ranks[year +1].rank_change = r1 -r2;
+                
+
+                if(Object.keys(data.compare_ranks).length === 3)
+                {
+                    let r3 = data.compare_ranks[year +2].rank
+                    data.compare_ranks[year +2].rank_change = r2 -r3;
+                }
+
+                    
             }
 
         }
@@ -842,7 +915,7 @@ module.exports = class providerService {
 
 
             const slug = req.params.slug;
-            let cacheName = `single-provider-ranking-${slug}}`
+            let cacheName = `single-provider-ranking-${slug}`
             let useCache = false
 
             let cacheData = await RedisConnection.getValuesSync(cacheName);
@@ -860,29 +933,47 @@ module.exports = class providerService {
                 const result = await elasticService.search('provider', query, { _source: ['ranks'] });
                 if (result.hits && result.hits.length > 0) {
                     let ranking = {}
-                    let classifications = []
-                    let years = []
+                    let programs = [], years = [], year, program;
+
                     if (result.hits[0]._source.ranks && result.hits[0]._source.ranks.length > 0) {
-                        for (let rank of result.hits[0]._source.ranks) {
-                            if (rank.featured) {
-                                if (!ranking[rank.year]) {
-                                    ranking[rank.year] = {}
-                                    years.push(rank.year)
-                                }
-                                if (!ranking[rank.year][rank.classification]) {
-                                    ranking[rank.year][rank.classification] = []
-                                    classifications.push(rank.classification)
-                                }
-                                ranking[rank.year][rank.classification].push(rank)
+
+                        rankingFromCache = await RedisConnection.getValuesSync(`ranking-list`);
+                        if(rankingFromCache.noCacheData != true)
+
+                        for (let rank of result.hits[0]._source.ranks)
+                        {
+                            if(rankingFromCache.noCacheData != true)
+                            {
+                                for(const eachRank of rankingFromCache)
+                                    if(eachRank.slug === rank.slug)
+                                    {
+                                            //get image/logo from cache
+                                        rank.image = eachRank.image; 
+                                        rank.logo = eachRank.logo;
+                                    }
+                                
                             }
+                               
+                            program = rank.program ? rank.program : "overall";
+                            year = rank.year ? rank.year : new Date().getFullYear();
+                            if (!ranking[year]) {
+                                ranking[year] = {}
+                                years.push(year);
+                            }
+                            if (!ranking[year][program]) {
+                                ranking[year][program] = []
+                                programs.push(program);
+                            }
+                            ranking[year][program].push(rank);
                         }
                         years = years.sort(function (a, b) { return b - a });
-                        classifications = classifications.filter((x, i, a) => a.indexOf(x) == i);
+                        programs = programs.filter((x, i, a) => a.indexOf(x) == i);
+                        console.log(rankings)
                     }
 
                     let finalData = {
                         years,
-                        classifications,
+                        programs,
                         ranking
                     }
                     RedisConnection.set(cacheName, finalData);
@@ -908,25 +999,25 @@ module.exports = class providerService {
     };
     const result = await elasticService.search('provider', query, { size:1000,_source: ['ranks'] });
    
-    if (result.hits && result.hits.length > 0) {
+    if (result.hits && result.hits.length > 0) 
+    {
         let rank_latest_year = {}
         for(let hit of result.hits)
         {
            
-            for (let rank of hit._source.ranks) {
-                
-                if (rank.featured && rank.year) {
+            for (let rank of hit._source.ranks)
+                if (rank.year)
+                {
                     if(rank_latest_year[rank.slug])
-                    {
-                        rank_latest_year[rank.slug] = (rank.year > rank_latest_year[rank.slug])? rank.year : rank_latest_year[rank.slug]
-                    }
-                    else{
+                        rank_latest_year[rank.slug] = (rank.year > rank_latest_year[rank.slug])? rank.year : rank_latest_year[rank.slug];
+
+                    else
                         rank_latest_year[rank.slug] = rank.year
-                    }                    
+            
                 }
-            }
+
         }
-        RedisConnection.set("provider_raning_latest_year", rank_latest_year);
+        RedisConnection.set("provider_ranking_latest_year", rank_latest_year);
     }
    }
 
@@ -956,11 +1047,26 @@ module.exports = class providerService {
             let response = await result.json();
             let list = []
             for(const rank of response){
+
+                if(rank.key_attributes && rank.key_attributes.length)
+                    rank.key_attributes = rank.key_attributes.map((attr) => {
+                        return {name: attr.name, slug: attr.slug, description: attr.description}
+                    })
+
+                if(rank.program)
+                    rank.program = rank.program.default_display_label;
                 if(rank.image )
-                rank.image =  formatImageResponse(rank.image);
+                    rank.image =  formatImageResponse(rank.image);
                 if(rank.logo )
-                rank.logo =  formatImageResponse(rank.logo);
-                list.push(rank)
+                    rank.logo =  formatImageResponse(rank.logo);
+
+                let tmp = {};
+                for (let key in rank) {
+                    if(key != "id" && key != "created_at" && key != "created_by" && key != "updated_at" && key != "updated_by")
+                        tmp[key] = rank[key];
+
+                }
+                list.push(tmp);
             }
             RedisConnection.set(cacheKey, list);
             callback(null, {success: true, message: 'Fetched successfully!', data:list});
@@ -1007,5 +1113,13 @@ module.exports = class providerService {
         } else {
             callback(null, {success: false, message: 'No data available!', data: []});
         }
+    }
+
+    async invalidateRankings()
+    {
+        await this.ranking((err, data) => {
+            if(!data)
+                console.log("ranking invalidation: ",err)
+        }, false);
     }
 }
