@@ -4648,9 +4648,41 @@ module.exports = class recommendationService {
                 website_link: result.website_link
             },
             course_count: (result.course_count) ? result.course_count : 0,
-            featured_ranks: [],
+            ranks: [],
             ratings:{}
         };
+
+        if(result.ranks && result.ranks.length)
+        {
+            let rankings = await RedisConnection.getValuesSync(`ranking-list`);
+            //let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+
+            for (let item of result.ranks) {
+                    //send latest year rank only
+                //if ( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
+                        //get image/logo from cache
+                    let image, logo;
+                    if(rankings.noCacheData != true){
+                        for(const eachRank of rankings)
+                            if(eachRank.slug === item.slug)
+                            {
+                                image = eachRank.image;
+                                logo = eachRank.logo;
+                            }
+
+                    }
+
+                    data.ranks.push({
+                        name: item.name,
+                        slug: item.slug,
+                        rank: item.rank,
+                        image,
+                        logo
+                    });
+                //}
+            }
+        }
+
         if (result.reviews && result.reviews.length > 0) {
             let totalRating = 0;
             let ratings = {};

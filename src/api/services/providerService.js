@@ -309,7 +309,6 @@ module.exports = class providerService {
 
         if(req.query['rank'])
         {
-            await this.setLatestRankingYear();  //re-move this function later;
             let cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
             if(cacheData.noCacheData != true) {
                 latestRankYear = cacheData
@@ -765,12 +764,13 @@ module.exports = class providerService {
 
         // ranking data for list view on institute listing 
         if(rank == null && isList && result.ranks && rankYear ){
+            let cacheData = await RedisConnection.getValuesSync(`ranking-list`);
             for (let item of result.ranks) {
                 
                 if ( item.year == rankYear[item.slug]) {
                     
                         //get image/logo from cache
-                    let image, logo, cacheData = await RedisConnection.getValuesSync(`ranking-list`);
+                    let image = logo = null;
                     if(cacheData.noCacheData != true){
                         for(const eachRank of cacheData)
                             if(eachRank.slug === item.slug)
@@ -785,9 +785,10 @@ module.exports = class providerService {
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
-                        image: item.image,
-                        logo: item.logo
+                        image,
+                        logo
                     });
+
                 }
             }
         }
