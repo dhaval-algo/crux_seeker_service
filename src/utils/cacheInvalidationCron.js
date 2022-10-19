@@ -176,10 +176,19 @@ const invalidateFacilities = async () => {
 }
 
 
+const invalidateRankings = async () => {
+    try {
+        await ProviderService.invalidateRankings();
+    }
+    catch (err){ console.log("Ranking cache invalidation Error",err); }  
+}
+
+
 
 
    
 module.exports = {
+    invalidateRankings,
     invalidatePartnerWithUs,
     invalidateLearnersPage,
     invalidateCategoryTree,
