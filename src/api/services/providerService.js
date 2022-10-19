@@ -441,9 +441,9 @@ module.exports = class providerService {
 
         if(req.query['rank']){
             ranking = await getRankingBySlug(req.query['rank']);
-            ranking.image = formatImageResponse(ranking.image);
-            ranking.logo = formatImageResponse(ranking.logo);
-            ranking.program =ranking.program.default_display_label;
+            ranking.image = ranking.image ? formatImageResponse(ranking.image) : null;
+            ranking.logo = ranking.logo ? formatImageResponse(ranking.logo) : null;
+            ranking.program = ranking.program ? ranking.program.default_display_label : null;
 
             if(ranking){
                 parsedFilters.push({
@@ -456,7 +456,7 @@ module.exports = class providerService {
             }
                     //handles both the query for rank-attr and just rank also
             query.bool.must.push({
-                "exists" : { "field" : `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}${ req.query['rank']? `_${req.query['rank-attr']}` :'' }` }
+                "exists" : { "field" : `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
             });
         }
 
@@ -947,7 +947,7 @@ module.exports = class providerService {
 
                     if (result.hits[0]._source.ranks && result.hits[0]._source.ranks.length > 0) {
 
-                        rankingFromCache = await RedisConnection.getValuesSync(`ranking-list`);
+                        let rankingFromCache = await RedisConnection.getValuesSync(`ranking-list`);
                         if(rankingFromCache.noCacheData != true)
 
                         for (let rank of result.hits[0]._source.ranks)
