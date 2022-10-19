@@ -406,7 +406,7 @@ module.exports = class providerService {
             let rank_query = req.query['rank'];
            
             if(rank_query){
-                let sort = ranksortOptions[req.query['sort']] || 'rank:asc';
+                let sort = ranksortOptions[req.query['sort']] || (req.query['rank-attr'] ? 'rank-atr:asc' :'rank:asc');
                 let splitSort = sort.split(":");
                 let sortField = splitSort[0]; 
                 if((sortField == 'rank') && rank_query){
