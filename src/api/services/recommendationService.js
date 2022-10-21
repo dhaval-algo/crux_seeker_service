@@ -791,7 +791,7 @@ module.exports = class recommendationService {
 
         try {
             const { user } = req;
-            const { limit = 5, page = 1, order = "DESC" } = req.query;
+            const { limit = 20, page = 1, order = "DESC" } = req.query;
             const query = {
                 limit: limit,
                 offset: (page - 1) * limit,
@@ -879,7 +879,7 @@ module.exports = class recommendationService {
     async getPeopleAreAlsoViewingArticles(req) {
         try {
             const userId = req.user.userId;
-            const { page = 1, limit = 6 ,currency} = req.query;
+            const { page = 1, limit = 20 ,currency} = req.query;
             const offset = (page - 1) * limit;
             const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
             const categoriesNames = categories.map((category) => category.name);
@@ -2644,7 +2644,7 @@ module.exports = class recommendationService {
 
         try {
             const userId = req.user.userId;
-            const { page = 1, limit = 6, currency = process.env.DEFAULT_CURRENCY } = req.query;
+            const { page = 1, limit = 20, currency = process.env.DEFAULT_CURRENCY } = req.query;
             const offset = (page - 1) * limit;
             const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
             const categoriesNames = categories.map((category) => category.name);
