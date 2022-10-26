@@ -764,21 +764,17 @@ module.exports = class providerService {
 
         // ranking data for list view on institute listing 
         if(rank == null && isList && result.ranks && rankYear ){
-            let cacheData = await RedisConnection.getValuesSync(`ranking-list`);
+                    
+                //get image/logo from cache
+            let image, logo, ranking = await RedisConnection.getValuesSync(`rankings_slug_object`);
             for (let item of result.ranks) {
                 
                 if ( item.year == rankYear[item.slug]) {
                     
-                        //get image/logo from cache
-                    let image = logo = null;
-                    if(cacheData.noCacheData != true){
-                        for(const eachRank of cacheData)
-                            if(eachRank.slug === item.slug)
-                            {
-                                image = eachRank.image; 
-                                logo = eachRank.logo;
-                            }
-                        
+                    if(cacheData.noCacheData != true)
+                    {
+                        image = ranking[item.slug].image; 
+                        logo = ranking[item.slug].logo;
                     }
 
                     data.ranks.push({
@@ -796,21 +792,17 @@ module.exports = class providerService {
         if(rank != null && isList && result.ranks && rankYear ){
 
                 //get image/logo from cache
-            let image, logo, cacheData = await RedisConnection.getValuesSync(`ranking-list`);
-            if(cacheData.noCacheData != true)
-            {
-                for(const eachRank of cacheData)
-                    if(eachRank.slug === rank)
-                    {
-                        image = eachRank.image; 
-                        logo = eachRank.logo;
-                    }
-                
-            }
+            let image, logo, ranking = await RedisConnection.getValuesSync(`rankings_slug_object`);
 
             data.ranks = {}
             data.compare_ranks = {}
             for (let item of result.ranks) {
+
+                if(ranking.noCacheData != true)
+                {
+                    image = ranking[item.slug].image; 
+                    logo = ranking[item.slug].logo;
+                }
 
                 if (item.year == rankYear[item.slug]) {
                     data.ranks[item.slug] = 
@@ -818,8 +810,8 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
-                            logo: logo,
-                            image: image,
+                            logo,
+                            image,
                             attributes: item.attributes
                         }
                 }
@@ -1046,7 +1038,7 @@ module.exports = class providerService {
         }
         if(result.ok) {
             let response = await result.json();
-            let list = []
+            let list = [], ranking = {}
             for(const rank of response){
 
                 if(rank.key_attributes && rank.key_attributes.length)
@@ -1068,8 +1060,10 @@ module.exports = class providerService {
 
                 }
                 list.push(tmp);
+                ranking[rank.slug] = tmp;
             }
             RedisConnection.set(cacheKey, list);
+            RedisConnection.set("rankings_slug_object",ranking); //also cache ranking as array object with key as it slug
             callback(null, {success: true, message: 'Fetched successfully!', data:list});
         } else {
             callback(null, {success: false, message: 'No data available!', data: []});

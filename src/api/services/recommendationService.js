@@ -4637,22 +4637,17 @@ module.exports = class recommendationService {
 
         if(result.ranks && result.ranks.length)
         {
-            let rankings = await RedisConnection.getValuesSync(`ranking-list`);
+            let rankings = await RedisConnection.getValuesSync(`rankings_slug_object`);
             //let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
 
             for (let item of result.ranks) {
                     //send latest year rank only
                 //if ( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
                         //get image/logo from cache
-                    let image, logo;
+                    let image = null, logo = null; 
                     if(rankings.noCacheData != true){
-                        for(const eachRank of rankings)
-                            if(eachRank.slug === item.slug)
-                            {
-                                image = eachRank.image;
-                                logo = eachRank.logo;
-                            }
-
+                            image = rankings[item.slug].image;
+                            logo = rankings[item.slug].logo;
                     }
 
                     data.ranks.push({
