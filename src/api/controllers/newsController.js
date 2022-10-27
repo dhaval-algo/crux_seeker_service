@@ -1,21 +1,20 @@
 const newsService = require("../services/newsService");
-const NewsService = new newsService();
 
 
 module.exports = {
-    getNewsContent(req,res){
-        const slug = req.params.slug;
-        NewsService.getNewsContent(slug, (err, data) => {
-            if (data) {
+    getNewsList(req,res){
+
+        newsService.getNewsList(req, (err, data) => {
+            if(data)
                 res.status(200).send(data);
-            } else {
+            else
                 res.status(200).send(err);
-            }
-        });      
+        });
     },
+
     getNewsBySlug(req,res){
         const slug = req.params.slug;
-        NewsService.getNewsBySlug(slug, (err, data) => {
+        newsService.getNewsBySlug(slug, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {

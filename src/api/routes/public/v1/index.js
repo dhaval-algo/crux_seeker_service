@@ -52,7 +52,7 @@ router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 router.get('/get-top-categories/', learnContentController.getTopCategories);
 
-router.get('/news', newsController.getNewsContent);
+router.get('/news', newsController.getNewsList);
 router.get('/news/:slug', newsController.getNewsBySlug);
 
 // static content API
