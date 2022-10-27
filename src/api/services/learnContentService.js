@@ -1632,8 +1632,8 @@ module.exports = class learnContentService {
                         additional_batch.total_duration_unit = batch.total_duration_unit
                         additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : null                   
                         additional_batch.batch_timings = {
-                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
-                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset:null,
+                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: null,
                             'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
                             'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
                         }                    
