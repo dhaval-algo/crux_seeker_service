@@ -314,4 +314,68 @@ module.exports = class partnerService {
         }
 
     }
+
+    async getTopCoupons(req, callback) 
+    {
+        return callback({success: false, message: 'Working on it!'}, null)
+
+        try{
+
+            let slug = req.params.slug, result;
+
+            let query = {"bool": {
+                "must": [
+                    {"exists": {"field":  "coupons"}},
+                    {"match": {"partner_slug.keyword": slug}}]
+            }}
+
+            try
+            {
+                result = await elasticService.search('learn-content', query, {}, ['coupons']);
+            }
+            catch(err)
+            {
+                console.log("single view news partner fetch err: ",err)
+                return data; //empty
+            }
+            let coupons = [];
+            let offerRange = {low:100, high:0}
+            if(result.coupons && result.coupons.length){
+                let price;
+                data.course_details.pricing.sale_price ? price = data.course_details.pricing.sale_price : price = data.course_details.pricing.regular_price
+
+                for(let coupon of result.coupons)
+                {
+                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    {
+                        if(coupon.discount){
+                            const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency.iso_code, currency)
+                            const percent = Math.ceil((100 * discount)/price)
+                            if(percent < offerRange.low)
+                                offerRange.low = percent
+                            if(percent > offerRange.high)
+                                offerRange.high = percent
+                            coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency.iso_code
+
+                        }
+                        else{
+                            coupon.youSave = coupon.discount_percent + " %"
+                            if(coupon.discount_percent < offerRange.low)
+                                offerRange.low = coupon.discount_percent
+                            if(coupon.discount_percent > offerRange.high)
+                                offerRange.high = coupon.discount_percent
+                        }
+                        
+                        coupons.push(coupon)
+                    }
+                }
+
+            }
+
+        }catch(err) {
+            console.log("partner service getTopCoupons err", err)
+            callback({success: false, message: 'Not found!'}, null);
+        }
+
+    }
 }

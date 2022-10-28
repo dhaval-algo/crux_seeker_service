@@ -79,6 +79,8 @@ router.get('/providers-ranking/:slug', providerController.getSingleProviderRanki
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
+router.get('/partners-top-coupons/:slug', partnerController.getTopCoupons);
+
 
 router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
