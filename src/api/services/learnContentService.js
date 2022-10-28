@@ -1583,7 +1583,7 @@ module.exports = class learnContentService {
                 {
                     result.indian_student_installments = result.indian_student_installments.map(installment =>{
 
-                        installment.payment_deadline = new Date(installment.payment_deadline)
+                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) : null
                         return installment
                     })
                 }
@@ -1594,7 +1594,7 @@ module.exports = class learnContentService {
                 {
                     result.international_student_installments = result.international_student_installments.map(installment =>{
 
-                        installment.payment_deadline = new Date(installment.payment_deadline)
+                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) :null
                         return installment
                     })
                 }
