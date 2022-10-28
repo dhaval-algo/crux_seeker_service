@@ -315,7 +315,7 @@ const getCourseCoupons = async (coursesIds, currency) =>
                     card_image_mobile: hit.card_image_mobile? formatImageResponse(hit.card_image_mobile): hit.images? formatImageResponse(hit.images) : null,
                     sidebar_listing_image: hit.sidebar_listing_image ? formatImageResponse(hit.sidebar_listing_image): hit.images? formatImageResponse(hit.images) : null,
                     partner: hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null },
-                    coupons[0]
+                    coupons: coupons[0]
                  }
 
                 data.push(course)
