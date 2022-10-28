@@ -1,6 +1,7 @@
 const elasticService = require("./elasticService");
 const helperService = require("../../utils/helper");
-const {getPaginationQuery, formatImageResponse } = require("../utils/general");
+const {getPaginationQuery, formatImageResponse, isDateInRange,
+    getCurrencies, getCurrencyAmount } = require("../utils/general");
 
 const keywordFields = ['name'];
 
@@ -107,7 +108,7 @@ const generateListViewData = async (rows) =>
     return dataArr;
 }
 
-const generateSingleViewData = async (result, isList = false, currency=process.env.DEFAULT_CURRENCY) =>
+const generateSingleViewData = async (result, isList = false, currency = process.env.DEFAULT_CURRENCY) =>
 {    
     let data = 
     {
@@ -199,6 +200,12 @@ const generateSingleViewData = async (result, isList = false, currency=process.e
         }
         else
             data.banner = {}
+        if(result.offers_courses && result.offers_courses.length > 1)
+            data.top_coupon_offers = await getCourseCoupons(result.offers_courses, currency)
+
+        else
+            data.top_coupon_offers = []
+
 
         if(result.key_takeaways) 
             data.key_takeaways = { title: "Key Takeaways", values: result.key_takeaways}
@@ -230,38 +237,126 @@ const getCourseDetails = async (courseSlug) =>
         data = {
             title: lc.title,
             slug: lc.slug,
-            partner: lc.partner_name ? lc.partner_name: null,
+            partner: lc.partner_slug ? await getPartnerDetails(lc.partner_slug): { name: lc.partner_name, slug: lc.partner_slug, logo: null} ,
             enrollmentEndDate: lc.course_enrollment_end_date? lc.course_enrollment_end_date: null,
             daysLeft: daysLeft ? daysLeft : 1,
             regularPrice: lc.regular_price ? lc.regular_price: null,
             salePrice: lc.sale_price ? lc.sale_price: null
         }
     }
-    if(lc.partner_slug)
-    {
-        let partner, query = { "bool": { "must": [{ "match": { "slug.keyword": lc.partner_slug } }] }}
+    return data;
+}
+
+const getCourseCoupons = async (coursesIds, currency) =>
+{
+    try{
+
+        let query = {
+            "bool": {
+              "must": [{ "terms": {"id": coursesIds}}, {"term": { "status.keyword": 'published' }} ]
+            }}
+        const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile',
+                    'listing_image', 'partner_slug', "partner_name", "title", "slug"]
 
         try
         {
-            partner = await elasticService.search('partner', query, {}, ['name','logo']);
+            result = await elasticService.search('learn-content', query, {}, courseFields);
         }
         catch(err)
         {
             console.log("single view news partner fetch err: ",err)
-            return data; //empty
+            return []; //empty
         }
+        
+        let data = []
+        if(result.hits && result.hits.length){
+            let currencies = await getCurrencies();
+            for(let hit of result.hits)
+            {
+                hit = hit._source;
+                let coupons = [], offerRange = {low:100, high:0}, price = hit.sale_price ? hit.sale_price: hit.regular_price;
 
-        if(partner && partner.hits && partner.hits.length)
-        {
-            partner = partner.hits[0]._source;
-            data.partner = {
-                name: partner.name,
-                slug: lc.partner_slug,
-                logo: partner.logo ? formatImageResponse(partner.logo) : null,
+
+                for(let coupon of hit.coupons)
+                {
+                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    {
+                        if(coupon.discount){
+                            coupon.discount = {value: coupon.discount.value, currency: coupon.discount.currency.iso_code}
+                            const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency)
+                            const percent = Math.ceil((100 * discount)/price)
+                            if(percent < offerRange.low)
+                                offerRange.low = percent
+                            if(percent > offerRange.high)
+                                offerRange.high = percent
+                            coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency.iso_code
+
+                        }
+                        else{
+                            coupon.youSave = coupon.discount_percent + " %"
+                            if(coupon.discount_percent < offerRange.low)
+                                offerRange.low = coupon.discount_percent
+                            if(coupon.discount_percent > offerRange.high)
+                                offerRange.high = coupon.discount_percent
+                        }
+                        
+                        coupons.push(coupon)
+                    }
+                }
+                if(!coupons.length)
+                    continue;
+
+
+                 let course = {
+                    title: hit.title,
+                    slug: hit.slug,
+                    image: hit.images ? formatImageResponse(hit.images): null,
+                    card_image: hit.card_image ? formatImageResponse(hit.card_image):  hit.images? formatImageResponse(hit.images) : null,
+                    card_image_mobile: hit.card_image_mobile? formatImageResponse(hit.card_image_mobile): hit.images? formatImageResponse(hit.images) : null,
+                    sidebar_listing_image: hit.sidebar_listing_image ? formatImageResponse(hit.sidebar_listing_image): hit.images? formatImageResponse(hit.images) : null,
+                    partner: hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null },
+                    coupons
+                 }
+
+                data.push(course)
+
             }
+
+        }
+        return data;
+
+    }catch(err) {
+        console.log("partner service getTopCoupons err", err)
+        return [];
+    }
+
+}
+
+const getPartnerDetails = async (partnerSlug) =>
+{
+    let partner, query = { "bool": { "must": [{ "match": { "slug.keyword" : partnerSlug } }] }}
+
+    try
+    {
+        partner = await elasticService.search('partner', query, {}, ['name','logo']);
+    }
+    catch(err)
+    {
+        console.log("single view news partner fetch err: ",err)
+        return { name: partnerSlug, slug: partnerSlug, logo: null }; //empty
+    }
+
+    if(partner && partner.hits && partner.hits.length)
+    {
+        partner = partner.hits[0]._source;
+        return {
+            name: partner.name,
+            slug: partnerSlug,
+            logo: partner.logo ? formatImageResponse(partner.logo) : null,
         }
     }
-    return data;
+    else
+        return { name: partnerSlug, slug: partnerSlug, logo: null }
 }
 
 module.exports = {
