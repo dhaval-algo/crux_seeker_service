@@ -129,6 +129,8 @@ const generateSingleViewData = async (result, isList = false, currency=process.e
         author_info: result.author_info,
         type: result.type,
         banner: result.banner? {type: result.banner.type} : null,
+        updated_at: result.updated_at? result.updated_at : new Date().toDateString().toISOString(),
+        created_at: result.created_at ? result.created_at: new Date().toDateString().toISOString()
 
     }
 
