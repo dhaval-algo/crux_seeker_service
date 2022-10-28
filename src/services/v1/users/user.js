@@ -3808,7 +3808,7 @@ const getUserProfile = async (req, res) => {
 
         user.setDataValue('pendingActions', pendingActions);
         user.setDataValue('profileProgress', pendingActions.profileProgress);
-
+        user.setDataValue('id', req.user.userId);
         res.status(200).send({
             message: "User Profile fetched successfully",
             success: true,
