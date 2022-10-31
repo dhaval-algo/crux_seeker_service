@@ -2,7 +2,9 @@
 
 const elasticService = require("./elasticService");
 const helperService = require("../../utils/helper");
-const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs,
+const RedisConnection = require('../../services/v1/redis');
+const redisConnection = new RedisConnection();
+const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs, updateSelectedFilters, calculateFilterCount, getAllFilters,
     getCurrencies, getCurrencyAmount, parseQueryFilters, getFilterAttributeName} = require("../utils/general");
 
 const keywordFields = [];
@@ -11,6 +13,13 @@ const keywordFields = [];
 const getNewsBySlug = async (req, callback) =>
 {
     const slug = req.params.slug;
+    let cacheKey = `single-news-${slug}`
+
+    let cacheData = await redisConnection.getValuesSync(cacheKey);
+    if(cacheData.noCacheData != true)
+        return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+
+
     const query = { 
         "bool": {
          "must":[
@@ -32,6 +41,7 @@ const getNewsBySlug = async (req, callback) =>
     {
         result.hits[0]._source._id = result.hits[0]._id;
         let data = await generateSingleViewData(result.hits[0]._source, false, currency)
+        redisConnection.set(cacheKey, data, process.env.CACHE_EXPIRE_SINGLE_NEWS || 360)
         callback(null, {success: true, message: 'Fetched successfully!', data})
     }
     else
@@ -39,9 +49,10 @@ const getNewsBySlug = async (req, callback) =>
 
 }
 
-const filterFields = ['topics','categories','sub_categories','skills','regions'];
+const filterFields = ['topics','categories','sub_categories','skills','regions', 'type'];
 
- const getNewsList = async (req, callback) =>{
+const getNewsList = async (req, callback) =>
+{
     const query = { 
         "bool": {
             "must": [],
@@ -50,7 +61,7 @@ const filterFields = ['topics','categories','sub_categories','skills','regions']
     };
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
-    let queryPayload = {};
+    let queryPayload = {}, cacheKey = 'news-lisiting-with-';
     let paginationQuery = await getPaginationQuery(req.query);
     queryPayload.from = paginationQuery.from;
     queryPayload.size = paginationQuery.size;
@@ -58,44 +69,58 @@ const filterFields = ['topics','categories','sub_categories','skills','regions']
     if(!req.query['sort'])
         req.query['sort'] = "updated_at:desc";
 
-    if(req.query['sort']){
+    if(req.query['sort'])
+    {
         let sort = req.query['sort'];
         let splitSort = sort.split(":");
         if(keywordFields.includes(splitSort[0]))
             sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
     
         queryPayload.sort = [sort];
+        cacheKey += `${sort}-`
     }
-    
+
     let queryString = null;
-    if(req.query['q']){
+    if(req.query['q'])
+    {
+        const q = decodeURIComponent(req.query['q'])
         query.bool.must.push( 
             {
-                match: {
-                    "title": decodeURIComponent(req.query['q'])
-                }
+                match: { "title": q }
             }
-        );            
+        );
+        cacheKey += `${q}-`
+
     }
+
+    //lets do filtering; with or without params
     let parsedFilters = [];
     const filterConfigs = await getFilterConfigs('Custom_News');
+    let filterQuery = JSON.parse(JSON.stringify(query));
+    let filterQueryPayload = JSON.parse(JSON.stringify(queryPayload));
+    let filterResponse = await getAllFilters('news', filterQuery, filterQueryPayload, filterConfigs);
+    let filters = filterResponse.filters;
 
-    if(req.query['f']){
+    if(req.query['f'])
+    {
         parsedFilters = parseQueryFilters(req.query['f']);
-            for(const filter of parsedFilters){  
-                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
-                if(elasticAttribute){
-                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+        for(const filter of parsedFilters)
+        {
+            let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+            if(elasticAttribute)
+            {
+                const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+                query.bool.must.push({ "terms": {[ attribute_name ]: filter.value} });
+                cacheKey += `${filter.key}-${filter.value}`
 
-                    query.bool.must.push({
-                        "terms": {[attribute_name]: filter.value}
-                    });
-
-                }
             }
+        }
       
     }
-    
+    let cacheData = await redisConnection.getValuesSync(cacheKey);
+    if(cacheData.noCacheData != true)
+        return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+
     const result = await elasticService.search('news', query, queryPayload, queryString);
     if(result.total && result.total.value > 0)
     {
@@ -109,14 +134,21 @@ const filterFields = ['topics','categories','sub_categories','skills','regions']
             totalCount: result.total.value
         }
 
+        //update selected flags
+        if(parsedFilters.length > 0)
+        {
+            filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'news', result.hits, filterResponse.total, query);
+            filters = updateSelectedFilters(filters, parsedFilters);
+        }
+
           let data = {
             list: list,
-            filters: [],
+            filters,
             pagination: pagination,
             sort: req.query['sort']
           };
 
-        
+        redisConnection.set(cacheKey, data, process.env.CACHE_EXPIRE_NEWS_LIST || 360)
         callback(null, {success: true, message: 'Fetched successfully!', data: data});
     }
     else
@@ -261,7 +293,7 @@ const getCourseDetails = async (courseSlug) =>
         lc = lc.hits[0]._source;
         let daysLeft = -1;  // default hard coded
 
-        if(lc.course_enrollment_end_date)
+        if(lc.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
             daysLeft = Math.ceil((new Date(lc.course_enrollment_end_date).getTime() - new Date().getTime())/ (1000 * 3600 * 24))
 
         data = {
