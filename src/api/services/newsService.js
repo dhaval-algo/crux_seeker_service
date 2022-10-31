@@ -1,13 +1,16 @@
+'use strict';
+
 const elasticService = require("./elasticService");
 const helperService = require("../../utils/helper");
-const {getPaginationQuery, formatImageResponse, isDateInRange,
-    getCurrencies, getCurrencyAmount } = require("../utils/general");
+const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs,
+    getCurrencies, getCurrencyAmount, parseQueryFilters, getFilterAttributeName} = require("../utils/general");
 
-const keywordFields = ['name'];
+const keywordFields = [];
 
 
-const getNewsBySlug = async (slug, callback) =>
+const getNewsBySlug = async (req, callback) =>
 {
+    const slug = req.params.slug;
     const query = { 
         "bool": {
          "must":[
@@ -15,6 +18,8 @@ const getNewsBySlug = async (slug, callback) =>
           ]
         }
     };
+    let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
+
     
     
     let result = null;
@@ -25,7 +30,8 @@ const getNewsBySlug = async (slug, callback) =>
 
     if(result && result.hits && result.hits.length > 0)
     {
-        let data = await generateSingleViewData(result.hits[0]._source, false)
+        result.hits[0]._source._id = result.hits[0]._id;
+        let data = await generateSingleViewData(result.hits[0]._source, false, currency)
         callback(null, {success: true, message: 'Fetched successfully!', data})
     }
     else
@@ -33,6 +39,7 @@ const getNewsBySlug = async (slug, callback) =>
 
 }
 
+const filterFields = ['topics','categories','sub_categories','skills','regions'];
 
  const getNewsList = async (req, callback) =>{
     const query = { 
@@ -41,6 +48,7 @@ const getNewsBySlug = async (slug, callback) =>
             "filter": []
         }
     };
+    let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
     let queryPayload = {};
     let paginationQuery = await getPaginationQuery(req.query);
@@ -64,18 +72,35 @@ const getNewsBySlug = async (slug, callback) =>
         query.bool.must.push( 
             {
                 match: {
-                    "name": decodeURIComponent(req.query['q']) //change this ######### 
+                    "title": decodeURIComponent(req.query['q'])
                 }
             }
         );            
     }
-    
+    let parsedFilters = [];
+    const filterConfigs = await getFilterConfigs('Custom_News');
 
+    if(req.query['f']){
+        parsedFilters = parseQueryFilters(req.query['f']);
+            for(const filter of parsedFilters){  
+                let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
+                if(elasticAttribute){
+                    const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
+
+                    query.bool.must.push({
+                        "terms": {[attribute_name]: filter.value}
+                    });
+
+                }
+            }
+      
+    }
+    
     const result = await elasticService.search('news', query, queryPayload, queryString);
     if(result.total && result.total.value > 0)
     {
 
-        const list = await generateListViewData(result.hits);
+        const list = await generateListViewData(result.hits, currency);
 
         let pagination = {
             page: paginationQuery.page,
@@ -98,11 +123,12 @@ const getNewsBySlug = async (slug, callback) =>
         callback(null, {success: true, message: 'No records found!', data: {list: [], pagination: {}, filters: []}});      
 }
 
-const generateListViewData = async (rows) =>
+const generateListViewData = async (rows, currency) =>
 {
     let dataArr = [];
     for(let row of rows){
-        const data = await generateSingleViewData(row._source, true);
+        row._source._id = row._id;
+        const data = await generateSingleViewData(row._source, true, currency);
         dataArr.push(data);
     }
     return dataArr;
@@ -233,13 +259,17 @@ const getCourseDetails = async (courseSlug) =>
     if(lc && lc.hits && lc.hits.length)
     {
         lc = lc.hits[0]._source;
-        daysLeft = 9; //hard set, will calc latr
+        let daysLeft = -1;  // default hard coded
+
+        if(lc.course_enrollment_end_date)
+            daysLeft = Math.ceil((new Date(lc.course_enrollment_end_date).getTime() - new Date().getTime())/ (1000 * 3600 * 24))
+
         data = {
             title: lc.title,
             slug: lc.slug,
             partner: lc.partner_slug ? await getPartnerDetails(lc.partner_slug): { name: lc.partner_name, slug: lc.partner_slug, logo: null} ,
             enrollmentEndDate: lc.course_enrollment_end_date? lc.course_enrollment_end_date: null,
-            daysLeft: daysLeft ? daysLeft : 1,
+            daysLeft: daysLeft,
             regularPrice: lc.regular_price ? lc.regular_price: null,
             salePrice: lc.sale_price ? lc.sale_price: null
         }
@@ -247,17 +277,18 @@ const getCourseDetails = async (courseSlug) =>
     return data;
 }
 
+const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile',
+                    'listing_image', 'partner_slug', "partner_name", "title", "slug", 'learn_content_pricing_currency']
+
 const getCourseCoupons = async (coursesIds, currency) =>
 {
     try{
 
-        let query = {
+        let result, query = {
             "bool": {
               "must": [{ "terms": {"id": coursesIds}}, {"term": { "status.keyword": 'published' }} ]
             }}
-        const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile',
-                    'listing_image', 'partner_slug', "partner_name", "title", "slug"]
-
+        
         try
         {
             result = await elasticService.search('learn-content', query, {}, courseFields);
@@ -275,7 +306,7 @@ const getCourseCoupons = async (coursesIds, currency) =>
             {
                 hit = hit._source;
                 let coupons = [], offerRange = {low:100, high:0}, price = hit.sale_price ? hit.sale_price: hit.regular_price;
-
+                let best_offer = 0, best_offer_index = 0, i = 0;
 
                 for(let coupon of hit.coupons)
                 {
@@ -283,24 +314,34 @@ const getCourseCoupons = async (coursesIds, currency) =>
                     {
                         if(coupon.discount){
                             coupon.discount = {value: coupon.discount.value, currency: coupon.discount.currency.iso_code}
-                            const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency)
-                            const percent = Math.ceil((100 * discount)/price)
+                            const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency)  //doubt
+                            const percent = Math.ceil((100 * discount)/price) //we cannot use price directly
+                            if(percent > best_offer )
+                            {
+                                best_offer = percent;
+                                best_offer_index = i;
+                            }
                             if(percent < offerRange.low)
                                 offerRange.low = percent
                             if(percent > offerRange.high)
                                 offerRange.high = percent
-                            coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency.iso_code
+                            coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency;
 
                         }
                         else{
                             coupon.youSave = coupon.discount_percent + " %"
+                            if(coupon.discount_percent > best_offer )
+                            {
+                                best_offer = percent;
+                                best_offer_index = i;
+                            }
                             if(coupon.discount_percent < offerRange.low)
                                 offerRange.low = coupon.discount_percent
                             if(coupon.discount_percent > offerRange.high)
                                 offerRange.high = coupon.discount_percent
                         }
                         
-                        coupons.push(coupon)
+                        coupons[i++] = coupon
                     }
                 }
                 if(!coupons.length)
@@ -315,7 +356,9 @@ const getCourseCoupons = async (coursesIds, currency) =>
                     card_image_mobile: hit.card_image_mobile? formatImageResponse(hit.card_image_mobile): hit.images? formatImageResponse(hit.images) : null,
                     sidebar_listing_image: hit.sidebar_listing_image ? formatImageResponse(hit.sidebar_listing_image): hit.images? formatImageResponse(hit.images) : null,
                     partner: hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null },
-                    coupon: coupons[0]
+                    //sale_price: hit.sale_price? getCurrencyAmount(hit.sale_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
+                    //regular_price: hit.regular_price ? getCurrencyAmount(hit.regular_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
+                    coupon: coupons[best_offer_index]
                  }
 
                 data.push(course)

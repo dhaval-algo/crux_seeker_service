@@ -13,8 +13,7 @@ module.exports = {
     },
 
     getNewsBySlug(req,res){
-        const slug = req.params.slug;
-        newsService.getNewsBySlug(slug, (err, data) => {
+        newsService.getNewsBySlug(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {
