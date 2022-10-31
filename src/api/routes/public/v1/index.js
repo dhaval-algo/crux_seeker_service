@@ -52,6 +52,7 @@ router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 router.get('/get-top-categories/', learnContentController.getTopCategories);
 
+//news endpoints
 router.get('/news', newsController.getNewsList);
 router.get('/news/:slug', newsController.getNewsBySlug);
 
@@ -79,7 +80,6 @@ router.get('/providers-ranking/:slug', providerController.getSingleProviderRanki
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
-router.get('/partners-top-coupons/:slug', partnerController.getTopCoupons);
 
 
 router.get('/categories/tree', categoryController.getCategoryTree);
