@@ -204,12 +204,14 @@ module.exports = class categoryService {
                             'logo' : el["logo"],
                          });
                      })
+
+                     if(data)
+                    {
+                        RedisConnection.set(cacheName, data);
+                    }
                 }
                 
-                if(data)
-                {
-                    RedisConnection.set(cacheName, data);
-                }
+                
                 callback(null, {success: true, message: 'Fetched successfully!', data: data});
             }
         }catch(err){
