@@ -30,8 +30,6 @@ const getNewsBySlug = async (req, callback) =>
     };
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
-    
-    
     let result = null;
     try{
         result = await elasticService.search('news', query);
@@ -202,7 +200,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
         {
             data.course = result.course;
             if(data.course.learn_content.slug)
-                data.course.learn_content = await getCourseDetails(data.course.learn_content.slug)
+                data.course.learn_content = await getCourseDetails(data.course.learn_content.slug, currency)
         }
         else
             data.course = {}
@@ -294,7 +292,8 @@ const getCourseDetails = async (courseSlug, currency) =>
         lc = lc.hits[0]._source;
         if(currencies.length == 0)
             currencies = await getCurrencies();
-        currencies.map(c => {if(c.iso_code == currency) currency = c.currency_symbol})
+        let u_currency_symbol = '$';
+        currencies.map(c => {if(c.iso_code == currency) u_currency_symbol = c.currency_symbol})
         let daysLeft = -1;  // default hard coded
 
         if(lc.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
@@ -306,10 +305,10 @@ const getCourseDetails = async (courseSlug, currency) =>
             partner: lc.partner_slug ? await getPartnerDetails(lc.partner_slug): { name: lc.partner_name, slug: lc.partner_slug, logo: null} ,
             enrollmentEndDate: lc.course_enrollment_end_date? lc.course_enrollment_end_date: null,
             daysLeft: daysLeft,
-            regularPrice: lc.regular_price ? lc.regular_price: null,
-            salePrice: lc.sale_price ? lc.sale_price: null,
+            regularPrice: lc.regular_price ? getCurrencyAmount(lc.regular_price, currencies, lc.learn_content_pricing_currency.iso_code, currency): null,
+            salePrice: lc.sale_price ? getCurrencyAmount(lc.sale_price, currencies, lc.learn_content_pricing_currency.iso_code, currency): null,
             offer_percent: (lc.sale_price) ? (Math.round(((lc.regular_price - lc.sale_price) * 100) / lc.regular_price)) : null,
-            u_currency_symbol: currency,
+            u_currency_symbol,
             b_currency_symbol : lc.learn_content_pricing_currency? lc.learn_content_pricing_currency.currency_symbol : null
 
         }
