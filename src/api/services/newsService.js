@@ -8,6 +8,7 @@ const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs,
     getCurrencies, getCurrencyAmount, parseQueryFilters, getFilterAttributeName} = require("../utils/general");
 
 const keywordFields = [];
+let currencies = [];
 
 
 const getNewsBySlug = async (req, callback) =>
@@ -254,7 +255,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
         {
             data.banner = result.banner;
             if(result.banner.learn_content.slug)
-                data.banner.learn_content = await getCourseDetails(result.banner.learn_content.slug);
+                data.banner.learn_content = await getCourseDetails(result.banner.learn_content.slug, currency);
         }
         else
             data.banner = {}
@@ -274,14 +275,14 @@ const generateSingleViewData = async (result, isList = false, currency = process
     return data;
 }
 
-const getCourseDetails = async (courseSlug) =>
+const getCourseDetails = async (courseSlug, currency) =>
 {
     
     let lc, data = {}, query = { "bool": { "must": [{ "match": { "slug.keyword": courseSlug } }] }}
 
     try
     {
-        lc = await elasticService.search('learn-content', query, {}, ['title','slug','sale_price','regular_price','course_enrollment_end_date', 'partner_name', 'partner_slug']);
+        lc = await elasticService.search('learn-content', query, {}, [...courseFields, 'course_enrollment_end_date']);
     }
     catch(err) {
         console.log("single view news course fetch err: ", err)
@@ -291,6 +292,9 @@ const getCourseDetails = async (courseSlug) =>
     if(lc && lc.hits && lc.hits.length)
     {
         lc = lc.hits[0]._source;
+        if(currencies.length == 0)
+            currencies = await getCurrencies();
+        currencies.map(c => {if(c.iso_code == currency) currency = c.currency_symbol})
         let daysLeft = -1;  // default hard coded
 
         if(lc.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
@@ -303,7 +307,11 @@ const getCourseDetails = async (courseSlug) =>
             enrollmentEndDate: lc.course_enrollment_end_date? lc.course_enrollment_end_date: null,
             daysLeft: daysLeft,
             regularPrice: lc.regular_price ? lc.regular_price: null,
-            salePrice: lc.sale_price ? lc.sale_price: null
+            salePrice: lc.sale_price ? lc.sale_price: null,
+            offer_percent: (lc.sale_price) ? (Math.round(((lc.regular_price - lc.sale_price) * 100) / lc.regular_price)) : null,
+            u_currency_symbol: currency,
+            b_currency_symbol : lc.learn_content_pricing_currency? lc.learn_content_pricing_currency.currency_symbol : null
+
         }
     }
     return data;
@@ -331,9 +339,11 @@ const getCourseCoupons = async (coursesIds, currency) =>
             return []; //empty
         }
         
-        let data = []
+        let data = [], u_currency_symbol = '$';
         if(result.hits && result.hits.length){
-            let currencies = await getCurrencies();
+            if(currencies.length == 0)
+                currencies = await getCurrencies();
+            currencies.map(c => {if(c.iso_code == currency) u_currency_symbol = c.currency_symbol})
             for(let hit of result.hits)
             {
                 hit = hit._source;
@@ -388,8 +398,11 @@ const getCourseCoupons = async (coursesIds, currency) =>
                     card_image_mobile: hit.card_image_mobile? formatImageResponse(hit.card_image_mobile): hit.images? formatImageResponse(hit.images) : null,
                     sidebar_listing_image: hit.sidebar_listing_image ? formatImageResponse(hit.sidebar_listing_image): hit.images? formatImageResponse(hit.images) : null,
                     partner: hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null },
-                    //sale_price: hit.sale_price? getCurrencyAmount(hit.sale_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
-                    //regular_price: hit.regular_price ? getCurrencyAmount(hit.regular_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
+                    sale_price: hit.sale_price? getCurrencyAmount(hit.sale_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
+                    regular_price: hit.regular_price ? getCurrencyAmount(hit.regular_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
+                    offer_percent: (hit.sale_price) ? (Math.round(((hit.regular_price - hit.sale_price) * 100) / hit.regular_price)) : null,
+                    u_currency_symbol,
+                    b_currency_symbol : hit.learn_content_pricing_currency? hit.learn_content_pricing_currency.currency_symbol : null,
                     coupon: coupons[best_offer_index]
                  }
 
