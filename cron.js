@@ -5,7 +5,7 @@ const cron = require('node-cron')
 const Sentry = require("@sentry/node");
 
 global.appRoot = path.resolve(__dirname);
-const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
+const { createSiteMap, copySiteMapS3ToFolder , createNewsSiteMap} = require('./src/services/v1/sitemap');
 const { storeActivity, learnpathActivity, articleActivity, providerActivity, setTrendingPopularityThreshold} = require('./src/utils/activityCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages,
     invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter,
@@ -82,6 +82,27 @@ if(ENABLE_SITEMAP_CRON)
     cron.schedule(process.env.SITEMAP_COPY_CRON_TIME, async function () {
         try {        
             await copySiteMapS3ToFolder()
+        } catch (error) {
+            console.log("Error in copying", error);
+        }
+    });
+}
+
+const ENABLE_NEWS_SITEMAP_CRON = process.env.ENABLE_NEWS_SITEMAP_CRON || false;
+if(ENABLE_NEWS_SITEMAP_CRON)
+{
+    cron.schedule(process.env.NEWS_SITEMAP_GENERATE_CRON_TIME, async function () {
+        try {        
+            await createNewsSiteMap()
+        } catch (error) {
+            console.log("Error in cron", error);
+        }
+    });
+
+    cron.schedule(process.env.NEWS_SITEMAP_COPY_CRON_TIME, async function () {
+        try {        
+            await copySiteMapS3ToFolder('news.xml')
+            await copySiteMapS3ToFolder('rss.xml')
         } catch (error) {
             console.log("Error in copying", error);
         }
