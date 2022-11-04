@@ -290,7 +290,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
 const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile','course_enrollment_end_date',
                     'listing_image', 'partner_slug', "partner_name", "title", "slug", 'learn_content_pricing_currency']
 
-const getCourseCoupons = async (coursesIds, currency, returnIfCouponsEmpty = false) =>
+const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
 {
     try{
 
@@ -361,7 +361,7 @@ const getCourseCoupons = async (coursesIds, currency, returnIfCouponsEmpty = fal
                         coupons[i++] = coupon
                     }
                 }
-                if(!returnIfCouponsEmpty && !coupons.length )
+                if(!singleCourse && !coupons.length )
                     continue;
 
                  let course = {
@@ -388,8 +388,9 @@ const getCourseCoupons = async (coursesIds, currency, returnIfCouponsEmpty = fal
             }
 
         }
-
-        return data.length == 1 ? data[0] : data;
+        if(singleCourse)
+            return data.length == 1 ? data[0]: {};
+        else return data;
 
     }catch(err) {
         console.log("partner service getTopCoupons err", err)
