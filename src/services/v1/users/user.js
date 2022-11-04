@@ -3797,12 +3797,11 @@ const getUserProfile = async (req, res) => {
         let goals = await getGoals(req)
         user.setDataValue('goals', goals);
 
-        if(goals)
-        {
+        if(goals != null && goals.length)
             user.setDataValue('isGoals', true);
-        }else{
+        else
             user.setDataValue('isGoals', false);
-        }
+
         // get user profileProgress
         let pendingActions = await  getUserPendingActions(req)
 
