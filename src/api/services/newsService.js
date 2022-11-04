@@ -13,8 +13,9 @@ let currencies = [];
 
 const getNewsBySlug = async (req, callback) =>
 {
+    let { currency = process.env.DEFAULT_CURRENCY } = req.query;
     const slug = req.params.slug;
-    let cacheKey = `single-news-${slug}`
+    let cacheKey = `single-news-${slug}-${currency}`
 
     let cacheData = await redisConnection.getValuesSync(cacheKey);
     if(cacheData.noCacheData != true)
@@ -28,7 +29,6 @@ const getNewsBySlug = async (req, callback) =>
           ]
         }
     };
-    let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
     let result = null;
     try{
@@ -199,14 +199,27 @@ const generateSingleViewData = async (result, isList = false, currency = process
         if(result.course)//custom
         {
             data.course = result.course;
-            if(data.course.learn_content.slug)
-                data.course.learn_content = await getCourseDetails(data.course.learn_content.slug, currency)
+            if(data.course.learn_content.id)
+                data.course.learn_content = await getCourseCoupons([result.banner.learn_content.id], currency, true);
         }
         else
             data.course = {}
 
         data.summary = result.summary ? result.summary: null; //gen
-        data.partners_section = result.partners_section ? result.partners_section : []; //gen
+        if(result.partners_section && result.partners_section.length > 0)  //gen
+        {
+            let sections = []
+            for(let eachSection of result.partners_section)
+            {
+                if(eachSection.offers_course.id)
+                    eachSection.offers_course = await getCourseCoupons([eachSection.offers_course.id], currency, true);
+                sections.push(eachSection)
+            }
+
+            data.partners_section = sections;
+        }
+        else
+            data.partners_section = []
 
         if(result.author_info && result.authors.length) //common
         {
@@ -252,12 +265,12 @@ const generateSingleViewData = async (result, isList = false, currency = process
         if(result.banner)  //custom
         {
             data.banner = result.banner;
-            if(result.banner.learn_content.slug)
-                data.banner.learn_content = await getCourseDetails(result.banner.learn_content.slug, currency);
+            if(result.banner.learn_content.id)
+                data.banner.learn_content = await getCourseCoupons([result.banner.learn_content.id], currency, true);
         }
         else
             data.banner = {}
-        if(result.offers_courses && result.offers_courses.length > 1)
+        if(result.offers_courses && result.offers_courses.length > 1)// custom
             data.top_coupon_offers = await getCourseCoupons(result.offers_courses, currency)
 
         else
@@ -273,59 +286,17 @@ const generateSingleViewData = async (result, isList = false, currency = process
     return data;
 }
 
-const getCourseDetails = async (courseSlug, currency) =>
-{
-    
-    let lc, data = {}, query = { "bool": { "must": [{ "match": { "slug.keyword": courseSlug } }] }}
 
-    try
-    {
-        lc = await elasticService.search('learn-content', query, {}, [...courseFields, 'course_enrollment_end_date']);
-    }
-    catch(err) {
-        console.log("single view news course fetch err: ", err)
-        return data; //empty
-    }
-
-    if(lc && lc.hits && lc.hits.length)
-    {
-        lc = lc.hits[0]._source;
-        if(currencies.length == 0)
-            currencies = await getCurrencies();
-        let u_currency_symbol = '$';
-        currencies.map(c => {if(c.iso_code == currency) u_currency_symbol = c.currency_symbol})
-        let daysLeft = -1;  // default hard coded
-
-        if(lc.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
-            daysLeft = Math.ceil((new Date(lc.course_enrollment_end_date).getTime() - new Date().getTime())/ (1000 * 3600 * 24))
-
-        data = {
-            title: lc.title,
-            slug: lc.slug,
-            partner: lc.partner_slug ? await getPartnerDetails(lc.partner_slug): { name: lc.partner_name, slug: lc.partner_slug, logo: null} ,
-            enrollmentEndDate: lc.course_enrollment_end_date? lc.course_enrollment_end_date: null,
-            daysLeft: daysLeft,
-            regularPrice: lc.regular_price ? getCurrencyAmount(lc.regular_price, currencies, lc.learn_content_pricing_currency.iso_code, currency): null,
-            salePrice: lc.sale_price ? getCurrencyAmount(lc.sale_price, currencies, lc.learn_content_pricing_currency.iso_code, currency): null,
-            offer_percent: (lc.sale_price) ? (Math.round(((lc.regular_price - lc.sale_price) * 100) / lc.regular_price)) : null,
-            u_currency_symbol,
-            b_currency_symbol : lc.learn_content_pricing_currency? lc.learn_content_pricing_currency.currency_symbol : null
-
-        }
-    }
-    return data;
-}
-
-const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile',
+const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile','course_enrollment_end_date',
                     'listing_image', 'partner_slug', "partner_name", "title", "slug", 'learn_content_pricing_currency']
 
-const getCourseCoupons = async (coursesIds, currency) =>
+const getCourseCoupons = async (coursesIds, currency, returnIfCouponsEmpty = false) =>
 {
     try{
 
         let result, query = {
             "bool": {
-              "must": [{ "terms": {"id": coursesIds}}, {"term": { "status.keyword": 'published' }} ]
+              "filter": [{ "terms": {"id": coursesIds}}, {"term": { "status.keyword": 'published' }} ]
             }}
         
         try
@@ -347,16 +318,20 @@ const getCourseCoupons = async (coursesIds, currency) =>
             {
                 hit = hit._source;
                 let coupons = [], offerRange = {low:100, high:0}, price = hit.sale_price ? hit.sale_price: hit.regular_price;
-                let best_offer = 0, best_offer_index = 0, i = 0;
+                let best_offer = 0, best_offer_index = 0, i = 0, daysLeft = -1;
+
+                if(hit.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
+                    daysLeft = Math.ceil((new Date(hit.course_enrollment_end_date).getTime() - new Date().getTime())/ (1000 * 3600 * 24))
 
                 for(let coupon of hit.coupons)
                 {
                     if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
+                        let percent, discount;
                         if(coupon.discount){
                             coupon.discount = {value: coupon.discount.value, currency: coupon.discount.currency.iso_code}
-                            const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency)  //doubt
-                            const percent = Math.ceil((100 * discount)/price) //we cannot use price directly
+                            discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency)  //doubt
+                            percent = Math.ceil((100 * discount)/price)
                             if(percent > best_offer )
                             {
                                 best_offer = percent;
@@ -367,6 +342,7 @@ const getCourseCoupons = async (coursesIds, currency) =>
                             if(percent > offerRange.high)
                                 offerRange.high = percent
                             coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency;
+                            currencies.map(c => {if(c.iso_code == coupon.discount.currency) coupon.discount.currency_symbol = c.currency_symbol})
 
                         }
                         else{
@@ -381,13 +357,12 @@ const getCourseCoupons = async (coursesIds, currency) =>
                             if(coupon.discount_percent > offerRange.high)
                                 offerRange.high = coupon.discount_percent
                         }
-                        
+                        coupon.offer_percent  = percent ? percent : coupon.discount_percent;
                         coupons[i++] = coupon
                     }
                 }
-                if(!coupons.length)
+                if(!returnIfCouponsEmpty && !coupons.length )
                     continue;
-
 
                  let course = {
                     title: hit.title,
@@ -397,12 +372,15 @@ const getCourseCoupons = async (coursesIds, currency) =>
                     card_image_mobile: hit.card_image_mobile? formatImageResponse(hit.card_image_mobile): hit.images? formatImageResponse(hit.images) : null,
                     sidebar_listing_image: hit.sidebar_listing_image ? formatImageResponse(hit.sidebar_listing_image): hit.images? formatImageResponse(hit.images) : null,
                     partner: hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null },
+                    enrollmentEndDate: hit.course_enrollment_end_date? hit.course_enrollment_end_date: null,
+                    daysLeft: daysLeft,
                     sale_price: hit.sale_price? getCurrencyAmount(hit.sale_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
                     regular_price: hit.regular_price ? getCurrencyAmount(hit.regular_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
-                    offer_percent: (hit.sale_price) ? (Math.round(((hit.regular_price - hit.sale_price) * 100) / hit.regular_price)) : null,
+                    offer_percent: coupons[best_offer_index] ? coupons[best_offer_index].offer_percent : hit.sale_price ? (Math.round(((hit.regular_price - hit.sale_price) * 100) / hit.regular_price)) : null,
                     u_currency_symbol,
                     b_currency_symbol : hit.learn_content_pricing_currency? hit.learn_content_pricing_currency.currency_symbol : null,
-                    coupon: coupons[best_offer_index]
+                    best_offer_index,
+                    coupons
                  }
 
                 data.push(course)
@@ -410,7 +388,8 @@ const getCourseCoupons = async (coursesIds, currency) =>
             }
 
         }
-        return data;
+
+        return data.length == 1 ? data[0] : data;
 
     }catch(err) {
         console.log("partner service getTopCoupons err", err)
