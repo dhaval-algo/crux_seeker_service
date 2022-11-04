@@ -325,7 +325,9 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
 
                 for(let coupon of hit.coupons)
                 {
-                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    if(coupon.validity_start_date == null)
+                        coupon.validity_start_date == new Date();
+                    if(coupon.validity_end_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
                         let percent, discount;
                         if(coupon.discount){
@@ -341,12 +343,12 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
                                 offerRange.low = percent
                             if(percent > offerRange.high)
                                 offerRange.high = percent
-                            coupon.youSave = coupon.discount.value + " "+ coupon.discount.currency;
                             currencies.map(c => {if(c.iso_code == coupon.discount.currency) coupon.discount.currency_symbol = c.currency_symbol})
+                            coupon.youSave = coupon.discount.currency_symbol +coupon.discount.value;
 
                         }
                         else{
-                            coupon.youSave = coupon.discount_percent + " %"
+                            coupon.youSave = coupon.discount_percent + "%"
                             if(coupon.discount_percent > best_offer )
                             {
                                 best_offer = percent;
