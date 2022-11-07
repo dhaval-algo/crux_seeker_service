@@ -262,7 +262,7 @@ function createNews() {
                     ]
                 }
             };
-            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at","title","summary","contents"] }
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at","title","summary","contents","author_names"] }
             
             const result = await elasticService.search('news', query, payload);
             //start SiteMap Steram
@@ -283,8 +283,9 @@ function createNews() {
                 image_url: 'https://www.careervira.com/ogImage.png',
                 managingEditor: 'Careervira',
                 webMaster: 'Careervira',
-                copyright:today.getFullYear()+'Careervira',
+                copyright:today.getFullYear()+' Careervira',
                 language: 'en',
+               //categories: ['News'],
                 pubDate: today,
                 ttl: '60'                
             });
@@ -305,12 +306,13 @@ function createNews() {
                             }
                         });
 
+                        // get author 
                         feed.item({
                             title:  hit._source.title,
                             description:  (hit._source.summary && hit._source.summary.description)? hit._source.summary.description : hit._source.contents[0].description ,
                             url: `${process.env.FRONTEND_URL}/news/${hit._source.slug}`,
-                            author: 'Careervira', // optional - defaults to feed author property
-                            date:hit._source.updated_at, // any format that js Date can parse.                            
+                            author: (hit._source.author_names && hit._source.author_names.length)?  hit._source.author_names[0] :'Careervira',
+                            date:hit._source.updated_at                             
                            
                         });
                     }
@@ -329,7 +331,6 @@ function createNews() {
                 path = 'sitemaps/rss.xml'
                 contentType = 'text/xml'
                 await uploadFileToS3(path, rssXml, contentType)
-                //
                 resolve(sitemap)
             }
 
