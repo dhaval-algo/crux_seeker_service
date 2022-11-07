@@ -2112,88 +2112,33 @@ const wishListCourseData = async (req,res) => {
                 totalWishedListIds.push(wishlist.value);
             }
         }
+        if (req.query.queryString)
+            req.query.q = req.query.queryString;
 
-        let queryBody = {
-            "from":offset,
-            "size": limit,
-            "query": {
-                "bool": {
-                    "must": [{
-                        "term": { "status.keyword": "published" }
-                    },
-                    {
-                        "match_phrase": {
-                            "title": queryString
-                        }
-                    },
-                    {
-                        "ids": {
-                            "values": totalWishedListIds
-                        }
-                    }
-                    ]
-                }
-            }
-        }
+        if(totalWishedListIds.length > 0){
 
-        if (!queryString) {
-
-            delete queryBody.query.bool.must[1];
-            let scores = {};
-            totalWishedListIds.forEach((id, index) => {
-                scores[id] = index;
-            });
-            queryBody["sort"] = [
+            req.query.courseIds = totalWishedListIds.join(',');
+            await LearnContentService.getLearnContentList(req, (err, data) => {
+                if(data)
                 {
-                    "_script": {
-                        "type": "number",
-                        "script": {
-                            "lang": "painless",
-                            "inline": "return params.scores[doc['_id'].value];",
-                            "params": {
-                                "scores": scores
-                            }
-                        }
-                    }
+                    let response = { success: true,
+                            data: {userId, courses: data.data.list, ids: []},
+                            pagination: {page, limit, total : totalCount} };
+                    return res.status(200).send(response);
                 }
-            ]
+                else
+                    return res.status(200).send({success: false,
+                            message: "something went wrong wishlist Course ",
+                            data: {list: [], pagination: {total: 0}, filters: {}} });
+            });
         }
-
-        const result = await elasticService.plainSearch('learn-content', queryBody);
-        
-        let courses = []
-        let wishListIdsFromElastic=[]
-        if(result.hits){
-            totalCount=result.hits.total.value
-            if(result.hits.hits && result.hits.hits.length > 0){
-                
-                for(const hit of result.hits.hits){
-                    const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
-                    wishListIdsFromElastic.push(course.id)
-                    courses.push(course);
-                }
-            }
-        }
-
-        return res.status(200).json({
-            success: true,
-
-            data: {
-                userId,
-                ids: wishListIdsFromElastic,
-                courses
-            },
-            pagination: {
-                page: page,
-                limit: limit,
-                total: totalCount
-            }
-        })
-       
+        else
+            return res.status(200).send({ success: true, message: 'No records found!',
+                                          data: {list: [], pagination: {total: 0}, filters: {}}});
         
     } catch (error) {
         console.log(error);
-            return res.status(500).send({error:error,success:false})
+        return res.status(500).send({error:error, success:false});
     }
 }
 
