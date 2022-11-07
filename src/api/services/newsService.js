@@ -6,8 +6,8 @@ const RedisConnection = require('../../services/v1/redis');
 const redisConnection = new RedisConnection();
 const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs, updateSelectedFilters, calculateFilterCount, getAllFilters,
     getCurrencies, getCurrencyAmount, parseQueryFilters, getFilterAttributeName} = require("../utils/general");
+ const { generateMetaInfo } = require('../utils/metaInfo');
 
-const keywordFields = [];
 let currencies = [];
 
 
@@ -40,6 +40,11 @@ const getNewsBySlug = async (req, callback) =>
     {
         result.hits[0]._source._id = result.hits[0]._id;
         let data = await generateSingleViewData(result.hits[0]._source, false, currency)
+        let meta_information = await generateMetaInfo('NEWS', data);
+            
+        if(meta_information)
+           data.meta_information = meta_information;
+
         redisConnection.set(cacheKey, data, process.env.CACHE_EXPIRE_SINGLE_NEWS || 360)
         callback(null, {success: true, message: 'Fetched successfully!', data})
     }
@@ -49,6 +54,17 @@ const getNewsBySlug = async (req, callback) =>
 }
 
 const filterFields = ['topics','categories','sub_categories','skills','regions', 'type'];
+
+
+const sortOptions = {
+    //'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    //'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
+    'Newest' :["updated_at:desc"],
+    'Oldest' :['updated_at:asc'],
+    'A-Z': ["title:asc"],
+    'Z-A': ["title:desc"],
+}
+
 
 const getNewsList = async (req, callback) =>
 {
@@ -60,23 +76,29 @@ const getNewsList = async (req, callback) =>
     };
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
-    let queryPayload = {}, cacheKey = 'news-lisiting-with-';
+    let queryPayload = {}, cacheKey = 'news-listing-with-';
     let paginationQuery = await getPaginationQuery(req.query);
     queryPayload.from = paginationQuery.from;
     queryPayload.size = paginationQuery.size;
 
     if(!req.query['sort'])
-        req.query['sort'] = "updated_at:desc";
+        req.query['sort'] = "Newest";
 
     if(req.query['sort'])
     {
-        let sort = req.query['sort'];
-        let splitSort = sort.split(":");
-        if(keywordFields.includes(splitSort[0]))
-            sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+        const keywordFields = ['title'];
+        let sort = sortOptions[req.query['sort']];
+        if(sort && sort.length > 0){
+            for(let field of sort){
+                let splitSort = field.split(":");
+                    if(keywordFields.includes(splitSort[0]))
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    queryPayload.sort = [field];
+            }
+        }
+        
     
-        queryPayload.sort = [sort];
-        cacheKey += `${sort}-`
+        cacheKey += `${req.query['sort']}-`
     }
 
     let queryString = null;
@@ -144,8 +166,12 @@ const getNewsList = async (req, callback) =>
             list: list,
             filters,
             pagination: pagination,
-            sort: req.query['sort']
+            sort: Object.keys(sortOptions)
           };
+        let meta_information = await generateMetaInfo('NEWS', list[0]);
+            
+        if (meta_information)
+            data.meta_information = meta_information;
 
         redisConnection.set(cacheKey, data, process.env.CACHE_EXPIRE_NEWS_LIST || 360)
         callback(null, {success: true, message: 'Fetched successfully!', data: data});
@@ -171,6 +197,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
     {
         title: result.title,
         slug: result.slug,
+        short_description: result.short_description ? result.short_description : null, //check if optional
         id: result._id,
         cover_image: result.cover_image? result.cover_image :null,
         sidebar_listing_image: result.sidebar_listing_image? result.sidebar_listing_image : null,            
@@ -178,7 +205,6 @@ const generateSingleViewData = async (result, isList = false, currency = process
         card_image: result.card_image? result.card_image: null,
         card_image_mobile: result.card_image_mobile? result.card_image_mobile: null,
         regions: result.regions? result.regions: null,
-        partners: result.partners? result.partners : null,     // check this send obj
         skills: result.skills? result.skills: null,
         categories: result.categories? result.categories: null,
         sub_categories: result.sub_categories? result.categories: null,
@@ -187,11 +213,77 @@ const generateSingleViewData = async (result, isList = false, currency = process
         author_info: result.author_info,
         type: result.type,
         banner: result.banner? {type: result.banner.type} : null,
+        isTrending: true,
+        isPopular: true,
         updated_at: result.updated_at? result.updated_at : new Date().toDateString().toISOString(),
         created_at: result.created_at ? result.created_at: new Date().toDateString().toISOString()
 
     }
 
+    if(result.author_info && result.authors && result.authors.length) //common
+    {
+        let authors = result.authors;
+
+        try{
+            let query = { "bool": {"filter": [{"terms": {"id": authors} }]}}
+
+            authors = await elasticService.search('author', query);
+
+        }catch(err) {
+            console.log("single view news author fetch err: ",err);
+            data.author = [];
+        }
+        if(authors && authors.hits && authors.hits.length)
+        {
+            
+            data.author = authors.hits.map(hit => {
+                hit = hit._source; 
+                if(hit.image)
+                    hit.image = formatImageResponse(hit.image)
+
+                return {
+                        bio: hit.bio? hit.bio: null,
+                        designation: hit.designation? hit.designation: null,
+                        image: hit.image? hit.image: null,
+                        first_name: hit.first_name? hit.first_name: null,
+                        last_name: hit.last_name? hit.last_name: null,
+                        facebook_url: hit.facebook_url? hit.facebook_url: null,
+                        twitter_url: hit.twitter_url? hit.twitter_url: null,
+                        linkedin_url: hit.linkedin_url? hit.linkedin_url: null }
+            })
+        }
+    }
+    else
+        data.author = [];
+
+    if(result.partners && result.partners.length) //common
+    {
+        let partners = result.partners;
+
+        try
+        {
+            let query = { "bool": {"filter": [{"terms": {"id": partners} }]}}
+
+            partners = await elasticService.search('partner', query, {}, ['name', 'logo', 'slug']);
+
+        }catch(err) {
+            console.log("single view news partners fetch err: ",err);
+            data.partner = [];
+        }
+        if(partners && partners.hits && partners.hits.length)
+        {
+            
+            data.partner = partners.hits.map(hit => {
+                hit = hit._source; 
+                return {
+                    name: hit.name,
+                    slug: hit.slug,
+                    logo: hit.logo ? formatImageResponse(hit.logo) : null}
+            })
+        }
+    }
+    else
+        data.partner = [];
   
 
     if(!isList)
@@ -220,42 +312,6 @@ const generateSingleViewData = async (result, isList = false, currency = process
         }
         else
             data.partners_section = []
-
-        if(result.author_info && result.authors.length) //common
-        {
-            let authors = result.authors;
-
-            try{
-                let query = { "bool": {"filter": [{"terms": {"id": authors} }]}}
-
-                authors = await elasticService.search('author', query);
-
-            }catch(err) {
-                console.log("single view news author fetch err: ",err);
-                data.author = [];
-            }
-            if(authors && authors.hits && authors.hits.length)
-            {
-                
-                data.author = authors.hits.map(hit => {
-                    hit = hit._source; 
-                    if(hit.image)
-                        hit.image = formatImageResponse(hit.image)
-
-                    return {
-                            bio: hit.bio? hit.bio: null,
-                            designation: hit.designation? hit.designation: null,
-                            image: hit.image? hit.image: null,
-                            first_name: hit.first_name? hit.first_name: null,
-                            last_name: hit.last_name? hit.last_name: null,
-                            facebook_url: hit.facebook_url? hit.facebook_url: null,
-                            twitter_url: hit.twitter_url? hit.twitter_url: null,
-                            linkedin_url: hit.linkedin_url? hit.linkedin_url: null }
-                })
-            }
-        }
-        else
-            data.author = [];
 
          
         data.contents = result.contents ? result.contents : null; //common

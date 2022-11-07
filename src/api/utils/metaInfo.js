@@ -561,7 +561,49 @@ const getPartnerMetaInfo = (result) => {
     }
 }
 
+const TITLE_NEWS_LIST = 'News | Careervira | Careervira.com';
+const EXTRA_KEYWORDS_NEWS_LIST = ["NEWS"];
 
+const getNewsListMetaInfo =  (result) => {
+    let meta_keywords = [];
+    let author_names = [];
+    let partner_names = [];
+    let skills = [];
+    let categories = [];
+
+    for (let news of result) {
+        news = news._source;
+
+        if (!news.categories)
+            news.categories = [];
+        categories = [...categories, ...news.categories];
+        if (!news.author_names)
+            news.author_names = [];
+        author_names = [...author_names, ...news.author_names];
+        if (!news.partner_names)
+            news.partner_names = [];
+        partner_names = [...partner_names, ...news.partner_names]
+        if (news.skills && news.skills.length > 0)
+            skills = [...skills, ...news.skills];
+
+    }
+
+    categories = categories.filter((x, i, a) => a.indexOf(x) == i);
+    author_names = author_names.filter((x, i, a) => a.indexOf(x) == i);
+    skills = skills.filter((x, i, a) => a.indexOf(x) == i);
+
+    meta_keywords = [...meta_keywords, ...categories, ...author_names, ...skills, ...EXTRA_KEYWORDS_NEWS_LIST];
+    if (meta_keywords.length > 0) {
+        meta_keywords = [...new Set(meta_keywords)];
+        meta_keywords = meta_keywords.join(", ");
+    }
+    return {
+        meta_title: TITLE_NEWS_LIST,
+        meta_description: defaultLearnContentMetaInfo.meta_description,
+        meta_keywords
+    }
+
+}
 
 const getArticleListMetaInfo = (result) => {
     let meta_keywords = [];
@@ -995,6 +1037,28 @@ const generateMetaInfo = async (page, result, list) => {
                 meta_description: (result.meta_description) ? result.meta_description : defaultLearnContentMetaInfo.meta_description,
                 meta_keywords: (result.meta_keywords) ? result.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
             }
+            break;
+        case 'NEWS':
+            let meta_keywords = "News,"
+            if(result.categories)
+                meta_keywords += result.categories.join(',')
+            if(result.partner_names)
+                meta_keywords += result.partner_names.join(',')
+            if(result.topics)
+                meta_keywords += result.topics.join(',');
+            if(result.skills)
+                meta_keywords += result.skills.join(',')
+            if(result.regions)
+                meta_keywords += result.regions.join(',')
+
+            meta_information = {
+                meta_title: `News | Careervira | Careervira.com`,
+                meta_description: (result.short_description) ? result.short_description : defaultLearnContentMetaInfo.meta_description,
+                meta_keywords
+            }
+            break;
+        case 'NEWS_LIST':
+            meta_information = getNewsListMetaInfo(result);
             break;
         default:
             break;
