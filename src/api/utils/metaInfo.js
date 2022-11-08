@@ -1037,7 +1037,7 @@ const generateMetaInfo = async (page, result, list) => {
             }
             break;
         case 'NEWS':
-            let meta_keywords = "News,"
+            meta_keywords = "News,"
             if(result.categories)
                 meta_keywords += result.categories.join(',')
             if(result.partner_names)
