@@ -166,7 +166,8 @@ const getNewsList = async (req, callback) =>
             list: list,
             filters,
             pagination: pagination,
-            sort: Object.keys(sortOptions)
+            sort: req.query['sort'],
+            sortOptions: Object.keys(sortOptions)
           };
 
         let meta_information = await generateMetaInfo('NEWS_LIST', list);
