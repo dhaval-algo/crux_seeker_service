@@ -849,7 +849,6 @@ const generateMetaInfo = async (page, result, list) => {
 
             result.meta_keywords = result.meta_keywords.replace(/{author_names}/g, `${result.author_first_name} ${result.author_last_name}`)
             result.meta_keywords = result.meta_keywords.replace(/{extra_keywords}/g, EXTRA_KEYWORDS_ARTICLE.join(", "))
-            meta_keywords = result.meta_keywords
 
             meta_information = {
                 meta_title: meta_title,
@@ -895,7 +894,6 @@ const generateMetaInfo = async (page, result, list) => {
 
             result.meta_keywords = result.meta_keywords.replace(/{author_names}/g, `${result.author_first_name} ${result.author_last_name}`)
             result.meta_keywords = result.meta_keywords.replace(/{extra_keywords}/g, EXTRA_KEYWORDS_ARTICLE.join(", "))
-            meta_keywords = result.meta_keywords
 
             meta_information = {
                 meta_title: meta_title,
