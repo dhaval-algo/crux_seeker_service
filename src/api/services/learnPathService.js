@@ -183,7 +183,7 @@ module.exports = class learnPathService {
 
                 let filter_object = {
                     "terms": {
-                        "id": learnPathIds
+                        "_id": learnPathIds
                     }
                 }
 

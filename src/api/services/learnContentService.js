@@ -383,7 +383,7 @@ module.exports = class learnContentService {
             
             let filter_object = {
                 "terms": {
-                  "id": courseIds 
+                  "_id": courseIds 
                 }
             }
 
