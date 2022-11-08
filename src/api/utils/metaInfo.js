@@ -570,9 +570,7 @@ const getNewsListMetaInfo =  (result) => {
     let partner_names = [];
     let skills = [];
     let categories = [];
-
-    for (let news of result) {
-        news = news._source;
+    for (news of result) {
 
         if (!news.categories)
             news.categories = [];
