@@ -83,6 +83,10 @@ router.post("/add-institute-wishlist", authenticateJWT, userService.addInstitute
 router.post("/fetch-institute-wishlist", authenticateJWT, userService.fetchInstituteWishList)
 router.post("/remove-institute-wishlist", authenticateJWT, userService.removeInstituteFromWishList)
 
+//news
+router.post('/add-news-to-wishlist',authenticateJWT, userService.addNewsToWishList);
+router.post('/remove-news-from-wishlist',authenticateJWT, userService.removeNewsFromWishList);
+router.get('/fetch-news-wishlist',authenticateJWT, userService.fetchNewsWishlist);
 
 //require.post()
 module.exports = router;            

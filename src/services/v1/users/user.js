@@ -39,6 +39,7 @@ let LearnContentService = new learnContentService();
 let LearnPathService = new learnPathService();
 const articleService = require("../../../api/services/articleService");
 let ArticleService = new articleService();
+const { getNewsList, generateSingleViewData: newsGenerateSingleViewData } = require("../../../api/services/newsService")
 const SOCIAL_PROVIDER = [LOGIN_TYPES.GOOGLE, LOGIN_TYPES.LINKEDIN];
 const validator = require("email-validator");
 const{sendSMS, sendEmail} =  require('../../../communication/v1/communication');
@@ -4322,7 +4323,200 @@ const calcAge = (dob) => {
     return age;
 }
 
+const addNewsToWishList = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        let newsIdsFromClient = validators.validateIds(req.body)
+        if (!newsIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let response = {
+            success: true,
+            data: {
+                wishlist: []
+            }
+        }
+        //check if provided newsIdsFromClient are valid/exits in elastic
+       // await validateIdsFromElastic("news", newsIdsFromClient).then(validIds => {newsIdsFromClient = validIds})
+
+        if(!newsIdsFromClient.length)
+            return res.status(200).json(response)
+
+            //finds exisiting ids, to check duplicate further
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'news_wishlist',
+                value: newsIdsFromClient
+            }
+        });
+        let newsIds = []
+        existingIds = existingIds.map((news) => news.value)
+        //avoids duplicate entries
+        newsIdsFromClient.forEach((newsId) => {
+            if (!existingIds.includes(newsId))
+                newsIds.push(newsId)
+        });
+
+        if (newsIds.length) {
+
+            const dataToSave = newsIds.map((newsId) => {
+                return {
+                    key: "news_wishlist",
+                    value: newsId,
+                    userId,
+                }
+            });
+            response.data.wishlist = await models.user_meta.bulkCreate(dataToSave)
+            await logActvity("NEWS_WISHLIST", userId, newsIds);
+
+            return res.status(200).json(response)
+
+        }
+        else
+            return res.status(200).json(response)
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const removeNewsFromWishList = async (req, res) => {
+
+    const { user} = req;
+    const id = validators.validateIds(req.body);
+    const resMeta = await models.user_meta.destroy({ where: { key:"news_wishlist", value: id, userId: user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+const fetchNewsWishlist = async (req,res) =>
+{
+    try {
+        const { user } = req
+        const userId = user.userId
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+        const offset = (page - 1) * limit
+        const { queryString } = req.query
+
+        let totalCount = 0
+        let where = {
+            userId: userId,
+            key: { [Op.in]: ['news_wishlist'] },
+        }
+
+        const totalWishListOfUser = await models.user_meta.findAll({
+                attributes: ['value'],
+                where,
+                order: [["id","DESC"]]
+            })
+
+        const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
+
+        let queryBody = {
+            "from":offset,
+            "size": limit,
+            "query": {
+                "bool": {
+                    "must": [{
+                        "term": { "status.keyword": "approved" }
+                    },
+                    {
+                        "match_phrase": {
+                            "title": queryString
+                        }
+                    },
+                    {
+                        "ids": {
+                            "values": totalWishedListIds
+                        }
+                    }
+                    ]
+                }
+            }
+        }
+
+        if (!queryString) {
+
+            delete queryBody.query.bool.must[1];
+            let scores = {};
+            totalWishedListIds.forEach((id, index) => {
+                scores[id] = index;
+            });
+            queryBody["sort"] = [
+                {
+                    "_script": {
+                        "type": "number",
+                        "script": {
+                            "lang": "painless",
+                            "inline": "return params.scores[doc['_id'].value];",
+                            "params": {
+                                "scores": scores
+                            }
+                        }
+                    }
+                }
+            ]
+        }
+
+        const result = await elasticService.plainSearch('news', queryBody);
+
+        let newsArr = []
+        let wishListIdsFromElastic=[]
+        if(result.hits){
+            totalCount = result.hits.total.value;
+            if(result.hits.hits && result.hits.hits.length > 0){
+                
+                for(const hit of result.hits.hits){
+                    hit._source._id = hit._id;
+                    const news = await newsGenerateSingleViewData(hit._source, true, req.query.currency);
+                    wishListIdsFromElastic.push(news.id)
+                    newsArr.push(news);
+                }
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+
+            data: {
+                userId,
+                ids: wishListIdsFromElastic,
+                newsArr
+            },
+            pagination: {
+                page,
+                limit,
+                total: totalCount
+            }
+        })
+
+    } catch (error) {
+        console.log("news wishlisting fetch ",error);
+        return res.status(500).send({error:error, success:false})
+    }
+}
+
+
 module.exports = {
+    fetchNewsWishlist,
+    removeNewsFromWishList,
+    addNewsToWishList,
     login,
     verifyOtp,
     sendOtp,

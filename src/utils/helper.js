@@ -1171,6 +1171,17 @@ const logActvity = async (type, userId, resource) => {
         await models.activity_log.bulkCreate(dataToLog)
         return
     }
+    if (type=="NEWS_WISHLIST"){
+        const dataToLog = resource.map((newsId)=>{
+            return {
+                userId,
+                activityId:activity.id,
+                resource:newsId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
     if(userId > 0)
     {
         const activity_log = await models.activity_log.create({
