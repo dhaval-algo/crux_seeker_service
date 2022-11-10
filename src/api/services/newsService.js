@@ -1,7 +1,7 @@
 'use strict';
 
 const elasticService = require("./elasticService");
-const helperService = require("../../utils/helper");
+const { logActvity } = require("../../utils/helper");
 const RedisConnection = require('../../services/v1/redis');
 const redisConnection = new RedisConnection();
 const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs, updateSelectedFilters, calculateFilterCount, getAllFilters,
@@ -14,6 +14,7 @@ let currencies = [];
 const getNewsBySlug = async (req, callback) =>
 {
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;
+    const { user = null} = req;
     const slug = req.params.slug;
     let cacheKey = `single-news-${slug}-${currency}`
 
@@ -46,6 +47,7 @@ const getNewsBySlug = async (req, callback) =>
            data.meta_information = meta_information;
 
         redisConnection.set(cacheKey, data, process.env.CACHE_EXPIRE_SINGLE_NEWS || 360)
+        await logActvity("NEWS_VIEW", user? user.userId : null, data.id);
         callback(null, {success: true, message: 'Fetched successfully!', data})
     }
     else
