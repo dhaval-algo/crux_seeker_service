@@ -489,6 +489,7 @@ const getPartnerDetails = async (partnerSlug) =>
 }
 
 module.exports = {
+    generateSingleViewData,
     getNewsList,
     getNewsBySlug,
 }
