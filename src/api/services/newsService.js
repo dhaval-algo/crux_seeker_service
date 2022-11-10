@@ -378,6 +378,7 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
             {
                 hit = hit._source;
                 let coupons = [], offerRange = {low:100, high:0}, price = hit.sale_price ? hit.sale_price: hit.regular_price;
+                let baseCurrency = hit.learn_content_pricing_currency? hit.learn_content_pricing_currency.iso_code : null;
                 let best_offer = 0, best_offer_index = 0, i = 0, daysLeft = -1;
 
                 if(hit.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
@@ -392,7 +393,8 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
                         let percent, discount;
                         if(coupon.discount){
                             coupon.discount = {value: coupon.discount.value, currency: coupon.discount.currency.iso_code}
-                            discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency)  //doubt
+                            discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency, currency);
+                            price = getCurrencyAmount(price, currencies, baseCurrency, currency);
                             percent = Math.ceil((100 * discount)/price)
                             if(percent > best_offer )
                             {
