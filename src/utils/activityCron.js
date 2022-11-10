@@ -10,6 +10,7 @@ const RedisConnection = new redisConnection();
 const COURSE_POPULAR_TRENDING_PERCENTAGE = process.env.COURSE_POPULAR_TRENDING_PERCENTAGE || 4
 const LEARN_PATH_POPULAR_TRENDING_PERCENTAGE = process.env.LEARN_PATH_POPULAR_TRENDING_PERCENTAGE || 15
 const ARTICLE_POPULAR_TRENDING_PERCENTAGE = process.env.ARTICLE_POPULAR_TRENDING_PERCENTAGE || 10
+const NEWS_POPULAR_TRENDING_PERCENTAGE = process.env.NEWS_POPULAR_TRENDING_PERCENTAGE || 10
 
 const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -837,6 +838,38 @@ const setTrendingPopularityThreshold = async () => {
             RedisConnection.set("ARTICLE_PATH_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
         }
     }
+
+    // Get total news count
+    esQuery = {
+        "bool": {
+            "filter": [
+                { "term": { "status.keyword": "approved" } }
+            ]
+        }
+    }
+    count = await elasticService.count("news", {"query": esQuery});
+
+    if(count)
+    {
+        //calculate popular/trending Threshold
+        let thresholdCount = Math.ceil((count.count * NEWS_POPULAR_TRENDING_PERCENTAGE)/100)        
+        let result = await elasticService.search("news", esQuery, { from: thresholdCount,
+                                size: 1,
+                                sortObject: { "activity_count.all_time.popularity_score" : "desc" },
+                                _source: [ "activity_count" ] });
+
+         if (result.hits)
+            RedisConnection.set("NEWS_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
+
+        result = await elasticService.search("news", esQuery, { from: thresholdCount,
+                                size: 1,
+                                sortObject: { "activity_count.last_x_days.trending_score" : "desc" },
+                                _source: [ "activity_count" ] });
+
+        if (result.hits)
+            RedisConnection.set("NEWS_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
+
+    }
 }
 
 
@@ -1198,7 +1231,7 @@ const newsActivity = async () => {
     const activities =  await models.activity.findAll({
         attributes: ["id", "type"],     
         where:{
-            "type": ["NEWS_VIEW","NEWS_WISHLIST"]
+            "type": ["NEWS_VIEW","NEWS_WISHLIST", "NEWS_SHARE"]
         },   
         raw:true
     })
