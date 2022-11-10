@@ -6,7 +6,9 @@ const Sentry = require("@sentry/node");
 
 global.appRoot = path.resolve(__dirname);
 const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
-const { storeActivity, learnpathActivity, articleActivity, providerActivity, setTrendingPopularityThreshold} = require('./src/utils/activityCron');
+const { storeActivity, learnpathActivity, articleActivity,
+    providerActivity, setTrendingPopularityThreshold,
+    newsActivity,} = require('./src/utils/activityCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages,
     invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter,
     invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam,
@@ -99,6 +101,7 @@ if(ENABLE_ACTVITY_LOG_CRON)
             await storeActivity()
             await articleActivity()
             await setTrendingPopularityThreshold()
+            await newsActivity();
         } catch (error) {
             console.log("Error in cron", error);
         }
