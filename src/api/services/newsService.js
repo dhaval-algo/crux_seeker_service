@@ -19,9 +19,10 @@ const getNewsBySlug = async (req, callback) =>
     let cacheKey = `single-news-${slug}-${currency}`
 
     let cacheData = await redisConnection.getValuesSync(cacheKey);
-    if(cacheData.noCacheData != true)
+    if(cacheData.noCacheData != true){
+        await logActvity("NEWS_VIEW", user? user.userId : null, cacheData.id);
         return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
-
+    }
 
     const query = { 
         "bool": {

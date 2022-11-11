@@ -1354,7 +1354,7 @@ const newsActivity = async () => {
     {
         if(activity.resource){
 
-            if(!activity.resource.test(re))
+            if(!re.test(activity.resource))
                 continue;
             
             if( !activity_count[activity.resource] )
