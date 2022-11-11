@@ -13,6 +13,7 @@ let currencies = [];
 
 const getNewsBySlug = async (req, callback) =>
 {
+    try{
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;
     const { user = null} = req;
     const slug = req.params.slug;
@@ -53,6 +54,11 @@ const getNewsBySlug = async (req, callback) =>
     }
     else
         return callback(null, { success: false, message: 'News Not found!' });
+    }catch(err){
+        console.log("Single fetch news err ", err);
+        return callback(null, { success: false, message: 'Something unexpected happend!' });
+
+    }
 
 }
 
@@ -60,8 +66,8 @@ const filterFields = ['topics','categories','sub_categories','skills','regions',
 
 
 const sortOptions = {
-    //'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
-    //'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
+    'Popular' : ["activity_count.all_time.popularity_score:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc"],
     'Newest' :["updated_at:desc"],
     'Oldest' :['updated_at:asc'],
     'A-Z': ["title:asc"],
@@ -71,6 +77,7 @@ const sortOptions = {
 
 const getNewsList = async (req, callback) =>
 {
+    try {
     const query = { 
         "bool": {
             "must": [],
@@ -79,7 +86,7 @@ const getNewsList = async (req, callback) =>
     };
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
-    let queryPayload = {}, cacheKey = 'news-listing-with-';
+    let queryPayload = {}, cacheKey = `news-listing-with-${currency}-`;
     let paginationQuery = await getPaginationQuery(req.query);
     queryPayload.from = paginationQuery.from;
     queryPayload.size = paginationQuery.size;
@@ -182,21 +189,27 @@ const getNewsList = async (req, callback) =>
         callback(null, {success: true, message: 'Fetched successfully!', data: data});
     }
     else
-        callback(null, {success: true, message: 'No records found!', data: {list: [], pagination: {}, filters: []}});      
+        callback(null, {success: true, message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+    }catch(err){
+        console.log("news listing caught ", err);
+        callback(null, {success: false, message: 'Something unexpected happend .!', data: {}});
+    }
 }
 
 const generateListViewData = async (rows, currency) =>
 {
     let dataArr = [];
+    const P_THRESHOLD = parseInt(await redisConnection.getValuesSync("NEWS_POPULARITY_SCORE_THRESHOLD"));
+    const T_THRESHOLD = parseInt(await redisConnection.getValuesSync("NEWS_TRENDING_SCORE_THRESHOLD"));
     for(let row of rows){
         row._source._id = row._id;
-        const data = await generateSingleViewData(row._source, true, currency);
+        const data = await generateSingleViewData(row._source, true, currency, P_THRESHOLD, T_THRESHOLD);
         dataArr.push(data);
     }
     return dataArr;
 }
 
-const generateSingleViewData = async (result, isList = false, currency = process.env.DEFAULT_CURRENCY) =>
+const generateSingleViewData = async (result, isList = false, currency = process.env.DEFAULT_CURRENCY, P_THRESHOLD = 0, T_THRESHOLD = 0) =>
 {    
     let data = 
     {
@@ -218,8 +231,8 @@ const generateSingleViewData = async (result, isList = false, currency = process
         author_info: result.author_info,
         type: result.type,
         banner: result.banner? {type: result.banner.type} : null,
-        isTrending: true,
-        isPopular: true,
+        isTrending: false,
+        isPopular: false,
         updated_at: result.updated_at? result.updated_at : new Date().toDateString().toISOString(),
         created_at: result.created_at ? result.created_at: new Date().toDateString().toISOString()
 
@@ -346,6 +359,12 @@ const generateSingleViewData = async (result, isList = false, currency = process
         else
             data.key_takeaways = [];
     }
+    //SET isPopular and isTrending
+    if( P_THRESHOLD && result.activity_count && (result.activity_count.all_time.popularity_score >= P_THRESHOLD))
+        data.isPopular  = true;
+
+    if( T_THRESHOLD && result.activity_count && (result.activity_count.last_x_days.trending_score >= T_THRESHOLD))
+        data.isTrending  = true;
 
     return data;
 }
