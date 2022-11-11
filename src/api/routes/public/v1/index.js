@@ -53,8 +53,8 @@ router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 router.get('/get-top-categories/', learnContentController.getTopCategories);
 
 //news endpoints
-router.get('/news', newsController.getNewsList);
-router.get('/news/:slug', newsController.getNewsBySlug);
+router.get('/news', injectTokenPayload, newsController.getNewsList);
+router.get('/news/:slug', injectTokenPayload, newsController.getNewsBySlug);
 
 // static content API
 router.get('/footer', footerController.getFooter);
