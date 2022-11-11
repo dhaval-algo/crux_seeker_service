@@ -261,6 +261,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
 
                 return {
                         bio: hit.bio? hit.bio: null,
+                        slug: hit.slug? hit.slug: null,
                         designation: hit.designation? hit.designation: null,
                         image: hit.image? hit.image: null,
                         first_name: hit.first_name? hit.first_name: null,
