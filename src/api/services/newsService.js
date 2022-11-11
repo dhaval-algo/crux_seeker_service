@@ -307,10 +307,11 @@ const generateSingleViewData = async (result, isList = false, currency = process
             let sections = []
             for(let eachSection of result.partners_section)
             {
-                let courses = eachSection.offers_course.map(course => course.id)
-                if(courses.length)
-                    eachSection.offers_course = await getCourseCoupons(courses, currency);
-
+                if(eachSection.offers_course){
+                    eachSection.offers_course = eachSection.offers_course.map(course => course.id)
+                    if(eachSection.offers_course.length)
+                        eachSection.offers_course = await getCourseCoupons(eachSection.offers_course, currency);
+                }
                 sections.push(eachSection)
             }
 
