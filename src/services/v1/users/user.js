@@ -4328,11 +4328,14 @@ const addNewsToWishList = async (req, res) => {
         const { user } = req;
         const userId = user.userId
         let newsIdsFromClient = validators.validateIds(req.body)
-        if (!newsIdsFromClient) {
+        //check if provided newsIdsFromClient are valid/exits in elastic
+        await validateIdsFromElastic("news", newsIdsFromClient).then(validIds => {newsIdsFromClient = validIds})
+
+        if (newsIdsFromClient.length <= 0) {
 
             return res.status(200).json({
                 success: false,
-                message: "invalid request sent"
+                message: "invalid request sent, provider valid ids"
             })
         }
 
@@ -4342,11 +4345,6 @@ const addNewsToWishList = async (req, res) => {
                 wishlist: []
             }
         }
-        //check if provided newsIdsFromClient are valid/exits in elastic
-       // await validateIdsFromElastic("news", newsIdsFromClient).then(validIds => {newsIdsFromClient = validIds})
-
-        if(!newsIdsFromClient.length)
-            return res.status(200).json(response)
 
             //finds exisiting ids, to check duplicate further
         let existingIds = await models.user_meta.findAll({
@@ -4512,8 +4510,78 @@ const fetchNewsWishlist = async (req,res) =>
     }
 }
 
+const addNewsToShare = async (req,res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        let newsIdsFromClient = validators.validateIds(req.body)
+
+        //check if provided newsIdsFromClient are valid/exits in elastic
+        await validateIdsFromElastic("news", newsIdsFromClient).then(validIds => {newsIdsFromClient = validIds})
+        if (newsIdsFromClient.length <= 0) {
+            return res.status(200).send({
+                success: false,
+                message: "invalid request sent, provider valid ids"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId,
+                key: 'news_share',
+                value: newsIdsFromClient
+            }
+        });
+
+        existingIds = existingIds.map((news) => news.value);
+        let newsIds = []
+        newsIdsFromClient.forEach((newsId) => {
+            if (!existingIds.includes(newsId)) newsIds.push(newsId)
+        });
+
+        if (newsIds.length)
+        {
+
+            const dataToSave = await Promise.all(newsIds.map(async (newsId) => {
+                await logActvity("NEWS_SHARE", userId, newsId);
+                return {
+                    key: "news_share",
+                    value: newsId,
+                    userId
+                }
+
+            }));
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+    } catch (error) {
+
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+
+        })
+    }
+}
+
 
 module.exports = {
+    addNewsToShare,
     fetchNewsWishlist,
     removeNewsFromWishList,
     addNewsToWishList,
