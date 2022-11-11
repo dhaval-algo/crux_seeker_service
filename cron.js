@@ -100,8 +100,8 @@ if(ENABLE_ACTVITY_LOG_CRON)
             await learnpathActivity()       
             await storeActivity()
             await articleActivity()
-            await setTrendingPopularityThreshold()
             await newsActivity();
+            await setTrendingPopularityThreshold()
         } catch (error) {
             console.log("Error in cron", error);
         }
