@@ -1269,7 +1269,7 @@ const newsActivity = async () => {
     {
         if(activity.resource){
 
-            if(!activity.resource.test(re))
+            if(!re.test(activity.resource))
                 continue;
 
             if(!activity_count[activity.resource])
@@ -1308,7 +1308,7 @@ const newsActivity = async () => {
 
     for (let activity of activity_log_x_days)
     {
-        if(!activity.resource.test(re))
+        if(!re.test(activity.resource))
                 continue;
 
         if(activity.resource){
@@ -1393,7 +1393,7 @@ const newsActivity = async () => {
 
     for (let activity of activity_logs_loggedout_x_days)
     {
-        if(!activity.resource.test(re))
+        if(!re.test(activity.resource))
                 continue;
 
         if(activity.resource){
@@ -1439,12 +1439,12 @@ const newsActivity = async () => {
         if(Object.keys(activity_count).length){
             for ( const [key, value] of Object.entries(activity_count))
             {
-                value.all_time.popularity_score = (articleWeightDistribution.NEWS_VIEW * value.all_time.views) + 
-                                                  (articleWeightDistribution.NEWS_WISHLIST * value.all_time.wishlists) +
-                                                    (articleWeightDistribution.NEWS_SHARE * value.all_time.share);
-                value.last_x_days.trending_score = (articleWeightDistribution.NEWS_VIEW * value.last_x_days.views) + 
-                                                    (articleWeightDistribution.NEWS_WISHLIST * value.last_x_days.wishlists) +
-                                                    (articleWeightDistribution.NEWS_SHARE * value.last_x_days.share);
+                value.all_time.popularity_score = (newsWeightDistribution.NEWS_VIEW * value.all_time.views) + 
+                                                  (newsWeightDistribution.NEWS_WISHLIST * value.all_time.wishlists) +
+                                                    (newsWeightDistribution.NEWS_SHARE * value.all_time.share);
+                value.last_x_days.trending_score = (newsWeightDistribution.NEWS_VIEW * value.last_x_days.views) + 
+                                                    (newsWeightDistribution.NEWS_WISHLIST * value.last_x_days.wishlists) +
+                                                    (newsWeightDistribution.NEWS_SHARE * value.last_x_days.share);
             }
         }
         if(Object.keys(activity_count).length){
@@ -1454,7 +1454,7 @@ const newsActivity = async () => {
                     news_id:key,
                     activity_count:value,
                 }
-                publishToSNS(process.env.ARTICLE_ACTIVITY_TOPIC_ARN, payload, "NEWS_ACTIVITY_COUNT")
+                publishToSNS(process.env.NEWS_ACTIVITY_TOPIC_ARN, payload, "NEWS_ACTIVITY_COUNT")
             }
         }
     }catch(err){
