@@ -1,44 +1,85 @@
 'use strict';
 
 const validators = require("../../utils/validators")
+const { parseQueryFilters } = require('../utils/general');
 const { sequelize, Sequelize:{ Op } } = require("../../../models")
 const models = require("../../../models")
+
+//whitelist: allow only this attributes to filter;
+const filterList = ["id","gender", "verified", "city", "country", "status", "phoneVerified","userType",
+"updatedAt", "createdAt", "fullName", "email", "phone", "lastLogin", "dob"]
+
+const buildConfigUsersById = (req)=> {
+
+    try{
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+        let { id = ""} = req.query;
+        let offset = (page-1) * limit, where = {}, order;
+    
+        id = id.trim();
+        if(id != ''){
+            id = id.split(',');
+            where.id = { [Op.or]:  id };
+        }
+
+        let sort = { key:'updatedAt', order: "desc" };
+        order = sequelize.literal(`"${sort.key}" ${sort.order}`);
+        let attributes = ['id', 'fullName','email', 'phone'];
+
+        return { where: {where, attributes, order, offset, limit, page}, sort };
+    }
+    catch(err){
+        console.log(err)
+        return err.message;
+    }
+}
+
+
 
 const buildConfig = (req)=> {
 
         try{
-            const { page = 1, limit = 10 } = validators.validatePaginationParams({ page: req.body.page, limit: req.body.limit })
-            let { sort = "", filters = [], search = ""} = req.body
-            let offset = (page-1) * limit, where = {}, order = sequelize.literal('"updatedAt" DESC')
+            const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+            let { sort = "", f = "", q = ""} = req.query;
+            let offset = (page-1) * limit, where = {}, order;
         
-        
-            search = search.trim()
-            if(search != ""){
-                where = { [Op.or] : {fullName:{[Op.iLike]: "%"+search+"%"}, city:{[Op.iLike]: "%"+search+"%"},
-                        country:{[Op.iLike]: search+"%"}, email:{[Op.iLike]: "%"+search+"%"}, phone:{[Op.iLike]: search+"%"}} }
+            sort = sort.trim()
+            if(!sort)
+                sort = {key:'updatedAt', order:"desc"}
+            else
+            {
+                sort = sort.trim().split(':')
+                sort = {key : sort[0], order: sort[1]}
+            }
+
+            f = f.trim();
+            if(f != "")
+                f = parseQueryFilters(f);
+
+            q = q.trim();
+            if(q != ""){
+                where = { [Op.or] : {fullName:{[Op.iLike]: "%"+q+"%"}, city:{[Op.iLike]: "%"+q+"%"},
+                        country:{[Op.iLike]: q+"%"}, email:{[Op.iLike]: "%"+q+"%"}, phone:{[Op.iLike]: q+"%"}} }
             }
         
             //if not search then filter, but not both at a time 
-            else if(filters.length > 0 ){
-                //whitelist: allow only this attributes to filter;
-                const filterList = ["id","gender", "verified", "city", "country", "status", "phoneVerified","userType",
-                                    "updatedAt", "createdAt", "fullName", "email", "phone", "lastLogin", "dob"]
-        
-                for (var filter of filters) {
-                    if(filterList.includes(filter.key)){
+            else if( f.length ){
+
+                for (var filter of f) {
+                    if(filterList.includes(filter.key))
+                    {
                         if(filter.key == "createdAt" || filter.key =="updatedAt" || filter.key =="lastLogin" || filter.key == "dob")
-                            where[filter.key] = {[Op.between]: [filter.lower, filter.upper]}
+                            where[filter.key] = {[Op.between]: [filter.value[0], filter.value[1] ? filter.value[1] : new Date()]}
                         else
-                            where[filter.key] = filter.value
+                            where[filter.key] = {[Op.or]: filter.value }
                     }
                     else
                         return {err:{message:"Filters: unsupported key "}}
                 }
             }
-        
-            if(sort != "")
-                order = sequelize.literal(`"${sort.key}" ${sort.order}`)
-            return {where, order, offset, limit}
+
+            order = sequelize.literal(`"${sort.key}" ${sort.order}`)
+            return {where: {where, order, offset, limit, page}, sort }
         }
         catch(err){
             console.log(err)
@@ -63,6 +104,7 @@ const queryUser = (id) =>{
     })
 }
 module.exports = {
+    buildConfigUsersById,
     buildConfig,
     queryUser,
 }
