@@ -50,6 +50,84 @@ const getMediaurl = (mediaUrl) => {
 
 module.exports = class partnerService {
 
+    async partnersByCourseId(req, callback)
+    {
+        let ids = req.query.ids, queryPayload = {}, sort = req.query['sort'];
+
+        if(!ids)
+            return callback(null, { success: false, message: 'Provide course Id(s) ..!', data: {} });
+        ids = ids.trim().split(',');
+
+        if(!sort)
+            sort = "name:asc";
+        if(sort){
+            let splitSort = sort.split(":");
+            if(keywordFields.includes(splitSort[0]))
+                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            queryPayload.sort = [sort];
+        }
+
+        let paginationQuery = await getPaginationQuery(req.query);
+        queryPayload.from = paginationQuery.from;
+        queryPayload.size = paginationQuery.size;
+        let pagination = {
+            page: paginationQuery.page,
+            count: 0,
+            perPage: paginationQuery.size,
+            totalCount: 0
+        }
+        let query = {
+            "bool": {
+                "should": [
+                    {
+                        "terms": {"_id": ids }
+                    }
+                ]
+            }
+        }
+
+        try{
+
+            let result = await elasticService.search('learn-content', query, {}, ["partner_id","partner_slug"]);
+            let partners = [];
+            if(result.hits && result.hits.length )
+            {
+                for(const hit of result.hits)
+                    partners.push(hit._source.partner_id)
+
+            }
+
+            if(partners.length)
+            {
+                query.bool.should[0].terms = {id: partners};
+
+                result = await elasticService.search('partner', query, queryPayload);
+
+                partners = [];
+                if(result.hits && result.hits.length)
+                    for(let hit of result.hits)
+                    {
+                        let partner = await this.generateSingleViewData(hit._source, false);
+                        partners.push(partner);
+                    }
+
+                pagination.totalCount  =  result.total.value;
+                pagination.count = partners.length;
+                return callback(null, {success: true, message: 'Fetched successfully!', data: { list: partners}, sort, pagination});
+            }
+
+            callback(null, {success: true, message: 'No Partner(s) Found!', data: [], sort, pagination});
+
+        }catch(err){
+
+            console.log("patners by course ids ",err.meta.body.error)
+            callback(null, {success: false, message: 'Unhandled condtion cause some error !', data: [], sort, pagination});
+
+        }
+
+
+    }
+
     async getPartnerList(req, callback){
         const query = { 
             "bool": {

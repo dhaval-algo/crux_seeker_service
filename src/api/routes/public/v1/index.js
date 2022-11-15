@@ -77,6 +77,7 @@ router.get('/providers/:slug', providerController.getSingleProvider);
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
+router.get('/partners-by-ids', partnerController.partnersByCourseId);
 
 router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
