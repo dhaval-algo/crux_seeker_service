@@ -40,7 +40,7 @@ const helperService = require("../../utils/helper");
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
 const {saveSessionKPIs} = require("../../utils/sessionActivity");
-const {getSearchTemplate} = require("../../utils/searchTemplates");
+const {getSearchTemplate,getUserKpis} = require("../../utils/searchTemplates");
 const { list } = require("../controllers/listUsersController");
 
 const sortOptions = {
@@ -286,7 +286,7 @@ module.exports = class learnContentService {
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
-        if(
+        if(!userId &&
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
             && (req.query['q'] == undefined || req.query['q'] == '')
@@ -337,21 +337,44 @@ module.exports = class learnContentService {
 
         const filterConfigs = await getFilterConfigs('Learn_Content');
             
-            let query = null;
             if (req.query['q']) {
 
                 searchTemplate = await getSearchTemplate('learn-content',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
-                query = searchTemplate.function_score.query;
                 esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
                 
             } else {
-                query = {
-                    "bool": {
-                        "must": [
-                            { term: { "status.keyword": 'published' } }
-                        ],
+                const functions = [];
+
+                searchTemplate = {
+                    function_score: {
+                        score_mode: "multiply",
+                        boost_mode: "multiply",
+                        query: {
+                            bool: {
+                                must: [
+                                    { term: { "status.keyword": 'published' } }
+                                ],
+                            }
+                        }
                     }
-                };
+                }
+
+                if (req.query.sort && req.query.sort == 'Most Relevant') {
+
+                    functions.push({
+                        field_value_factor: {
+                            field: "activity_count.all_time.course_views",
+                            modifier: "log2p",
+                            missing: 8
+                        }
+                    });
+                }
+
+                functions.push(...await getUserKpis('learn-content', userId));
+
+                if (functions.length) {
+                    searchTemplate.function_score.functions = functions
+                }
             }
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
@@ -387,7 +410,7 @@ module.exports = class learnContentService {
                 }
             }
 
-            query.bool.must.push(filter_object)
+            searchTemplate.function_score.query.bool.must.push(filter_object)
             esFilters['courseIds'] = filter_object;
         }
 
@@ -421,7 +444,7 @@ module.exports = class learnContentService {
                     "terms": {[`${slugMapping[i].elastic_key}.keyword`]: [slugLabel]}
                 }
 
-                query.bool.must.push(filter_object);
+                searchTemplate.function_score.query.bool.must.push(filter_object);
 
                 esFilters['slugged'] = filter_object;
 
@@ -467,7 +490,7 @@ module.exports = class learnContentService {
                     else 
                         filter_object = {"terms": {[attribute_name]: filter.value}};
 
-                    query.bool.must.push(filter_object);
+                    searchTemplate.function_score.query.bool.must.push(filter_object);
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                 }
             }            
@@ -507,7 +530,7 @@ module.exports = class learnContentService {
                          }
                     };
 
-                    query.bool.must.push(filter_object);
+                    searchTemplate.function_score.query.bool.must.push(filter_object);
                     esFilters[elasticAttribute.elastic_attribute_name] = filter_object;                 
                 }
             }
@@ -584,7 +607,7 @@ module.exports = class learnContentService {
       
         // --Aggreation query build
     
-        let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
+        let result = await elasticService.searchWithAggregate('learn-content', searchTemplate, queryPayload);
         /**
          * Aggregation object from elastic search
          */
