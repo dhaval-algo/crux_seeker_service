@@ -961,7 +961,6 @@ module.exports = class providerService {
                         }
                         years = years.sort(function (a, b) { return b - a });
                         programs = programs.filter((x, i, a) => a.indexOf(x) == i);
-                        console.log(rankings)
                     }
 
                     let finalData = {
