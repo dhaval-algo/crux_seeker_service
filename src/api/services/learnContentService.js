@@ -282,7 +282,7 @@ module.exports = class learnContentService {
         try{
         let searchTemplate = null;
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = req.query['q']? 'Most Relevant' : 'Popular';
+        let defaultSort =  'Most Relevant' ;
         let useCache = false;
         let cacheName = "";
         const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
