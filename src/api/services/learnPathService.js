@@ -13,7 +13,7 @@ const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 
 const categoryService = require("./categoryService");
-const {getSearchTemplate} = require("../../utils/searchTemplates");
+const {getSearchTemplate,getUserKpis} = require("../../utils/searchTemplates");
 const CategoryService = new categoryService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -94,12 +94,12 @@ module.exports = class learnPathService {
         try {
             let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = req.query['q']? 'Most Relevant' :"Highest Rated";
+            let defaultSort =  'Most Relevant';
             let useCache = false;
             let cacheName = "learnpath";
             const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
 
-            if(
+            if(!userId &&
                 req.query['learnPathIds'] == undefined
                 && req.query['f'] == undefined
                 && (req.query['q'] == undefined || req.query['q'] == '')
@@ -138,17 +138,41 @@ module.exports = class learnPathService {
             if (req.query['q']) {
 
                 searchTemplate = await getSearchTemplate('learn-path',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
-                query = searchTemplate.function_score.query;
                 esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
                 
             } else {
-                query = {
-                    "bool": {
-                        "must": [
-                            { term: { "status.keyword": 'approved' } }
-                        ],
+                const functions = [];
+
+                searchTemplate = {
+                    function_score: {
+                        score_mode: "multiply",
+                        boost_mode: "multiply",
+                        query: {
+                            bool: {
+                                must: [
+                                    { term: { "status.keyword": 'approved' } }
+                                ],
+                            }
+                        }
                     }
-                };
+                }
+
+                if (req.query.sort && req.query.sort == 'Most Relevant') {
+
+                    functions.push({
+                        field_value_factor: {
+                            field: "activity_count.all_time.learnpath_views",
+                            modifier: "log2p",
+                            missing: 8
+                        }
+                    });
+                }
+
+                functions.push(...await getUserKpis('learn-path', userId));
+
+                if (functions.length) {
+                    searchTemplate.function_score.functions = functions
+                }
             };
 
             let queryPayload = {};
@@ -187,7 +211,7 @@ module.exports = class learnPathService {
                     }
                 }
 
-                query.bool.must.push(filter_object)
+                searchTemplate.function_score.query.bool.must.push(filter_object)
                 esFilters['courseIds'] = filter_object;
             }
 
@@ -216,12 +240,12 @@ module.exports = class learnPathService {
                             "terms": { [attribute_name]: filter.value }
                         };
 
-                        query.bool.must.push(filter_object);
+                        searchTemplate.function_score.query.bool.must.push(filter_object);
                         esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                     }
                 }
                 if (req.query['f'].includes("Price Type:")) {
-                    query.bool.must.push({
+                    searchTemplate.function_score.query.bool.must.push({
                         "bool": {
                             "must_not": [
                                 {
@@ -281,7 +305,7 @@ module.exports = class learnPathService {
                             }
                         };
 
-                        query.bool.must.push(filter_object);
+                        searchTemplate.function_score.query.bool.must.push(filter_object);
                         esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                     }
                 }
@@ -368,7 +392,7 @@ module.exports = class learnPathService {
 
             // --Aggreation query build
 
-            let result = await elasticService.searchWithAggregate('learn-path', searchTemplate ? searchTemplate : query, queryPayload);
+            let result = await elasticService.searchWithAggregate('learn-path', searchTemplate , queryPayload);
 
             /**
              * Aggregation object from elastic search
