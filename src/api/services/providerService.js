@@ -440,11 +440,13 @@ module.exports = class providerService {
 
         if(req.query['rank']){
             ranking = await getRankingBySlug(req.query['rank']);
-            ranking.image = ranking.image ? formatImageResponse(ranking.image) : null;
-            ranking.logo = ranking.logo ? formatImageResponse(ranking.logo) : null;
-            ranking.program = ranking.program ? ranking.program.default_display_label : null;
 
             if(ranking){
+
+                ranking.image = ranking.image ? formatImageResponse(ranking.image) : null;
+                ranking.logo = ranking.logo ? formatImageResponse(ranking.logo) : null;
+                ranking.program = ranking.program ? ranking.program.default_display_label : null;
+
                 parsedFilters.push({
                     key: 'Ranking',
                     value: [ranking.name]
@@ -640,7 +642,6 @@ module.exports = class providerService {
                 website_link: result.website_link
             },            
             course_count: (result.course_count) ? result.course_count : 0,
-            featured_ranks: [],
             placements: {},
             gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
             facilities: (result.facilities) ? result.facilities : null,
@@ -705,6 +706,53 @@ module.exports = class providerService {
                         data.accreditations.push(accr);
                     }
                 }
+            }
+
+            if(result.ranks && result.ranks.length)
+            {
+                let ranks = [], rankings = await RedisConnection.getValuesSync(`rankings_slug_object`);
+                let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+                data.rank = {};
+
+                for (let item of result.ranks) {
+                        //send latest year rank only
+                    if( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
+                            //get image/logo from cache
+                        let image = null, logo = null;
+                        if(rankings.noCacheData != true){
+                                image = rankings[item.slug].image;
+                                logo = rankings[item.slug].logo;
+                        }
+
+                        ranks.push({
+                            name: item.name,
+                            slug: item.slug,
+                            rank: item.rank,
+                            year: item.year,
+                            precedence: item.precedence ? item.precedence  : 0,
+                            image,
+                            logo
+                        });
+                    }
+                }
+                //send only one rank with higher precedence
+                if(ranks.length > 1)
+                {
+                    // track precedence
+                    let highP = 0, highPIndex = 0;
+
+                    ranks.map((rank, i) => {
+                        if(highP < rank.precedence)
+                        {
+                            highP = rank.precedence;
+                            highPIndex = i;
+                        }
+                    })
+                    data.rank = ranks[highPIndex]
+                }
+                else if(ranks.length == 1)
+                    data.rank = ranks[0]
+
             }
         }
 
@@ -781,6 +829,7 @@ module.exports = class providerService {
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
+                        precedence: item.precedence ? item.precedence: null,
                         image,
                         logo
                     });
@@ -810,6 +859,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            precedence: item.precedence ? item.precedence: null,
                             logo,
                             image,
                             attributes: item.attributes
@@ -827,6 +877,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            precedence: item.precedence ? item.precedence: null,
                             rank_change : 0
                         }
                     }
