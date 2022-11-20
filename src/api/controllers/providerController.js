@@ -75,6 +75,16 @@ module.exports = {
         } else {
             res.status(200).send(result);
         }
+    },    
+    getProviderPlacements: async (req, res) => {  
+        let result = await ProviderService.getProviderPlacements(req);
+        if (req.query['fields']) {
+            let finalData = formatResponseField(req.query['fields'], result.data)
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
+        } else {
+            res.status(200).send(result);
+        }  
+             
     },
 
 };

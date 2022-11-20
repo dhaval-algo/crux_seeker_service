@@ -771,4 +771,59 @@ module.exports = class providerService {
             callback(null, {success: false, message: 'No data available!', data: []});
         }
     }
+
+    async getProviderPlacements(req) {
+        let id = req.params.id;
+        id = id.split("PVDR_").pop()
+        let data = {};
+        let cacheName = `provider_placement_${id}`;
+        try {
+            const query = {
+                "bool": {
+                    "filter": [
+                        { "term": { "provider_id": id } }
+                    ]
+                }
+            };            
+
+            let cacheData = await RedisConnection.getValuesSync(cacheName);
+            data = cacheData;
+
+            if (cacheData.noCacheData) {
+               let result = await elasticService.search('institute-placement', query,);
+
+                if (result.hits && result.hits.length) {
+                    let years = []
+                    let programs  = []
+                    let placement_data = {}
+                    for (const hit of result.hits) {
+                        years.push(hit._source.year)
+                        programs.push(hit._source.program_name)
+                        if(!placement_data[hit._source.year])placement_data[hit._source.year] ={}
+                        if(hit._source.percentage_of_students_placed)
+                        {
+                            hit._source.percentage_of_students_placed.percentage = Math.round(( hit._source.percentage_of_students_placed.students_placed/ hit._source.percentage_of_students_placed.total_number_of_students)*100)
+                        }
+                        placement_data[hit._source.year][hit._source.program_name] = hit._source
+                    }                  
+                    
+                    data.years = years.filter((x, i, a) => a.indexOf(x) == i)
+                    data.programs = programs.filter((x, i, a) => a.indexOf(x) == i)
+                    data.placement_data = placement_data
+                    await RedisConnection.set(cacheName, data);
+                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER);
+                    return { success: true, data }
+                }
+                else {
+                    return { success: false, data: null }
+                }
+            }
+
+            return { success: false, data: data }
+
+        } catch (error) {
+            console.log("Error fetching top categories in institute-home-page", error);
+            return { success: false, data: null }
+        }
+    }    
 }

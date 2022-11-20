@@ -74,6 +74,7 @@ router.get('/course-option-by-categories/', learnContentController.getCourseOpti
 
 router.get('/providers/', providerController.getProviderList);
 router.get('/providers/:slug', providerController.getSingleProvider);
+router.get('/providers-placements/:id', providerController.getProviderPlacements);
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
@@ -141,10 +142,7 @@ router.get('/learn-path-learn-types', learnPathController.getLearnPathLearntypes
 router.get('/learn-path-topics', learnPathController.getLearnPathTopics)
 
 // graph / data tables api
-router.get('/bar-graph/:id', graphController.getBarGraph)
-router.get('/line-graph/:id', graphController.getlineGraph)
-router.get('/pie-chart/:id', graphController.getPieChart)
-router.get('/donut-chart/:id', graphController.getDonutChart)
+router.get('/graph/:id', graphController.getGraph)
 router.get('/data-table/:id', graphController.getDataTable)
 
 
