@@ -310,9 +310,10 @@ module.exports = class providerService {
         if(req.query['rank'])
         {
             let cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
-            if(cacheData.noCacheData != true) {
+            if(cacheData.noCacheData != true)
                 latestRankYear = cacheData
-            }
+            else
+                latestRankYear = this.setLatestRankingYear();
             let yearOptions = []
             let yearoption = parseInt(latestRankYear[req.query['rank']]);
             for(let i =0; i< 11; i++ )  
@@ -1080,6 +1081,7 @@ module.exports = class providerService {
 
         }
         RedisConnection.set("provider_ranking_latest_year", rank_latest_year);
+        return rank_latest_year;
     }
    }
 
