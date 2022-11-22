@@ -3425,7 +3425,7 @@ const editEducation = async (req, res) => {
                 grade
             },
             {
-                where: {id:req.user.userId, id:id}
+                where: {userId:req.user.userId, id:id}
             }
         )
 
@@ -3549,7 +3549,7 @@ const editWorkExperience = async (req, res) => {
                 experience
             },
             {
-                where: {id:req.user.userId, id:id}
+                where: {userId:req.user.userId, id:id}
             }
         )
 
@@ -3638,6 +3638,11 @@ const getUserProfile = async (req, res) => {
                 {
                     model: models.user_experience,
                     attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+                },
+                {
+                    model: models.user_address,
+                    attributes: ["id","addressLine", "locality", "city", "state", "country", "zipCode"]
+
                 }
             ],
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
@@ -4213,6 +4218,110 @@ const calcAge = (dob) => {
     return age;
 }
 
+const addAddress = async (req, res) => {
+    let {addressLine, locality, city, state, country, zipCode } = req.body
+    try {        
+        
+        const user_address = await models.user_address.create({
+            userId: req.user.userId,
+            addressLine,
+            locality,
+            city,
+            state,
+            country,
+            zipCode
+        })
+
+        res.status(200).send({
+            message: "Address added successfully",
+            success: true,
+            data: {
+                id: user_address.id,
+                addressLine,
+                locality,
+                city,
+                state,
+                country,
+                zipCode
+            }
+        })
+    } catch (error) {
+        console.log('addAddress err ',error);
+        res.status(200).send({
+            message: "Error adding Address",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const editAddress = async (req, res) => {
+    let {addressLine, locality, city, state, country, zipCode } = req.body
+    try {        
+        const user_address = await models.user_address.update(
+            {            
+                addressLine,
+                locality,
+                city,
+                state,
+                country,
+                zipCode
+            },
+            {
+                where: {userId:req.user.userId}
+            }
+        )
+
+        res.status(200).send({
+            message: "Address updated successfully",
+            success: true,
+            data: {
+                id: user_address.id,
+                addressLine,
+                locality,
+                city,
+                state,
+                country,
+                zipCode
+
+            }
+        })
+
+    } catch (error) {
+        console.log('editAddress  err ',error);
+        res.status(200).send({
+            message: "Error updating Address ",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const getAddress = async (req, res) => {    
+    try {        
+        
+        const user_address = await models.user_address.findOne({
+            where: {
+                userId:req.user.userId
+            },
+            attributes: ["id","addressLine", "locality", "city", "state", "country", "zipCode"]         
+        })
+
+        res.status(200).send({
+            message: "Address fetched successfully",
+            success: true,
+            data: user_address             
+        })
+    } catch (error) {
+        console.log('getAddress err ',error);
+        res.status(200).send({
+            message: "Error fetching Address",
+            success: false
+        })
+    }
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -4268,9 +4377,12 @@ module.exports = {
     getPersonalDetails,
     editPersonalDetails,
     addEducation,
-    editEducation,
+    editEducation,    
     deleteEducation,
     getEducations,
+    addAddress,
+    editAddress,
+    getAddress,
     addWorkExperience,
     editWorkExperience,
     deleteWorkExperience,

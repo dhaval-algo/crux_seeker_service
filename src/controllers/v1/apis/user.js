@@ -50,6 +50,9 @@ router.get('/get-work-experiences',authenticateJWT, userService.getWorkExperienc
 router.post('/add-education',authenticateJWT, userService.addEducation);
 router.post('/edit-education',authenticateJWT, userService.editEducation);
 router.post('/delete-education',authenticateJWT, userService.deleteEducation);
+router.post('/add-address',authenticateJWT, userService.addAddress);
+router.post('/edit-address',authenticateJWT, userService.editAddress);
+router.get('/get-address',authenticateJWT, userService.getAddress);
 router.get('/get-user-profile',authenticateJWT, userService.getUserProfile);
 router.get('/get-skills',authenticateJWT, userService.getSkills);
 router.get('/get-key-skills',authenticateJWT, userService.getKeySkills);
