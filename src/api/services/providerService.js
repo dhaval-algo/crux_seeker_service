@@ -829,6 +829,7 @@ module.exports = class providerService {
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
+                        year: item.year,
                         precedence: item.precedence ? item.precedence: null,
                         image,
                         logo
@@ -859,6 +860,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            year: item.year,
                             precedence: item.precedence ? item.precedence: null,
                             logo,
                             image,
@@ -867,8 +869,9 @@ module.exports = class providerService {
                 }
             }
             let compareYear = parseInt(rankYear[rank])
-            for (let i=1; i < 4 ; i++)
+            for (let i= 0; i < 4 ; i++)
             {
+                data.compare_ranks[compareYear] = null
                 for (let item of result.ranks) {
 
                     if (item.year == compareYear && item.slug == rank) {
@@ -877,9 +880,11 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            year: item.year,
                             precedence: item.precedence ? item.precedence: null,
                             rank_change : 0
                         }
+
                     }
                 }
                 compareYear--
@@ -888,16 +893,30 @@ module.exports = class providerService {
             if(Object.keys(data.compare_ranks).length >= 2)
             {
                 let year = parseInt(Object.keys(data.compare_ranks).sort()[0]); //get base year
+                let r = 0, r1 = 0;
+                if(data.compare_ranks[year])
+                    r = data.compare_ranks[year].rank;
 
-                let r1 = data.compare_ranks[year].rank;
-                let r2 = data.compare_ranks[year +1].rank
-                data.compare_ranks[year +1].rank_change = r1 -r2;
-                
-
-                if(Object.keys(data.compare_ranks).length === 3)
+                if( data.compare_ranks[year +1] )
                 {
-                    let r3 = data.compare_ranks[year +2].rank
-                    data.compare_ranks[year +2].rank_change = r2 -r3;
+                    r1 = data.compare_ranks[year +1].rank;
+                    if(r >= 1 )
+                        data.compare_ranks[year +1].rank_change = r -r1;
+                    r = r1;
+                }
+
+                if( data.compare_ranks[year +2] )
+                {
+                    r1 = data.compare_ranks[year +2].rank;
+                    if(r >= 1 )
+                        data.compare_ranks[year +2].rank_change =  r -r1;
+                    r = r1;
+                }
+                if( data.compare_ranks[year +3] )
+                {
+                    r1 = data.compare_ranks[year +3].rank;
+                    if(r >= 1 )
+                        data.compare_ranks[year +3].rank_change = r -r1;
                 }
 
                     
