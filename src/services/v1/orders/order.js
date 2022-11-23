@@ -106,7 +106,7 @@ const oderDetails = async (req, res, next) => {
 
                 return res.status(200).json({
                     'success': true,
-                    'message': 'something went wrong, Please try again',
+                    'message': 'Fetch successfully!',
                     'data': finalData
                 });
 
