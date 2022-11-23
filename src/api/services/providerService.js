@@ -784,29 +784,155 @@ module.exports = class providerService {
                         { "term": { "provider_id": id } }
                     ]
                 }
-            };            
+            };
 
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             data = cacheData;
 
             if (cacheData.noCacheData) {
-               let result = await elasticService.search('institute-placement', query,);
+                let result = await elasticService.search('institute-placement', query,);
 
                 if (result.hits && result.hits.length) {
                     let years = []
-                    let programs  = []
+                    let programs = []
                     let placement_data = {}
                     for (const hit of result.hits) {
                         years.push(hit._source.year)
                         programs.push(hit._source.program_name)
-                        if(!placement_data[hit._source.year])placement_data[hit._source.year] ={}
-                        if(hit._source.percentage_of_students_placed)
-                        {
-                            hit._source.percentage_of_students_placed.percentage = Math.round(( hit._source.percentage_of_students_placed.students_placed/ hit._source.percentage_of_students_placed.total_number_of_students)*100)
+                        if (!placement_data[hit._source.year]) placement_data[hit._source.year] = {}
+
+                        let batch_profile = []
+                        if (hit._source.gender_diversity_graph_id) {
+                            batch_profile.push({
+                                tab_label: 'Gender Diversity',
+                                type: "GRAPH",
+                                graph_id: hit._source.gender_diversity_graph_id
+                            })
                         }
-                        placement_data[hit._source.year][hit._source.program_name] = hit._source
-                    }                  
-                    
+                        if (hit._source.sector_wise_placement_graph) {
+                            batch_profile.push({
+                                tab_label: 'Batches By Skills',
+                                type: "GRAPH",
+                                graph_id: hit._source.sector_wise_placement_graph
+                            })
+                        }
+                        if (hit._source.academic_background_graph_id) {
+                            batch_profile.push({
+                                tab_label: 'Academic Background',
+                                type: "GRAPH",
+                                graph_id: hit._source.academic_background_graph_id
+                            })
+                        }
+                        if (hit._source.work_experience_graph_id) {
+                            batch_profile.push({
+                                tab_label: 'Work Experience',
+                                type: "GRAPH",
+                                graph_id: hit._source.work_experience_graph_id
+                            })
+                        }
+
+                        let recruiter_profile = []
+                        if (hit._source.key_insights_section) {
+                            let key_insight_data = []
+                            if (hit._source.key_insights_section.new_recruiters) {
+                                key_insight_data.push({
+                                    label: "New Recuiter",
+                                    image: "https://www.careervira.com/_next/static/media/teaching-type.8a03508e.svg",
+                                    stats: hit._source.key_insights_section.new_recruiters
+                                })
+                            }
+                            if (hit._source.key_insights_section.companies_visited) {
+                                key_insight_data.push({
+                                    label: "Companies Visited",
+                                    image: "https://www.careervira.com/_next/static/media/teaching-type.8a03508e.svg",
+                                    stats: hit._source.key_insights_section.companies_visited
+                                })
+                            }
+                            if (hit._source.key_insights_section.pre_placement_offers) {
+                                key_insight_data.push({
+                                    label: "Pre Placement Offers",
+                                    image: "https://www.careervira.com/_next/static/media/teaching-type.8a03508e.svg",
+                                    stats: hit._source.key_insights_section.pre_placement_offers
+                                })
+                            }
+                            recruiter_profile.push({
+                                tab_label: 'Key Insights',
+                                type: "KEY_INSIGHT",
+                                heading: 'Key Insights',
+                                key_insight_data: key_insight_data
+                            })
+                        }
+
+                        if (hit._source.profiles_offered && hit._source.profiles_offered.length > 0 ) {
+                            recruiter_profile.push({
+                                tab_label: 'Profiles Offered',
+                                type: "BULLET_LIST",
+                                heading: 'Profiles Offered',
+                                bullet_list_data: hit._source.profiles_offered.map(item => item.profiles_offered)
+
+                            })
+                        }
+
+                        if (hit._source.top_recruiter) {
+                            recruiter_profile.push({
+                                tab_label: 'Top Recruiters',
+                                type: "TABLE",
+                                heading: 'Top Recruiters For Final Placements',
+                                table_data: {
+                                    head: ["Companies", "#Offers"],
+                                    rows: hit._source.top_recruiter.map(item => [item.recruiter, item.number_of_offers])
+                                }
+                            })
+                        }
+
+                        if (hit._source.percentage_of_students_placed) {
+                            recruiter_profile.push({
+                                tab_label: 'Percentage Of Students Placed',
+                                type: "TABLE",
+                                heading: 'Percentage Of Students Placed',
+                                table_data: {
+                                    head: ["Perticulars", hit._source.year],
+                                    rows: [
+                                        [
+                                            'Numbers of students registered',
+                                            hit._source.percentage_of_students_placed.total_number_of_students
+                                        ],
+                                        [
+                                            'Numbers of students placed',
+                                            hit._source.percentage_of_students_placed.students_placed
+                                        ],
+                                        [
+                                            '% of students placed',
+                                            Math.round((hit._source.percentage_of_students_placed.students_placed / hit._source.percentage_of_students_placed.total_number_of_students) * 100)
+                                        ]
+                                    ]
+                                }
+                            })
+                        }
+                        let salary_CTC = []
+                        if (hit._source.CTC_graph_id) {
+                            salary_CTC.push({
+                                tab_label: 'Highest CTC',
+                                type: "GRAPH",
+                                graph_id: hit._source.CTC_graph_id
+                            })
+                        }
+                        if (hit._source.sector_wise_highest_CTC_graph_id) {
+                            salary_CTC.push({
+                                tab_label: 'CTC By skill',
+                                type: "GRAPH",
+                                graph_id: hit._source.sector_wise_highest_CTC_graph_id
+                            })
+                        }
+
+
+                        placement_data[hit._source.year][hit._source.program_name] = {
+                            batch_profile,
+                            recruiter_profile,
+                            salary_CTC
+                        }
+                    }
+
                     data.years = years.filter((x, i, a) => a.indexOf(x) == i)
                     data.programs = programs.filter((x, i, a) => a.indexOf(x) == i)
                     data.placement_data = placement_data
@@ -825,5 +951,5 @@ module.exports = class providerService {
             console.log("Error fetching top categories in institute-home-page", error);
             return { success: false, data: null }
         }
-    }    
+    }  
 }
