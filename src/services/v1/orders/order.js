@@ -25,7 +25,7 @@ const oderDetails = async (req, res, next) => {
             'message': 'something went wrong, Please try again',
             'data': {}
         }
-        let order_id = req.query.order_id
+        let order_id = req.query.orderId
         let user_id = await encryptUserId(req.user.userId)
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/${user_id}/${order_id}`
         let finalData = {}
@@ -33,10 +33,10 @@ const oderDetails = async (req, res, next) => {
 
             if (response.data.status == 'OK' && response.data.data) {
                 finalData.orderData = response.data.data[0]
-                switch (finalData.orderData.orderItems[0].item_type) {
+                switch (finalData.orderData.orderItems[0].itemType) {
                     case 'course':
                         try {
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].item_id.toString() } });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.coursesData = {
                                     title: courses[0].title,
@@ -78,7 +78,7 @@ const oderDetails = async (req, res, next) => {
                         break;
                     case 'lp':
                         try {
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].item_id.toString() } });
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.learnPathData = {
                                     title: courses[0].title,
