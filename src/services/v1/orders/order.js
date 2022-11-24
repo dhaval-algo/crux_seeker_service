@@ -38,7 +38,7 @@ const oderDetails = async (req, res, next) => {
                         try {
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].itemId.toString() } });
                             if (courses && courses.length > 0) {
-                                finalData.coursesData = {
+                                finalData.itemData = {
                                     title: courses[0].title,
                                     slug: courses[0].slug,
                                     id: courses[0].id,
@@ -80,7 +80,7 @@ const oderDetails = async (req, res, next) => {
                         try {
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].itemId.toString() } });
                             if (courses && courses.length > 0) {
-                                finalData.learnPathData = {
+                                finalData.itemData = {
                                     title: courses[0].title,
                                     slug: courses[0].slug,
                                     id: courses[0].id,
