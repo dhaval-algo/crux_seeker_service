@@ -5,7 +5,7 @@ const EXTRA_KEYWORDS_PROVIDER = ['top institutes', 'indian institutes', 'free co
 const EXTRA_KEYWORDS_PARTNER = ["free courses", "online courses", "courses near me", "careervira courses", "available courses", "self paced/instructors", "english courses", "degrees", "certifications"];
 const EXTRA_KEYWORDS_PROVIDER_LIST = ["courses", "free courses", "online courses", "courses near me", "careervira courses", "available courses", "self paced/instructors", "english courses", "degrees", "certifications"];
 const DESCRIPTION_PROVIDER_LIST = "Discover Highly Vetted and Curated online courses, executive education, boot camp, degrees, and certifications for professionals. Get a detailed analysis and ranking of the courses and programs from the top global institutions. Make better learning and career decisions.";
-const TITLE_PROVIDER_LIST = "List of institutes offering over 10000+ courses | Careervira | Careervira.com"
+const TITLE_PROVIDER_LIST = "List of institutes offering over 50K+ courses | Careervira | Careervira.com"
 const TITLE_ARTICLE_LIST = `Advice by Careervira | Get advice from top professionals, experts and learners  | ${process.env.SITE_URL_FOR_META_DATA}`;
 const DESCRIPTION_ARTICLE_LIST = `You can get expert advice with Careervira.com’s personalised career services. Get advice from top professionals, industry experts, academics and learners on career guide, learn path and how to master a subject. You can navigate through your career path to reach your target role based on your skill assessment`
 const EXTRA_KEYWORDS_ARTICLE_LIST = ["careervira advice", "online marketplace", "learn content", "courses near me", "careervira courses", "careervira articles", "free articles", "learning advice", "institute advice", "ranking articles", "ranking advice", "career advice", "career path", "top courses", "experts", "top professionals", "industry experts", "careervira content", "institutes", "degrees", "certifications"];
@@ -13,7 +13,7 @@ const EXTRA_KEYWORDS_ARTICLE = ["careervira advice", "online marketplace", "lear
 const DEFAULT_CALL_FOR_ACTION = 'Visit us at Careervira.'
 const defaultLearnContentMetaInfo = {
     meta_description: "Find top courses, degrees and certifications here. See our comprehensive collection of management, software, finance and big data courses from top Institutes and Partners like Pluralsight, Coursera, Edureka, Simpliv LLC and many more. Start learning now. Search and compare courses before you buy.",
-    meta_title: "List of over 10000 courses , degrees and certifications from top institutes and providers | Careervira | Careervira.com",
+    meta_title: "List of over 50K+ courses , degrees and certifications from top institutes and providers | Careervira | Careervira.com",
     meta_keywords: "online courses, learning courses, paid courses, degrees, certifications, offline courses, instructor courses, courses near me, top courses"
 };
 
