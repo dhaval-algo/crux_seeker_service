@@ -563,6 +563,15 @@ module.exports = class learnPathService {
             ids = req.query['ids'].split(",");
         }
         if(ids.length > 0){
+            ids = ids.map(id => {
+                    
+                if(!id.includes("LRN_CNT_PUB_"))
+                {
+                    id = 'LRN_PTH_'+id
+                }
+
+                return id
+            })
             const queryBody = {
                 "query": {
                   "ids": {
