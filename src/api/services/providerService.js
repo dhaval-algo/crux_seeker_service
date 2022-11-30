@@ -321,7 +321,7 @@ module.exports = class providerService {
                
                 yearOptions.push (
                     {
-                        "label": yearoption,
+                        "label": String(yearoption),
                         "count": 0,
                         "selected": false,
                         "disabled": false
@@ -478,21 +478,44 @@ module.exports = class providerService {
         let filters = filterResponse.filters; */  
 
         let result = {};
+        //aggs for counting rankings and years
+        queryPayload.aggs = {
+            ranks: {
+                nested: {
+                    path: "ranks"
+                },
+                aggs: {
+                    Year: {
+                        terms: {
+                            field: "ranks.year.keyword"
+                        }
+                    },
+                     Ranking: {
+                        terms: {
+                            field: "ranks.name.keyword"
+                        }
+                    }
+                }
+
+            }
+        }
+
         try{
-            result = await elasticService.search('provider', query, queryPayload, queryString);
+            result = await elasticService.searchWithAggregate('provider', query, queryPayload, queryString);
         }catch(e){
             console.log("Error fetching elastic data <> ", e);
         }
 
-        if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits, req.query['rank'], rankYear);
+        if(result.hits.total && result.hits.total.value > 0){
+
+            const list = await this.generateListViewData(result.hits.hits, req.query['rank'], rankYear);
 
             let pagination = {
                 page: paginationQuery.page,
                 count: list.length,
                 perPage: paginationQuery.size,
-                totalCount: result.total.value,
+                totalCount: result.hits.total.value,
                 total: filterResponse.total
             }
 
@@ -505,6 +528,7 @@ module.exports = class providerService {
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
+            filters = await this.updateRanksFilter(result, filters, parsedFilters);
 
             let data = {
                 list: list,
@@ -530,9 +554,10 @@ module.exports = class providerService {
             if(parsedFilters.length > 0){
                 
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
+            filters = await this.updateRanksFilter(result, filters, parsedFilters);
             callback(null, {success: true, message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
@@ -1188,4 +1213,33 @@ module.exports = class providerService {
                 console.log("ranking invalidation: ",err)
         }, false);
     }
+
+    async updateRanksFilter(result, filters, parsedFilters){
+
+        for(let i = 0; i < filters.length; i++)
+        {
+            const field = filters[i].label;
+            if( ['Year', 'Ranking'].includes(field) )
+            {
+                const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
+                let options = [];
+                await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
+                    for(let option of filters[i].options)
+                    {
+                        if(each.key == option.label)
+                        {
+                            option.count = each.doc_count;
+                            if(seleteddFilter && seleteddFilter.value.includes(option.label))
+                                option.selected = true;
+                            options.push(option);
+                        }
+                    }
+                }));
+
+                filters[i].options = options;
+            }
+        }
+        return filters;
+    }
+
 }
