@@ -136,8 +136,7 @@ const cancellationDetails = async (req, res, next) => {
             'data': {}
         }
         let orderId = req.query.orderId
-       // let userId = await encryptUserId(req.user.userId)
-        let userId = await encryptUserId(3)
+        let userId = await encryptUserId(req.user.userId)
 
         let itemType = req.query.itemType
         let itemId = req.query.itemId
@@ -180,7 +179,6 @@ const cancellationDetails = async (req, res, next) => {
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile
                                 }
-                                // finalData.coursesdata = courses[0]
                             }
                         } catch (error) {
                             console.log("No course for id", error)
@@ -343,7 +341,6 @@ const orderHistory = async (req, res, next) => {
         let sortOptions = ['Recently Purchansed','Purchansed Earlier']
         req.query.sort = req.query.sort || defaultSort 
         let userId = await encryptUserId(req.user.userId)
-        //let userId = 'WKbJUbB9Ac6o3bM0TeJ26Q=='
         let page =  req.query.page || 1 
         let size =  req.query.size || 10 
         let sortBy = (req.query.sort ='Recently Purchansed')?'desc' : 'asc'
@@ -370,6 +367,7 @@ const orderHistory = async (req, res, next) => {
                     if(parsedFilter.key =='cartType')
                     {
                         requestData.cartType = parsedFilter.value
+
                     }
                     if(parsedFilter.key =='orderStatus')
                     {
@@ -463,7 +461,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Course",
-                                selected: false,
+                                selected: (requestData.itemType =="course")? true:false,
                                 disabled: false
                             })
                         }
@@ -471,7 +469,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Learn Path",
-                                selected: false,
+                                selected: (requestData.itemType =="learnpath")? true:false,
                                 disabled: false
                             })
                         }
@@ -493,7 +491,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "EMI",
-                                selected: false,
+                                selected: (requestData.cartTypes =="emi")? true:false,
                                 disabled: false
                             })
                         }
@@ -501,7 +499,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Single Purchased",
-                                selected: false,
+                                selected: (requestData.cartTypes =="buynow")? true:false,
                                 disabled: false
                             })
                         }
@@ -509,7 +507,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Enroll",
-                                selected: false,
+                                selected: (requestData.cartTypes =="enrollnow")? true:false,
                                 disabled: false
                             })
                         }
@@ -532,7 +530,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Successful",
-                                selected: false,
+                                selected: (requestData.orderStatus =="Successful")? true:false,
                                 disabled: false
                             })
                         }
@@ -540,7 +538,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Created",
-                                selected: false,
+                                selected: (requestData.orderStatus =="Created")? true:false,
                                 disabled: false
                             })
                         }
@@ -548,7 +546,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Payment Failed",
-                                selected: false,
+                                selected: (requestData.orderStatus =="Payment Failed")? true:false,
                                 disabled: false
                             })
                         }
