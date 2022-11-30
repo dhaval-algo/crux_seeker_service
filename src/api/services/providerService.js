@@ -837,21 +837,21 @@ module.exports = class providerService {
                             if (hit._source.key_insights_section.new_recruiters) {
                                 key_insight_data.push({
                                     label: "New Recuiter",
-                                    image: "https://www.careervira.com/_next/static/media/teaching-type.8a03508e.svg",
+                                    image: "https://d2lk14jtvqry1q.cloudfront.net/media/building_line_b7b3abb434.svg",
                                     stats: hit._source.key_insights_section.new_recruiters
                                 })
                             }
                             if (hit._source.key_insights_section.companies_visited) {
                                 key_insight_data.push({
                                     label: "Companies Visited",
-                                    image: "https://www.careervira.com/_next/static/media/teaching-type.8a03508e.svg",
+                                    image: "https://d2lk14jtvqry1q.cloudfront.net/media/briefcase_4_line_9f5185d881.svg",
                                     stats: hit._source.key_insights_section.companies_visited
                                 })
                             }
                             if (hit._source.key_insights_section.pre_placement_offers) {
                                 key_insight_data.push({
                                     label: "Pre Placement Offers",
-                                    image: "https://www.careervira.com/_next/static/media/teaching-type.8a03508e.svg",
+                                    image: "https://d2lk14jtvqry1q.cloudfront.net/media/medal_2_fill_1233a61201.svg",
                                     stats: hit._source.key_insights_section.pre_placement_offers
                                 })
                             }
