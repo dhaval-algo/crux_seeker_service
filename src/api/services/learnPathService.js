@@ -6,11 +6,14 @@ const fetch = require("node-fetch");
 const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
+const {formatCount} = require("../utils/general")
+const {generateMetaInfo} = require("../utils/metaInfo")
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 
 const categoryService = require("./categoryService");
+const {getSearchTemplate} = require("../../utils/searchTemplates");
 const CategoryService = new categoryService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -24,8 +27,11 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     getCurrencies,
-    getCurrencyAmount
+    getCurrencyAmount,
+    paginate,
+    formatImageResponse
 } = require('../utils/general');
+const { list } = require("../controllers/listUsersController");
 
 const round = (value, step) => {
     step || (step = 1.0);
@@ -36,7 +42,18 @@ const round = (value, step) => {
 let currencies = [];
 const ENTRY_PER_PAGE = 25;
 
-const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages'];
+const filterFields = ['topics', 'categories', 'sub_categories', 'title', 'levels', 'medium', 'pricing_type','life_stages', 'learn_type_label'];
+
+const sortOptions = {
+    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
+    'Highest Rated': ["ratings:desc"],
+    'Newest' :["created_at:desc"],
+    'Price Low To High': ["basePrice:asc"],
+    'Price High To Low': ["basePrice:desc"],
+    'Most Relevant' : []
+
+}
 
 
 const parseQueryRangeFilters = (filter) => {
@@ -75,10 +92,12 @@ module.exports = class learnPathService {
     async getLearnPathList(req, callback, skipCache) {
 
         try {
+            let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = "ratings:desc";
+            let defaultSort = req.query['q']? 'Most Relevant' :"Highest Rated";
             let useCache = false;
             let cacheName = "learnpath";
+            const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
 
             if(
                 req.query['learnPathIds'] == undefined
@@ -106,7 +125,7 @@ module.exports = class learnPathService {
                 if(skipCache != true) {
                     let cacheData = await RedisConnection.getValuesSync(cacheName);
                     if(cacheData.noCacheData != true) {
-                        return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                        return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     }
                 }
             }
@@ -115,12 +134,21 @@ module.exports = class learnPathService {
             const filterConfigs = await getFilterConfigs('Learn_Path');
 
             let esFilters = {};
-            const query = {
-                "bool": {
-                    "must": [
-                        { term: { "status.keyword": 'approved' } }
-                    ],
-                }
+            let query = null;
+            if (req.query['q']) {
+
+                searchTemplate = await getSearchTemplate('learn-path',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
+                query = searchTemplate.function_score.query;
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
+                
+            } else {
+                query = {
+                    "bool": {
+                        "must": [
+                            { term: { "status.keyword": 'approved' } }
+                        ],
+                    }
+                };
             };
 
             let queryPayload = {};
@@ -129,19 +157,24 @@ module.exports = class learnPathService {
             queryPayload.size = paginationQuery.size;
 
 
-            if (!req.query['sort'] && !req.query['q']) {
+            if (!req.query['sort']) {
                 req.query['sort'] = defaultSort;
             }
 
             if (req.query['sort']) {
-
+                queryPayload.sort = []
                 const keywordFields = ['title'];
-                let sort = req.query['sort'];
-                let splitSort = sort.split(":");
-                if (keywordFields.includes(splitSort[0])) {
-                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
-                }
-                queryPayload.sort = [sort];
+                let sort = sortOptions[req.query['sort']];
+                if (sort && sort.length > 0) {
+                    for (let field of sort) {
+
+                        let splitSort = field.split(":");
+                        if (keywordFields.includes(splitSort[0])) {
+                            field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                        }
+                        queryPayload.sort.push(field)
+                    }
+                }         
 
             }
 
@@ -150,7 +183,7 @@ module.exports = class learnPathService {
 
                 let filter_object = {
                     "terms": {
-                        "id": learnPathIds
+                        "_id": learnPathIds
                     }
                 }
 
@@ -162,37 +195,6 @@ module.exports = class learnPathService {
             let parsedFilters = [];
             let parsedRangeFilters = [];
             let filters = [];
-
-            if(req.query['q']){
-
-                let filter_object = {                    
-                    "bool": {
-                        "should": [
-                          {
-                            "query_string" : {
-                                "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                                "fields" : ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'],
-                                "analyze_wildcard" : true,
-                                "allow_leading_wildcard": true
-                            }
-                          },
-                          {
-                              "multi_match": {
-                                      "fields": ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'],
-                                      "query": decodeURIComponent(req.query['q']).trim(),
-                                      "fuzziness": "AUTO",
-                                      "prefix_length": 0                              
-                              }
-                          }           
-                        ]
-                      }                    
-                    }
-    
-    
-                query.bool.must.push(filter_object);
-                esFilters['q'] = filter_object;
-                
-            }
 
             if (req.query['f']) {
                 parsedFilters = parseQueryFilters(req.query['f']);
@@ -366,7 +368,7 @@ module.exports = class learnPathService {
 
             // --Aggreation query build
 
-            let result = await elasticService.searchWithAggregate('learn-path', query, queryPayload);
+            let result = await elasticService.searchWithAggregate('learn-path', searchTemplate ? searchTemplate : query, queryPayload);
 
             /**
              * Aggregation object from elastic search
@@ -398,12 +400,12 @@ module.exports = class learnPathService {
                                 for (let learn_type of json) {
 
                                     if (learn_type.image && learn_type.image.formats) {
-                                        learn_types_images[learn_type.default_display_label] = {
+                                        learn_types_images[learn_type.default_display_label] = formatImageResponse({
                                             "small": (learn_type.image.formats.small) ? learn_type.image.formats.small.url : null,
                                             "medium": (learn_type.image.formats.medium) ? learn_type.image.formats.medium.url : null,
                                             "thumbnail": (learn_type.image.formats.thumbnail) ? learn_type.image.formats.thumbnail.url : null,
                                             "large": (learn_type.image.formats.large) ? learn_type.image.formats.large.url : null
-                                        }
+                                        })
                                     }
                                 }
                             }
@@ -422,6 +424,7 @@ module.exports = class learnPathService {
                     field: filter.elastic_attribute_name,
                     filterable: filter.filterable,
                     sortable: filter.sortable,
+                    filter_postion: filter.filter_postion || 'vertical',
                     order: filter.order,
                     is_singleton: filter.is_singleton,
                     is_collapsed: filter.is_collapsed,
@@ -528,9 +531,10 @@ module.exports = class learnPathService {
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort'],
+                sortOptions: Object.keys(sortOptions)
             };
 
-            let meta_information = null; //TODO once reules are given. await generateMetaInfo('learn-path-list', result);
+            let meta_information = await generateMetaInfo('LEARN_PATH_LIST', result);
 
             if (meta_information) {
                 data.meta_information = meta_information;
@@ -541,9 +545,10 @@ module.exports = class learnPathService {
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24 );
             }
 
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, { success: true, message: 'Fetched successfully!', data: data });
         } catch (e) {
-            callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
+            console.log("Error in learn path listing", e)
+            callback(null, { success: false, message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
 
@@ -581,7 +586,7 @@ module.exports = class learnPathService {
             }            
         }
         if(callback){
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: learnpathOrdered});
+            callback(null, {success: true, message: 'Fetched successfully!', data: learnpathOrdered});
         }else{
             return learnpathOrdered;
         }
@@ -598,7 +603,7 @@ module.exports = class learnPathService {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 learnpathId = cacheData.id
                 if(cacheData.noCacheData != true) {
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     useCache = true
                 }
             }
@@ -614,29 +619,22 @@ module.exports = class learnPathService {
                         }
                     }
                     const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
-                    learnpathId = learnPath.id
-                    callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+                    learnpathId = data.id
+                    callback(null, { success: true, message: 'Fetched successfully!', data: data });
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_LEARNPATH  || 60 * 60 * 24);
                 } else {
-                    /***
-                     * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                     */
-                    let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                    if (response.ok) {
-                        let urls = await response.json();
-                        if(urls.length > 0){  
-                            let slug = urls[0].new_url
-                            return callback({ status: 'redirect', slug:slug, message: 'Redirect!' }, null);
-                        }else{
-                            return callback({ status: 'failed', message: 'Not found!' }, null);
-                        }
+                    let redirectUrl = await helperService.getRedirectUrl(req);
+                    if (redirectUrl) {
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                     }
-                    callback({ status: 'failed', message: 'Not found!' }, null);
+                    return callback(null, { success: false, message: 'Not found!' });
                 }
             }
-            req.body = {learnpathId: "LRN_PTH_"+learnpathId}
-            this.addActivity(req, (err, data) => {})
+            if(learnpathId){
+                req.body = {learnpathId: learnpathId}
+                this.addActivity(req, (err, data) => {})
+            }
         }
         catch(err){
             console.log(err)
@@ -654,7 +652,7 @@ module.exports = class learnPathService {
         };
 
         let result = await elasticService.search('learn-path', query); 
-        if (result.hits && result.hits.length > 0) {
+        if (result.hits && result.hits.length > 0) { 
             return result.hits[0]._source;
         } else {
             return null;
@@ -669,7 +667,10 @@ module.exports = class learnPathService {
             title: result.title,
             slug: result.slug,
             description: result.description,
-            cover_images: result.images,
+            cover_images: (result.images)? formatImageResponse(result.images) : null,
+            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null),            
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_iimagesmage)? formatImageResponse(result.images) : null),
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],
             medium: result.medium,
             reviews_extended: [],
@@ -688,20 +689,33 @@ module.exports = class learnPathService {
                 average_rating: 0,
                 average_rating_actual: 0,
                 rating_distribution: []
-            },
-            meta_information: {
-                meta_keywords: result.meta_keywords,
-                meta_description: result.meta_description,
-                meta_title: `${result.title} | Learn Path | ${process.env.SITE_URL_FOR_META_DATA || 'Careervira.com'}`
-            },
+            },           
             duration: {
                 total_duration: result.total_duration,
                 total_duration_unit: result.total_duration_unit,
             },
-            courses: result.courses
+            courses: result.courses,
+            skills: (result.skills) ? result.skills :null,
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         }
 
         if (!isList) {
+            data.meta_information = await generateMetaInfo('LEARN_PATH', result);         
+
+
+            if(result.cv_take && result.cv_take.display_cv_take)
+            {
+                data.cv_take = result.cv_take
+            }
+
+            // send prices in all currencies
+            data.pricing.regular_prices = {}
+            data.pricing.sale_prices = {}
+            currencies.map(currency => {
+                data.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, result.currency, currency.iso_code)
+                data.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, result.currency, currency.iso_code)
+            })
+
             let reviews = await this.getReviews({ params: { learnPathId: data.id }, query: {} });
             if (reviews)
                 data.reviews_extended = reviews;
@@ -715,7 +729,22 @@ module.exports = class learnPathService {
             }
         }
 
+        //SET popular and trending keys
+        const LEARN_PATH_POPULARITY_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("LEARN_PATH_POPULARITY_SCORE_THRESHOLD"));
 
+        data.isPopular  = false
+        if( (LEARN_PATH_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > LEARN_PATH_POPULARITY_SCORE_THRESHOLD))
+        {
+            data.isPopular  = true
+        }
+
+        const LEARN_PATH_TRENDING_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("LEARN_PATH_TRENDING_SCORE_THRESHOLD"));
+
+        data.isTrending  = false
+        if( (LEARN_PATH_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > LEARN_PATH_TRENDING_SCORE_THRESHOLD))
+        {
+            data.isTrending  = true
+        }
         //TODO this logic is copied from course service
         //but this aggreation logic should be put in elastic search add added in the reviews_extended object for both course and learn-path.
         if (result.reviews && result.reviews.length > 0) {
@@ -736,21 +765,24 @@ module.exports = class learnPathService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);
             let rating_distribution = [];
 
-            //add missing ratings
-            for (let i = 0; i < 5; i++) {
-                if (!ratings[i + 1]) {
-                    ratings[i + 1] = 0;
+            if(!isList)
+            {
+                //add missing ratings
+                for (let i = 0; i < 5; i++) {
+                    if (!ratings[i + 1]) {
+                        ratings[i + 1] = 0;
+                    }
                 }
-            }
-            Object.keys(ratings)
-                .sort()
-                .forEach(function (v, i) {
-                    rating_distribution.push({
-                        rating: v,
-                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                Object.keys(ratings)
+                    .sort()
+                    .forEach(function (v, i) {
+                        rating_distribution.push({
+                            rating: v,
+                            percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                        });
                     });
-                });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         }
 
 
@@ -895,6 +927,7 @@ module.exports = class learnPathService {
                     field: filter.elastic_attribute_name,
                     filterable: filter.filterable,
                     sortable: filter.sortable,
+                    filter_postion: filter.filter_postion || 'vertical',
                     order: filter.order,
                     is_singleton: filter.is_singleton,
                     is_collapsed: filter.is_collapsed,
@@ -971,9 +1004,9 @@ module.exports = class learnPathService {
                 filters: filters
             };
 
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            callback(null, { success: true, message: 'Fetched successfully!', data: data });
         } catch (e) {
-            callback(null, { status: 'error', message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
+            callback(null, { success: false, message: 'Failed to fetch!', data: { list: [], pagination: { total: 0 }, filters: [] } });
         }
     }
 
@@ -982,15 +1015,15 @@ module.exports = class learnPathService {
              const {user} = req;
              const {learnpathId} = req.body	
              const activity_log =  await helperService.logActvity("LEARNPATH_VIEW",(user)? user.userId : null, learnpathId);
-             callback(null, {status: 'success', message: 'Added successfully!', data: null});
+             callback(null, {success: true, message: 'Added successfully!', data: null});
         } catch (error) {
             console.log("Learn path view activity error",  error)
-            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+            callback(null, {success: false, message: 'Failed to Add', data: null});
         }
     }
 
     async getPopularLearnPaths(req, callback, returnData){
-        let { type } = req.params; // Populer, Trending,Free
+        let { type, priceType="Paid" } = req.params; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
         
         let offset= (page -1) * limit
@@ -1030,9 +1063,17 @@ module.exports = class learnPathService {
                 );
             } 
             
-            if(type && type =="Free"){
+            if(priceType && priceType =="Free"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
+                );
+                 esQuery.bool.filter.push(
+                    { "term": { "display_price": true } }
+                );
+            }
+            if(priceType && priceType =="Paid"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Paid" } }
                 );
                  esQuery.bool.filter.push(
                     { "term": { "display_price": true } }
@@ -1041,10 +1082,10 @@ module.exports = class learnPathService {
             let sort = null
             switch (type) {                
                 case "Trending":
-                    sort = [{ "activity_count.last_x_days.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.last_x_days.trending_score" : "desc" },{ "ratings" : "desc" }]
                     break; 
                 default:
-                    sort = [{ "activity_count.all_time.learnpath_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.all_time.popularity_score" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
             
@@ -1070,6 +1111,184 @@ module.exports = class learnPathService {
         } catch (error) {
             console.log("Error while processing data for popular learnpaths", error);
             callback(error, null);
+        }
+    }
+
+    async getLearnPathLearntypes(req) {
+        let {page =1, limit= 5, category, sub_category, topic} = req.query
+        let cacheName = 'learn-path-learn-types'
+        let data = {};
+        try {
+
+            let query = {
+             "match_all": {}
+            };
+
+            if(category)
+            {
+                query = {
+                    "term": {
+                        "categories.keyword": {
+                            "value": decodeURIComponent(category)
+                        }
+                    }
+                };
+
+                cacheName = cacheName + category
+            }
+
+            if(sub_category)
+            {
+                query = {
+                    "term": {
+                        "sub_categories.keyword": {
+                            "value": decodeURIComponent(sub_category)
+                        }
+                    }
+                };
+                cacheName = cacheName + sub_category
+            }
+
+            if(topic)
+            {
+                query = {
+                    "term": {
+                        "topics.keyword": {
+                            "value": decodeURIComponent(topic)
+                        }
+                    }
+                };
+                cacheName = cacheName + topic
+            }
+            
+
+            const aggs = {
+                "learn_type_count": {
+                    "terms": {
+                    "field": "learn_type.default_display_label.keyword"
+                    }
+                }
+            }
+
+            const payload = {
+                "size":0,
+                aggs
+            };
+                
+            let cacheData = await RedisConnection.getValuesSync(cacheName); 
+            let  result = cacheData;             
+
+            if(cacheData.noCacheData) 
+            {
+                result = await elasticService.searchWithAggregate('learn-path', query, payload);
+                await RedisConnection.set(cacheName, result);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24);
+            }
+
+            let learn_types = []
+            let learn_types_images = await LearnContentService.getLearnTypeImages();
+
+            if (result.aggregations && result.aggregations.learn_type_count.buckets.length >0) {
+                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, images: learn_types_images[item.key],count:formatCount(item.doc_count)}))
+                
+                data = {
+                    total: learn_types.length,
+                    page,
+                    limit,
+                    learn_types: await paginate(learn_types, page, limit)
+                }
+                return { success: true, data }
+            }
+            return { success: false, data:null }
+
+        } catch (error) {
+            console.log("Error fetching top categories in home page", error);
+            return { success: false, data:null }
+        }
+    }
+
+    async getLearnPathTopics(req) {
+        let {page =1, limit= 5, category, sub_category} = req.query
+        let cacheName = 'learn-path-topics'
+        let data = {};
+        try {
+
+            let query = {
+             "match_all": {}
+            };
+
+            if(category)
+            {
+                query = {
+                    "term": {
+                        "categories.keyword": {
+                            "value": decodeURIComponent(category)
+                        }
+                    }
+                };
+
+                cacheName = cacheName + category
+            }
+
+            if(sub_category)
+            {
+                query = {
+                    "term": {
+                        "sub_categories.keyword": {
+                            "value": decodeURIComponent(sub_category)
+                        }
+                    }
+                };
+                cacheName = cacheName + sub_category
+            }
+
+            const aggs = {
+                "topics_count": {
+                    "terms": {
+                    "field": "topics.keyword"
+                    }
+                }
+            }
+
+            const payload = {
+                "size":0,
+                aggs
+            };
+                
+            let cacheData = await RedisConnection.getValuesSync(cacheName); 
+            let  result = cacheData;             
+
+            if(cacheData.noCacheData) 
+            {
+                result = await elasticService.searchWithAggregate('learn-path', query, payload);
+                await RedisConnection.set(cacheName, result);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_LEARNPATH || 60 * 60 * 24);
+            }
+
+            let topics = []
+           
+            if (result.aggregations && result.aggregations.topics_count.buckets.length >0) {
+                result.aggregations.topics_count.buckets.map(item => topics.push( item.key))
+                // topics = topics.map( async topic =>{
+                //     let slug = await helperService.getTreeUrl('topic', topic, true)
+                //     return({
+                //         label:topic,
+                //         slug : slug
+                //     })
+                // })
+                data = {
+                    total: topics.length,
+                    page,
+                    limit,
+                    topics: await paginate(topics, page, limit)
+                }
+                return { success: true, data }
+            }
+            return { success: false, data:null }
+
+        } catch (error) {
+            console.log("Error fetching top categories in home page", error);
+            return { success: false, data:null }
         }
     }
 

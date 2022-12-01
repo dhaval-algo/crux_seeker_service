@@ -3,8 +3,11 @@ const axios = require("axios");
 const defaults = require('../../services/v1/defaults/defaults');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
 
-const whetherShowMLCourses = (recommendationType) => {
+
+const whetherShowMLCourses = async (recommendationType) => {
     switch (recommendationType) {
 
         case "get-similar-courses":
@@ -12,6 +15,47 @@ const whetherShowMLCourses = (recommendationType) => {
                 return true;
             }
             return false;
+        case "courses-recommendation":
+            let ml_counter=0;
+            let logic_counter=0;
+            let response = await fetch(`${apiBackendUrl}/learn-content-weight?_limit=-1`)
+            if (response.ok) {
+                let json = await response.json();
+                if(json){
+                    ml_counter = json.user_weights.ml_based_user
+                    logic_counter = json.user_weights.logic_based_user
+                }
+            }
+            let cacheKey = 'user-percentage';
+            let cachedData = await RedisConnection.getValuesSync(cacheKey, customKey=true);
+            
+            let user_percentage={ml_counter:0, logic_counter:1}
+            
+            if (cachedData.noCacheData != true) {
+                user_percentage=cachedData
+                if(user_percentage.logic_counter < logic_counter){
+                    user_percentage.logic_counter = user_percentage.logic_counter+1
+                    RedisConnection.set(cacheKey, user_percentage);
+                    return false
+                }else if(user_percentage.ml_counter < ml_counter){
+                    user_percentage.ml_counter = user_percentage.ml_counter + 1
+                    RedisConnection.set(cacheKey, user_percentage);
+                    return true
+                }else{
+                    // user_percentage={ml_counter:0, logic_counter:1}
+                    // RedisConnection.set(cacheKey, user_percentage);
+
+                    /**
+                     * This case can also make cohorts in AB Testing. Now If you want to start sampling again flush the cache and start again.
+                     * For cohorts we can just send False if rest is LOGIC or True if rest is ML to send.
+                     */
+                    return false
+                }
+            }else{
+                RedisConnection.set(cacheKey, user_percentage);
+                return false
+            }
+
     }
 
 }
@@ -41,9 +85,9 @@ const getSimilarCoursesDataML = async (courseId) => {
 
                 let scores = {};
                 const course_ids = [];
-                response.data["data"].forEach((course) => {
+                response.data["data"].forEach((course,i) => {
 
-                    scores[`LRN_CNT_PUB_${course.course_id}`] = course.similarity;
+                    scores[`LRN_CNT_PUB_${course.course_id}`] = i;
                     course_ids.push(`LRN_CNT_PUB_${course.course_id}`);
 
                 });
@@ -54,7 +98,7 @@ const getSimilarCoursesDataML = async (courseId) => {
                     "sort": [
                         {
                             "_script": {
-                                "order": "desc",
+                                "order": "asc",
                                 "type": "number",
                                 "script": {
                                     "lang": "painless",
@@ -90,8 +134,7 @@ const getSimilarCoursesDataML = async (courseId) => {
                 }
                 const result = await elasticService.plainSearch("learn-content", esQuery);
                 if (result && result.hits && result.hits.hits && result.hits.hits.length) {
-
-                    const data = { result: result.hits.hits, courseIdSimilarityMap: scores };
+                    const data = result.hits.hits;
                     RedisConnection.set(cacheName, data);
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
                     return data;
@@ -100,7 +143,7 @@ const getSimilarCoursesDataML = async (courseId) => {
             }
         }
 
-        return { result: [], courseIdSimilarityMap: {} };
+        return [];
 
     } catch (error) {
         console.log("Error occured while fetching data from ML Server: ");
@@ -110,7 +153,7 @@ const getSimilarCoursesDataML = async (courseId) => {
         else {
             console.log(error);
         }
-        return { result: [], courseIdSimilarityMap: {} };
+        return [];
 
     }
 

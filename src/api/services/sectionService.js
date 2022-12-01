@@ -1,106 +1,34 @@
 const elasticService = require("./elasticService");
 const articleService = require('./articleService');
 const redisConnection = require('../../services/v1/redis');
-const apiBackendUrl = process.env.API_BACKEND_URL;
-const fetch = require("node-fetch");
-
+const helperService = require("../../utils/helper");
+const recommendationService = require("./recommendationService");
+let RecommendationService = new recommendationService();
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
-
+const {formatImageResponse} = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
     try{
         let articles = [];
-        if (!!section.featured_articles && !!section.featured_articles.length) {
-          let featured_articles = await getActiveArticles(section.featured_articles, true)
-          section.featured_articles =  featured_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...featured_articles.articleSlugs])]
-           
+       
+        // if (!!section.location_display_labels && !!section.location_display_labels.length) {
+        //   let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
+        //   section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
+        //   articles = [...new Set([...articles,...location_display_labels.articleSlugs])]
+        // }
+        let similar_articles = []
+        for(const [key, value] of Object.entries(section.similar_articles)) {
+          
+            let similar = await ArticleService.getArticleByIds(value, true, true)
+            articles = similar.articleSlugs
+              
+            similar_articles.push({title: key, articles: similar.articles, articleSlugs: articles})
         }
-        if (!!section.trending_articles && !!section.trending_articles.length) {
-          let trending_articles = await ArticleService.getArticleByIds(section.trending_articles, true, true)
-          section.trending_articles =  trending_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...trending_articles.articleSlugs])]
-        }
+        section.similar_articles = similar_articles
 
-        if (!!section.recent_articles && !!section.recent_articles.length) {
-          let recent_articles = await ArticleService.getArticleByIds(section.recent_articles, false, true)
-          section.recent_articles =  recent_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...recent_articles.articleSlugs])]
-
-        }
-        if (!!section.recommended_articles && !!section.recommended_articles.length) {
-          let recommended_articles = await ArticleService.getArticleByIds(section.recommended_articles, true, true)
-          section.recommended_articles =  recommended_articles.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...recommended_articles.articleSlugs])]
-        }
-        if (!!section.location_display_labels && !!section.location_display_labels.length) {
-          let location_display_labels = await ArticleService.getArticleByIds(section.location_display_labels, true, true)
-          section.location_display_labels =  location_display_labels.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...location_display_labels.articleSlugs])]
-        }
-      
-        if (!!section.career_guidance && !!section.career_guidance.length) {
-          let career_guidance = await ArticleService.getArticleByIds(section.career_guidance, true, true)
-          section.career_guidance =  career_guidance.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...career_guidance.articleSlugs])]
-        }
-        if (!!section.expert_interview_advice && !!section.expert_interview_advice.length) {
-          let expert_interview_advice = await ArticleService.getArticleByIds(section.expert_interview_advice, true, true)
-          section.expert_interview_advice =  expert_interview_advice.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...expert_interview_advice.articleSlugs])]
-        }
-        if (!!section.improve_your_resume && !!section.improve_your_resume.length) {
-          let improve_your_resume = await ArticleService.getArticleByIds(section.improve_your_resume, true, true)
-          section.improve_your_resume =  improve_your_resume.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...improve_your_resume.articleSlugs])]
-        }
-      
-        if (!!section.all_about_linkedin && !!section.all_about_linkedin.length) {
-          let all_about_linkedin = await ArticleService.getArticleByIds(section.all_about_linkedin, true, true)
-          section.all_about_linkedin =  all_about_linkedin.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...all_about_linkedin.articleSlugs])]
-        }
-        if (!!section.best_ways_to_learn && !!section.best_ways_to_learn.length) {
-          let best_ways_to_learn = await ArticleService.getArticleByIds(section.best_ways_to_learn, true, true)
-          section.best_ways_to_learn =  best_ways_to_learn.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...best_ways_to_learn.articleSlugs])]
-        }
-        if (!!section.top_skills_of_the_future && !!section.top_skills_of_the_future.length) {
-          let top_skills_of_the_future = await ArticleService.getArticleByIds(section.top_skills_of_the_future, true, true)
-          section.top_skills_of_the_future =  top_skills_of_the_future.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...top_skills_of_the_future.articleSlugs])]
-        }
-        if (!!section.important_skills_of_the_future && !!section.important_skills_of_the_future.length) {
-          let important_skills_of_the_future = await ArticleService.getArticleByIds(section.important_skills_of_the_future, true, true)
-          section.important_skills_of_the_future =  important_skills_of_the_future.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...important_skills_of_the_future.articleSlugs])]
-        }
-      
-        if (!!section.tips_for_learners && !!section.tips_for_learners.length) {
-          let tips_for_learners = await ArticleService.getArticleByIds(section.tips_for_learners, true, true)
-          section.tips_for_learners =  tips_for_learners.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...tips_for_learners.articleSlugs])]
-        }
-
-        if (!!section.best_certifications && !!section.best_certifications.length) {
-          let best_certifications = await ArticleService.getArticleByIds(section.best_certifications, true, true)
-          section.best_certifications =  best_certifications.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...best_certifications.articleSlugs])]
-        }
-
-        if (!!section.top_stories && !!section.top_stories.length) {
-          let top_stories = await ArticleService.getArticleByIds(section.top_stories, true, true)
-          section.top_stories =  top_stories.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...top_stories.articleSlugs])]
-        }
-
-        if (!!section.latest_stories && !!section.latest_stories.length) {
-          let latest_stories = await ArticleService.getArticleByIds(section.latest_stories, true, true)
-          section.latest_stories =  latest_stories.articles.filter(art => !!art)
-          articles = [...new Set([...articles,...latest_stories.articleSlugs])]
-        }
-        return resolve({data:section, articles:articles});
+        return resolve({data:section, articles});
     } catch (error) {
       return resolve({data:[], articles:[]});
     }
@@ -130,7 +58,6 @@ const getActiveArticles =  (articles,returnSlugs) => {
     let articleSlugs = [];
     if(resultT.hits.hits){
       if(resultT.hits.hits && resultT.hits.hits.length > 0){
-          //console.log("result.hits.hits <> ", result.hits.hits);
           let articles = resultT.hits.hits;
           for (let index = 0; index < articles.length; index++) {
             const element = articles[index];
@@ -192,7 +119,7 @@ module.exports = class sectionService {
             ]
           }
         },
-        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "short_description"]
+        "_source": ["default_display_label", "slug", "location_display_labels", "cover_image", "banner_image","short_description","position"]
       }
       
       const result = await elasticService.plainSearch('section', query);
@@ -222,13 +149,15 @@ module.exports = class sectionService {
             let secR = {
               label: hit._source.default_display_label,
               slug: hit._source.slug,
+              position: hit._source.position,
               type: "category",
               count: section.doc_count,
               short_description: hit._source.short_description,
               cover_image: (hit._source.cover_image) ?((hit._source.cover_image['large']) ?hit._source.cover_image['large'] : hit._source.cover_image['thumbnail']) : null,
+              banner_image: (hit._source.banner_image) ?((hit._source.banner_image['large']) ?hit._banner.cover_image['large'] : hit._source.banner_image['thumbnail']) : null,
               child: []
             }
-            data.push(secR)
+            data[ hit._source.position -1] = secR
           }
         }
         //return callback(null, { success: true, data })
@@ -256,8 +185,72 @@ module.exports = class sectionService {
     }
   }
 
-  async getSectionContent(slug, callback,skipCache) {
+  async countPage(req, callback,useCache = true) {
+    const cacheKey = "count-page";
+    if(useCache){
+      try {
+          let cacheData = await RedisConnection.getValuesSync(cacheKey);
+          if(cacheData.noCacheData != true) {
+              //console.log("cache found for footer: returning data");
+              return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+          }
+      }catch(error){
+          console.warn("Redis cache failed for count page: "+cacheKey,error);
+      }
+    }
 
+    let result = {
+      course:null,
+      partner:null,
+      institute:null
+    };
+    try{
+      const query_courses = await elasticService.count('learn-content')      
+      const query_partner = await elasticService.count('partner')  
+      const query_institute = await elasticService.count('provider')
+      if(query_courses.count){
+        if(query_courses.count < 100){
+          query_courses.count = Math.floor(query_courses.count/10)*10;
+        }else if(query_courses.count < 1000){
+          query_courses.count = Math.floor(query_courses.count/100)*100;
+        }else if(query_courses.count > 1000){
+          query_courses.count = Math.floor(query_courses.count/1000)+'k';
+        }
+        result['course'] = query_courses['count']+''
+      }
+      if(query_partner.count){
+        if(query_partner.count < 100){
+          query_partner.count = Math.floor(query_partner.count/10)*10;
+        }else if(query_partner.count < 1000){
+          query_partner.count = Math.floor(query_partner.count/100)*100;
+        }else if(query_partner.count > 1000){
+          query_partner.count = Math.floor(query_partner.count/1000)+'k';
+        }
+        result['partner'] = query_partner['count']+''
+      }
+      if(query_institute.count){
+        if(query_institute.count < 100){
+          query_institute.count = Math.floor(query_institute.count/10)*10;
+        }else if(query_institute.count < 1000){
+          query_institute.count = Math.floor(query_institute.count/100)*100;
+        }else if(query_institute.count > 1000){
+          query_institute.count = Math.floor(query_institute.count/1000)+'k';
+        }
+        result['institute'] = query_institute['count']+''
+      }
+        
+      RedisConnection.set('count-page', result);
+      //RedisConnection.expire('count-page', process.env.CACHE_EXPIRE_COUNT_PAGE);
+
+      return callback(null, { success: true, data:result })
+    }catch(e){
+        return callback(null, { success: true, data:{} })
+        console.log('Error while retriving about us data',e);
+    }
+  }
+
+  async getSectionContent(req, callback,skipCache) {
+    const slug = req.params.slug;
     let data = {}
     try {
       if(skipCache != true) {
@@ -275,9 +268,61 @@ module.exports = class sectionService {
         }
       };
       
-      const result = await elasticService.search('section', query)
+      const result = await elasticService.search('section', query, {},  {excludes: ["all_featured_articles"] })
       if (result.hits && result.hits.length) {
         let response = await buildSectionView(result.hits[0]._source)
+        response.data.cover_image = formatImageResponse(response.data.cover_image)
+        response.data.banner_image = formatImageResponse(response.data.banner_image)
+        response.data.meta_information = await generateMetaInfo('SECTION_PAGE', result.hits[0]._source)
+
+         // check if most popular article skills have minimum 6 articles
+         if (result.hits[0]._source.popular_article_skills && result.hits[0]._source.popular_article_skills) {
+          result.hits[0]._source.popular_article_skills = await Promise.all(
+            result.hits[0]._source.popular_article_skills.map(async (skill) => {
+              let reqObj = {
+                query: {
+                  skill: skill.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return skill
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          response.data.popular_article_skills = result.hits[0]._source.popular_article_skills.filter(skill => skill != null)
+        }
+
+        // check if most trending article skills have minimum 6 articles
+        if (result.hits[0]._source.trending_article_skills && result.hits[0]._source.trending_article_skills) {
+          result.hits[0]._source.trending_article_skills = await Promise.all(
+            result.hits[0]._source.trending_article_skills.map(async (skill) => {
+              let reqObj = {
+                query: {
+                  skill: skill.name,
+                  subType:'Trending'
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return skill
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          response.data.trending_article_skills = result.hits[0]._source.trending_article_skills.filter(skill => skill != null)
+        }       
+  
+
         RedisConnection.set('section-article-'+slug, response.articles);
         RedisConnection.expire('section-article-'+slug, process.env.CACHE_EXPIRE_SECTION_ARTCLE);
         RedisConnection.set('section-page-'+slug, response.data);
@@ -285,20 +330,11 @@ module.exports = class sectionService {
 
         return callback(null, { success: true, data:response.data })
       }
-      /***
-       * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-       */
-      let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-      if (response.ok) {
-          let urls = await response.json();
-          if(urls.length > 0){  
-              slug = urls[0].new_url
-              return callback(null, { success: "redirect", slug: slug,  data:data })
-          }else{
-            return callback(null, { success: true, data:data })
-          }
+      let redirectUrl = await helperService.getRedirectUrl(req);
+      if (redirectUrl) {
+          return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
       }
-      return callback(null, { success: true, data:data })
+      return callback(null, { success: false, message: 'Not found!' });
 
     } catch (error) {
       console.log("ERROR:",error)
@@ -310,28 +346,80 @@ module.exports = class sectionService {
     let data = {}
     try {
 
-      if(skipCache != true) {
-          let cacheData = await RedisConnection.getValuesSync('blog-home-page');
-          if(cacheData.noCacheData != true) {
-              return callback(null, { success: true, data:cacheData });
-          }
+      if (skipCache != true) {
+        let cacheData = await RedisConnection.getValuesSync('blog-home-page');
+        if (cacheData.noCacheData != true) {
+          return callback(null, { success: true, data: cacheData });
+        }
       }
 
       const query = {
-        "match_all": {}
-      };
-      
-      const result = await elasticService.search('blog_home_page', query, {from: 0, size: 1000})
-      if (result.hits && result.hits.length) {
-        let response = await buildSectionView(result.hits[0]._source)
-        RedisConnection.set('blog-home-article-slug', response.articles);
-        RedisConnection.expire('blog-home-article-slug', process.env.CACHE_EXPIRE_HOME_ARTICLE_SLUG);
-        RedisConnection.set('blog-home-page', response.data);
-        RedisConnection.expire('blog-home-page', process.env.CACHE_EXPIRE_BLOG_HOME_PAGE);
-
-        return callback(null, { success: true,  data:response.data })
+        "bool": {
+          "filter": [
+              { "term": { "id": 1 } }
+          ]
       }
-      return callback(null, { success: true, data:data })
+      };
+
+      const result = await elasticService.search('blog_home_page', query, { from: 0, size: 1000 }, ["meta_information", "most_popular_article_categories", "trending_article_categories"])
+      
+      if (result.hits && result.hits.length) {
+        let data = result.hits[0]._source
+        // check if most popular article categories have minimum 6 articles
+        if (data.most_popular_article_categories && data.most_popular_article_categories) {
+          data.most_popular_article_categories = await Promise.all(
+            data.most_popular_article_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          data.most_popular_article_categories = data.most_popular_article_categories.filter(category => category != null)
+        }
+
+        // check if most trending article categories have minimum 6 articles
+        if (data.trending_article_categories && data.trending_article_categories) {
+          data.trending_article_categories = await Promise.all(
+            data.trending_article_categories.map(async (category) => {
+              let reqObj = {
+                query: {
+                  category: category.name,
+                  subType: 'Trending'
+                }
+              }
+              let recommendation = await RecommendationService.getPopularArticles(reqObj)
+
+              if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 5) {
+                return category
+
+              } else {
+                return null
+              }
+
+            })
+          )
+          data.trending_article_categories = data.trending_article_categories.filter(category => category != null)
+
+          data.meta_information = await generateMetaInfo('ADVICE_PAGE', data)     
+       
+        }  
+        RedisConnection.set('blog-home-page', data);
+        RedisConnection.expire('blog-home-page', process.env.CACHE_EXPIRE_BLOG_HOME_PAGE);
+        
+        return callback(null, { success: true, data: data })
+      }
+      return callback(null, { success: true, data: data })
 
     } catch (error) {
       return callback(null, { success: true, data: data })

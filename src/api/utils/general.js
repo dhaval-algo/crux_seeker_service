@@ -140,6 +140,7 @@ const getRankingFilter = async (useCache = true) => {
         let rankingFilter = {
             label: 'Ranking',
             filterable: true,
+            filter_postion: 'vertical',   
             is_collapsed: true,
             filter_type: 'Checkboxes',
             options: []
@@ -160,7 +161,9 @@ const getRankingFilter = async (useCache = true) => {
                 slug: rank.slug,
                 count: 0,
                 selected: false,
-                disabled: false
+                disabled: false,
+                image: rank.image ? formatImageResponse (rank.image): null,
+                logo: rank.logo ? formatImageResponse (rank.logo) :null
             });
         }
         RedisConnection.set(cacheKey, rankingFilter);
@@ -498,247 +501,6 @@ const countCheck = (format) => {
     return counter;
 }
 
-const generateMetaDescription = async (result) => {
-    try{
-        const actions = {
-            "subscribe_now":" Subscribe Now!",
-            "want_more_information":" Want more information? Call Us Now.",
-            "visit_us_at_careervira":" Visit us at Careervira.",
-            "join_us_now":" Join Us Now!",
-            "click_here_for_details":" Click here for details.",
-            "enroll_now":" Enroll Now!"
-        }
-        const max_char_count = 160
-        let format = result.meta_description
-        const title = result.title
-        const learn_type = result.learn_type
-        const partner = result.partner_name
-        const skills = result.skills
-        const action = result.call_for_action 
-
-        format = format.replace(/{title}/g, '\"'+title+'\"')
-        format = format.replace(/{learn_type}/g, '\"'+learn_type+'\"')
-        format = format.replace(/{partner_name}/g, '\"'+partner+'\"')
-        if(result.call_for_action){
-            format = format.replace(/{call_for_action}/g, actions[action])
-        }else{
-            format = format.replace(/{call_for_action}/g, '')
-        }
-        let skill_string = "";
-        if(skills.length > 0){
-            skill_string += " like ";
-            for(let skill of skills){
-                skill_string = skill_string + skill + ","; 
-            }
-            skill_string = skill_string.slice(0, -1);
-            skill_string += " etc"
-        }
-        
-        format = format.replace(/{skills}/g, skill_string)
-        
-        let count = countCheck(format);
-        if(count>max_char_count){
-            if(result.call_for_action){
-                let re = new RegExp(actions[action],"g");
-                format = format.replace(re, '')
-            }
-        }
-        
-        for(let i = skills.length-1;i >= 0;i--){
-            let re = new RegExp(","+skills[i],"g");
-            let recount = countCheck(format);
-            if(recount > max_char_count){
-                format = format.replace(re, '')
-            }else{
-                break
-            }
-        }
-
-        return format;
-    }catch(err){
-        console.log("err")
-        return result.meta_description
-    }
-}
-
-const generateMetaKeywords = async (result) => {
-    try{
-        let format = result.meta_keywords
-        const skills = result.skills
-        const topics = result.topics
-        let name = result.title
-        let partner_name = result.partner_name
-        let course_partner_name = [];
-        if(name.includes(partner_name)){
-            course_partner_name.push(name);
-        }else{
-            if((name.split(" ").length + partner_name.split(" ").length) > 6){
-                course_partner_name.push(partner_name + " " + name);
-            }else{
-                course_partner_name.push(name + " by " + partner_name);
-            }
-        }
-        let topic_learn_type = [];
-        for(let i of topics){
-            topic_learn_type.push(i + " " + result.learn_type);
-        }
-        let medium_topic_name = [];
-        if(result.medium){
-            for(let i of topics){
-                medium_topic_name.push(result.medium + " " + i + " course")
-            }
-        }
-
-        let payment_medium = [];
-        if(result.pricing_type == 'Free'){
-            if(result.medium){
-                payment_medium.push("Free " + result.medium)
-            }
-        }
-
-        let payment_topic = [];
-        if(result.pricing_type == 'Free'){
-            for(let i of topics){
-                payment_topic.push("Free " + i + " Course")
-            }
-        }
-        if(skills.length > 0){
-            format = format.replace(/{skills}/g, skills.join(", "))
-        }else{
-            format = format.replace(/{skills}, /g, '')
-        }
-        if(topics.length > 0){
-            format = format.replace(/{topic}/g, topics.join(", "))
-        }else{
-            format = format.replace(/{topic}, /g, '')
-        }
-        if(course_partner_name.length > 0){
-            format = format.replace(/{course_name_by_partner_name}/g, course_partner_name.join(", "))
-        }else{
-            format = format.replace(/{course_name_by_partner_name}, /g, '')
-        }
-        if(topic_learn_type.length > 0){
-            format = format.replace(/{topic_and_learn_type}/g, topic_learn_type.join(", "))
-        }else{
-            format = format.replace(/{topic_and_learn_type}, /g, '')
-        }
-        if(medium_topic_name.length > 0){
-            format = format.replace(/{medium_and_topic_name}/g, medium_topic_name.join(", "))
-        }else{
-            format = format.replace(/{medium_and_topic_name}, /g, '')
-        }
-        if(payment_medium.length > 0){
-            format = format.replace(/{payment_and_medium}/g, payment_medium.join(", "))
-        }else{
-            format = format.replace(/{payment_and_medium}, /g, '')
-        }
-        if(payment_topic.length > 0){
-            format = format.replace(/{payment_and_topic}/g, payment_topic.join(", "))
-        }else{
-            format = format.replace(/{payment_and_topic}/g, '')
-        }
-        
-        return format;
-    }catch(err){
-        console.log("err in meta keywords", err)
-    }
-}
-
-const generateMetaInfo = async (page, result, list) => {
-    let meta_information = null;
-    let meta_keywords = null;
-    let meta_title = null;
-    let meta_description = null;
-    
-    switch (page) {
-        case 'learn-content':
-            meta_title = `${result.title} | ${result.partner_name}`;
-            
-            meta_information = {
-                meta_title: meta_title,
-                meta_description: await generateMetaDescription(result),
-                meta_keywords: await generateMetaKeywords(result),
-                add_type: result.add_type,
-                import_source: result.import_source,
-                external_source_id: result.external_source_id,
-                application_seat_ratio: result.application_seat_ratio,
-                bounce_rate: result.bounce_rate,
-                completion_ratio: result.completion_ratio,
-                enrollment_ratio: result.enrollment_ratio,
-                faculty_student_ratio: result.faculty_student_ratio,
-                gender_diversity: result.gender_diversity,
-                student_stream_diversity: result.student_stream_diversity,
-                student_nationality_diversity: result.student_nationality_diversity,
-                average_salary_hike: result.average_salary_hike,
-                instructor_citations: result.instructor_citations
-            }
-            break;
-        case 'learn-content-list':
-            meta_information = metaInfo.getLearnContentListMetaInfo(result);
-            break;
-        case 'provider':
-            meta_information = metaInfo.getProviderMetaInfo(result);
-            break;
-        case 'provider-list':
-            meta_information = metaInfo.getProviderListMetaInfo(list);
-            break;
-
-        case 'partner' :
-            meta_information = metaInfo.getPartnerMetaInfo(result);
-            break;
-
-        case 'trending-now' :
-            
-            meta_information = await metaInfo.getTrendingNowMetaInfo(result);
-            break;
-        case 'article':
-            meta_title = `${result.title} | ${process.env.SITE_URL_FOR_META_DATA}`;
-            if(result.short_description)
-            {
-                meta_description = result.short_description;
-                let position = meta_description.indexOf(".")
-                if(position >0 )  
-                {
-                    meta_description =  meta_description.substring(0, position);
-                }
-            }else
-            {
-                content = result.content.replace(/<(.|\n)*?>/g, '');
-                content = content.replace(/&nbsp;/g, ' ');
-                let content_index = content.indexOf(".")       
-                meta_description = content.substring(0, (content_index > 0)? content_index :100);
-            }       
-            
-            keywords =[result.title]
-            if(result.categories){
-                keywords = [...keywords, ...result.categories];
-            }
-            keywords.push(`${result.author_first_name} ${result.author_last_name}`);
-            keywords = [...keywords, ...result.tags];
-            
-            extra_keyword = [ "careervira advice", "online marketplace", "learn content", "courses near me", "courses near me", "careervira articles", "english courses", "free articles", "learning advice", "institute advice", "ranking articles", "ranking advice", "career advice", "career path", "top courses", "experts", "top professionals", "industry experts", "careervira content", "institutes", "degrees", "certifications", "courses"];
-            keywords = [...keywords, ...extra_keyword];
-            
-            if(keywords.length > 0){
-                keywords = [...new Set(keywords)];
-                 meta_keywords = keywords.join(", ");
-            }
-            meta_information = {
-                meta_title: meta_title,
-                meta_description: meta_description,
-                meta_keywords: meta_keywords
-            }
-            break;
-        case 'article-list':
-            meta_information = metaInfo.getArticleListMetaInfo(result);
-            break;
-        default:
-            break;
-    }
-    
-    return meta_information;
-}
-
 const compareRule = async (rule,engineEvent,facts) =>{
 
     return new Promise(async (resolve, reject) => {
@@ -772,6 +534,104 @@ const compareRule = async (rule,engineEvent,facts) =>{
     })
 }
 
+const paginate = async (array, page_number, page_size) => {
+    return array.slice((page_number - 1) * page_size, page_number * page_size);
+  }
+
+const formatResponseField = (requestedfields, data) => {
+    let finalData = {}
+    fields = requestedfields.split(",");
+    if(fields.includes("list"))
+    {
+        fields = [...fields, 'filters', 'pagination', 'sort'];
+
+    }
+    for (let field of fields)
+    {
+        if(field.includes("::"))
+        {
+            let subFields = field.split("::");
+            let subFieldKey = subFields[0];
+            let subFieldArr = subFields[1].split(":");
+           if(Array.isArray(data[subFieldKey])){
+                let i=0
+                for(let arrayData of data[subFieldKey])
+                {
+                    for(let subField of subFieldArr)
+                    {
+                        if(!finalData[subFieldKey])  finalData[subFieldKey] = []
+                        if(!finalData[subFieldKey][i])  finalData[subFieldKey][i] = {}
+                        finalData[subFieldKey][i][subField] =  data[subFieldKey][i][subField] 
+                    }
+
+                    i++
+                }
+                
+            }
+            else{
+                for(let subField of subFieldArr)
+                {
+                    if(!finalData[subFieldKey])  finalData[subFieldKey] = {}
+                    finalData[subFieldKey][subField] =  data[subFieldKey][subField] 
+                }
+            }
+            
+        }
+        else
+        {
+            if(Array.isArray(data))
+            {
+                let i=0
+                finalData = []
+                for(let arrayData of data)
+                {
+                    if(!finalData[i]) finalData[i] ={}
+                    finalData[i][field] =  arrayData[field] 
+                    
+                    i++
+                }
+            }
+            else {
+                finalData[field] =  data[field]
+            }
+            
+        }
+    }
+    return finalData
+}
+
+const formatImageResponse = (imageObject) => {
+
+   if(!imageObject)
+        return null;
+    let image = null
+   if(imageObject.large) image = imageObject.large
+   else if (imageObject.medium) image = imageObject.medium
+   else if (imageObject.small) image = imageObject.small
+   else if (imageObject.thumbnail) image = imageObject.thumbnail
+   else if(imageObject.formats)
+   {
+        if(imageObject.formats.large && imageObject.formats.large.url) image = imageObject.formats.large.url
+        else if (imageObject.formats.medium && imageObject.formats.medium.url) image = imageObject.formats.medium.url
+        else if (imageObject.formats.small && imageObject.formats.small.url) image = imageObject.formats.small.url
+        else if (imageObject.formats.thumbnail && imageObject.formats.thumbnail.url) image = imageObject.formats.thumbnail.url
+   }
+   else if(imageObject.url) image = imageObject.url;
+   return image
+}
+const formatCount = (count) => {
+if(count > 1000){
+    count = Math.floor(count/1000)+'k';
+  }else if(count > 100){
+    count = Math.floor(count/100)*100;
+  }else if(count > 10){
+    count = Math.floor(count/10)*10;
+  }else if(count > 5){
+    count = Math.floor(count/5)*5;
+  }
+  return count
+}
+
 
   module.exports = {
     isDateInRange,
@@ -792,9 +652,12 @@ const compareRule = async (rule,engineEvent,facts) =>{
     getRankingBySlug,
     sortFilterOptions,
     getUserFromHeaders,
-    calculateFilterCount,
-    generateMetaInfo,
-    compareRule
+    calculateFilterCount,    
+    compareRule,
+    paginate,
+    formatResponseField,
+    formatImageResponse,
+    formatCount
 }
 
 

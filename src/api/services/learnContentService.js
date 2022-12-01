@@ -3,7 +3,8 @@ const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
-const { getCurrencies, getCurrencyAmount, generateMetaInfo, isDateInRange } = require('../utils/general');
+const { getCurrencies, getCurrencyAmount, isDateInRange,formatCount } = require('../utils/general');
+const { generateMetaInfo } = require('../utils/metaInfo');
 const models = require("../../../models");
 const { 
     getFilterConfigs, 
@@ -13,17 +14,21 @@ const {
     getMediaurl,
     getFilterAttributeName,
     updateSelectedFilters,
+    paginate,
+    formatImageResponse
 } = require('../utils/general');
 
 const redisConnection = require('../../services/v1/redis');
 
 const RedisConnection = new redisConnection();
 
+const recommendationService = require("./recommendationService");
+let RecommendationService = new recommendationService();
+
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
-const articleService = require("./articleService");
 const mLService = require("./mLService");
-let ArticleService = new articleService();
+
 
 let slugMapping = [];
 let currencies = [];
@@ -34,6 +39,19 @@ const allowZeroCountFields = ['level','categories','sub_categories'];
 const helperService = require("../../utils/helper");
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
+const {saveSessionKPIs} = require("../../utils/sessionActivity");
+const {getSearchTemplate} = require("../../utils/searchTemplates");
+const { list } = require("../controllers/listUsersController");
+
+const sortOptions = {
+    'Popular' : ["activity_count.all_time.popularity_score:desc","ratings:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
+    'Highest Rated': ["ratings:desc"],
+    'Newest' :["published_date:desc"],
+    'Price Low To High': ["basePriceRound:asc"],
+    'Price High To Low': ["basePriceRound:desc"],
+    'Most Relevant' : []
+}
 
 const getBaseCurrency = (result) => {
     return result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null;
@@ -59,23 +77,25 @@ const getEntityLabelBySlugFromCache= async (entity, slug, skipCache=false) =>
             if(json){
                 for(let entity of json)
                 {                    
-                    if( entity.slug){
-                       let article_advice = [];
-                       let featured_articles = [];
-                       if(entity.article_advice && entity.article_advice.length > 0)
-                       {
-                           article_advice = entity.article_advice.map((article)=> article.id);
-                       }
-                       if(entity.featured_articles && entity.featured_articles.length > 0)
-                       {
-                           featured_articles = entity.featured_articles.map((article)=> article.id);
+                    if( entity.slug){                       
+                    //pick only image urls , instead of sending whole large logo object
+                    let logos = {}
+                       if(entity.logo){
+                           if(entity.logo.formats){
+
+                                Object.keys(entity.logo.formats).forEach((size, index) => {
+                                    logos[size] = entity.logo.formats[size].url
+                                })
+                           }
+                           else
+                                logos['thumbnail'] = entity.logo.url     
                        }
                         entities[entity.slug] = {
+                            "logo" : (entity.logo) ? logos : null,
+                            "faq" : (entity.faq) ? entity.faq : null,
                             "default_display_label"  :(entity.default_display_label)?entity.default_display_label :null,
                             "description"  :(entity.description)?entity.description :null,
-                            "meta_information":(entity.meta_information)?entity.meta_information :null,
-                            "article_advice":article_advice,
-                            "featured_articles": featured_articles
+                            "meta_information":(entity.meta_information)?entity.meta_information :null
                         }
                     }                    
                 }
@@ -102,7 +122,7 @@ const getEntityLabelBySlug = async (entity, slug) => {
     else
     {
         let response = await fetch(`${apiBackendUrl}/${entity}?slug_eq=${slug}`);
-        
+
         if (response.ok) {
         let json = await response.json();
         
@@ -110,23 +130,24 @@ const getEntityLabelBySlug = async (entity, slug) => {
             let cacheName = `enity_slug_${entity}`;
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             if(cacheData.noCacheData != true) {
+                //pick only image urls , instead of sending whole large logo object
+                let logos = {}
+                if(json[0].logo){
+                    if(json[0].logo.formats){
 
-                let article_advice = [];
-                let featured_articles = [];
-                if(json[0].article_advice && json[0].article_advice.length > 0)
-                {
-                    article_advice = json[0].article_advice.map((article)=> article.id);
-                }
-                if(json[0].featured_articles && json[0].featured_articles.length > 0)
-                {
-                    featured_articles = json[0].featured_articles.map((article)=> article.id);
+                         Object.keys(json[0].logo.formats).forEach((size, index) => {
+                             logos[size] = json[0].logo.formats[size].url
+                         })
+                    }
+                    else
+                         logos['thumbnail'] = json[0].logo.url     
                 }
                 cacheData[slug] = {
+                "logo" : (json[0].logo) ? json[0].logo : null,
+                "faq" : (json[0].faq) ? json[0].faq : null,
                 "default_display_label"  :(json[0].default_display_label)?json[0].default_display_label :null,
                 "description"  :(json[0].description)?json[0].description :null,                
-                "meta_information":(json[0].meta_information)?json[0].meta_information :null,
-                "article_advice":article_advice,
-                "featured_articles": featured_articles
+                "meta_information":(json[0].meta_information)?json[0].meta_information :null
                 }
                 RedisConnection.set(cacheName, cacheData);
                // RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ENTITY_SLUG);
@@ -234,16 +255,37 @@ const getSlugMapping = (req) => {
     return slugMapping;
 };
 
+const saveLearnContentListSessionKPIs = (req, page_details) => {
+    if (((req.user && req.user.userId) || req.segmentId) && page_details && page_details.pageType && page_details.label) {
+        let kpiKey = null;
+        const userId = (req.user && req.user.userId) ?req.user.userId : req.segmentId;
+        switch (page_details.pageType) {
+
+            case "category": kpiKey = "categories"; break;
+            case "sub_category": kpiKey = "sub_categories"; break;
+            case "topic": kpiKey = "topics"; break;
+
+        }
+
+        if (kpiKey) {
+
+            saveSessionKPIs(userId, { [kpiKey]: [page_details.label] },'click');
+        }
+
+    }
+}
+
 module.exports = class learnContentService {
 
     async getLearnContentList(req, callback, skipCache){
-
+ 
         try{
-
+        let searchTemplate = null;
         let defaultSize = await getPaginationDefaultSize();
-        let defaultSort = "ratings:desc";
+        let defaultSort = req.query['q']? 'Most Relevant' : 'Popular';
         let useCache = false;
         let cacheName = "";
+        const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
         if(
             req.query['courseIds'] == undefined
             && req.query['f'] == undefined
@@ -270,13 +312,18 @@ module.exports = class learnContentService {
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
                 cacheName = "listing-search_"+apiCurrency;                
             }
+            if(req.query['hardFilter'])
+            {
+                cacheName += `_${req.query['hardFilter']}`;
+            }
 
             cacheName += `_${defaultSort}`;
 
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    saveLearnContentListSessionKPIs(req , cacheData.page_details);
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }
         }
@@ -285,46 +332,58 @@ module.exports = class learnContentService {
 
 
         currencies = await getCurrencies();
-        slugMapping = getSlugMapping(req);
+        var slugMapping = getSlugMapping(req);
 
 
         const filterConfigs = await getFilterConfigs('Learn_Content');
-        
-        const query = { 
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }}                
-                ],
-            }
-        };
+            
+            let query = null;
+            if (req.query['q']) {
 
+                searchTemplate = await getSearchTemplate('learn-content',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
+                query = searchTemplate.function_score.query;
+                esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
+                
+            } else {
+                query = {
+                    "bool": {
+                        "must": [
+                            { term: { "status.keyword": 'published' } }
+                        ],
+                    }
+                };
+            }
         let queryPayload = {};
         let paginationQuery = await getPaginationQuery(req.query);
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort'] && !req.query['q']){
+        if(!req.query['sort']){
             req.query['sort'] = defaultSort;
         }
 
         if(req.query['sort']){
-            
+            queryPayload.sort = []
             const keywordFields = ['title'];
-            let sort = req.query['sort'];
-            let splitSort = sort.split(":");
-            if(keywordFields.includes(splitSort[0])){
-                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            let sort = sortOptions[req.query['sort']];
+                if(sort && sort.length > 0){
+                for(let field of sort){
+                
+                    let splitSort = field.split(":");
+                    if(keywordFields.includes(splitSort[0])){
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                queryPayload.sort.push(field)
+                }
             }
-            queryPayload.sort = [sort];
-            
         }
-
+        
         if(req.query['courseIds']){
             let courseIds = req.query['courseIds'].split(",");
             
             let filter_object = {
                 "terms": {
-                  "id": courseIds 
+                  "_id": courseIds 
                 }
             }
 
@@ -341,14 +400,18 @@ module.exports = class learnContentService {
                 query_slug = slugs[i].replace("&", "%26");
                 var slug_data = await getEntityLabelBySlug(slugMapping[i].entity_key, query_slug);
                 if(!slug_data){
-                    return callback(null, {status: 404, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+                    let redirectUrl = await helperService.getRedirectUrl(req);
+                    if (redirectUrl) {
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    }
+                    return callback(null, { success: false, message: 'Not found!' });
                 }
                 var slugLabel = slug_data.default_display_label;
                 var slug_pageType = slugMapping[i].pageType;
                 var slug_description = slug_data.description;
                 var slug_meta_information = slug_data.meta_information;
-                var slug_article_advice = slug_data.article_advice;
-                var slug_featured_articles = slug_data.featured_articles;
+                var slug_logo = slug_data.logo;
+                var slug_faq = slug_data.faq;
                 if(!slugLabel){
                     slugLabel = slugs[i];                
                 }
@@ -365,52 +428,33 @@ module.exports = class learnContentService {
             }           
         }
 
-        if(req.query['q']){
-
-            let filter_object = {                    
-                "bool": {
-                    "should": [
-                      {
-                        "query_string" : {
-                            "query" : `*${decodeURIComponent(req.query['q']).replace("+","//+").trim()}*`,
-                            "fields" : ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
-                            "analyze_wildcard" : true,
-                            "allow_leading_wildcard": true
-                        }
-                      },
-                      {
-                          "multi_match": {
-                                  "fields": ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'],
-                                  "query": decodeURIComponent(req.query['q']).trim(),
-                                  "fuzziness": "AUTO",
-                                  "prefix_length": 0                              
-                          }
-                      }           
-                    ]
-                  }                    
-                }
-
-
-            query.bool.must.push(filter_object);
-            esFilters['q'] = filter_object;
-            
-        }
         let parsedFilters = [];
         let parsedRangeFilters = [];       
         let filters = [];
+        let hardparsedFilters = []
+        if(req.query['hardFilter'])
+        {
+            req.query['f'] = (req.query['f'])? `${req.query['f']}::${req.query['hardFilter']}`: req.query['hardFilter']
+            hardparsedFilters = parseQueryFilters(req.query['hardFilter']);
+        }
         
+
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
             for(const filter of parsedFilters){                
                 let elasticAttribute = filterConfigs.find(o => o.label === filter.key);
                 if(elasticAttribute){
                     const attribute_name  = getFilterAttributeName(elasticAttribute.elastic_attribute_name, filterFields);
-
                     let filter_object = {}
                             //case for boolean attribute;
-                    if(elasticAttribute.elastic_data_type == 'boolean')
-                    {
-                        if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
+                    if(elasticAttribute.elastic_data_type == 'boolean'){
+                        if(elasticAttribute.elastic_attribute_name == 'job_assistance'){
+                            let job_asis = filter.value[0]
+
+                            job_asis.toLowerCase() == 'yes' ? job_asis = true : job_asis = false;
+                            filter_object = {"term": {[attribute_name]: job_asis}};
+                        }
+                        else if(elasticAttribute.elastic_attribute_name == 'coupon_offers')
                         {
                             let offer = filter.value[0]
             
@@ -537,11 +581,10 @@ module.exports = class learnContentService {
         }
 
         queryPayload.aggs = aggs;
-
+      
         // --Aggreation query build
-
-        let result = await elasticService.searchWithAggregate('learn-content', query, queryPayload);
-
+    
+        let result = await elasticService.searchWithAggregate('learn-content', searchTemplate?searchTemplate:query, queryPayload);
         /**
          * Aggregation object from elastic search
          */
@@ -570,6 +613,7 @@ module.exports = class learnContentService {
                     field: filter.elastic_attribute_name,
                     filterable: filter.filterable,
                     sortable: filter.sortable,
+                    filter_postion: filter.filter_postion || 'vertical',
                     order: filter.order,
                     is_singleton: filter.is_singleton,
                     is_collapsed: filter.is_collapsed,
@@ -614,6 +658,8 @@ module.exports = class learnContentService {
                         if(filter.elastic_attribute_name == "learn_type")
                         {   option.image  = learn_types_images[item.key] }
 
+                        if(filter.elastic_attribute_name == "job_assistance")
+                            item.key == 1 ? option.label = "Yes" : option.label = "No"
                         if(filter.elastic_attribute_name == "coupon_offers")
                             item.key == 1 ? option.label = "Yes" : option.label = "No"
 
@@ -707,47 +753,52 @@ module.exports = class learnContentService {
                 }
             }
 
+
+            //remove filter if pagetype is partner or institute
+            if(req.query['hardFilter'])
+            {
+                if(hardparsedFilters && hardparsedFilters.length > 0)
+                {
+                    for (let hardfilter of hardparsedFilters)
+                    {
+                        filters = filters.filter(o => o.label !== hardfilter.key);
+                    }
+                }
+            }
+            
+
             let data = {
                 list: list,
                 filters: filters,
                 pagination: pagination,
                 sort: req.query['sort'],
+                sortOptions: Object.keys(sortOptions)
             };
 
-
+            
             data.page_details = {
                 pageType: slug_pageType || "default",
                 slug: req.query['slug'] || null,
                 label: slugLabel || null,
                 description: slug_description || null,
+                logo : (slug_logo && slug_logo.url)? (slug_logo.url) :((slug_logo)? formatImageResponse(slug_logo) : null),
+                course_count: result.total.value
             }
+            data.faq = slug_faq
             if (slug_pageType == "category" || slug_pageType == "sub_category" || slug_pageType == "topic") {
                 try {
                     if(slug_pageType == "category" && slugLabel){
                         this.addPopularEntities(slug_pageType, slugLabel)
                     }else if(slug_pageType == "topic" && slugLabel){
                         this.addPopularEntities(slug_pageType, slugLabel)
-                    }
-                    data.article_advice = []
-                    data.featured_articles = []
-                    if(slug_article_advice && slug_article_advice.length >0 )
-                    {
-                        data.article_advice = await ArticleService.getArticleByIds(slug_article_advice, true, false);
-                    }
-                    if(slug_featured_articles && slug_featured_articles.length >0 )
-                    {
-                        data.featured_articles = await ArticleService.getArticleByIds(slug_featured_articles, true, false);
-                    }
+                    }                    
                 } catch (error) {
-                    console.log("Error in getArticleByIds", error)
-                    data.article_advice = []
-                    data.featured_articles = []
+                    console.log("Error in addPopularEntities", error)
                 }
+                data.meta_information = slug_meta_information;
                
             }
-
-            result.page_details = data.page_details;
-            result.meta_information = slug_meta_information;
+            
 
             //TODO dont send data if filters are applied.
             
@@ -764,14 +815,15 @@ module.exports = class learnContentService {
             //     data.get_started.free = await this.getPopularCourses(param, (err, data) => { }, true)
             // }
 
-            let meta_information = await generateMetaInfo('learn-content-list', result);
+            let meta_information = await generateMetaInfo('LEARN_CONTENT_LIST', data);
             
             if (meta_information) {
                 data.meta_information = meta_information;
             }
 
-
-            callback(null, { status: 'success', message: 'Fetched successfully!', data: data });
+            
+            callback(null, { success: true, message: 'Fetched successfully!', data: data });
+            saveLearnContentListSessionKPIs(req , data.page_details);
 
             if (useCache) {
                 list.forEach((course) => {
@@ -788,10 +840,10 @@ module.exports = class learnContentService {
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24 );
             }
 
-
+      
     }catch(e){
         console.log(e)
-        callback(null, {status: 'error', message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
+        callback(null, {success: false, message: 'Failed to fetch!', data: {list: [], pagination: {total: 0}, filters: []}});
 
     }
 
@@ -807,8 +859,13 @@ module.exports = class learnContentService {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             courseId = cacheData.id
             if(cacheData.noCacheData != true) {
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+
+                callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 useCache = true
+                if ((req.user && req.user.userId) || req.segmentId) {
+                    const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+                    saveSessionKPIs(userId, { courses: [cacheData] },'click');
+                }
             }            
         }
               
@@ -816,7 +873,7 @@ module.exports = class learnContentService {
         {
             const course = await this.fetchCourseBySlug(slug);
             if(course){
-                const data = await this.generateSingleViewData(course, false, req.query.currency);
+                let data = await this.generateSingleViewData(course, false, req.query.currency);
                 /**
                  * Log skills entity
                  */
@@ -826,28 +883,50 @@ module.exports = class learnContentService {
                     }
                 }
                 courseId = data.id
+
+                // if enquiry is 'On', then check course end date,
+                if(data.enquiry){
+                    const today = new Date()
+                    data.enquiry = false
+                    let { course_details :{course_end_date}, additional_batches } = data
+
+                    // if batch (any) end date is not passed then keep enquiry 'On'
+                    if( additional_batches.length > 0){
+                        for(let batch of additional_batches){
+
+                            if(today < new Date(batch.enrollment_end_date)){
+                                data.enquiry = true;
+                                break;
+                            }
+                        }
+                    }
+                    // if course end date is not passed then keep enquiry 'On'
+                    if(course_end_date != null && data.enquiry != true){
+                        if( today < new Date(course_end_date) )
+                            data.enquiry = true;
+                    }
+
+
+                }
+
                 this.getReviews({params:{courseId: data.id}, query: {}}, (err,review_data)=>{
                     if(review_data && review_data.data) data.reviews_extended = review_data.data;
-                    callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                    callback(null, {success: true, message: 'Fetched successfully!', data: data});
                     RedisConnection.set(cacheName, data); 
                     RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_COURSE);                   
-                }) 
+                })
+
+                if ((req.user && req.user.userId) || req.segmentId) {
+                    const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+                    saveSessionKPIs(userId, { courses: [data] },'click');
+                }
                 
             }else{
-                /***
-                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                 */
-                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                if (response.ok) {
-                    let urls = await response.json();
-                    if(urls.length > 0){  
-                        let slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
-                    }else{
-                        return callback({status: 'failed', message: 'Not found!'}, null);
-                    }
+                let redirectUrl = await helperService.getRedirectUrl(req);
+                if (redirectUrl) {
+                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                 }
-                callback({status: 'failed', message: 'Not found!'}, null);
+                return callback(null, { success: false, message: 'Not found!' });                
             } 
         }
         req.body = {courseId: courseId}
@@ -950,14 +1029,14 @@ module.exports = class learnContentService {
     }
 
     async getPopularCourses(req, callback, returnData) {
-        let { subType } = req.query; // Populer, Trending,Free
+        let { subType, priceType="Paid" } = req.query; // Populer, Trending,Free
         let { category, sub_category, topic, currency=process.env.DEFAULT_CURRENCY, page = 1, limit =20} = req.query;       
         
         const offset= (page -1) * limit
         
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${priceType || ''}-${currency}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if(cachedData.noCacheData != true) {
                 courses = cachedData;
@@ -995,19 +1074,25 @@ module.exports = class learnContentService {
                 );
             } 
             
-            if(subType && subType =="Free"){
+            if(priceType && priceType =="Free"){
                 esQuery.bool.filter.push(
                     { "term": { "pricing_type.keyword": "Free" } }
+                );
+                
+            }
+            if(priceType && priceType =="Paid"){
+                esQuery.bool.filter.push(
+                    { "term": { "pricing_type.keyword": "Paid" } }
                 );
                 
             }
             let sort = null
             switch (subType) {                
                 case "Trending":
-                    sort = [{ "activity_count.last_x_days.course_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.last_x_days.trending_score" : "desc" },{ "ratings" : "desc" }]
                     break; 
                 default:
-                    sort = [{ "activity_count.all_time.course_views" : "desc" },{ "ratings" : "desc" }]
+                    sort = [{ "activity_count.all_time.popularity_score" : "desc" },{ "ratings" : "desc" }]
                     break;
             }
             
@@ -1043,7 +1128,7 @@ module.exports = class learnContentService {
         const query = { "bool": {
             "must": [
               {term: { "slug.keyword": slug }},
-              {term: { "status.keyword": 'published' }}
+              {terms: { "status.keyword": ['published','unpublished' ]}}
             ]
         }};       
 
@@ -1076,7 +1161,7 @@ module.exports = class learnContentService {
                 }    
             }
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: categories});
+        callback(null, {success: true, message: 'Fetched successfully!', data: categories});
     }
 
 
@@ -1093,6 +1178,15 @@ module.exports = class learnContentService {
                 ids = req.query['ids'].split(",");
             }
             if(ids.length > 0){
+                ids = ids.map(id => {
+                    
+                    if(!id.includes("LRN_CNT_PUB_"))
+                    {
+                        id = 'LRN_CNT_PUB_'+id
+                    }
+
+                    return id
+                })
                 const queryBody =  {
                     "ids": {
                         "values": ids
@@ -1114,12 +1208,12 @@ module.exports = class learnContentService {
                 }            
             }
             if(callback){
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: courseOrdered});
+                callback(null, {success: true, message: 'Fetched successfully!', data: courseOrdered});
             }else{
                 return courseOrdered;
             }
         } catch (error) {
-            callback(null, {status: 'error', message: 'Failed to Fetch', data: null});
+            callback(null, {success: false, message: 'Failed to Fetch', data: null});
             console.log("course by id error=>",error)
         }
         
@@ -1162,7 +1256,7 @@ module.exports = class learnContentService {
                 }
             }
         }
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: courses});
+        callback(null, {success: true, message: 'Fetched successfully!', data: courses});
     }
 
 
@@ -1176,26 +1270,13 @@ module.exports = class learnContentService {
         if(result.recommended_effort_per_week){
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
             effort = `${result.recommended_effort_per_week} ${efforUnit}`
-        }
-        //let coverImageSize = 'large';
-        //if(isList){
-           // coverImageSize = 'thumbnail';
-        //}
+        }      
 
         for(let i=0; i<result.reviews.length; i++){
             if(result.reviews[i]['reviewer_name'] == 'Other'){
                 result.reviews.splice(i, 1);
             }
-        }
-
-        // let cover_image = null;
-        // if(result.images){
-        //     if(result.images[coverImageSize]){
-        //         cover_image = getMediaurl(result.images[coverImageSize]);
-        //     }else{
-        //         cover_image = getMediaurl(result.images['thumbnail']);
-        //     }
-        // }
+        }      
 
         let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
         let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
@@ -1206,28 +1287,64 @@ module.exports = class learnContentService {
             canBuy = true;
             tax = helperService.roundOff(0.18 * partnerPrice, 2);
         }
-        
+        let regular_price = null, sale_price = null;
+        if(result.pricing_type == "Paid" )
+        {
+            regular_price = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency);
+            sale_price = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency);
+        }
+            //temp patch for old object format; scatter attributes 
+        if(result.providers_list == undefined){
+            let provider = {name: result.provider_name, slug: result.provider_slug,
+                        currency: result.provider_currency, url:result.provider_course_url}
+            result.providers_list = [provider]
+        }
+        const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
+        let desktop_course_image = null , mobile_course_image = null, partner_logo = null;
+        if(partnerCourseImage.noCacheData != true)
+        {
+            desktop_course_image = partnerCourseImage.desktop_course_image;
+            mobile_course_image = partnerCourseImage.mobile_course_image;
+            partner_logo = partnerCourseImage.logo;
+        }
+        else
+        {
+            const query = {
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} },{term: { "slug.keyword": result.partner_slug }}]
+                }
+            };
+            
+            const imageResult = await elasticService.search('partner', query, {size:2000}, ["mobile_course_image", "desktop_course_image", "logo"]);
+
+            if(imageResult.hits && imageResult.hits.length > 0){                
+                desktop_course_image = (imageResult.hits[0]._source.desktop_course_image)? imageResult.hits[0]._source.desktop_course_image : desktop_course_image ;
+                mobile_course_image = (imageResult.hits[0]._source.mobile_course_image) ? imageResult.hits[0]._source.mobile_course_image : mobile_course_image;
+                partner_logo = (imageResult.hits[0]._source.logo)? formatImageResponse(imageResult.hits[0]._source.logo): partner_logo; 
+            }
+        }
+
         let data = {
             canBuy: canBuy,
             title: result.title,
+            status:result.status,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
             subtitle: result.subtitle,
-            provider: {
-                name: result.provider_name,
-                currency: result.provider_currency,
-                slug: result.provider_slug
-            },
+            providers: result.providers_list,
+            provider_course_url: result.provider_course_url,
+            original_course_url: result.original_course_url,
             partner: {
                 name: result.partner_name,
                 slug: result.partner_slug,
-                partner_url: result.partner_url,
-                currency: result.partner_currency
+                partner_url: result.partner_url
             },
-            currency: result.learn_content_pricing_currency?result.learn_content_pricing_currency:null,            
             instructors: [],
             cover_video: (result.video) ? getMediaurl(result.video) : null,
-            cover_image: (result.images)? result.images :null,
+            cover_image: partner_logo ? partner_logo : ((result.images)? formatImageResponse(result.images) :null),
+            sidebar_listing_image: mobile_course_image ? mobile_course_image : ((result.listing_image)? formatImageResponse(result.listing_image) : ((result.images)? formatImageResponse(result.images) : null)),            
+            card_image:desktop_course_image ? desktop_course_image : ((result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null)),
+            card_image_mobile:mobile_course_image ? mobile_course_image : ((result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.images)? formatImageResponse(result.images) : null)),
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             description: result.description,
             skills: (!isList) ? result.skills_gained : null,
@@ -1263,22 +1380,16 @@ module.exports = class learnContentService {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
                     pricing_type: result.pricing_type,
-                    currency:result.learn_content_pricing_currency? result.learn_content_pricing_currency.iso_code:null,
                     base_currency: baseCurrency,
                     user_currency: currency,
-                    regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
-                    sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
+                    regular_price,
+                    sale_price,
                     offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
                     schedule_of_sale_price: result.schedule_of_sale_price,
                     free_condition_description: result.free_condition_description,
                     conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
                     pricing_additional_details: result.pricing_additional_details,
-                    course_financing_options: result.course_financing_options,
-                    partnerPrice: partnerPrice,
-                    partnerPriceInUserCurrency: partnerPriceInUserCurrency,
-                    partnerRegularPrice: helperService.roundOff(result.regular_price, 2),
-                    partnerSalePrice: helperService.roundOff(result.sale_price, 2),
-                    conversionRate: conversionRate,
+                    course_financing_options: result.course_financing_options,                  
                     tax: tax
                 },
                 course_start_date: result.course_start_date || null,
@@ -1294,7 +1405,6 @@ module.exports = class learnContentService {
                     time_zone_name: result.course_batch_time_zone_name || null
                 }
             },
-            provider_course_url: result.provider_course_url,
             reviews: [],
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
@@ -1325,7 +1435,25 @@ module.exports = class learnContentService {
             corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
             accreditations: [],
             ads_keywords:result.ads_keywords,
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
         };
+
+        
+        //SET popular and trending keys
+        const COURSE_POPULARITY_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_POPULARITY_SCORE_THRESHOLD");
+
+        data.isPopular = false
+        if ( (COURSE_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > parseInt(COURSE_POPULARITY_SCORE_THRESHOLD))) {
+            data.isPopular = true
+        }
+
+        const COURSE_TRENDING_SCORE_THRESHOLD = await RedisConnection.getValuesSync("COURSE_TRENDING_SCORE_THRESHOLD");
+
+        data.isTrending = false
+        if ( (COURSE_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > parseInt(COURSE_TRENDING_SCORE_THRESHOLD))) {
+            data.isTrending = true
+        }
+       
 
         let coupons = [];
         let offerRange = {low:100, high:0}
@@ -1337,7 +1465,9 @@ module.exports = class learnContentService {
 
                 for(let coupon of result.coupons)
                 {
-                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    if(coupon.validity_start_date == null )
+                        coupon.validity_start_date == new Date();
+                    if(coupon.validity_end_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
                         if(coupon.discount){
                             const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency.iso_code, currency)
@@ -1370,11 +1500,27 @@ module.exports = class learnContentService {
 
 
         if(!isList){
-           
-            let meta_information = await generateMetaInfo  ('learn-content', result);
+            data.meta_description  = result.meta_description;
+            data.meta_keywords  = result.meta_keywords;
+            let meta_information = await generateMetaInfo  ('LEARN_CONTENT', data);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
+                delete(data.meta_description)
+                delete(data.meta_keywords)
+                data.meta_information.add_type= result.add_type,
+                data.meta_information.import_source= result.import_source,
+                data.meta_information.external_source_id= result.external_source_id,
+                data.meta_information.application_seat_ratio= result.application_seat_ratio,
+                data.meta_information.bounce_rate= result.bounce_rate,
+                data.meta_information.completion_ratio= result.completion_ratio,
+                data.meta_information.enrollment_ratio= result.enrollment_ratio,
+                data.meta_information.faculty_student_ratio= result.faculty_student_ratio,
+                data.meta_information.gender_diversity= result.gender_diversity,
+                data.meta_information.student_stream_diversity= result.student_stream_diversity,
+                data.meta_information.student_nationality_diversity= result.student_nationality_diversity,
+                data.meta_information.average_salary_hike= result.average_salary_hike,
+                data.meta_information.instructor_citations= result.instructor_citations
             }            
         }
         else{
@@ -1382,6 +1528,14 @@ module.exports = class learnContentService {
         }
 
         if(!isList){
+            // send prices in all currencies
+            data.course_details.pricing.regular_prices = {}
+            data.course_details.pricing.sale_prices = {}
+            currencies.map(currency => {
+                data.course_details.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency.iso_code)
+                data.course_details.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency.iso_code)
+            })
+            
             if(result.instructors && result.instructors.length > 0){
                 for(let instructor of result.instructors){
                     if(instructor.name == 'Other'){
@@ -1425,11 +1579,27 @@ module.exports = class learnContentService {
             if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
             {
                 data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
-                data.course_details.pricing.indian_students_payment_deadline = result.indian_students_payment_deadline
+                data.course_details.pricing.indian_students_payment_deadline = (result.indian_students_payment_deadline)? new Date(result.indian_students_payment_deadline) : null
                 data.course_details.pricing.indian_students_GST = result.indian_students_GST
+                if(result.indian_student_installments && result.indian_student_installments.length > 0)
+                {
+                    result.indian_student_installments = result.indian_student_installments.map(installment =>{
+
+                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) : null
+                        return installment
+                    })
+                }
                 data.course_details.pricing.indian_student_installments = result.indian_student_installments
                 data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
-                data.course_details.pricing.international_students_payment_deadline = result.international_students_payment_deadline
+                data.course_details.pricing.international_students_payment_deadline = (result.international_students_payment_deadline)? new Date(result.international_students_payment_deadline) : null
+                if(result.international_student_installments && result.international_student_installments.length > 0)
+                {
+                    result.international_student_installments = result.international_student_installments.map(installment =>{
+
+                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) :null
+                        return installment
+                    })
+                }
                 data.course_details.pricing.international_student_installments = result.international_student_installments
             }
             
@@ -1456,16 +1626,16 @@ module.exports = class learnContentService {
                         additional_batch.id = batch.id
                         additional_batch.batch = batch.batch
                         additional_batch.batch_size = batch.batch_size
-                        additional_batch.batch_start_date = batch.batch_start_date
-                        additional_batch.batch_end_date = batch.batch_end_date
-                        additional_batch.batch_enrollment_start_date = batch.batch_enrollment_start_date
-                        additional_batch.batch_enrollment_end_date = batch.batch_enrollment_end_date
+                        additional_batch.batch_start_date = (batch.batch_start_date) ? new Date(batch.batch_start_date) : null
+                        additional_batch.batch_end_date =(batch.batch_end_date)? new Date(batch.batch_end_date) :null
+                        additional_batch.batch_enrollment_start_date = (batch.batch_enrollment_start_dat)? new Date(batch.batch_enrollment_start_date) :null
+                        additional_batch.batch_enrollment_end_date = (batch.batch_enrollment_end_date)? new Date(batch.batch_enrollment_end_date) : null
                         additional_batch.total_duration = batch.total_duration
                         additional_batch.total_duration_unit = batch.total_duration_unit
-                        additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : "-"                    
+                        additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : null                   
                         additional_batch.batch_timings = {
-                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
-                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset:null,
+                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: null,
                             'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
                             'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
                         }                    
@@ -1473,6 +1643,8 @@ module.exports = class learnContentService {
                             additional_batch.pricing_type = batch.pricing_type
                             additional_batch.regular_price = (batch.regular_price)? getCurrencyAmount(batch.regular_price, currencies, baseCurrency, currency):null
                             additional_batch.sale_price = (batch.sale_price)?getCurrencyAmount(batch.sale_price, currencies, baseCurrency, currency):null
+                            additional_batch.offer_percent = (batch.sale_price) ? (Math.round(((batch.regular_price-batch.sale_price) * 100) / batch.regular_price)) : null
+
                         }
                         data.additional_batches.push(additional_batch);
                     }
@@ -1512,21 +1684,23 @@ module.exports = class learnContentService {
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];
 
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
+            if(!isList){
+                //add missing ratings
+                for(let i=0; i<5; i++){
+                    if(!ratings[i+1]){
+                        ratings[i+1] = 0;
+                    }                
+                }
+                Object.keys(ratings)
+                .sort()
+                .forEach(function(v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
                 });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         }
 
         //Ignore default values in ui
@@ -1559,30 +1733,33 @@ module.exports = class learnContentService {
             }
         } 
 
-        if(result.partner_currency){
-            data.provider.currency = result.partner_currency.iso_code;
-        }
 
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
+        if(result.enquiry)
+            data.enquiry = result.enquiry
 
         let listData = {
             title: data.title,
             slug: data.slug,
             id: data.id,
-            provider: data.provider,
+            providers: data.providers,
             partner: data.partner,
-            cover_image: data.cover_image,
+            cover_image: desktop_course_image ? desktop_course_image: data.cover_image,
+            sidebar_listing_image: data.sidebar_listing_image,            
+            card_image:data.card_image,
+            card_image_mobile:data.card_image_mobile,
             currency: data.currency,
-            description: data.description,
             course_details: data.course_details,
-            provider_course_url: data.provider_course_url,
             ratings: data.ratings,
             categories_list: data.categories_list,
             sub_categories_list : data.sub_categories_list,
             topics_list : data.topics_list,
-            meta_information: data.meta_information
+            isTrending:data.isTrending,
+            isPopular:data.isPopular,
+            isCvTake:data.isCvTake,
+            couponCount: coupons.length
         }
 
         return isList ? listData : data;
@@ -1671,10 +1848,10 @@ module.exports = class learnContentService {
             const {user} = req;
             const {courseId} = req.body	
             const activity_log =  await helperService.logActvity("COURSE_VIEW",(user)? user.userId : null, courseId);
-            callback(null, {status: 'success', message: 'Added successfully!', data: null});
+            callback(null, {success: true, message: 'Added successfully!', data: null});
        } catch (error) {
            console.log("Course activity error",  error)
-            callback(null, {status: 'error', message: 'Failed to Add', data: null});
+            callback(null, {success: false, message: 'Failed to Add', data: null});
        }
         
     }
@@ -1707,12 +1884,12 @@ module.exports = class learnContentService {
                     {
                         
                         if( learn_type.image &&  learn_type.image.formats){
-                            learn_types_images[learn_type.default_display_label] = {
+                            learn_types_images[learn_type.default_display_label] = formatImageResponse({
                             "small"  :(learn_type.image.formats.small)?learn_type.image.formats.small.url :null,
                             "medium"  :(learn_type.image.formats.medium)?learn_type.image.formats.medium.url :null,
                             "thumbnail"  :(learn_type.image.formats.thumbnail)?learn_type.image.formats.thumbnail.url :null,
                             "large"  :(learn_type.image.formats.large)?learn_type.image.formats.large.url :null
-                            }
+                            })
                         }                    
                     }
                     RedisConnection.set(cacheName, learn_types_images);
@@ -1921,4 +2098,394 @@ module.exports = class learnContentService {
 
         }
     }
+
+    
+    async getLearnContentLearntypes(req) {
+        let {page =1, limit= 5, category, sub_category, topic} = req.query
+        let cacheName = 'learn-content-learn-types'
+        let data = {};
+        try {
+
+            let query = {
+             "match_all": {}
+            };
+
+            if(category)
+            {
+                query = {
+                    "term": {
+                        "categories.keyword": {
+                            "value": decodeURIComponent(category)
+                        }
+                    }
+                };
+
+                cacheName = cacheName + category
+            }
+
+            if(sub_category)
+            {
+                query = {
+                    "term": {
+                        "sub_categories.keyword": {
+                            "value": decodeURIComponent(sub_category)
+                        }
+                    }
+                };
+                cacheName = cacheName + sub_category
+            }
+
+            if(topic)
+            {
+                query = {
+                    "term": {
+                        "topics.keyword": {
+                            "value": decodeURIComponent(topic)
+                        }
+                    }
+                };
+                cacheName = cacheName + topic
+            }
+            
+
+            const aggs = {
+                "learn_type_count": {
+                    "terms": {
+                    "field": "learn_type.keyword"
+                    }
+                }
+            }
+
+            const payload = {
+                "size":0,
+                aggs
+            };
+                
+            let cacheData = await RedisConnection.getValuesSync(cacheName); 
+            let  result = cacheData;             
+
+            if(cacheData.noCacheData) 
+            {
+                result = await elasticService.searchWithAggregate('learn-content', query, payload);
+                await RedisConnection.set(cacheName, result);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24);
+            }
+
+            let learn_types = []
+            let learn_types_images = await this.getLearnTypeImages();
+           
+            if (result.aggregations && result.aggregations.learn_type_count.buckets.length >0) {
+                result.aggregations.learn_type_count.buckets.map(item => learn_types.push({label: item.key, count: formatCount(item.doc_count),images: learn_types_images[item.key]}))
+                
+                data = {
+                    total: learn_types.length,
+                    page,
+                    limit,
+                    learn_types: await paginate(learn_types, page, limit)
+                }
+                return { success: true, data }
+            }
+            return { success: false, data:null }
+
+        } catch (error) {
+            console.log("Error fetching top categories in home page", error);
+            return { success: false, data:null }
+        }
+    }
+
+    async getLearnContentTopics(req) {
+        let {page =1, limit= 5, category, sub_category} = req.query
+        let cacheName = 'learn-content-topics'
+        let data = {};
+        try {
+
+            let query = {
+             "match_all": {}
+            };
+
+            if(category)
+            {
+                query = {
+                    "term": {
+                        "categories.keyword": {
+                            "value": decodeURIComponent(category)
+                        }
+                    }
+                };
+
+                cacheName = cacheName + category
+            }
+
+            if(sub_category)
+            {
+                query = {
+                    "term": {
+                        "sub_categories.keyword": {
+                            "value": decodeURIComponent(sub_category)
+                        }
+                    }
+                };
+                cacheName = cacheName + sub_category
+            }
+
+            const aggs = {
+                "topics_count": {
+                    "terms": {
+                    "field": "topics.keyword"
+                    }
+                }
+            }
+
+            const payload = {
+                "size":0,
+                aggs
+            };
+                
+            let cacheData = await RedisConnection.getValuesSync(cacheName); 
+            let  result = cacheData;             
+
+            if(cacheData.noCacheData) 
+            {
+                result = await elasticService.searchWithAggregate('learn-content', query, payload);
+                await RedisConnection.set(cacheName, result);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_COURSE || 60 * 60 * 24);
+            }
+
+            let topics = []
+           
+            if (result.aggregations && result.aggregations.topics_count.buckets.length >0) {
+                await Promise.all(result.aggregations.topics_count.buckets.map(async item => {
+                    let slug = await helperService.getTreeUrl('topic', item.key, true)                    
+                    topics.push( {
+                                label:item.key,
+                                slug : slug
+                            })
+                }))
+                        
+                data = {
+                    total: topics.length,
+                    page,
+                    limit,
+                    topics: await paginate(topics, page, limit)
+                }
+                return { success: true, data }
+            }
+            return { success: false, data:null }
+
+        } catch (error) {
+            console.log("Error fetching top categories in home page", error);
+            return { success: false, data:null }
+        }
+    }
+
+    
+  async getCourseLandingPage(req) {
+    let data = {};
+    try {
+      const query = {
+        "bool": {
+            "filter": [
+                { "term": { "id": 1 } }
+            ]
+        }
+      };
+      const payload = {
+        "size": 1
+      };
+
+      let cacheData = await RedisConnection.getValuesSync('course-home-page');
+      let result = cacheData;
+
+      if (cacheData.noCacheData) {
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories", "course_recommendation_categories", "trending_skillls","free_trending_skills","meta_description", "meta_keywords"]);
+        await RedisConnection.set('course-home-page', result);
+        RedisConnection.expire('course-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
+      }
+        if (result.hits && result.hits.length) {
+            data = result.hits[0]._source
+            // check if course recomndation categories have minimum 4 courses 
+            if (data.course_recommendation_categories && data.course_recommendation_categories) {
+                data.course_recommendation_categories = await Promise.all(
+                    data.course_recommendation_categories.map(async (category) => {
+                        let reqObj = {
+                            query: {
+                                category: category.name
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
+                            return category
+                        } else {
+                            return null
+                        }
+
+                    })
+
+                )
+                data.course_recommendation_categories = data.course_recommendation_categories.filter(category => category != null)
+            }
+
+            // check if Trending skill have minimum 6 courses 
+            if (data.trending_skillls && data.trending_skillls) {
+                data.trending_skillls = await Promise.all(
+                    data.trending_skillls.map(async (skill) => {
+                        let reqObj = {
+                            query: {
+                                skill: skill.name,
+                                subType : 'Trending'
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6) {
+                            return skill
+                        } else {
+                            return null
+                        }
+
+                    })
+
+                )
+                data.trending_skillls = data.trending_skillls.filter(skill => skill != null)
+            }
+
+            // check if (Free) Trending skill have minimum 6 courses 
+            if (data.free_trending_skills && data.free_trending_skills) {
+                data.free_trending_skills = await Promise.all(
+                    data.free_trending_skills.map(async (skill) => {
+                        let reqObj = {
+                            query: {
+                                skill: skill.name,
+                                subType : 'Trending',
+                                priceType: 'Free'
+                            }
+                        }
+                        let recommendation = await RecommendationService.getPopularCourses(reqObj);
+                        if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 6)
+                            return skill;
+                        else
+                            return null
+                    })
+
+                )
+                data.free_trending_skills = data.free_trending_skills.filter(skill => skill);
+            }
+        return { success: true, data }
+      }
+      return { success: false, data: null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in course-home-page", error);
+      return { success: false, data: null }
+    }
+  }
+
+  async geCourseLandingPageTopCategories(req) {
+    let { page = 1, limit = 5 } = req.query
+
+    let data = {};
+    try {
+      const query = {
+        "bool": {
+            "filter": [
+                { "term": { "id": 1 } }
+            ]
+        }
+      };
+      const payload = {
+        "size": 1
+      };
+
+      let cacheData = await RedisConnection.getValuesSync('course-home-page-top-categories');
+      let result = cacheData;
+
+      if (cacheData.noCacheData) {
+        result = await elasticService.search('course-home-page', query, payload, ["top_categories"]);
+        await RedisConnection.set('course-home-page-top-categories', result);
+        RedisConnection.expire('course-home-page-top-categories', process.env.CACHE_EXPIRE_HOME_PAGE);
+      }
+
+      if (result.hits && result.hits.length) {
+        data = {
+          total: result.hits[0]._source.top_categories.length,
+          page,
+          limit,
+          categories: await paginate(result.hits[0]._source.top_categories, page, limit)
+        }
+        return { success: true, data }
+      }
+      return { success: false, data: null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in course-home-page", error);
+      return { success: false, data: null }
+    }
+  }
+
+  async getPopularCategories(req, skipCache=false) {
+    let { page = 1, limit = 5 } = req.query
+
+    let data = {};
+    let result = null
+    let cacheData = null
+    let categories = []
+    try {
+
+      if(skipCache !=true) {
+        cacheData = await RedisConnection.getValuesSync('course-home-page-popular-categories');
+        categories = cacheData;
+      }
+
+      if ((cacheData && cacheData.noCacheData) || skipCache) {
+        result = await models.popular_categories.findAll({          
+           
+            attributes: ['name'],
+            order: [
+                ['count', 'DESC']
+            ]
+        })
+         // check if course recomndation categories have minimum 4 courses 
+         
+         if (result && result.length > 0) {
+            categories =  result.map(category => {return  {name:category.name}})
+            categories = await Promise.all(                
+                categories.map(async (category) => {
+                    let reqObj = {
+                        query: {
+                            category: category.name
+                        }
+                    }                   
+                    let recommendation = await RecommendationService.getPopularCourses(reqObj)
+                   
+                    if (recommendation.success && recommendation.data && recommendation.data.list && recommendation.data.list.length > 3) {
+                        return category
+                    } else {
+                        return null
+                    }
+
+                })
+            )
+           
+            categories = categories.filter(category => category != null)
+        }
+
+        await RedisConnection.set('course-home-page-popular-categories', categories);
+      }
+
+      if (categories && categories.length) {
+        data = {
+          total: categories.length,
+          page,
+          limit,
+          categories: await paginate(categories, page, limit)
+        }
+        return { success: true, data }
+      }
+      return { success: false, data: null }
+
+    } catch (error) {
+      console.log("Error fetching top categories in course-home-page", error);
+      return { success: false, data: null }
+    }
+  }
+
 }

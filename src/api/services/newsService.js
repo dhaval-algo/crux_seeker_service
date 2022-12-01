@@ -1,6 +1,5 @@
 const elasticService = require("./elasticService");
-const fetch = require("node-fetch");
-const apiBackendUrl = process.env.API_BACKEND_URL;
+const helperService = require("../../utils/helper");
 
 const getNewsData = async (data) => {
     let newData = [];
@@ -30,9 +29,9 @@ module.exports = class CustomPageService {
         }
         if(result && result.hits && result.hits.length > 0) {
             let newsData = await getNewsData(result.hits);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:newsData});
+            callback(null, {success: true, message: 'Fetched successfully!', data:newsData});
         } else {
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            callback(null, {success: false, message: 'No data available!', data: []});
         }
 
     }
@@ -56,22 +55,13 @@ module.exports = class CustomPageService {
         }
         if(result && result.hits && result.hits.length > 0) {
            // let newsData = await getNewsData(result.hits);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data:result.hits[0]._source});
+            callback(null, {success: true, message: 'Fetched successfully!', data:result.hits[0]._source});
         } else {
-            /***
-             * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-             */
-            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-            if (response.ok) {
-                let urls = await response.json();
-                if(urls.length > 0){  
-                    slug = urls[0].new_url
-                    return callback(null, {status: 'redirect',slug:slug, message: 'Redirect!', data: []});
-                }else{
-                    return callback(null, {status: 'failed', message: 'No data available!', data: []});
-                }
+            let redirectUrl = await helperService.getRedirectUrl(req);
+            if (redirectUrl) {
+                return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
             }
-            callback(null, {status: 'failed', message: 'No data available!', data: []});
+            return callback(null, { success: false, message: 'Not found!' });
         }
 
     }

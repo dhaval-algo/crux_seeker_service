@@ -1,0 +1,57 @@
+{{> emailHeader }}
+<div class="main " style="margin:  auto;font-size: 10px; max-width: 750px;color: #2b2b2b; width:100%;padding-top: 30px; ">
+        <div class="template-card" style="max-width: 367px; width:100%; margin: auto; ">
+            <div style="padding: 0 6px;">               
+                <p style="margin: 24px 0;">Dear Careervira Team,</p>
+                <p style="margin-bottom: 24px;">You have a new Job Application for the role {{jobTitle}}, following are the details : </p>
+            </div>
+           
+            <div style="margin-bottom: 25px; padding: 0 6px;padding-top: 25px;background:#f8f8f8">
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;font-weight: 500;color: #2b2b2b;display: inline-block;width: 49%;"><b>Applicant Details:</b></div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Full Name: {{ fullName }}</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Email: {{ email }}</div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Resume : {{ resumeUrl }} </div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;font-weight: 500;color: #2b2b2b;display: inline-block;width: 49%;"><b>Job Role Details:</b></div>
+                </div>
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Job Role: {{ jobTitle }} ( Job ID: {{jobId}})</div>
+                </div>
+                {{#if jobDepartment}}
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Job Dept: {{ jobDepartment }}</div>
+                </div>
+                {{/if}}
+                {{#if jobType}}
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Job Type: {{ jobType }}</div>
+                </div>
+                {{/if}}
+
+                {{#if jobCity}}
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> Job Location: {{ jobCity }}</div>
+                </div>
+                {{/if}}
+
+
+                <div style="margin-bottom: 7px;">
+                    <div style="font-size: 10px;color: #2b2b2b;display: inline-block;width: 49%;"> &nbsp;</div>
+                </div>
+            </div>
+            <div style="padding: 0 6px;">                
+                <p>
+                    Thank you, <br>Careervira Dev. Team
+                </p>
+            </div>
+        </div>
+    </div>
+{{> emailFooter }}

@@ -116,12 +116,14 @@ module.exports = class ArticleService {
                 if(queueData.status =='unpublished'){
                     if(sectionCacheData.includes(articleSlug)){
                         let sectionslug = sectionKey.replace('section-article-','')
-                        SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
+                        let req = {params : {slug :sectionslug}}
+                        SectionService.getSectionContent(req, (err, data) => {}, true); 
                     } 
                 }
                 else{
                     let sectionslug = sectionKey.replace('section-article-','')
-                    SectionService.getSectionContent(sectionslug, (err, data) => {}, true); 
+                    let req = {params : {slug :sectionslug}}
+                    SectionService.getSectionContent(req, (err, data) => {}, true); 
                 }
             }
         }

@@ -20,7 +20,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(currentRoleCacheKey);
                     if(cacheData.noCacheData != true) {
-                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        return res.status(200).send({success: true, message: 'Fetched successfully!', options: cacheData})
                         useCache = true
                     }            
                 }
@@ -46,7 +46,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     {
                         RedisConnection.set(currentRoleCacheKey, data);
                     }
-                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                    return res.status(200).send({success: true, message: 'Fetched successfully!', options: data})
                 }
                 
             }else if(searchType == "preferred_role"){
@@ -54,7 +54,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(preferredRoleCacheKey);
                     if(cacheData.noCacheData != true) {
-                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        return res.status(200).send({success: true, message: 'Fetched successfully!', options: cacheData})
                         useCache = true
                     }            
                 }
@@ -80,7 +80,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     {
                         RedisConnection.set(preferredRoleCacheKey, data);
                     }
-                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                    return res.status(200).send({success: true, message: 'Fetched successfully!', options: data})
                 }
 
             }else if(searchType == "industry_choice"){
@@ -88,7 +88,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(industryChoiceCacheKey);
                     if(cacheData.noCacheData != true) {
-                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        return res.status(200).send({success: true, message: 'Fetched successfully!', options: cacheData})
                         useCache = true
                     }            
                 }
@@ -114,7 +114,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     {
                         RedisConnection.set(industryChoiceCacheKey, data);
                     }
-                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                    return res.status(200).send({success: true, message: 'Fetched successfully!', options: data})
                 }
 
             }else if(searchType == "highest_degree"){
@@ -122,7 +122,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(degreeCacheKey);
                     if(cacheData.noCacheData != true) {
-                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        return res.status(200).send({success: true, message: 'Fetched successfully!', options: cacheData})
                         useCache = true
                     }            
                 }
@@ -148,7 +148,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     {
                         RedisConnection.set(degreeCacheKey, data);
                     }
-                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                    return res.status(200).send({success: true, message: 'Fetched successfully!', options: data})
                 }
 
             }else if(searchType == "specialization"){
@@ -156,7 +156,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(specializationCacheKey);
                     if(cacheData.noCacheData != true) {
-                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        return res.status(200).send({success: true, message: 'Fetched successfully!', options: cacheData})
                         useCache = true
                     }            
                 }
@@ -182,7 +182,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     {
                         RedisConnection.set(specializationCacheKey, data);
                     }
-                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                    return res.status(200).send({success: true, message: 'Fetched successfully!', options: data})
                 }
 
             }
@@ -191,7 +191,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                 if(skipCache !=true) {
                     let cacheData = await RedisConnection.getValuesSync(preferredSkillCacheKey);
                     if(cacheData.noCacheData != true) {
-                        return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: cacheData})
+                        return res.status(200).send({success: true, message: 'Fetched successfully!', options: cacheData})
                         useCache = true
                     }            
                 }
@@ -217,7 +217,7 @@ const fetchSuggestGoals = async (req, res, skipCache) => {
                     {
                         RedisConnection.set(preferredSkillCacheKey, data);
                     }
-                    return res.status(200).send({status: 'success', message: 'Fetched successfully!', options: data})
+                    return res.status(200).send({success: true, message: 'Fetched successfully!', options: data})
                 }
 
             }

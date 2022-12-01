@@ -1,9 +1,13 @@
 const elasticService = require("./elasticService");
 const fetch = require("node-fetch");
 const models = require("../../../models");
+const helperService = require("../../utils/helper");
 
 const categoryService = require("./categoryService");
 const CategoryService = new categoryService();
+const redisConnection = require('../../services/v1/redis');
+
+const RedisConnection = new redisConnection();
 
 const { 
     getFilterConfigs, 
@@ -12,17 +16,35 @@ const {
     getMediaurl,
     getFilterAttributeName,
     updateSelectedFilters,
-    generateMetaInfo,
     compareRule,
     getCurrencies,
-    getCurrencyAmount
+    getCurrencyAmount,
+    formatImageResponse
 } = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 const apiBackendUrl = process.env.API_BACKEND_URL;
 
 const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
 const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug','article_sub_categories','article_job_roles','article_skills','article_topics'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
+const {getSearchTemplate} = require("../../utils/searchTemplates");
+const sortOptions = {
+    'Newest' :["created_at:desc"],
+    'Popular' : ["activity_count.all_time.popularity_score:desc"],
+    'Trending' : ["activity_count.last_x_days.trending_score:desc"],
+    'A-Z': ["title:asc"],
+    'Z-A' :["title:desc"],
+    'Most Relevant' : []
+}
+
+const currencyToRegion = {
+    "INR" : "India",
+    "EUR": "Europe",
+    "GBP" : "UK",
+    "USD" : "USA"
+  }
+  
 
 const CheckArticleRewards = async (user, premium) => {  
     let rewards = [];
@@ -55,20 +77,76 @@ const getEmiBaseCurrency = (result) => {
 module.exports = class articleService {
 
     async getArticleList(req, callback){
+        let userCurrency= (req && req.query && req.query['currency'] )? req.query['currency']: process.env.DEFAULT_CURRENCY 
+        let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] )? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']:'India'
+
         const filterConfigs = await getFilterConfigs('Article');
-        
+        let searchTemplate = null;
+        const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
         let esFilters = {}
 
         let publishedFilter = {term: { "status.keyword": 'published' }};
         esFilters['published'] = publishedFilter;
 
-        const query = { 
+        let query = null;
+        if (req.query['q']) {
+
+            searchTemplate = await getSearchTemplate('article', decodeURIComponent(req.query['q']).replace("+", "//+").trim(), userId);
+            query = searchTemplate.function_score.query;
+            esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
+
+        } else {
+            query = {
+                "bool": {
+                    "must": [
+                        publishedFilter
+                    ],
+                }
+            };
+        }
+
+        query.bool.must.push({
             "bool": {
-                "must": [
-                    publishedFilter                
-                ],
+              "should": [
+                {
+                  "bool": {
+                    "filter": [
+                      {
+                        "terms": {
+                          "template.keyword": [
+                            "ARTICLE",
+                            "LEARN_GUIDE",
+                            "LEARN_ADVICE"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "bool": {
+                    "filter": [
+                      {
+                        "term": {
+                          "template.keyword": "CAREER_GUIDE"
+                        }
+                      },
+                      {
+                        "term": {
+                          "career_level.keyword": "Level 1"
+                        }
+                      } ,
+                      {
+                        "term": {
+                          "region.keyword": region
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
             }
-        };
+          })
 
         if(req.query.articleIds)
         {
@@ -86,22 +164,26 @@ module.exports = class articleService {
         queryPayload.size = paginationQuery.size;
         
 
-        if(!req.query['sort'] && !req.query['q']){
-            req.query['sort'] = "published_date:desc";
+        if(!req.query['sort']){
+            req.query['sort'] = (req.query['q']) ? 'Most Relevant': 'Newest';
         }
+        if (req.query['sort']) {
+            queryPayload.sort = []
+            const keywordFields = ['title'];
+            let sort = sortOptions[req.query['sort']];
+            if (sort && sort.length > 0) {
+                for (let field of sort) {
 
-        if(req.query['sort']){
-            
-            let sort = req.query['sort'];
-            let splitSort = sort.split(":");
-            if(splitSort[0] == 'title'){
-                splitSort[0] = 'slug';
-            }
-            if(keywordFields.includes(splitSort[0])){
-                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
-            }
-            queryPayload.sort = [sort];
+                    let splitSort = field.split(":");
+                    if (keywordFields.includes(splitSort[0])) {
+                        field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                    }
+                    queryPayload.sort.push(field)
+                }
+            }               
+
         }
+       
 
         let parsedFilters = [];
         let parsedRangeFilters = [];
@@ -138,36 +220,6 @@ module.exports = class articleService {
         }
         
         let queryString = null;
-        if(req.query['q']){
-
-            let filterObject = {                    
-                "bool": {
-                    "should": [
-                        {
-                            "query_string" : {
-                                "query" : `*${decodeURIComponent(req.query['q']).trim()}*`,
-                                "fields" : (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-                                "analyze_wildcard" : true,
-                                "allow_leading_wildcard": true
-                            }
-                        },
-                        {
-                            "multi_match": {
-
-                                "fields":  (req.searchField) ?(req.searchField): ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'],
-
-                                "query": decodeURIComponent(req.query['q']).trim(),
-                                "fuzziness": "AUTO",
-                                "prefix_length": 0                              
-                            }
-                        }           
-                    ]
-                    }                    
-                }
-
-            query.bool.must.push(filterObject);
-            esFilters['q'] = filterObject;         
-        }
 
          //FILTER FACET AGGREGATIONS
          let aggs = {
@@ -216,7 +268,7 @@ module.exports = class articleService {
 
         queryPayload.aggs = aggs;
         
-        let result = await elasticService.searchWithAggregate('article', query, queryPayload, queryString);
+        let result = await elasticService.searchWithAggregate('article', searchTemplate ? searchTemplate : query, queryPayload, queryString);
         let aggs_result = result.aggregations;
         result = result.hits;
 
@@ -229,6 +281,7 @@ module.exports = class articleService {
                 field: filter.elastic_attribute_name == "author_first_name" ? "author_slug" : filter.elastic_attribute_name,
                 filterable: filter.filterable,
                 sortable: filter.sortable,
+                filter_postion: filter.filter_postion || 'vertical',                
                 order: filter.order,
                 is_singleton: filter.is_singleton,
                 is_collapsed: filter.is_collapsed,
@@ -362,17 +415,30 @@ module.exports = class articleService {
             list: list,
             filters: filters,
             pagination: pagination,
-            sort: req.query['sort']
+            sort: req.query['sort'],
+            sortOptions: Object.keys(sortOptions)
           };
 
-          let meta_information = await generateMetaInfo  ('article-list', result.hits);
+          let meta_information = await generateMetaInfo  ('ARTICLE_LIST', result.hits);
           if(meta_information)
           {
               data.meta_information  = meta_information;
           }    
         
-        callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+        callback(null, {success: true, message: 'Fetched successfully!', data: data});
 
+    }
+
+    async addActivity(req, callback){
+        try {
+             const {user} = req;
+             const {articleId} = req.body	
+             const activity_log =  await helperService.logActvity("ARTICLE_VIEW",(user)? user.userId : null, articleId);
+             callback(null, {success: true, message: 'Added successfully!', data: null});
+        } catch (error) {
+            console.log("Article view activity error",  error)
+            callback(null, {success: false, message: 'Failed to Add', data: null});
+        }
     }
 
     async getArticle( slug, req, callback){
@@ -385,23 +451,16 @@ module.exports = class articleService {
         const result = await elasticService.search('article', query);
         if(result.hits && result.hits.length > 0){
             const data = await this.generateSingleViewData(result.hits[0]._source, false, req);
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
+            req.body = {articleId: data.id}
+            this.addActivity(req, (err, data) => {})
         }else{
-            /***
-             * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-             */
-            let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-            if (response.ok) {
-                let urls = await response.json();
-                if(urls.length > 0){  
-                    slug = urls[0].new_url
-                    return callback({status: 'redirect',slug:slug,message: 'Redirect!'}, null);
-                }else{
-                    return callback({status: 'failed', message: 'Not found!'}, null);
-                }
+            let redirectUrl = await helperService.getRedirectUrl(req);
+            if (redirectUrl) {
+                return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
             }
-            callback({status: 'failed', message: 'Not found!'}, null);
-        }        
+            return callback(null, { success: false, message: 'Not found!' });
+        }   
     }
 
 
@@ -427,8 +486,9 @@ module.exports = class articleService {
         }
 
         if(!result.created_by_role) result.created_by_role='author'
+        if(!result.template ) result.template='ARTICLE'
 
-        if(result.created_by_role=='author')
+        if(result.created_by_role=='author' && result.template== "ARTICLE" )
         {            
             let auth = await this.getAuthor(result.author_id);         
             if(auth){
@@ -440,7 +500,10 @@ module.exports = class articleService {
                     designation: auth.designation,
                     bio: auth.bio,
                     slug: auth.slug,
-                    image:auth.image
+                    image:auth.image,
+                    twitter_url: auth.twitter_url,
+                    linkedin_url: auth.linkedin_url,
+                    facebook_url: auth.facebook_url
                 }];
             }else{
                 author = [{
@@ -450,7 +513,11 @@ module.exports = class articleService {
                     lastname: result.last_name ? result.author_last_name.trim():"",
                     designation: result.author_designation,
                     bio: result.author_bio,
-                    slug: result.author_slug
+                    slug: result.author_slug,
+                    image:null,
+                    twitter_url: null,
+                    linkedin_url: null,
+                    facebook_url: null
                 }];
             }
         }
@@ -470,13 +537,25 @@ module.exports = class articleService {
                     designation: co_author.designation,
                     bio: co_author.bio,
                     slug: co_author.slug,
-                    image: (co_author.image) ?( (co_author.image.large) ? getMediaurl(co_author.image.large):  getMediaurl(co_author.image.thumbnail)): null
+                    image: (co_author.image) ? formatImageResponse(co_author.image) :  null,
+                    twitter_url: co_author.twitter_url,
+                    linkedin_url: co_author.linkedin_url,
+                    facebook_url: co_author.facebook_url
                 });
             }
-         }
+        }
 
         if(result.partners && result.partners.length > 0 )
         {
+            result.partners = result.partners.map(partner => { 
+                if(partner.id)
+                {
+                    return partner.id
+                }
+                else{
+                    return partner
+                }
+            })
             const partnerQuery = { 
                 "bool": {
                     "should": [
@@ -503,39 +582,41 @@ module.exports = class articleService {
                         name: hit._source.name.trim(),
                         id: hit._source.id,
                         slug: hit._source.slug,
-                        image:  (hit._source.cover_image) || null
+                        image:  (hit._source.cover_image)? formatImageResponse(hit._source.cover_image) : null
                     })
                 }
             }
             result.partners = partners
         }                
-
+        if(author && author.length > 0)  
+        {
+            author = author.filter(entity => entity.slug !=null )
+        } 
         let data = {
             title: result.title,
             premium: (result.premium)? result.premium:false,
+            display_author: (result.display_author)? result.display_author:true,
             slug: result.slug,
             id: `ARTCL_PUB_${result.id}`,          
-            cover_image: (result.cover_image)? result.cover_image : null,
+            cover_image: (result.cover_image)? formatImageResponse(result.cover_image) : null,            
+            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
             short_description: result.short_description,
             author: (author)? author: [],
             partners: (result.partners)? result.partners : [],
-            created_by_role: (result.created_by_role)? result.created_by_role:'author', 
-            comments: (result.comments && !isList) ? result.comments : [],
-            social_links: {
-                facebook: result.facebook_link,
-                linkedin: result.linkedin_link,
-                twitter: result.twitter_link
-            },
+            created_by_role: (result.created_by_role)? result.created_by_role:'author',
             published_date: result.published_date,
-            categories: (result.categories) ? result.categories : [],
+            categories: (result.categories) ? result.categories : null,
+            topics: (result.article_topics) ? result.article_topics : null,
+            sub_categories: (result.article_sub_categories) ? result.article_sub_categories : null,
             levels: (result.levels) ? result.levels : [],
             duration:(result.duration) ? result.duration : null,
             tags: (result.tags) ? result.tags : [],            
             section_name: result.section_name,
             section_slug: result.section_slug,
-            related_articles: (result.related_articles && !isList) ? await this.getArticleByIds(result.related_articles) : [],
-            recommended_articles: (result.recommended_articles && !isList) ? await this.getArticleByIds(result.recommended_articles) : [],
-            ads_keywords:result.ads_keywords
+            ads_keywords:result.ads_keywords,
+            template:result.template
         };
 
         data.emiInUserCurrency = null
@@ -548,65 +629,394 @@ module.exports = class articleService {
         }
 
         data.brochure = null
+
         if(result.brochure){       
             data.brochure = {
                 name: result.brochure.name,
                 ext: result.brochure.ext,
                 mime: result.brochure.mime,
-                url: result.brochure.url
+                url: result.brochure.url,
+                size: ( Math.round(result.brochure.size / 1024, 2) > 1 ) ?  Math.round(result.brochure.size / 1024, 2) + " Mb": result.brochure.size+ " Kb"
             }
         }
 
         if(!isList){
-            let meta_information = await generateMetaInfo  ('article', result);
+         
+            let meta_information = await generateMetaInfo  (result.template, result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
             }
         }
-
-        data.description = null;
-        data.content_section = null
-        data.level_info = null
-        data.course_recommendation = null
-        data.conclusion = null
+       
         if(!isList){
             data.full_access = false;
+            
             if(rewards && rewards.length > 0)
             {
                 if(rewards[0].access_type == 'full_access')
                 {
+                    data.content = {}
                     data.full_access= true;
-                    data.description = result.content;
-                    data.content_section = result.content_section || null
-                    data.level_info = result.level_info || null
-                    if(data.level_info){
-                        data.level_info.levels_beginner = result.level_beginner || null
-                        data.level_info.levels_intermediate = result.level_intermediate || null
-                        data.level_info.levels_advance = result.level_advance || null
-                    }else{
-                        data.level_info = {}
-                        data.level_info.levels_beginner = result.level_beginner || null
-                        data.level_info.levels_intermediate = result.level_intermediate || null
-                        data.level_info.levels_advance = result.level_advance || null
+                    if(result.template== "ARTICLE"){
+                        if( result.content){
+                            data.content.description ={
+                                title: "Description",
+                                content : result.content
+                            }
+                        }
+                        else{
+                            data.content.description = null
+                        }
+                        data.content.content_section = result.content_section || null
+                        data.content.level_info = result.level_info || null
+                        if(data.content.level_info){
+                            data.content.level_info.levels_beginner = result.article_level_beginner || null
+                            data.content.level_info.levels_intermediate = result.article_level_intermediate || null
+                            data.content.level_info.levels_advance = result.article_level_advance || null
+                        }else{
+                            data.content.level_info = {}
+                            data.content.level_info.levels_beginner = result.article_level_beginner || null
+                            data.content.level_info.levels_intermediate = result.article_level_intermediate || null
+                            data.content.level_info.levels_advance = result.article_level_advance || null
+                        }
+                        data.content.course_recommendation = result.course_recommendation || null;
+                        if(result.conclusion)
+                        {
+                            data.content.conclusion ={
+                                title: "Conclusion",
+                                content: result.conclusion
+                            }
+                        }
+                        if(result.summary_title && result.summary_content)
+                        {
+                            data.content.summary = {
+                                title: result.summary_title,
+                                content: result.summary_content
+                            }
+                        }
                     }
-                    data.course_recommendation = result.course_recommendation || null;
-                    data.conclusion = result.conclusion || null;
-                }
-                else if(rewards[0].access_type == 'partial_access')
-                {
-                    let description = result.content.replace(/<(.|\n)*?>/g, '');
-                    description = description.replace(/&nbsp;/g, ' ');
-                    data.description = description.split(' ').slice(0, 70).join(' ');
-                }
-            }           
+                    if(result.template== "LEARN_GUIDE"){
+                        data.content.description = result.description || null;
+                        data.content.introduction  = result.introduction || null;
+                        data.content.specialization  = result.specialization || null;
+                        data.content.prerequisites   = result.prerequisites|| null;
+                        data.content.path_to_take   = result.path_to_take || null;
+                        data.content.soft_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.soft_skills   = {
+                                title:  result.soft_skills_title,
+                                description:  result.soft_skills_description,
+                                skills:  result.soft_skills_skills
+                            }
+                            if(data.content.soft_skills.skills && data.content.soft_skills.skills.length > 0)
+                            {
+                                await Promise.all(data.content.soft_skills.skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.soft_skills.skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.soft_skills.skills[index].description =  skill_info.description || null;
+                                }))
+                            }                            
+                        }
+                        data.content.technical_skills   =  null
+                        if(result.technical_skills_title)
+                        {
+                            data.content.technical_skills    = {
+                                title:  result.technical_skills_title,
+                                description:  result.technical_skills_description,
+                                beginner_skills:  result.technical_skills_beginner_skills,
+                                intermediate_skills:  result.technical_skills_intermediate_skills,
+                                advanced_skills:  result.technical_skills_advanced_skills
+                            }
+                            if(data.content.technical_skills.beginner_skills && data.content.technical_skills.beginner_skills.length > 0)
+                            {
+                                await Promise.all(data.content.technical_skills.beginner_skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.beginner_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.beginner_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.beginner_skills[index].description =  skill_info.beginner_description || null;
+                                }))
+                            }
+                            if(data.content.technical_skills.intermediate_skills && data.content.technical_skills.intermediate_skills.length > 0)
+                            {
+                                await Promise.all(data.content.technical_skills.intermediate_skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.intermediate_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.intermediate_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.intermediate_skills[index].description =  skill_info.intermediate_description || null;
+                                }))
+                            }
+                            if(data.content.technical_skills.advanced_skills && data.content.technical_skills.advanced_skills.length > 0)
+                            {
+                                await Promise.all(data.content.technical_skills.advanced_skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.advanced_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.advanced_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.advanced_skills[index].description =  skill_info.advanced_description || null;
+                                }))
+                            }
+                            data.content.level_beginner   = result.level_beginner || null;
+                            data.content.level_intermediate    = result.level_intermediate  || null;
+                            data.content.level_advanced   = result.level_advanced || null;
+                            data.content.job_prospects   = result.job_prospects || null;
+                            data.content.advantages   = result.advantages || null;
+                            data.content.faq     = result.faq || null;
+                            data.content.conclusion    = result.conclusion || null;                             
+                        } 
+                        
+                        let redirectResourse =  null
+                        if(result.categories)
+                        {
+                            let redirectUrl = await helperService.getTreeUrl('category', result.categories);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.categories} Category`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.categories} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_sub_categories)
+                        {
+                            let redirectUrl =  await helperService.getTreeUrl('sub-category', result.article_sub_categories);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.article_sub_categories} Subcategory`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_topics )
+                        {
+                            let redirectUrl =   await helperService.getTreeUrl('topic', result.article_topics);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.article_topics} Topic`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_topics} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        data.content.redirectResourse = redirectResourse
+                    }
+                    if(result.template== "CAREER_GUIDE"){
+                        data.content.region = result.region || null;
+                        data.content.career_level = result.career_level || null;
+                        data.content.description = result.description || null;
+                        data.content.role_duties  = result.role_duties || null;                        
+                        data.content.prerequisites   = result.prerequisites|| null;
+                        data.content.required_skills  = result.required_skills || null;
+                        data.content.soft_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.soft_skills   = {
+                                title:  result.soft_skills_title,
+                                description:  result.soft_skills_description,
+                                skills:  result.soft_skills_skills
+                            }
+                            if(data.content.soft_skills.skills && data.content.soft_skills.skills.length > 0)
+                            {
+                                await Promise.all(data.content.soft_skills.skills.map(async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.soft_skills.skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.soft_skills.skills[index].description =  skill_info.description || null;
+                                }))
+                            }                            
+                        }
+                        data.content.technical_skills   =  null
+                        if(result.soft_skills_title)
+                        {
+                            data.content.technical_skills    = {
+                                title:  result.technical_skills_title,
+                                description:  result.technical_skills_description,
+                                beginner_skills:  result.technical_skills_beginner_skills,
+                                intermediate_skills:  result.technical_skills_intermediate_skills,
+                                advanced_skills:  result.technical_skills_advanced_skills
+                            }
+                            if(data.content.technical_skills.beginner_skills && data.content.technical_skills.beginner_skills.length > 0)
+                            {
+                                await Promise.all(data.content.technical_skills.beginner_skills.map( async  (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.beginner_skills[index].logo =   skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.beginner_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.beginner_skills[index].description =  skill_info.beginner_description || null;
+                                }))
+                            }
+                            if(data.content.technical_skills.intermediate_skills && data.content.technical_skills.intermediate_skills.length > 0)
+                            {
+                                await Promise.all(data.content.technical_skills.intermediate_skills.map( async (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.intermediate_skills[index].logo =  skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.intermediate_skills[index].image = skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.intermediate_skills[index].description =  skill_info.intermediate_description || null; 
+                                }))
+                            }
+                            if(data.content.technical_skills.advanced_skills && data.content.technical_skills.advanced_skills.length > 0)
+                            {
+                                await Promise.all(data.content.technical_skills.advanced_skills.map(async  (skill, index) => {
+                                    let skill_info = await RedisConnection.getValuesSync(`skill_${skill.default_display_label }`)
+                                    data.content.technical_skills.advanced_skills[index].logo =   skill_info.logo ? formatImageResponse(skill_info.logo) : null;
+                                    data.content.technical_skills.advanced_skills[index].image =  skill_info.image ? formatImageResponse(skill_info.image) : null;
+                                    data.content.technical_skills.advanced_skills[index].description =  skill_info.advanced_description || null;
+                                }))
+                            }                            
+                            data.content.skill_acquisition   = result.skill_acquisition || null;
+                            if(result.insights && result.insights.length > 0)
+                            {
+                                data.content.insights = {
+                                    title : "Insights",
+                                    content : result.insights
+                                }
+                            }else{
+                                data.content.insights = null
+                            }
+                            data.content.summary   = result.summary || null;
+                            data.content.reviews   = result.reviews || null;
+                            if(data.content.reviews && data.content.reviews.length > 0)
+                            {
+                                data.content.reviews.map((review, index) => {
+                                    data.content.reviews[index].image =  review.image ? formatImageResponse(review.image) : null;
+                                })
+                            }
+                            data.content.top_hiring_companies   = result.top_hiring_companies || null;
+                            if(data.content.top_hiring_companies && data.content.top_hiring_companies.length > 0)
+                            {
+                                data.content.top_hiring_companies.map((top_hiring_company, index) => {
+                                    data.content.top_hiring_companies[index].image =  top_hiring_company.image ? formatImageResponse(top_hiring_company.image) : null;
+                                })
+                            }
+                            data.content.faq     = result.faq || null;                            
+                        }
+                        const queryBody = {              
+                              "bool": {
+                                "filter": [
+                                  {term: { "group_id.keyword": result.group_id }}
+                                ]
+                            }
+                        };
+                        
+                        const groupResult = await elasticService.search('article', queryBody, { _source: ['region','career_level','slug']});
+                        
+                        let variations = {
+                            regions: [],
+                            levels: [],
+                            slugs:{}
+                        }
+                        if(groupResult.hits){
+                            if(groupResult.hits && groupResult.hits.length > 0){
+                                for(const hit of groupResult.hits){                                   
+                                    variations.regions.push(hit._source.region)
+                                    variations.levels.push(hit._source.career_level)
+                                    if(!variations.slugs[hit._source.region]) variations.slugs[hit._source.region] = []
+                                    variations.slugs[hit._source.region].push ({label:hit._source.career_level, slug:hit._source.slug})
+                                }
+                            }
+                        }
+                        
+                        variations.regions = variations.regions.filter((x, i, a) => a.indexOf(x) == i)                       
+                        
+                        data.variations = []
+                        for(let region of variations.regions)
+                        {
+                            data.variations.push({
+                                label: region,
+                                levels: variations.slugs[region]
+                            })
+                        }
+                        let redirectResourse =  null
+                        if(result.categories && result.categories.length > 0)
+                        {
+                            let redirectUrl = await helperService.getTreeUrl('category', result.categories[0]);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.categories[0]} Category`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.categories[0]} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_sub_categories && result.article_sub_categories.length > 0)
+                        {
+                            let redirectUrl =  await helperService.getTreeUrl('sub-category', result.article_sub_categories[0]);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.article_sub_categories[0]} Subcategory`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_sub_categories[0]} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        else if(result.article_topics && result.article_topics.length > 0)
+                        {
+                            let redirectUrl =   await helperService.getTreeUrl('topic', result.article_topics[0]);
+                            if(redirectUrl)
+                            {
+                                redirectResourse = {
+                                    title: `Explore ${result.article_topics[0]} Topic`,
+                                    subTitle: `To know more on how to learn the skill required to be a ${result.article_topics[0]} expert`,
+                                    url: redirectUrl
+                                }
+                            }
+                            
+                        }
+                        data.content.redirectResourse = redirectResourse
+                    }
+                    if(result.template== "LEARN_ADVICE"){
+                        data.content.banner = result.banner || null;
+                        if(data.content.banner)
+                        {
+                            data.content.banner.partner_logo = data.content.banner.partner_logo ? formatImageResponse (data.content.banner.partner_logo) : null
+                            data.content.banner.banner_image = data.content.banner.banner_image ? formatImageResponse (data.content.banner.banner_image) : null
+                        }
+                        data.content.overview = result.overview || null;
+                        data.content.quote  = result.quote || null;                        
+                        data.content.course_structure   = result.course_structure|| null;
+                        data.content.final_take  = result.final_take || null;
+                        data.content.insider_tips  = result.insider_tips || null;                         
+                        data.content.takeaways  = result.takeaways || null;
+                        
+                    }
+                   
+                }              
+            }     
         }
 
         if(result.custom_ads_keywords) {
             data.ads_keywords +=`,${result.custom_ads_keywords}` 
         }
+
+        //SET popular and trending keys
+        const ARTICLE_POPULARITY_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("ARTICLE_POPULARITY_SCORE_THRESHOLD"));
+
+        data.isPopular  = false
+        if( (ARTICLE_POPULARITY_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.all_time.popularity_score > ARTICLE_POPULARITY_SCORE_THRESHOLD))
+        {
+            data.isPopular  = true
+        }
+
+        const ARTICLE_TRENDING_SCORE_THRESHOLD = parseInt(await RedisConnection.getValuesSync("ARTICLE_TRENDING_SCORE_THRESHOLD"));
+        
+        data.isTrending  = false
+        if( (ARTICLE_TRENDING_SCORE_THRESHOLD >= 0) && result.activity_count && (result.activity_count.last_x_days.trending_score > ARTICLE_TRENDING_SCORE_THRESHOLD))
+        {
+            data.isTrending  = true
+        }
+
         return data;
         }
+        
         catch(err){
             console.log("ERROR: ",err)
         }
@@ -631,12 +1041,12 @@ module.exports = class articleService {
                   "bool": {
                     "must": [
                       {term: { "status.keyword": 'published' }},
-                      {terms: { "id": articleIds }}
+                      {terms: { "id.keyword": articleIds }}
                     ]
                  }
                 }
             };
-
+           
             const result = await elasticService.plainSearch('article', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
@@ -664,7 +1074,7 @@ module.exports = class articleService {
     }
 
 
-    async generateAuthorData(result, fetch_articles = false){
+    async generateAuthorData(result){
         let data = {
             id: result.id,
             user_id: result.user_id,
@@ -673,7 +1083,7 @@ module.exports = class articleService {
             lastname: result.last_name,
             designation: result.designation,
             bio: result.bio,
-            image: (result.image) ?( (result.image.large) ? getMediaurl(result.image.large):  getMediaurl(result.image.thumbnail)): null,
+            image: (result.image) ? formatImageResponse (result.image) : null,
             slug: result.slug,
             email: result.email,
             twitter_url: result.twitter_url,
@@ -681,13 +1091,10 @@ module.exports = class articleService {
             facebook_url: result.facebook_url,
             city: result.city
         };
+        data.meta_information = await generateMetaInfo  ('AUTHOR', data);
         if(!data.image && !data.image==null){
             data.image = getMediaurl(result.image['url']);
-        }
-
-        if(fetch_articles){
-            data.articles = await this.getArticleByAuthor(result.user_id);
-        }
+        }       
 
         return data;
     }
@@ -706,7 +1113,8 @@ module.exports = class articleService {
         return author;     
     }
 
-    async getAuthorBySlug(slug, callback){
+    async getAuthorBySlug(req, callback){
+        const slug = req.params.slug;
         let author = null;
 
         const query = { "bool": {
@@ -717,64 +1125,143 @@ module.exports = class articleService {
 
         const result = await elasticService.search('author', query);
         if(result.hits && result.hits.length > 0){
-            author = await this.generateAuthorData(result.hits[0]._source, true);
+            author = await this.generateAuthorData(result.hits[0]._source);
         }
         if(callback){
             if(author){
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: author});
+                callback(null, {success: true, message: 'Fetched successfully!', data: author});
             }else{
-                /***
-                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                 */
-                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                if (response.ok) {
-                    let urls = await response.json();
-                    if(urls.length > 0){  
-                        slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug,message: 'Redirect!'}, null);
-                    }else{
-                        return callback({status: 'failed', message: 'Not found!', data: null}, null);
-                    }
+                let redirectUrl = await helperService.getRedirectUrl(req);
+                if (redirectUrl) {
+                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                 }
-                callback(null, {status: 'failed', message: 'Not found!', data: null});
-            }            
+                return callback(null, { success: false, message: 'Not found!' });
+                }            
         }else{
             return author;  
         }           
     }
 
 
-    async getArticleByAuthor(author_id, isListing = true){
-        let articles = [];
-        const queryBody = {
-            "query": {
-              "bool": {
-                "must": [
-                  {term: { "status.keyword": 'published' }},
-                  {
-                      "bool": {
-                        "should": [
-                            {term: { "author_id": author_id }},
-                            {term: {"co_authors.user_id": author_id}}
+    async getArticlesByAuthor(req) {
+        try {
+            let author_id = req.params.id
+            let { page = 1, limit = 10, } = req.query;
+            let finaldata  ={}
+            let cacheKey = `articles-by author-${author_id}-${page}-${limit}`;
+            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            let articles = [];
+            if (cachedData.noCacheData != true) {
+                finaldata = cachedData;
+            } else {
+
+                // Find author user id 
+                let query = {
+
+                    "bool": {
+                        "must": [
+                            { term: { "id": author_id } }
+                            
                         ]
                     }
-                }
-                ]
-             }
-            }
-        };
 
-            const result = await elasticService.plainSearch('article', queryBody);
-            if(result.hits){
-                if(result.hits.hits && result.hits.hits.length > 0){
-                    for(const hit of result.hits.hits){
-                        const article = await this.generateSingleViewData(hit._source, isListing);
-                        articles.push(article);
+                };
+               
+                let author_user_id = null
+                let result = await elasticService.search("author", query);
+               
+                if (result.hits) {
+                    author_user_id = result.hits[0]._source.user_id
+                }
+                let region = (req && req.query && req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6']) ? req.query['c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6'] : 'India'
+                const offset = (page - 1) * limit
+
+                query = {
+
+                    "bool": {
+                        "must": [
+                            { term: { "status.keyword": 'published' } },
+                            {
+                                "bool": {
+                                    "should": [
+                                        { term: { "author_id": author_user_id } },
+                                        { term: { "co_authors.user_id": author_user_id } }
+                                    ]
+                                }
+                            }
+                        ]
                     }
-                }
-            } 
-        return articles;
-    }
 
+                };
+                query.bool.must.push({
+                    "bool": {
+                        "should": [
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "terms": {
+                                                "template.keyword": [
+                                                    "ARTICLE",
+                                                    "LEARN_GUIDE",
+                                                    "LEARN_ADVICE"
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                "bool": {
+                                    "filter": [
+                                        {
+                                            "term": {
+                                                "template.keyword": "CAREER_GUIDE"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "career_level.keyword": "Level 1"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "region.keyword": region
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                })
+               
+                result = await elasticService.search("article", query, { from: offset, size: limit });
+                
+                if (result.hits) {
+                    
+                    for (const hit of result.hits) {
+                        var data = await this.generateSingleViewData(hit._source, true)
+                        articles.push(data);
+                    }
+                    let pagination = {
+                        page:page,
+                        count: result.hits.length,
+                        perPage: limit,
+                        totalCount: result.total.value,
+                        total: result.total.value
+                    }
+                    finaldata  = { list: articles, pagination:pagination } 
+                    await RedisConnection.set(cacheKey, finaldata);
+                    RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_ARTCLE_SLUG);
+                }
+            }
+            let response = { success: true, message: "list fetched successfully", data: finaldata };
+            return response;
+        } catch (error) {
+            console.log("error in article by id", error)
+            return { success: false, message: "Error fetching list", data: null };
+        }
+    }
 
 }

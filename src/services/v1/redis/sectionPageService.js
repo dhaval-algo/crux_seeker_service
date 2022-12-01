@@ -41,9 +41,9 @@ module.exports = class sectionPageService {
                         // /*******************/
                         // console.log("SQSConsumer->",subject)
                         
-                        let sectionSlug = queueData.slug
-                        console.log("sectionSQSConsumer->",sectionSlug)
-                        SectionService.getSectionContent(sectionSlug, (err, data) => {}, true); 
+                        let sectionSlug = queueData.slug                        
+                        let req = {params : {slug :sectionSlug}}
+                        SectionService.getSectionContent(req, (err, data) => {}, true); 
                          
                     },
                     sqs: new AWS.SQS()

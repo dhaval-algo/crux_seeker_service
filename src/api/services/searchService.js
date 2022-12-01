@@ -1,251 +1,215 @@
-const mSorter = require("match-sorter");
-let {matchSorter} = mSorter;
 const elasticService = require("./elasticService");
-const learnContentService = require("./learnContentService");
-let LearnContentService = new learnContentService();
+const { getSearchTemplate } = require("../../utils/searchTemplates");
+const recommendationService = require("./recommendationService");
+let RecommendationService = new recommendationService();
 
-const entityQueryMapping = {
-    'learn-content': {label: 'Course', status: 'published', fields: ['title^7','categories^6','sub_categories^5','provider_name^4','level^3','medium^2','partner_name'], source_fields: ['title']},
-    'learn-path': {label: 'Learn Path', status: 'approved', fields: ['title^9','description^8','categories^7','sub_categories^6','topics^5','life_stages^4','levels^3','medium^2','courses.title'], source_fields: ['title']},
-    'provider': {label: 'Institute', status: 'approved', fields: ['name^2','programs'], source_fields: ['name','slug']},
-    'article': {label: 'Article', status: 'published', fields: ['title^4', 'section_name^3', 'author_first_name^2', 'author_last_name'], source_fields: ['title', 'slug', 'section_name', 'section_slug']}
-};
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons"]
+const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
+const learnPathFields = ["id","title","slug","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile"]
+const providerFields = ["id","name","slug","cover_image","card_image","card_image_mobile","logo","programs","institute_types","study_modes","reviews","address_line1","address_line2","city","state","pincode","country","phone","email","course_count","rating","ranks"]
 
-const MAX_PER_ENTITY = 20;
-const MAX_RESULT = 30;
+const entitySearchParams = {
+    "learn-content": { maxResults: process.env.MAX_SEARCH_RESULT_COURSE || 5, sourceFields: courseFields },
+    "learn-path": { maxResults: process.env.MAX_SEARCH_RESULT_LP || 5, sourceFields: learnPathFields },
+    "article": { maxResults: process.env.MAX_SEARCH_RESULT_ARTICLE || 5, sourceFields: articleFields },
+    "provider": { maxResults: process.env.MAX_SEARCH_RESULT_PROVIDER || 5, sourceFields: providerFields}
 
-const generateEntityQuery = (entity, keyword) => {
-    let entityConfig = entityQueryMapping[entity];
-    let entity_query = {
-        "bool": {
-          "must": [
-            {
-              "term": {
-                "status.keyword": entityConfig.status
-              }
-            },
-            /* {
-              "multi_match": {
-                "query": `${decodeURIComponent(keyword)}`,
-                "fields": entityConfig.fields
-              }
-            }, */
-           {
-                "bool": {
-                "should": [
-                  {
-                      "query_string" : {
-                          "query" : `*${decodeURIComponent(keyword).replace("+","//+").trim()}*`,
-                          "fields" : entityConfig.fields,
-                          "analyze_wildcard" : true,
-                          "allow_leading_wildcard": true
-                      }
-                  },
-                  {
-                      "multi_match": {
-                              "fields": entityConfig.fields,
-                              "query": decodeURIComponent(keyword).trim(),
-                              "fuzziness": "AUTO",
-                              "prefix_length": 0
-                          
-                      }
-                  }           
-                ]
-              }
-            },
-            {
-              "term": {
-                "_index": entity
-              }
-            }
-          ]
-        }
-      };
-      return entity_query;
-};
+}
+
+
+const entitySearchSuggestionParams = {
+    'keyword-suggestion': { maxResults: process.env.MAX_SEARCH_SUGGESTION_KEYWORD || 6, sourceFields: ['suggestion'] },
+    "learn-content": { maxResults: process.env.MAX_SEARCH_SUGGESTION_COURSE || 5, sourceFields: ['title', 'slug'] },
+    "learn-path": { maxResults: process.env.MAX_SEARCH_SUGGESTION_LP || 4, sourceFields: ['title', 'slug'] },
+    "article": { maxResults: process.env.MAX_SEARCH_SUGGESTION_ARTICLE || 4, sourceFields: ['title', 'slug','section_slug'] },
+    "provider": { maxResults: process.env.MAX_SEARCH_SUGGESTION_PROVIDER || 3, sourceFields: ['name', 'slug'] }
+}
+
 
 module.exports = class searchService {
-    async getSearchResult(req, callback){
-        const keyword = decodeURIComponent(req.params.keyword);
-        const entity = req.query.entity;
-        const queryEntities = [];
-        let sourceFields = [];
-        
-        let query = { 
-                    "bool": {
-                        "should": []
-                    }
-                };
-        if(!entity || (entity == 'all')){
-            for (const [key, value] of Object.entries(entityQueryMapping)) {
-                queryEntities.push(key);
-                sourceFields = [...sourceFields, ...entityQueryMapping[key]['source_fields']];
-                const entityQuery = generateEntityQuery(key, keyword);
-                query.bool.should.push(entityQuery);
+    async getSearchResult(req, callback) {
+        try {
+            const query = decodeURIComponent(req.params.keyword).trim();
+            const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+            const entity = req.query.entity;
+            const result = [];
 
-            }            
-        }else{
-            queryEntities.push(entity);
-            sourceFields = [...sourceFields, ...entityQueryMapping[entity]['source_fields']];
-            const entityQuery = generateEntityQuery(entity, keyword);
-            query.bool.should.push(entityQuery);
-        }
+            if (!entity || (entity == 'all')) {
+                const indices = [];
+                const queries = [];
+                for (const entity in entitySearchParams) {
 
-        const uniqueFields = sourceFields.filter(function(item, pos, self) {
-            return self.indexOf(item) == pos;
-        });
-       
-        const result = await elasticService.search(queryEntities.join(","), query, {from: 0, size: MAX_RESULT});
-        
-        
-        let data = {
-            result: [],
-            totalCount: 0,
-            viewAll: false
-        };
-        if(result.total && result.total.value > 0){            
+                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
 
-            for(const hit of result.hits){
-                let data_source = hit._index;
-                let cardData = await this.getCardData(data_source, hit._source);
-                
-                if(data.result.length < MAX_PER_ENTITY){
-                    data.result.push(cardData);
-                }                    
-                data.totalCount++;
-                if(data.totalCount > MAX_PER_ENTITY){
-                    data.viewAll = true;
-                }  
-            }
-          //  data.result = matchSorter(data.result, keyword, {keys: ['title'], threshold: matchSorter.rankings.NO_MATCH});
+                    indices.push(entity);
+                    queries.push({ size: entitySearchParams[entity].maxResults, query: entitySearchTemplate, _source: entitySearchParams[entity].sourceFields });
 
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
-        }else{
-            callback(null, {status: 'success', message: 'No records found!', data: data});
-        } 
-        
-        
-        /* let allHits = [];
-        let query = null;
-        let data = {
-            result: [],
-            totalCount: 0,
-            viewAll: false
-        };
-
-        if(entity){
-            let entityConfig = entityQueryMapping[entity];
-            query = {
-                "query_string" : {
-                    "query" : `*${decodeURIComponent(keyword)}*`,
-                    "fields" : entityConfig.fields,
-                    "analyze_wildcard" : true,
-                    "allow_leading_wildcard": true
                 }
+
+                const searchResults = await elasticService.multiSearch(indices, queries);
+                for (const searchResult of searchResults) {
+
+                    if (searchResult && !searchResult.error && searchResult.hits && searchResult.hits.hits && searchResult.hits.hits.length) {
+                        result.push(...searchResult.hits.hits);
+
+                    }
+                }
+
+            } else {
+
+                const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
+                const searchResult = await elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchParams[entity].maxResults }, entitySearchParams[entity].sourceFields);
+
+                if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+
+            }
+
+            const data = {
+                courses: [],
+                "learn-paths": [],
+                articles: [],
+                institutes: []
             };
-            const result = await elasticService.search(entity, query);
-            if(result.total && result.total.value > 0){ 
-                allHits = [...allHits, ...result.hits];
-            }
-        }else{
-            for (const [key, value] of Object.entries(entityQueryMapping)) {
-                let entityConfig = entityQueryMapping[key];
-                query = {
-                    "bool": {
-                        "must": [
-                            {
-                                "term": {
-                                  "status.keyword": entityConfig.status
-                                }
-                              },
-                          {
-                    "query_string" : {
-                        "query" : `*${decodeURIComponent(keyword)}*`,
-                        "fields" : entityConfig.fields,
-                        "analyze_wildcard" : true,
-                        "allow_leading_wildcard": true
-                    }
-                }
-            ]
-        }
-                };
-                const result = await elasticService.search(key, query);
-                if(result.total && result.total.value > 0){ 
-                    allHits = [...allHits, ...result.hits];
-                }
-            }
-        }
-        if(allHits.length > 0){            
+            if (result.length) {
 
-            for(const hit of allHits){
-                let data_source = hit._index;
-                
-                let entityConfig = entityQueryMapping[data_source];
-                if(hit._source.status !== entityConfig.status){
-                    console.log("skipping <> ", hit._source.status);
-                    //continue;
+                for (const hit of result) {
+
+                    const cardData = await this.getCardData(hit._index, hit._source, req.query.currency);
+                    switch (cardData.index) {
+
+                        case "learn-content": data.courses.push(cardData);
+                            break;
+                        case "learn-path": data['learn-paths'].push(cardData);
+                            break;
+                        case "article": data.articles.push(cardData);
+                            break;
+                        case "provider": data.institutes.push(cardData);
+
+                    }
+
                 }
-                let cardData = await this.getCardData(data_source, hit._source);
-                
-                if(data.result.length < MAX_PER_ENTITY){
-                    data.result.push(cardData);
-                }                    
-                data.totalCount++;
-                if(data.totalCount > MAX_PER_ENTITY){
-                    data.viewAll = true;
-                }  
-            }            
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data });
-        }else{
-            callback(null, {status: 'success', message: 'No records found!', data: data});
-        }  */
+
+                callback(null, { success: true, message: 'Fetched successfully!', data: data });
+            } else {
+                callback(null, { success: true, message: 'No records found!', data: data });
+            }
+
+
+        } catch (error) {
+            console.log("Error Occured while Searching", error);
+            callback(null, { success: true, message: 'No records found!', data: {} });
+        }
+
     }
 
 
+    async getSearchSuggestions(req, callback) {
+        try {
 
-    async getCardData(data_source, entityData){
-        let data = {};
-        if(data_source == 'learn-content' || data_source.includes("learn-content-v")){
-            data = {
-                index: "learn-content",
-                title: entityData.title,
-                slug: entityData.slug,
-                rating: entityData.average_rating,
-                reviews_count: entityData.reviews.length,
-                provider: entityData.provider_name
-            };
-        }else if(data_source == 'learn-path'){
-            data = {
-                index: "learn-path",
-                title: entityData.title,
-                slug: entityData.slug,
-                rating: entityData.average_rating,
-                reviews_count: entityData.reviews.length,
-                image: entityData.images,
-                courses_count: entityData.courses.length
-            };
+            const query = decodeURIComponent(req.params.word).trim();
+            const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
+            const entity = req.query.entity;
+            const result = [];
+
+            if (!entity || (entity == 'all')) {
+                const indices = [];
+                const queries = [];
+                for (const entity in entitySearchSuggestionParams) {
+
+                    const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
+                    indices.push(entity);
+                    queries.push({ size: entitySearchSuggestionParams[entity].maxResults, query: entitySearchTemplate, _source: entitySearchSuggestionParams[entity].sourceFields });
+                }
+
+                const searchResults = await elasticService.multiSearch(indices, queries);
+                for (const searchResult of searchResults) {
+                    if (searchResult && !searchResult.error && searchResult.hits && searchResult.hits.hits && searchResult.hits.hits.length) {
+                        result.push(...searchResult.hits.hits);
+                    }
+                }
+
+            } else {
+
+                const entitySearchTemplate = await getSearchTemplate(entity, query, userId, req);
+                const searchResult = await elasticService.search(entity, entitySearchTemplate, { from: 0, size: entitySearchSuggestionParams[entity].maxResults }, entitySearchSuggestionParams[entity].sourceFields);
+                if (searchResult && searchResult.total && searchResult.total.value) result.push(...searchResult.hits);
+
+            }
+
+            const data = result.map((hit) => {
+                const source = hit['_source'];
+
+                if (hit['_index'].includes('keyword-suggestion')) return { type: 'keyword-suggestion', suggestion: source['suggestion'] }
+                if (hit['_index'].includes('learn-content')) return { type: 'learn-content', suggestion: source['title'], slug: source['slug'] }
+                if (hit['_index'].includes('learn-path')) return { type: 'learn-path', suggestion: source['title'], slug: source['slug'] }
+                if (hit['_index'].includes('article')) return { type: 'article', suggestion: source['title'], slug: `${source['section_slug']}/${source['slug']}` }
+                if (hit['_index'].includes('provider')) return { type: 'provider', suggestion: source['name'], slug: source['slug'] }
+            });
+
+            if (data.length) {
+
+                callback(null, { success: true, message: 'Fetched successfully!', data: data });
+            }
+            else {
+                callback(null, { success: false, message: 'No records found!', data: [] });
+            }
+
+        } catch (error) {
+            console.log("Error Occured while getting search suggestions", error);
+            callback(null, { success: false, message: 'No records found!', data: [] });
         }
-        else if(data_source == 'provider'){
-            data = {
-                index: data_source,
-                title: entityData.name,
-                slug: entityData.slug,
-                description: "Institute"
-            };
-        }else if(data_source == 'article'){
-            data = {
-                index: data_source,
-                title: entityData.title,
-                slug: entityData.slug,
-                section_name: entityData.section_name,
-                section_slug: entityData.section_slug,
-                description: "Advice"
-            };
+    }
+
+
+    async getCardData(data_source, entityData, currency) {
+        let data = {};
+        if (data_source == 'learn-content' || data_source.includes("learn-content-v")) {
+            // data = {
+            //     index: "learn-content",
+            //     title: entityData.title,
+            //     slug: entityData.slug,
+            //     rating: entityData.average_rating,
+            //     reviews_count: entityData.reviews.length,
+            //     provider: entityData.provider_name
+            // };
+            data = await RecommendationService.generateCourseFinalResponse(entityData, currency)
+            data.index = "learn-content"
+        } else if (data_source == 'learn-path' || data_source.includes("learn-path-v")) {
+            // data = {
+            //     index: "learn-path",
+            //     title: entityData.title,
+            //     slug: entityData.slug,
+            //     rating: entityData.average_rating,
+            //     reviews_count: entityData.reviews.length
+
+
+            // };
+            data = await RecommendationService.generateLearnPathFinalResponse(entityData, currency)
+            data.index = "learn-path"
+        }
+        else if (data_source == 'provider' || data_source.includes("provider-v")) {
+            // data = {
+            //     index: 'provider',
+            //     title: entityData.name,
+            //     slug: entityData.slug,
+            //     description: "Institute"
+            // };
+            data = await RecommendationService.generateproviderFinalResponse(entityData)
+            data.index = "provider"
+        } else if (data_source == 'article' || data_source.includes("article-v")) {
+            // data = {
+            //     index: 'article',
+            //     title: entityData.title,
+            //     slug: entityData.slug,
+            //     section_name: entityData.section_name,
+            //     section_slug: entityData.section_slug,
+            //     description: "Advice"
+            // };
+            data = await RecommendationService.generateArticleFinalResponse(entityData)
+            data.index = "article"
         }
 
         return data;
     }
-    
-
 
 }

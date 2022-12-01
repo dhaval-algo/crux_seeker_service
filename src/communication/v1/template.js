@@ -147,6 +147,27 @@ module.exports = {
          
     },
 
+    enquiryEmailToAdmins: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/enquiryEmailToAdmins.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({
+            courseImgUrl:messagData.courseImgUrl,
+            course_name:messagData.course_name,
+            provider:messagData.provider,
+            full_name:messagData.full_name,
+            email:messagData.email,
+            phone:messagData.phone,
+            city:messagData.city
+        });
+         
+        let templateData = {subject:'New Enquiry',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
     resetEmailToOld: function(messagData){
         let templatesPath = path.join(__dirname, './templates/reset-email-to-old.hbs');
 
@@ -155,6 +176,27 @@ module.exports = {
         let emailTemplate = template({old_email:messagData.old_email, new_email:messagData.new_email, resource_link:process.env.SERVER_URL });
          
         let templateData = {subject:'Careervira- Reset Email',message:emailTemplate};
+ 
+        return templateData 
+         
+    },
+
+    jobApplicationEmail: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/jobApplication.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({
+            fullName: messagData.fullName,
+            email: messagData.email,
+            resumeUrl: messagData.resumeUrl,
+            jobId: messagData.jobId,
+            jobTitle: messagData.jobTitle,
+            jobType: messagData.jobType,
+            jobDepartment: messagData.jobDepartment,
+            jobCity:messagData.jobCity
+        });         
+        let templateData = {subject:`Careers: Job Application from ${messagData.fullName}`,message:emailTemplate};
  
         return templateData 
          

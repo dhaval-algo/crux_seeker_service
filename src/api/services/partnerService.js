@@ -1,16 +1,12 @@
 const elasticService = require("./elasticService");
-const fetch = require("node-fetch");
-const learnContentService = require("./learnContentService");
-let LearnContentService = new learnContentService();
-const articleService = require("./articleService");
-let ArticleService = new articleService();
 
-const categoryService = require("./categoryService");
-const CategoryService = new categoryService();
+const helperService = require("../../utils/helper");
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
 
-const {generateMetaInfo} = require('../utils/general');
+const {formatImageResponse} = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 
-const apiBackendUrl = process.env.API_BACKEND_URL;
 const rangeFilterTypes = ['RangeSlider','RangeOptions'];
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
@@ -51,103 +47,6 @@ const getMediaurl = (mediaUrl) => {
     }    
     return mediaUrl;
 };
-
-const getPartnerCoursesData = async (partner_name) => {
-    const query = {
-        "bool": {
-            "must": [
-                {term: { "status.keyword": 'published' }},
-                {term: { "partner_name.keyword": partner_name }}
-            ]
-         }
-    };
-     
-    const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
-    if(result.total && result.total.value > 0){
-        return result.hits;
-    }else{
-        return [];
-    }
-};
-
-const getAllCategoryTree = async () => {
-    let category_tree = [];
-    category_tree = CategoryService.getTreeV2(false) || [];
-    return category_tree;
-};
-
-const getSubCategories = async (partner_name) => {
-    let data = await getPartnerCoursesData(partner_name);
-    let options = [];
-    let others = null;
-    for(const esData of data){
-        const entity = esData._source;
-        let entityData = entity['sub_categories'];
-        if(entityData && entityData.length > 0)
-        {
-            for(const entry of entityData){
-                if(entry == 'Others'){
-                    if(others != null){
-                        others.count++;
-                    }else{
-                        others = {
-                            label: entry,
-                            slug: null,
-                            count: 1
-                        }
-                    }                        
-                    continue;
-                }
-
-                let existing = options.find(o => o.label === entry);
-                if(existing){
-                    existing.count++;
-                }else{
-                    options.push({
-                        label: entry,
-                        slug: null,
-                        count: 1
-                    });
-                }
-            }
-        }
-    }
-    if(others != null){
-        options.push(others);
-    }
-    return options;
-};
-
-const getCategoryTree = async (partner_name) => {
-    const tree = [];
-    const subCategories = await getSubCategories(partner_name);
-    const allCategories = await getAllCategoryTree();
-
-    for(const cat of allCategories){
-        const category = {
-            label: cat.label,
-            slug: cat.slug,
-            count: 0,
-            child: []
-        };
-        for(const subcat of cat.child){
-            let ex_subcat = subCategories.find(o => o.label === subcat.label);
-            if(ex_subcat){
-                ex_subcat.slug = subcat.slug;
-                category.child.push(ex_subcat);
-                category.count++;
-            }
-        }
-        if(category.child.length > 0){
-            tree.push(category);
-        }
-    }    
-    return tree;
-};
-
-
-
-
 
 module.exports = class partnerService {
 
@@ -210,9 +109,9 @@ module.exports = class partnerService {
               };
 
             
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
         }else{
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
+            callback(null, {success: true, message: 'No records found!', data: {list: [], pagination: {}, filters: []}});
         }        
     }
 
@@ -230,26 +129,17 @@ module.exports = class partnerService {
             //console.log("result <> ", result);
             if(result.hits && result.hits.length > 0){
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
             }else{
-                /***
-                 * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
-                 */
-                let response = await fetch(`${apiBackendUrl}/url-redirections?old_url_eq=${slug}`);
-                if (response.ok) {
-                    let urls = await response.json();
-                    if(urls.length > 0){  
-                        let slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
-                    }else{
-                        return callback({status: 'failed', message: 'Not found!'}, null);
-                    }
+                let redirectUrl = await helperService.getRedirectUrl(req);
+                if (redirectUrl) {
+                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
                 }
-                callback({status: 'failed', message: 'Not found!'}, null);
+                return callback(null, { success: false, message: 'Not found!' });
             }  
         } catch (error) {
                 console.log("partner erorr!!!!!!!!!!!!!!", error)
-                callback({status: 'failed', message: 'Not found!'}, null);
+                callback({success: false, message: 'Not found!'}, null);
         }      
     }
 
@@ -265,45 +155,19 @@ module.exports = class partnerService {
 
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){
-        
-        let coverImageSize = 'large';
-        if(isList){
-            coverImageSize = 'thumbnail';
-        }
-        let cover_image = null;
-        if(result.cover_image){
-            cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            if(!cover_image){
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-
-        let courses = {
-            list: [],
-            total: 0
-        };
-
-        let articles = {
-            list: [],
-            total: 0
-        };
- 
-        if(!isList){
-            courses = await this.getPartnerCourses(result.name, currency);   
-            articles = await this.getPartnerArticles(result.id);
-                        
-        }
-
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){    
         let data = {
             name: result.name,
             slug: result.slug,            
             id: `PTNR_${result.id}`,
+            short_description: result.short_description || null,
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
             offerings: (!isList) ? result.offerings : null,
-            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
-            cover_image: cover_image,
+            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : ((result.embedded_video_url) ? result.embedded_video_url : null),
+            cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
+            sidebar_listing_image: (result.listing_image)? formatImageResponse(result.listing_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),            
+            logo:(result.logo)? formatImageResponse(result.logo): null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,           
             establishment_year: result.establishment_year,
             corporate_partners: [],
@@ -323,27 +187,76 @@ module.exports = class partnerService {
             linkedin_url: result.linkedin_url,
             facebook_url: result.facebook_url,
             twitter_url: result.twitter_url,
-            courses: courses,
-            articles:articles,
             user_first_name: result.user_first_name,
             user_last_name: result.user_last_name,
             user_email: result.user_email,
             user_id: result.user_id,
-            category_tree: null
+            category_tree: null,
+            gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
+            vision: (result.vision)? result.vision : null,
+            mission: (result.mission)? result.mission : null,
+            partner_universities: [],
+            accreditations: [],
+            report: (result.report)? result.report : null,
+            highlights: (result.highlights)? result.highlights : null,
+            facts: (result.facts)? result.facts : null
         };
         if(!isList){
-            result.courses  =  courses;
-            let meta_information = await generateMetaInfo  ('partner', result);
+            // get course count 
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "published" } },
+                        {"term": { "partner_name.keyword": result.name }}
+                    ]
+                }
+            }
+        
+            // Get total count of course
+            let course_count = await elasticService.count("learn-content", {"query": esQuery});
+            if(course_count)
+            {
+                data.course_count = course_count.count
+                if(data.highlights)
+                {
+                    data.highlights.course_count = course_count.count
+                }
+            }
+            
+            let meta_information = await generateMetaInfo  ('PARTNER', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
             }
         }
-        if(result.awards && result.awards.length > 0){
-            for(let award of result.awards){                
-                if(!isList){
-                    if(award.image){
-                        award.image = getMediaurl(award.image.thumbnail);                    
+         
+        if (result.accreditations && result.accreditations.length > 0) {
+            for (let accreditations of result.accreditations) {
+                if (!isList) {
+                    if (accreditations.logo) {
+                        accreditations.logo = formatImageResponse(accreditations.logo);
+                    }
+                    data.accreditations.push(accreditations);
+                }
+            }
+        }
+        if (result.partner_universities && result.partner_universities.length > 0) {
+            for (let partner_universities of result.partner_universities) {
+                if (!isList) {
+                    if (partner_universities.logo) {
+                        partner_universities.logo = formatImageResponse(partner_universities.logo);
+                    }
+                    data.partner_universities.push(partner_universities);
+                }
+            }
+        }
+
+        if (result.awards && result.awards.length > 0) {
+            for (let award of result.awards) {
+                if (!isList) {
+                    if (award.image) {
+                        award.image = formatImageResponse(award.image);
                     }
                     data.awards.push(award);
                 }
@@ -354,7 +267,7 @@ module.exports = class partnerService {
             for(let epartner of result.education_partners){                
                 if(!isList){
                     if(epartner.logo){
-                        epartner.logo = getMediaurl(epartner.logo.thumbnail);                    
+                        epartner.logo = formatImageResponse( epartner.logo);                 
                     }
                     data.education_partners.push(epartner);
                 }
@@ -365,7 +278,7 @@ module.exports = class partnerService {
             for(let cpartner of result.corporate_partners){                
                 if(!isList){
                     if(cpartner.logo){
-                        cpartner.logo = getMediaurl(cpartner.logo.thumbnail);                    
+                        cpartner.logo = formatImageResponse( cpartner.logo);  ;                    
                     }
                     data.corporate_partners.push(cpartner);
                 }
@@ -376,69 +289,29 @@ module.exports = class partnerService {
     }
 
 
-    async getPartnerCourses(partner_name, currency){
-        let courses = {
-            list: [],
-            total: 0
-        };
+    async cachePartnersCourseImages(){
+
         try {
+
             const query = {
-                "bool": {
-                    "must": [
-                        {term: { "status.keyword": 'published' }},
-                        {term: { "partner_name.keyword": partner_name }}
-                    ]
-                 }
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} }]
+                }
             };
-    
-            let queryPayload = {};
-            queryPayload.from = 0;
-            queryPayload.size = 4;
-            queryPayload.sort = "published_date:desc";
-    
-            const result = await elasticService.search('learn-content', query, queryPayload);
+            
+            const result = await elasticService.search('partner', query, {size:2000}, ["slug","mobile_course_image", "desktop_course_image", "logo"]);
+
             if(result.hits && result.hits.length > 0){
-                courses.list = await LearnContentService.generateListViewData(result.hits, currency);
-                courses.total = result.total.value;
+                for(let h of result.hits)
+                {
+                    h._source.logo = formatImageResponse(h._source.logo);
+                    RedisConnection.set("partner-course-image-" + h._source.slug, h._source);
+
+                }
             }
         } catch (error) {
-            console.log("error in fetching partner courses",error)
+                console.log("partner course image caching error", error)
         }
-       
-        return courses;        
+
     }
-
-    async getPartnerArticles(partners ){
-        let articles = {
-            list: [],
-            total: 0
-        };
-        try {
-            const query = {
-                "bool": {
-                    "must": [
-                        {term: { "status.keyword": 'published' }},
-                        {term: { "partners": partners}}
-                    ]
-                 }
-            };
-    
-            let queryPayload = {};
-            // queryPayload.from = 0;
-            // queryPayload.size = 4;
-            queryPayload.sort = "published_date:desc";
-            const result = await elasticService.search('article', query, queryPayload);
-            if(result.hits && result.hits.length > 0){
-                articles.list = await ArticleService.generateListViewData(result.hits);
-                articles.total = result.total.value;
-            }
-        } catch (error) {
-            console.log("error in fetching partner articles",error)
-        }
-       
-        return articles;        
-    }
-    
-
-
 }

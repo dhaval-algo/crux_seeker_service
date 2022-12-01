@@ -1,9 +1,12 @@
-const models = require("../../models");
-const moment = require("moment");
 const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const learnContentService = require("../api/services/learnContentService");
 let LearnContentService = new learnContentService();
+const providerService = require("../api/services/providerService");
+let ProviderService = new providerService();
+const  FooterService = require("../api/services/footerService")
+const footerService = new FooterService()
+
 
 const {
     getCurrencies,
@@ -74,6 +77,70 @@ const  invalidatTopics = async () => {
     }  
 }
 
+const invalidatePartnerWithUs = async () => {
+    try {
+        await footerService.partnerWithUs((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidatePartnerWithUs cache invalidation Error",error)
+    }
+}
+
+const invalidateLearnersPage = async () => {
+    try {
+        await footerService.learners((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateLearnersPage cache invalidation Error",error)
+    }
+}
+
+const invalidateAboutUs = async () => {
+    try {
+        await footerService.aboutUs((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateAboutUs cache invalidation Error",error)
+    }
+}
+
+const invalidateLeadership = async () => {
+    try {
+        await footerService.leadership((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateLeadership cache invalidation Error",error)
+    }
+}
+
+const invalidateTeam = async () => {
+    try {
+        await footerService.team((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateTeam cache invalidation Error",error)
+    }
+}
+
+const invalidateCareer = async () => {
+    try {
+        await footerService.career((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateCareer cache invalidation Error",error)
+    }
+}
+
+const invalidateTNM = async () => {
+    try {
+        await footerService.termandcondition((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidateTNM cache invalidation Error",error)
+    }
+}
+
+const invalidatePP = async () => {
+    try {
+        await footerService.privacypolicy((err, data) => {}, false);
+    } catch (error) {
+        console.log("invalidatePP  cache invalidation Error",error)
+    }
+}
+
 const invalidatSkills = async () => {
     try {
         await CategoryService.getSkills({query:{}}, (err, data) => {}, true);
@@ -81,10 +148,30 @@ const invalidatSkills = async () => {
         console.log("Skills cache invalidation Error",error)
     }  
 }
+    
+const invalidPopularCategories = async () => {
+    try {
+        await LearnContentService.getPopularCategories({query:{}}, true);
+    } catch (error) {
+        console.log("Popular Categories cache invalidation Error",error)
+    }  
+}
+
+const invalidateFacilities = async () => {
+    try {
+        await ProviderService.invalidateFacilities( (err, data) => {}, false);
+    } catch (error) {
+        console.log("Facilities cache invalidation Error",error)
+    }  
+}
+
+
 
 
    
 module.exports = {
+    invalidatePartnerWithUs,
+    invalidateLearnersPage,
     invalidateCategoryTree,
     invalidateEntityLabelCache,
     invalidateLearnTypeImages,
@@ -92,5 +179,13 @@ module.exports = {
     invalidateFilterConfigs,
     invalidateRankingFilter,
     invalidatTopics,
-    invalidatSkills
+    invalidateAboutUs,
+    invalidateLeadership,
+    invalidateTeam,
+    invalidateCareer,
+    invalidateTNM,
+    invalidatePP,
+    invalidatSkills,
+    invalidPopularCategories,
+    invalidateFacilities
 }

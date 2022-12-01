@@ -1,9 +1,9 @@
 const {
+    validateIdsFromElastic,
     isEmail,
     decryptStr,
     getOtp,
     verifySocialToken,
-    createUser,
     sendVerifcationLink,
     getLoginToken,
     invalidateTokens,
@@ -31,6 +31,7 @@ const defaults = require("../defaults/defaults");
 const moment = require("moment");
 const { resolve } = require("path");
 const { default: Axios } = require("axios");
+const crypto = require("crypto")
 const SEND_OTP = !!process.env.SEND_OTP;
 const learnContentService = require("../../../api/services/learnContentService");
 const learnPathService = require("../../../api/services/learnPathService");
@@ -49,40 +50,52 @@ const validators = require("../../../utils/validators")
 const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
+const {saveSessionKPIs}=require("../../../utils/sessionActivity");
 
 const login = async (req, res, next) => {
     try {
         const body = req.body;
         const audience = req.headers.origin;
-        const { username = "", password = "" } = body;
+        const { email = "", password = "" } = body;
         // validate input
-        if (username.trim() == '') {
+        if (email.trim() == '' || !validator.validate(email.trim()) || password.trim() == '') {
             return res.status(200).json({
                 'success': false,
-                'message': 'Username is required',
+                'message': 'Mandatory fields are missing',
                 'data': {}
             });
         }
-
-        if (!validator.validate(username.trim())) {
-            return res.status(200).json({
-                'success': false,
-                'message': 'Please enter the email in the right format',
-                'data': {}
-            });
-        }
-
-        if (password.trim() == '') {
-            return res.status(200).json({
-                'success': false,
-                'message': 'Password is required',
-                'data': {}
-            });
-        }
-        //userSigin Fuction
         
-        const response = await signInUser({ username, password, audience, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).json(response);
+        // check if user exist
+        const verificationRes = await userExist(email,LOGIN_TYPES.LOCAL);
+        if (!verificationRes.success) {
+            return res.status(200).json(verificationRes);
+        }
+           
+        const credVerificationRes = checkPassword(verificationRes.data.user, password);
+        if (!credVerificationRes.success) {
+            return res.status(200).json(credVerificationRes);            
+        }
+
+        //create token
+        const payload = {           
+            email,
+            name:  verificationRes.data.user.fullName || "",
+            userId: verificationRes.data.user.userId,
+            provider: LOGIN_TYPES.LOCAL,
+            userType: verificationRes.data.user.userType,
+            isVerified: verificationRes.data.user.verified || false,
+            profilePicture: verificationRes.data.user.profilePicture,
+            audience: req.headers.origin
+            
+        }
+        const tokenRes = await getLoginToken(payload);
+
+        //Add entry in login activity table 
+        models.user_login_activity.create({userId: verificationRes.data.user.userId, provider: LOGIN_TYPES.LOCAL})
+
+        return res.status(200).json(tokenRes);
+       
 
     } catch (error) {
         console.log(error);
@@ -122,26 +135,39 @@ const sendOtp = async (req, res, next) => {
         /* 
         * Check if user exists or resgistered user
         */
-        const response = await generateOtp({ username, audience, provider: LOGIN_TYPES.LOCAL, otpType});
+        const response = await generateOtp({ username, audience, provider: null, otpType});
         if(!response.success){
             return res.status(500).json(response);
         }
-        const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
-        const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
-        let phone = userPhone.value.substring(2, 12);
-        if(userPhone.value.substring(0, 2) != '91'){
+        email = username
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+    
+        let user = await models.user.findOne({ where: where})        
+        let countryCode =  user.phone.split(" ")[0];    
+        let phoneWithoutcode =  user.phone.split(" ")[1];
+        if(process.env.PHONEVERIFICATION =='true' && countryCode =='+91' )
+        {
+            await sendSMSOTP (phoneWithoutcode, response.data.otp);
+            //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
+            return res.status(200).json({
+                'success': true,
+                'code': 'OTP_SENT',
+                'message':'Otp has been sent.'
+            });
+        }
+        else{
             return res.status(500).json({
                 'code': 'SERVER_ERROR',
                 'description': 'Only indian number are allowed'
-            });
-        }
-        await sendSMSOTP (phone, response.data.otp);
-        //await sendSMS( phone, `${response.data.otp} is the OTP to verify your Careervira account. It will expire in 10 minutes.`)
-        return res.status(200).json({
-            'success': 'true',
-            'code': 'OTP_SENT',
-            'message':'Otp has been sent.'
-        });
+            });   
+        }        
+        
     } catch (error) {
         console.log(error);
         return res.status(500).json({
@@ -191,7 +217,16 @@ const verifyOtp = async (req, res, next) => {
             })
         }
         if(email){
-            let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
+            let where = {
+                [Op.and]: [
+                    {
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                    }
+                ]
+            }
+        
+            let email_already_exist = await models.user.findOne({ where: where})
+            
             if(email_already_exist){
                 return res.status(200).json({
                     code: "EMAIL ALREADY EXIST",
@@ -205,10 +240,10 @@ const verifyOtp = async (req, res, next) => {
         const provider = providerObj.provider
         if(!provider || provider == ''){
             provider = LOGIN_TYPES.LOCAL
-        }
-
-        let userObj = await models.user_meta.findOne({where:{userId:userId, key:"email", metaType:"primary"}})
-        const username = userObj.value
+        }        
+    
+        let userObj = await models.user.findOne({where:{id:userId}})
+        const username = userObj.email
         
         const response = await startVerifyOtp({ username, otp, audience, provider: provider, otpType });
         if(!response.success){
@@ -217,9 +252,7 @@ const verifyOtp = async (req, res, next) => {
         if(otpType == OTP_TYPES.PHONEVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
         {
             const response = await verifyPhone( username);
-            const userMeta = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
-            const userPhone = await models.user_meta.findOne({where:{userId:userMeta.userId, metaType:'primary', key:'phone'}})
-            let phone = userPhone.value.substring(2, 12);
+            let phone = userObj.phone.substring(2, 12);
             await sendSMSWelcome(phone)
         }
         if(otpType == OTP_TYPES.EMAILVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
@@ -254,22 +287,14 @@ const verifyOtp = async (req, res, next) => {
             }else{
                 await models.user_meta.update({value:username},{where:{userId:userId, metaType:'primary', key:'oldEmail'}})
             }
-            await models.user_meta.update({
-                value:email
+            await models.user.update({
+                email:email
             }, {
                 where: {
-                    userId:userId,
-                    metaType:'primary', 
-                    key:'email'
+                    id:userId
                 }
             });
-            await models.user_login.update({
-                email: email
-            }, {
-                where: {
-                    userId:userId
-                }
-            });
+            
             // If everything goes fine updating the verified status
             const userEntry = await models.user.findOne({where:{id:userId}})
             if(userEntry){
@@ -283,9 +308,10 @@ const verifyOtp = async (req, res, next) => {
                         }
                     )
                 }
-            }
-            let data = {old_email:username, new_email:email}
-            sendDataForStrapi(data, "update-email");
+            }            
+            await invalidateTokens({userId},'verification');
+           // let data = {old_email:username, new_email:email}
+            //sendDataForStrapi(data, "update-email");
         }
         return res.status(200).json(response);
     } catch (error) {
@@ -323,94 +349,104 @@ const verifyUserToken = async (req, res) => {
 }
 
 const signUp = async (req, res) => {
-    const audience = req.headers.origin;
-    let { username = "", password = "", provider = LOGIN_TYPES.LOCAL, email} = req.body;
-    if (username.trim() == '' && provider == LOGIN_TYPES.LOCAL) {
-        return res.status(200).json({
-            'success': false,
-            'message': 'Email is required',
-            'data': {}
+    try {
+
+        const audience = req.headers.origin;
+        // check if input fields are now empty
+        let { fullName = "", password = "", phone = "", email = "", country = "" } = req.body;
+        if (fullName.trim() == '' || password.trim() == '' || phone.trim() == '' || email.trim() == '' || country == "") {
+            return res.status(200).json({
+                'success': false,
+                'message': 'Mandatory fields are missing',
+                'data': {}
+            });
+        }
+
+        //check if email is already exist
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where(Sequelize.fn('lower', Sequelize.col('email')), Sequelize.fn('lower', email))
+                }
+            ]
+        }
+
+        let isEmailExist = await models.user.findOne({ where: where })
+
+        if (isEmailExist != null) {
+            return res.status(200).json({
+                'success': false,
+                'message': DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+                'code': DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+                'data': {}
+            });
+
+        }
+
+        //Create new user 
+        let user = await models.user.create({
+            fullName: fullName,
+            email: email,
+            phone: phone,
+            verified: false,
+            phoneVerified: false,
+            status: "active",
+            userType: "registered",
+            country: country
         });
-    }
+        //Hash password
+        const { userSalt, passwordHash } = await hashPassword(password);
 
-    if (password.trim() == '' &&  provider == LOGIN_TYPES.LOCAL) {
-        return res.status(200).json({
-            'success': false,
-            'message': 'Password is required',
-            'data': {}
+        //create login for user
+        let user_login = await models.user_login.create({
+            userId: user.id,
+            provider: LOGIN_TYPES.LOCAL,
+            password: passwordHash,
+            passwordSalt: userSalt
         });
-    }
 
-    if (provider == LOGIN_TYPES.LOCAL) {
+        //create token
+        const payload = {
+            email: user.email || "",
+            name: user.fullName || "",
+            userId: user.id,
+            provider: LOGIN_TYPES.LOCAL,
+            userType: user.userType,
+            isVerified: false,
+            profilePicture: user.profilePicture,
+            audience: req.headers.origin
 
-        for(let userMeta of req.body.userMeta)
-        {
-            if((userMeta.key=="firstName" || userMeta.key=="lastName" || userMeta.key=="phone") && userMeta.value.trim()== '')
-            {
-                return res.status(200).json({
-                    'success': false,
-                    'message': 'Mandatory fields are missing',
-                    'data': {}
-                });
+        }
+        const tokenRes = await getLoginToken(payload);
+        tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
+        tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
+
+        // send OTP for phone verification
+        if (phone) {
+            let countryCode = phone.split(" ")[0];
+            let phoneWithoutcode = phone.split(" ")[1];
+            if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
+                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+                let userId = user.id
+                const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
+                await sendSMSOTP(phoneWithoutcode, response.data.otp);
+                tokenRes.data.verifyPhone = true
             }
         }
-    }
-    
-    let providerRes= {}
-    //if orivude is socila login veriffy token
-    if(provider !=LOGIN_TYPES.LOCAL){
-        providerRes = await verifySocialToken(req.body)
+
+        // send email varification link
+        await sendVerifcationLink(payload)
+        res.status(200).send(tokenRes)
+    } catch (error) {
+        console.log(error)
+         return res.status(200).json({
+                'success': false,
+                'message': DEFAULT_CODES.USER_ALREADY_REGISTERED.message,
+                'code': DEFAULT_CODES.USER_ALREADY_REGISTERED.code,
+                'data': {}
+            });
         
-        if (!providerRes.success) {
-            return res.status(200).send(providerRes)
-        }
     }
-    username = username || providerRes.data.email;
-
-    const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
-    if (verificationRes.success || (verificationRes.code ==DEFAULT_CODES.SUSPENDED_USER.code)) {
-        if(verificationRes.code != DEFAULT_CODES.SUSPENDED_USER.code && provider != LOGIN_TYPES.LOCAL)
-        {
-            const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data, audience: req.headers.origin, provider: providerRes.data.provider });
-            tokenRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code
-            tokenRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message  
-            delete verificationRes.data.user.password
-            return res.status(200).json(tokenRes)
-        }
-        verificationRes.success = false
-        verificationRes.code = DEFAULT_CODES.USER_ALREADY_REGISTERED.code;
-        verificationRes.message = DEFAULT_CODES.USER_ALREADY_REGISTERED.message;
-        verificationRes.data = {}
-        return res.status(200).json(verificationRes)
-    }
-    req.body.tokenPayload = req.user;
-    req.body.audience = audience;
-    req.body.provider = req.body.provider || LOGIN_TYPES.LOCAL
-    
-    let userres = await createUser({...req.body,...verificationRes.data, ...providerRes.data})
- 
-    if (!userres.success) {
-        return res.status(500).send(userres)
-    }
-    const tokenRes = await getLoginToken({provider: LOGIN_TYPES.LOCAL, ...userres.data.user, audience: audience || ""});
-    tokenRes.code = DEFAULT_CODES.USER_REGISTERED.code
-    tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
-    userres.data.user.userId
-    delete userres.data.user.id
-    tokenRes.data['user'] = userres.data.user
-
-    if(process.env.PHONEVERIFICATION =='true'&& userres.data.user.country =="India" && userres.data.user.phone.substring(0, 2) =='91' )
-    {
-        const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-        const username = userres.data.user.username
-        userId = userres.data.user.userId
-        const response = await generateOtp({ username, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
-        const userMeta = await models.user_meta.findOne({where:{userId:userId, metaType:'primary', key:'phone'}})
-        let phone = userMeta.value.substring(2, 12);
-        await sendSMSOTP (phone, response.data.otp);
-        tokenRes.data.verifyPhone = true
-    }
-    res.status(200).send(tokenRes)
 }
 /* 
     {
@@ -450,43 +486,88 @@ const socialSignIn = async (req, res, next) => {
 
         //verify token 
         const providerRes = await verifySocialToken(req.body)
+
         if (!providerRes.success) {
             return res.status(200).json(providerRes)
         }
-        //check if user exists
-        let verificationRes = await userExist(providerRes.data.username, LOGIN_TYPES.LOCAL);
-        if (!verificationRes.success) {
-            return res.status(200).json(verificationRes)
-            // const newUserRes = await createUser(providerRes.data);
-            // if (!newUserRes.success) {
-            //     return res.status(500).json({
-            //         'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-            //         'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-            //         success: false
-            //     })
-            // }
-            // verificationRes.data.user = newUserRes.data.user;
-        }
-        const payload = {
-            requestFieldMetaType: "primary",
-            requestFields: ["firstName", "lastName", "profilePicture"],
-            user:verificationRes.data.user
-        }
 
-        let resForm = await fetchFormValues(payload)
-
-        // check if login type present if not create.
-        const userAuth =  await createSocialEntryIfNotExists({...verificationRes.data.user,...providerRes.data},provider)
-        if(!userAuth) {
-            return res.status(500).json({
-                'code': DEFAULT_CODES.SYSTEM_ERROR.code,
-                'message': DEFAULT_CODES.SYSTEM_ERROR.message,
-                success: false
-            });
+        //check if user with email exists
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', providerRes.data.email))                        
+                }
+            ]
         }
-        //create token
-        const tokenRes = await getLoginToken({ ...verificationRes.data.user,...providerRes.data,...resForm.data.requestFieldValues, audience: req.headers.origin, provider: providerRes.data.provider });
+        let user = await models.user.findOne({ where: where})
         
+        
+        //check if user with email is suspended
+        if(user && user.status=="suspended")
+        {
+            res.status(200).json({
+                code: DEFAULT_CODES.SUSPENDED_USER.code,
+                message: DEFAULT_CODES.SUSPENDED_USER.message,
+                success: false,
+                data: {
+                    user: {}
+                }
+            })
+        }
+
+        
+        //check if user with email and requested soacial provider exists
+        let user_login = null
+        if(user !=null)
+        {
+
+            user_login = await models.user_login.findOne({ where: {userId:user.id, provider:provider}})
+
+            if(user_login !=null)
+            {
+                //create login for requested social provider
+                await models.user_login.create({
+                    userId: user.id,
+                    provider: provider,
+                });
+                
+            }
+        }
+        else{
+            //crete new user
+
+            user = await models.user.create({
+                fullName: providerRes.data.firstName+' '+ providerRes.data.lastName,
+                email: providerRes.data.email,
+                verified: true,
+                status: "active",
+                userType: "registered"
+            });
+
+             //create login for requested social provider
+             user_login=  await models.user_login.create({
+                userId: user.id,
+                provider: provider,
+            });
+            await sendWelcomeEmail(user)
+        }     
+        
+        //create token
+        const payload = {           
+            email: user.email || "",
+            name:  user.fullName || "",
+            userId: user.id,
+            provider: provider || "",
+            userType: user.userType,
+            isVerified: user.verified || false,
+            profilePicture: user.profilePicture,
+            audience: req.headers.origin
+            
+        }
+        const tokenRes = await getLoginToken(payload);
+        
+        //Add entry in login activity table 
+        models.user_login_activity.create({userId: user.id, provider: provider})
         return res.status(200).json(tokenRes);
 
     } catch (error) {
@@ -498,80 +579,8 @@ const socialSignIn = async (req, res, next) => {
         });
     }
 }
-/* 
-    {
-        code:'',
-        success:true/false,
-        message:'',
-        data:{
-            x_token:""
-        }
-    }
-*/
 
-const signInUser = async (resData) => {
-    const response = {
-        code: DEFAULT_CODES.LOGIN_SUCCESS.code,
-        success: true,
-        message: DEFAULT_CODES.LOGIN_SUCCESS.message,
-        data: {
-        }
-
-    }
-    return new Promise(async (resolve, reject) => {
-        try {
-            // check if valid user
-            /* 
-                {
-                    code:'',
-                    success:true/false,
-                    message:'',
-                    data:{
-                        user: {}
-                    }
-                }
-            */
-            const verificationRes = await userExist(resData.username, LOGIN_TYPES.LOCAL);
-            if (!verificationRes.success) {
-                return resolve(verificationRes)
-            }
-
-
-            //verify credential
-            /* 
-                {
-                    code:'',
-                    success:true/false,
-                    message:'',
-                    data:{
-                        user: {}
-                    }
-                }
-            */
-            const credVerificationRes = checkPassword(verificationRes.data.user, resData.password);
-            if (!credVerificationRes.success) {
-                return resolve(credVerificationRes);
-            }
-            const payload = {
-                requestFieldMetaType: "primary",
-                requestFields: ["firstName", "lastName", "profilePicture"],
-                user:verificationRes.data.user
-            }
-
-            let resForm = await fetchFormValues(payload)
-            const tokenRes = getLoginToken({ ...verificationRes.data.user,...resForm.data.requestFieldValues, audience: resData.audience, provider: resData.provider });
-            return resolve(tokenRes);
-        } catch (error) {
-            console.log(error);
-            response.code = DEFAULT_CODES.SYSTEM_ERROR.code;
-            response.message = DEFAULT_CODES.SYSTEM_ERROR.message;
-            response.success = false;
-            return resolve(response);
-        }
-    })
-
-}
-const userExist = (username, provider) => {
+const userExist = (email, provider = null) => {
 
     return new Promise(async (resolve, reject) => {
         
@@ -586,49 +595,16 @@ const userExist = (username, provider) => {
         }
 
         try {
-            let dbCol = 'email';
-            // determine is username is email or phone
-            if (!isEmail(username)) {
-                dbCol = 'phone';
-            }
-
-            //check in db
             let where = {
                 [Op.and]: [
                     {
-                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col(dbCol)),Sequelize.fn('lower', username))                        
-                    },
-                    {
-                        provider: {
-                            [Op.eq]: provider
-                        }
+                        [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
                     }
                 ]
             }
-            let userLogin = await models.user_login.findOne({ where: where})
-            
-            if (userLogin != null) {
-                const user = await models.user.findOne({ where: { id: userLogin.userId } });
+            let user = await models.user.findOne({ where: where})
 
-             //   if (provider != LOGIN_TYPES.LOCAL && !user.verified) {
-                // if (!user.verified) {
-                   
-                //     return resolve({
-                //         code: DEFAULT_CODES.UNVERIFIED_USER.code,
-                //         message: DEFAULT_CODES.UNVERIFIED_USER.message,
-                //         success: false,
-                //         data: {
-                //             user: {}
-                //         }
-                //     })
-                    // await models.user.update({
-                    //     verified: true,
-                    // }, {
-                    //     where: {
-                    //         id: userLogin.userId
-                    //     }
-                    // });
-                //}
+            if (user != null) {
                 if (user.status == "suspended") {
                    
                     return resolve({
@@ -640,19 +616,36 @@ const userExist = (username, provider) => {
                         }
                     })
                 }
-                const { userId, email = "", password = "", phone = "" } = userLogin;
-                response.success = true;
-                response.code = DEFAULT_CODES.VALID_USER;
-                response.message = DEFAULT_CODES.VALID_USER.message;
-                response.data.user = {
-                    email,
-                    password,
-                    phone,
-                    userId,
-                    userType: user.userType,
-                    verified: provider != LOGIN_TYPES.LOCAL ? true : user.verified
+                let where = { userId: user.id} 
+                if(provider){
+                    where = { userId: user.id, provider: provider} 
                 }
-                return resolve(response)
+                const user_login = await models.user_login.findOne({ where: where});
+          
+               if(user_login)
+               {
+                    response.success = true;
+                    response.code = DEFAULT_CODES.VALID_USER;
+                    response.message = DEFAULT_CODES.VALID_USER.message;
+                    
+                    response.data.user = {                        
+                        email,
+                        fullName:user.fullName,
+                        userId: user.id,
+                        status:user.status,
+                        userType: user.userType,
+                        verified: user.verified,
+                        password: user_login.password,
+                        profilePicture: user.profilePicture,
+                        passwordSalt:user_login.passwordSalt
+                        
+                    }
+                    return resolve(response)
+                }
+                else {
+                    return resolve(response)
+                }
+                
             } else {
                 return resolve(response)
             }
@@ -671,6 +664,14 @@ const userExist = (username, provider) => {
     })
 };
 
+const hashPassword = async (password) => {
+    const userSalt = crypto.randomBytes(16).toString('hex');
+    const finalSalt = process.env.PASSWORD_SALT + userSalt
+    const passwordHash = crypto.pbkdf2Sync(password, finalSalt, 
+       parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+    return {userSalt, passwordHash}
+};
+
 const checkPassword = (userObj, resPwd) => {
     let response = {
         code: DEFAULT_CODES.VALID_PASSWORD.code,
@@ -679,7 +680,11 @@ const checkPassword = (userObj, resPwd) => {
         data: {
         }
     }
-    if (userObj.password && resPwd === decryptStr(userObj.password)) {
+    
+    const finalSalt = process.env.PASSWORD_SALT + userObj.passwordSalt
+    const passwordHash = crypto.pbkdf2Sync(resPwd, finalSalt, 
+       parseInt(process.env.PASSWORD_HASH_ITERATION), 64, `sha512`).toString(`hex`);
+    if (userObj.password && passwordHash == userObj.password) {
         return response
     } else {
         response.success = false;
@@ -936,19 +941,15 @@ const validateOtp = async (username, otp, otpType) => {
 
 const resendVerificationLink = async (req, res) => {
     const { user } = req
-    const payload = {
-        requestFieldMetaType: "primary",
-        requestFields: ["firstName", "lastName"],
-        user
-    }
-
-    let resForm = await fetchFormValues(payload)
-
+        
+    let userData = await models.user.findOne({ where: {id:user.userId}})
     let userObj = {
         ...user,
-        ...resForm.data.requestFieldValues,
+        fullName:userData.fullName,
+        email:userData.email,
         audience: req.headers.origin
     }
+    await invalidateTokens(userObj,'verification')
     await sendVerifcationLink(userObj)
     return res.status(200).json({
         success: true,
@@ -989,17 +990,11 @@ const verifyAccount = async (req, res) => {
                     id: user.userId
                 }
             });
-            const payload = {
-                requestFieldMetaType: "primary",
-                requestFields: ["firstName", "lastName"],
-                user
-            }
-
-            let resForm = await fetchFormValues(payload)
-
-            let newUserObj = { ...user, userType: "registered", verified: true, ...resForm.data.requestFieldValues }
-            await invalidateTokens(newUserObj)
-            await sendWelcomeEmail(newUserObj)
+          
+            let userObj = await models.user.findOne({where:{id: user.userId}})
+            let newUserObj = { ...user, userType: userObj.userType, verified: true, fullName: userObj.fullName }
+            await invalidateTokens(newUserObj,'verification')
+            await sendWelcomeEmail(userObj)
             const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
             return res.status(200).send(tokenRes)
         } else {
@@ -1037,7 +1032,7 @@ const forgotPassword = async (req,res) => {
             })
         }
     }
-    const userRes = await userExist(email, LOGIN_TYPES.LOCAL)
+    const userRes = await userExist(email)
     if(!userRes.success) {
         return res.status(200).json(userRes)
     }
@@ -1074,16 +1069,36 @@ const resetPassword = async (req,res) => {
         const verifiedToken = await require("../auth/auth").verifyToken(reset_token, options);
         if (verifiedToken) {
             let { user } = verifiedToken;
-            const encryptedPWD = encryptStr(password);
-            let userres = await models.user_login.update({
-                password: encryptedPWD
-            }, {
+            const {userSalt, passwordHash} = await hashPassword(password);
+
+            //check if local type is present 
+           let user_login =  await models.user_login.findOne({
                 where: {
                     userId: user.userId,
                     provider:LOGIN_TYPES.LOCAL
 
                 }
             });
+            if(user_login){
+                let userres = await models.user_login.update({
+                    password: passwordHash,
+                    passwordSalt: userSalt
+                }, {
+                    where: {
+                        userId: user.userId,
+                        provider:LOGIN_TYPES.LOCAL
+
+                    }
+                });
+            }
+            else{
+                await models.user_login.create({
+                    userId: user.userId,
+                    provider: LOGIN_TYPES.LOCAL,
+                    password: passwordHash,
+                    passwordSalt: userSalt
+                });  
+            }
             await invalidateTokens(user)
             return res.status(200).send({
                 success:true
@@ -1107,23 +1122,32 @@ const resetPassword = async (req,res) => {
     }  
 }
 
-const getProfileProgress = async (req,res) => {
+const getProfileProgress = async (req,res =null) => {
     const { user } = req
     const profileRes = await calculateProfileCompletion(user)
     if(profileRes){
-        return res.status(200).json({
-            success:true,
-            data: {
-                profileProgress:profileRes
-            }
-        })
+        if (res) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    profileProgress: profileRes
+                }
+            })
+        } else {
+            return profileRes
+        }
+
 
     }
     else{
-        return res.status(500).json({
-            success:false,
-            message:"internal server error"
-        })
+        if (res) {
+            return res.status(500).json({
+                success: false,
+                message: "internal server error"
+            })
+        }else{
+            return null
+        }
     }
 }
 
@@ -1190,30 +1214,20 @@ const addCourseToWishList = async (req, res) => {
             });
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
-            const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, courseIds: numericIds }
+          
             await logActvity("COURSE_WISHLIST", userId, courseIds);
-            sendDataForStrapi(data, "profile-add-wishlist");
+            //sendDataForStrapi(data, "profile-add-wishlist");
+            saveSessionKPIs(userId,{courseIds:courseIds},'wishlist');
 
             return res.status(200).json({
                 success: true,
-                data: {
-                    wishlist: resMeta
-                }
+                message: "Wishlisted Succesfully!"
             })
         }
         else {
             return res.status(200).json({
                 success: true,
-                data: {
-                    wishlist: []
-                }
+                message: "Wishlisted Succesfully!"
             })
         }
 
@@ -1227,7 +1241,7 @@ const addCourseToWishList = async (req, res) => {
     }
 }
 
-const getGoals = async (req, res) => {
+const getGoals = async (req, res=null) => {
     try {
         const { user } = req;
         const userId = user.userId
@@ -1275,17 +1289,29 @@ const getGoals = async (req, res) => {
             goalList.push(obj);
         }
 
-        return res.status(200).json({
-            success: true,
-            result: goalList
-        })
+        if(res)
+        {
+            return res.status(200).json({
+                success: true,
+                result: goalList
+            })
+        }
+        else{
+            return goalList
+        }
         
     } catch (error) {
         console.log(error)
-        return res.status(500).json({
-            success: false,
-            message:"internal server error"
-        })
+        if(res)
+        {
+            return res.status(500).json({
+                success: false,
+                message:"internal server error"
+            })
+        }else{
+            return null
+        }
+        
     }
 }
 
@@ -1521,16 +1547,8 @@ const addLearnPathToWishList = async (req,res) => {
             });
 
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
-            const numericIds = learnpathIds.map((learnpathId) => learnpathId.split("LRN_PTH_").pop())
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, learnpathIds: numericIds }
+           
             await logActvity("LEARNPATH_WISHLIST", userId, learnpathIds);
-            sendDataForStrapi(data, "profile-add-learnpath-wishlist");
 
             return res.status(200).json({
                 success: true,
@@ -1554,6 +1572,215 @@ const addLearnPathToWishList = async (req,res) => {
         return res.status(500).json({
             success: false,
             message:"internal server error"
+        })
+    }
+}
+
+const addCourseToShare = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const courseIdsFromClient = validators.validateAddWishlistParams(req.body)
+        if (!courseIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'course_share',
+                value: courseIdsFromClient
+            }
+        });
+        let courseIds = []
+        existingIds = existingIds.map((course) => course.value)
+        courseIdsFromClient.forEach((courseId) => {
+            if (!existingIds.includes(courseId)) courseIds.push(courseId)
+        });
+
+        if (courseIds.length) {
+            const dataToSave = courseIds.map((courseId) => {
+                return {
+                    key: "course_share",
+                    value: courseId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            // const numericIds = courseIds.map((courseId) => courseId.split("LRN_CNT_PUB_").pop())
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+            // const data = { email: userinfo.value, courseIds: numericIds }
+            await logActvity("COURSE_SHARE", userId, courseIds);
+            // sendDataForStrapi(data, "profile-add-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+
+const addLearnPathToShare = async (req,res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const learnPathIdsFromClient = validators.validateLearnPathAddWishlist(req.body)
+        if (!learnPathIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'learnpath_share',
+                value: learnPathIdsFromClient
+            }
+        });
+        let learnpathIds = []
+        existingIds = existingIds.map((learnpath) => learnpath.value)
+        learnPathIdsFromClient.forEach((learnpathId) => {
+            if (!existingIds.includes(learnpathId)) learnpathIds.push(learnpathId)
+        });
+
+        if (learnpathIds.length) {
+            const dataToSave = learnpathIds.map((learnpathId) => {
+                return {
+                    key: "learnpath_share",
+                    value: learnpathId,
+                    userId: userId,
+                }
+            });
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            // const numericIds = learnpathIds.map((learnpathId) => learnpathId.split("LRN_PTH_").pop())
+            // const userinfo = await models.user_meta.findOne({
+            //     attributes: ["value"],
+            //     where: {
+            //         userId: user.userId, metaType: 'primary', key: 'email'
+            //     }
+            // })
+            // const data = { email: userinfo.value, learnpathIds: numericIds }
+            await logActvity("LEARNPATH_SHARE", userId, learnpathIds);
+            // sendDataForStrapi(data, "profile-add-learnpath-wishlist");
+
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        }
+        else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+const addArticleToShare = async (req,res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        const articleIdsFromClient = validators.validateAddArticleParams(req.body)
+        if (!articleIdsFromClient) {
+            return res.status(200).send({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'article_share',
+                value: articleIdsFromClient
+            }
+        });
+        let articleIds = []
+        existingIds = existingIds.map((article) => article.value)
+        articleIdsFromClient.forEach((articleId) => {
+            if (!existingIds.includes(articleId)) articleIds.push(articleId)
+        });
+
+        if (articleIds.length) {
+
+            const dataToSave = articleIds.map((articleId) => {
+                return {
+                    key: "article_share",
+                    value: articleId,
+                    userId: userId
+                }
+            })
+
+            const resMeta = await models.user_meta.bulkCreate(dataToSave)
+            await logActvity("ARTICLE_SHARE", userId, articleIds);
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: resMeta
+                }
+            })
+        } else {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    share: []
+                }
+            })
+        }
+    } catch (error) {
+
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+
         })
     }
 }
@@ -1675,12 +1902,9 @@ const getRecentlyViewedCourses = async (req,res,next,returnData=false) => {
     }
     
     return res.status(statusCode).json({
-        success:success,
-        data: {
-            courseIds: courseIds,
-            courses: courses
-        },
-        message: message
+        success,
+        data: { courseIds, courses},
+        message
     });
 }
 
@@ -1688,9 +1912,6 @@ const removeCourseFromWishList = async (req,res) => {
     const { user} = req;
     const {courseId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"course_wishlist", value:courseId, userId:user.userId}})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, courseId:courseId.split("LRN_CNT_PUB_").pop()}
-    sendDataForStrapi(data, "profile-remove-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -1703,9 +1924,6 @@ const removeLearnPathFromWishList = async (req,res) => {
     const { user} = req;
     const {learnpathId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"learnpath_wishlist", value:learnpathId, userId:user.userId}})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, learnpathId:learnpathId.split("LRN_PTH_").pop()}
-    sendDataForStrapi(data, "profile-remove-learnpath-wishlist");
     return res.status(200).json({
         success:true,
         data: {
@@ -1894,88 +2112,33 @@ const wishListCourseData = async (req,res) => {
                 totalWishedListIds.push(wishlist.value);
             }
         }
+        if (req.query.queryString)
+            req.query.q = req.query.queryString;
 
-        let queryBody = {
-            "from":offset,
-            "size": limit,
-            "query": {
-                "bool": {
-                    "must": [{
-                        "term": { "status.keyword": "published" }
-                    },
-                    {
-                        "match_phrase": {
-                            "title": queryString
-                        }
-                    },
-                    {
-                        "ids": {
-                            "values": totalWishedListIds
-                        }
-                    }
-                    ]
-                }
-            }
-        }
+        if(totalWishedListIds.length > 0){
 
-        if (!queryString) {
-
-            delete queryBody.query.bool.must[1];
-            let scores = {};
-            totalWishedListIds.forEach((id, index) => {
-                scores[id] = index;
-            });
-            queryBody["sort"] = [
+            req.query.courseIds = totalWishedListIds.join(',');
+            await LearnContentService.getLearnContentList(req, (err, data) => {
+                if(data)
                 {
-                    "_script": {
-                        "type": "number",
-                        "script": {
-                            "lang": "painless",
-                            "inline": "return params.scores[doc['_id'].value];",
-                            "params": {
-                                "scores": scores
-                            }
-                        }
-                    }
+                    let response = { success: true,
+                            data: {userId, courses: data.data.list, ids: []},
+                            pagination: {page, limit, total : totalCount} };
+                    return res.status(200).send(response);
                 }
-            ]
+                else
+                    return res.status(200).send({success: false,
+                            message: "something went wrong wishlist Course ",
+                            data: {list: [], pagination: {total: 0}, filters: {}} });
+            });
         }
-
-        const result = await elasticService.plainSearch('learn-content', queryBody);
-        
-        let courses = []
-        let wishListIdsFromElastic=[]
-        if(result.hits){
-            totalCount=result.hits.total.value
-            if(result.hits.hits && result.hits.hits.length > 0){
-                
-                for(const hit of result.hits.hits){
-                    const course = await LearnContentService.generateSingleViewData(hit._source, true, req.query.currency);
-                    wishListIdsFromElastic.push(course.id)
-                    courses.push(course);
-                }
-            }
-        }
-
-        return res.status(200).json({
-            success: true,
-
-            data: {
-                userId: userId,
-                ids: wishListIdsFromElastic,
-                courses: courses
-            },
-            pagination: {
-                page: page,
-                limit: limit,
-                total: totalCount
-            }
-        })
-       
+        else
+            return res.status(200).send({ success: true, message: 'No records found!',
+                                          data: {list: [], pagination: {total: 0}, filters: {}}});
         
     } catch (error) {
         console.log(error);
-            return res.status(500).send({error:error,success:false})
+        return res.status(500).send({error:error, success:false});
     }
 }
 
@@ -2001,86 +2164,33 @@ const wishListLearnPathData = async (req,res) => {
 
         const totalWishedListIds = totalWishListOfUser.map((rec) => rec.value)
 
-        let queryBody = {
-            "from":offset,
-            "size": limit,
-            "query": {
-                "bool": {
-                    "must": [{
-                        "term": { "status.keyword": "approved" }
-                    },
-                    {
-                        "match_phrase": {
-                            "title": queryString
-                        }
-                    },
-                    {
-                        "ids": {
-                            "values": totalWishedListIds
-                        }
-                    }
-                    ]
-                }
-            }
-        }
+        if (req.query.queryString)
+            req.query.q = req.query.queryString
+       
+        if(totalWishedListIds.length > 0)
+        {
+         req.query.learnPathIds = totalWishedListIds.join(',');
+         await LearnPathService.getLearnPathList(req, (err, data) => {
+              if(data){
+                let response = {
+                            success: true,
+                            data: { userId, learnpaths: data.data.list, ids: [] },
+                            pagination: {page, limit, total : totalCount} };
+                return res.status(200).send(response);
 
-        if (!queryString) {
-
-            delete queryBody.query.bool.must[1];
-            let scores = {};
-            totalWishedListIds.forEach((id, index) => {
-                scores[id] = index;
-            });
-            queryBody["sort"] = [
-                {
-                    "_script": {
-                        "type": "number",
-                        "script": {
-                            "lang": "painless",
-                            "inline": "return params.scores[doc['_id'].value];",
-                            "params": {
-                                "scores": scores
-                            }
-                        }
-                    }
-                }
-            ]
-        }
-
-        const result = await elasticService.plainSearch('learn-path', queryBody);
-        
-        let learnpaths = []
-        let wishListIdsFromElastic=[]
-        if(result.hits){
-            totalCount=result.hits.total.value
-            if(result.hits.hits && result.hits.hits.length > 0){
-                
-                for(const hit of result.hits.hits){
-                    const learnpath = await LearnPathService.generateSingleViewData(hit._source, true, req.query.currency);
-                    wishListIdsFromElastic.push(learnpath.id)
-                    learnpaths.push(learnpath);
-                }
-            }
-        }
-
-        return res.status(200).json({
-            success: true,
-
-            data: {
-                userId: userId,
-                ids: wishListIdsFromElastic,
-                learnpaths: learnpaths
-            },
-            pagination: {
-                page: page,
-                limit: limit,
-                total: totalCount
-            }
-        })
+              }
+              else
+                  return res.status(200).send({ success: false,
+                                                message: "something went wrong wish List learnpath ",
+                                                data: {list: [], pagination: {total: 0}, filters: {} } });
+          });
+         }
+         else
+             return res.status(200).send({success: true, message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
          
     } catch (error) {
         console.log(error);
-            return res.status(500).send({error:error,success:false})
+        return res.status(500).send({error:error, success:false});
     }
 }
 
@@ -2457,8 +2567,15 @@ const updateEmail =async (req,res) => {
                 data: {}
             })
         }
-        let email_already_exist = await models.user_meta.findOne({where:{key:'email', value:email, metaType:'primary'}})
-        if(email_already_exist){
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', email))                        
+                }
+            ]
+        }
+        let email_already_exist = await models.user.findOne({where:where})
+        if(email_already_exist != null){
             return res.status(200).json({
                 code: "EMAIL ALREADY EXIST",
                 message: "Please enter email which is not already used.",
@@ -2474,8 +2591,8 @@ const updateEmail =async (req,res) => {
             provider = LOGIN_TYPES.LOCAL
         }
 
-        let oldEmailObj = await models.user_meta.findOne({where:{userId:userId, key:'email',metaType:'primary'}});
-        const oldEmail = oldEmailObj.value;
+        let oldEmailObj = await models.user.findOne({where:{id:userId}})
+        const oldEmail = oldEmailObj.email;
         const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
         const response = await generateOtp({ username:oldEmail, userId, provider: provider, otpType:OTP_TYPE });
         if(!response.success){
@@ -2488,7 +2605,7 @@ const updateEmail =async (req,res) => {
             email_data: {
                 otp: response.data.otp
             }
-        }
+        }        
         await sendEmail(emailPayload);
         return res.status(200).json({
             success: true
@@ -2508,32 +2625,17 @@ const uploadProfilePic =async (req,res) => {
     let imageName = `86ab15d2${user.userId}EyroLPIJo${new Date().getTime()}`;
     let path = `images/profile-images/${imageName}.jpeg`
     let s3Path = await uploadImageToS3(path,imageB)
-    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
-    if(!existImg) {
-        await models.user_meta.create({value:s3Path,key:'profilePicture',metaType:'primary',userId:user.userId})
-    } else {
-       // await deleteObject(existImg.value);
-        await models.user_meta.update({value:s3Path},{where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
-    }
+  
+    await models.user.update({profilePicture:s3Path},{where:{id:user.userId}})
+    
     const profileRes = await calculateProfileCompletion(user)
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, image:s3Path}
-    sendDataForStrapi(data, "update-profile-picture");
     return res.status(200).json({success:true,profilePicture:s3Path, profileProgress:profileRes})
 }
 
 const removeProfilePic = async (req,res) => {
     const {user} = req
 
-    const existImg = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'profilePicture'}})
-
-    if(existImg) {
-      //  await deleteObject(existImg.value);
-        await models.user_meta.destroy({where:{key:'profilePicture',metaType:'primary',userId:user.userId}})        
-    }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value}
-    sendDataForStrapi(data, "remove-profile-picture");
+    await models.user.update({profilePicture:null},{where:{id:user.userId}})
     const profileRes = await calculateProfileCompletion(user)
     return res.status(200).json({success:true, profileProgress:profileRes})
 }
@@ -2571,33 +2673,14 @@ const uploadResumeFile = async (req,res) =>{
         uploadDate:today,
         size:size
     }
-    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-    if(!existResume) {
-        await models.user_meta.create({value:JSON.stringify(fileValue),key:'resumeFile',metaType:'primary',userId:user.userId})
-    } else {
-        let pathObject = JSON.parse(existResume.value);
-        
-        // await deleteObject(pathObject.filepath);
-        await models.user_meta.update({value:JSON.stringify(fileValue)},{where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-    }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, resume:s3Path}
-    sendDataForStrapi(data, "upload-resume");
+    await models.user.update({resumeFile: JSON.stringify(fileValue)},{where:{id:user.userId}})
     return res.status(200).json({success:true,resumeFile:fileValue})
 }
 
 const deleteResumeFile = async (req,res) => {
     const {user} = req
     
-    const existResume = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'resumeFile'}})
-
-    if(existResume) {
-      //  await deleteObject(existImg.value);
-        await models.user_meta.destroy({where:{key:'resumeFile',metaType:'primary',userId:user.userId}})
-    }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value}
-    sendDataForStrapi(data, "remove-resume");
+    await models.user.update({resumeFile:null},{where:{id:user.userId}})
     return res.status(200).json({success:true, resumeFile:{}})
 }
 
@@ -2610,26 +2693,59 @@ const uploadPrimarySkills = async (req,res) => {
     } else {
         await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'primarySkills'}})
     }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let learn_profile = {email:userinfo.value, data:data}
-    sendDataForStrapi(learn_profile, "update-learn-profile");
     return res.status(200).json({success:true,data:data})
 }
 
-const uploadSkills = async (req,res) => {
+const addSkills = async (req,res) => {
     const {data} =req.body
     const { user} = req;
-    const existSkills = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'skills'}})
-    if(!existSkills) {
-        await models.user_meta.create({value:JSON.stringify(data),key:'skills',metaType:'primary',userId:user.userId})        
-    } else {
-        // await deleteObject(pathObject.filepath);
-        await models.user_meta.update({value:JSON.stringify(data)},{where:{userId:user.userId, metaType:'primary', key:'skills'}})
+    let responseData = null;
+    try {
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary']
+                }
+            ],
+            attributes: ['id','topic']
+
+        })
+        if(userData )
+        {
+            for(let topicData of userData)
+            {
+                await models.user_skill.destroy({where: {userTopicId: topicData.id}})
+            }
+        }
+        
+        await models.user_topic.destroy({where: {userId: user.userId}})
+
+        for (const [key, value] of Object.entries(data)) {
+            const userTopic  = await models.user_topic.create({
+                 userId: user.userId,
+                 topic: key
+             })
+     
+             for(let skill of value)
+             {
+                 await models.user_skill.create({
+                     userTopicId:userTopic.id,
+                     skill:skill.skill,
+                     isPrimary: skill.isPrimary
+                 })
+             }
+             
+        }
+         return res.status(200).json({success:true,data:data})
+    } catch (error) {
+        console.log("add skill", error)
+        return res.status(200).json({success:false,data:{}, message:"Error updating Skills"})
     }
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let learn_profile = {email:userinfo.value, data:data}
-    sendDataForStrapi(learn_profile, "update-learn-profile");
-    return res.status(200).json({success:true,data:data})
+    
 }
 
 const fetchUserMetaObjByUserId = async (id) => {
@@ -2685,15 +2801,10 @@ const bookmarkArticle = async (req,res) => {
             const resMeta = await models.user_meta.bulkCreate(dataToSave)
             const numericIds = articleIds.map((articleId) => articleId.split("ARTCL_PUB_").pop())
 
-            const userinfo = await models.user_meta.findOne({
-                attributes: ["value"],
-                where: {
-                    userId: user.userId, metaType: 'primary', key: 'email'
-                }
-            })
-            const data = { email: userinfo.value, articleIds: numericIds }
-            sendDataForStrapi(data, "profile-bookmark-article");
-
+        
+            //const data = { email: userinfo.value, articleIds: numericIds }
+            await logActvity("ARTICLE_WISHLIST", userId, articleIds);
+           // sendDataForStrapi(data, "profile-bookmark-article");
             return res.status(200).json({
                 success: true,
                 data: {
@@ -2723,9 +2834,6 @@ const removeBookmarkArticle = async (req,res) => {
     const { user} = req;
     const {articleId} = req.body
     const resMeta = await models.user_meta.destroy({ where: { key:"article_bookmark", value:articleId, userId:user.userId}})
-    const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-    let data = {email:userinfo.value, articleId:articleId.split("ARTCL_PUB_").pop()}
-    sendDataForStrapi(data, "profile-remove-bookmark-article");
     return res.status(200).json({
         success:true,
         data: {
@@ -2768,7 +2876,7 @@ const bookmarkArticleData = async (req,res) => {
          }); 
         }
         else{
-            res.status(200).send({status: 'success', message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
+            res.status(200).send({success: true, message: 'No records found!', data: {list: [], pagination: {total: 0}, filters: {}}});
         }      
     } catch (error) {
         console.log(error);
@@ -2800,15 +2908,14 @@ const fetchbookmarkIds = async (req,res) => {
     })
 }
 
-const verifyPhone = async (username) =>{
+const verifyPhone = async (email) =>{
     return new Promise(async (resolve, reject) => {
-        try{ 
-            const user = await models.user_meta.findOne({where:{value:username, metaType:'primary', key:'email'}})
+        try{           
             await models.user.update({
                     phoneVerified: true,
                 }, {
                     where: {
-                        id: user.userId
+                        email: email
                     }
                 });
             return resolve(true)
@@ -2855,40 +2962,31 @@ const sendSMSWelcome = async (phone) =>{
 const updatePhone = async (req,res) => {
     try {
         const { user } = req    
-        const { phone } = req.body  
-   
-        let where = {
-            userId: user.userId,
-            metaType:'primary',
-            key:'phone',
-        }
-        const existPhone = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'phone'}})
-        if(!existPhone){
-            await models.user_meta.create({
-                userId: user.userId,
-                metaType:'primary',
-                key:'phone',
-                value: phone
-            });
-        }else{
-            await models.user_meta.update({
-                value: phone,
-            }, {
-                where: where
-            });
-        }
-        
+        const { phone } = req.body        
+      
         await models.user.update({
+            phone: phone,
             phoneVerified: false,
         }, {
             where: {
                 id: user.userId
             }
         });
-        
-        const userinfo = await models.user_meta.findOne({where:{userId:user.userId, metaType:'primary', key:'email'}})
-        let data = {email:userinfo.value, phone:phone}
-        sendDataForStrapi(data, "update-phone")
+
+       let userData =  await models.user.findOne({where: {id: user.userId}});
+        if(phone){
+            let countryCode =  phone.split(" ")[0];    
+            let phoneWithoutcode =  phone.split(" ")[1];
+            if(process.env.PHONEVERIFICATION =='true' && countryCode =='+91' )
+            {
+                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+                let userId = user.id
+                let email = userData.email
+                const response = await generateOtp({ username:email, userId, provider: null, otpType:OTP_TYPE });
+                await sendSMSOTP (phoneWithoutcode, response.data.otp);
+               
+            }
+        }
         return res.status(200).json({
             'success': true,
             'message': 'Phone is updated',
@@ -2906,29 +3004,17 @@ const updatePhone = async (req,res) => {
 const suspendAccount = async (req, res) => {
     const { email } = req.body;
     try {
-        let where = {
-            [Op.and]: [
-                {
-                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
-                }
-            ]
-        }
-        let userLogin = await models.user_login.findOne({ where: where})
-        let user = null
-        if (userLogin != null) {
-            user = await models.user.findOne({ where: { id: userLogin.userId} });
-        }
         let userres = await models.user.update({
             status: "suspended"
         }, {
             where: {
-                id: user.id
+                email: email
             }
         });
                
-        await sendSuspendedEmail(userLogin)
+        await sendSuspendedEmail({email: email})
         //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send({status: 'success', message: 'successfully supended!'})
+        return res.status(200).send({success: true, message: 'successfully supended!'})
 
     } catch (error) {
         console.log(error);
@@ -2938,33 +3024,19 @@ const suspendAccount = async (req, res) => {
 
 const reactivateAccount = async (req, res) => {
     const { email } = req.body;
-    try {
-        let where = {
-            [Op.and]: [
-                {
-                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col("email")),Sequelize.fn('lower', email))                        
-                }
-            ]
-        }
-        
-        let userLogin = await models.user_login.findOne({ where: where})
-        
-        let user = null
-        if (userLogin != null) {
-            user = await models.user.findOne({ where: { id: userLogin.userId} });
-        }
+    try {      
         
         let userres = await models.user.update({
             status: "active"
         }, {
             where: {
-                id: user.id
+                email: email
             }
         });
                
-        await sendActivatedEmail(userLogin)
+        await sendActivatedEmail({email:email})
         //const tokenRes = await getLoginToken({ ...newUserObj, audience: req.headers.origin, provider: LOGIN_TYPES.LOCAL });
-        return res.status(200).send({status: 'success', message: 'successfully activated!'})
+        return res.status(200).send({success: true, message: 'successfully activated!'})
 
     } catch (error) {
         console.log(error);
@@ -2972,7 +3044,7 @@ const reactivateAccount = async (req, res) => {
     }
 }
 
-const getUserPendingActions = async (req, res) => {
+const getUserPendingActions = async (req, res = null) => {
     try {
         const { user } = req
         const userId = user.userId
@@ -2982,7 +3054,7 @@ const getUserPendingActions = async (req, res) => {
             pendingProfileActions: [
             ],
             profileProgress: null,
-            verification:{}
+            verification:{ phoneVerified: false, emailVerified : false}
         }
 
         const fields = {
@@ -2992,7 +3064,7 @@ const getUserPendingActions = async (req, res) => {
             profilePicture: {
                 weightage: 10,
             },
-            firstName: {
+            fullName: {
                 weightage: 4,
             },
             dob: {
@@ -3012,10 +3084,10 @@ const getUserPendingActions = async (req, res) => {
             },
             workExp: {
                 weightage: 10,
+            },
+            goal: {
+                weightage: 10,
             }
-            // phone: {
-            //     weightage: 5,
-            // }
         }
 
         const verificationFields = {
@@ -3027,110 +3099,111 @@ const getUserPendingActions = async (req, res) => {
             }
         }
 
-        const userData = await models.user_meta.findAll({
-            attributes: ["key", "value"],
-            where: {
-                metaType: "primary",
-                key: { [Op.in]: Object.keys(fields) },
-                userId: userId
-            }
-        })
-
-        const userVerificationData = await models.user.findAll({
-            attributes: Object.keys(verificationFields),
+        const userData = await models.user.findOne({
             where: {
                 id: userId
             }
         })
-        
-        const availableFields = userData.filter((field) => {
-            if (field.value) {
-                try {
-                    // verify whether field.value is an array
 
-                    const obj = JSON.parse(field.value)
-                    if (Array.isArray(obj)) return obj.length != 0
-
-                    //check for empty object
-                    if (JSON.stringify(obj) == "{}") return false
-                    return true
-
-                } catch {
-                    // it is a non empty string 
-                    return true
-                }
-            }
-            else {
-                return false
-            }
-        }).map((field) => field.key)
-
-        
-        let addPersonalDetails = false
-        for (const field in fields) {
-
-            if (availableFields.includes(field)) {
-                profileProgress += fields[field].weightage;
-            }
-            else {
-
-                if (["dob", "firstName", "gender", "city"].includes(field)) {
-                    addPersonalDetails = true
-                }
-                else {
-                    response.pendingProfileActions.push(field)
-                }
-            }
+        if(userData.fullName!= null){
+            profileProgress += fields.fullName.weightage;
         }
-
-        if(addPersonalDetails){
+        else {
             response.pendingProfileActions.push("personalDetails")
         }
 
-        if (userVerificationData.length) {
+        if(userData.dob!= null){
+            profileProgress += fields.dob.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("personalDetails")
+        }
 
-            if (userVerificationData[0]["verified"]) {
+        if(userData.gender!= null){
+            profileProgress += fields.gender.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("personalDetails")
+        }
+
+        if(userData.city!= null){
+            profileProgress += fields.city.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("personalDetails")
+        }
+
+        if(userData.resumeFile!= null){
+            profileProgress += fields.resumeFile.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("resumeFile")
+        }
+        if(userData.profilePicture!= null){
+            profileProgress += fields.profilePicture.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("profilePicture")
+        }
+        const education = await models.user_education.findAll({
+            where: {
+                userId: userId
+            }
+        })
+        if(education && education.length > 0){
+            profileProgress += fields.education.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("education")
+        }
+
+        const workExp = await models.user_experience.findAll({
+            where: {
+                userId: userId
+            }
+        })
+        if(workExp && workExp.length > 0){
+            profileProgress += fields.workExp.weightage;
+        }
+        else {
+            response.pendingProfileActions.push("workExp")
+        }
+
+        if (userData.verified) {
                 
-                profileProgress += verificationFields.verified.weightage
-            }
-            else {
-                response.pendingProfileActions.push('email')
-            }
-        
-            
-            if (userVerificationData[0]["phoneVerified"]) {
-                response.verification.phoneVerified = true
-                profileProgress += verificationFields.phoneVerified.weightage
-            }
-            else {
-                const phoneData = await models.user_meta.findAll({
-                    attributes: ["key", "value"],
-                    where: {
-                        metaType: "primary",
-                        key: { [Op.in]: ["phone"] },
-                        userId: userId
-                    }
-                })
+            profileProgress += verificationFields.verified.weightage
+            response.verification.emailVerified = true
+        }
+        else {
+            response.verification.emailVerified = false
+            response.pendingProfileActions.push("emailVerification")
+        }
 
-                if (phoneData.length && phoneData[0].value) {
-                    if (phoneData[0].value.slice(0, 2) != '91') {
-                        response.verification.phoneVerified = true
-                        profileProgress += verificationFields.phoneVerified.weightage
-                    }
-                    else{
-                        response.verification.phoneVerified=false
-                        response.pendingProfileActions.push("phoneVerification")
-                    }
-                }else{
-                    response.pendingProfileActions.push('phone') 
+        if (userData.phoneVerified) {
+            response.verification.phoneVerified = true
+            profileProgress += verificationFields.phoneVerified.weightage
+        }
+        else {
+            if (userData.phone !=null) {
+                let countryCode =  userData.phone.split(" ")[0];  
+       
+                if (countryCode != '+91') {
+                    response.verification.phoneVerified = true
+                    profileProgress += verificationFields.phoneVerified.weightage
                 }
+                else{
+                    response.verification.phoneVerified=false
+                    response.pendingProfileActions.push("phoneVerification")
+                }
+            }else{
+                response.pendingProfileActions.push('phone') 
             }
         }
-        
-        /**
+
+         /**
          * Adding profile progress for profile Actions : 10%
         */
-        const goalObj = await models.goal.findAll({
+          const goalObj = await models.goal.findAll({
             where:{
                 userId: userId
             }
@@ -3139,20 +3212,589 @@ const getUserPendingActions = async (req, res) => {
         if(!goalObj.length){
             response.pendingProfileActions.push('goal') 
         }else{
-            profileProgress += 10
+            profileProgress += fields.goal.weightage;
+        }
+
+         /**
+         * Adding profile progress for profile Actions : 10%
+        */
+          const user_topic = await models.user_topic.findAll({
+            where:{
+                userId: userId
+            }
+        })
+
+        if(!user_topic.length){
+            response.pendingProfileActions.push('skills') 
+        }else{
+            profileProgress += fields.skills.weightage
         }
 
         response.profileProgress=profileProgress
-        res.send({ message: "success", data: response })
+        if(response.pendingProfileActions && response.pendingProfileActions.length > 0)
+        {
+            response.pendingProfileActions = response.pendingProfileActions.filter((v, i, a) => a.indexOf(v) === i)
+        } 
+        if(res){
+            res.send({ success: true, data: response })
+        } 
+        else
+        {
+            return response
+        } 
+        
     } catch (error) {
         console.log(error)
-        res.status(500).send({
+        if(res)
+        {
+            res.status(500).send({
+                success: false,
+                message: "internal server error",
+                error: error
+            })
+        }
+        else
+        {
+            return null
+        }
+    }
+}
+
+const isUserEmailExist = async (req, res) => {  
+        
+    let username = req.body.email
+        
+    let response = {
+        code: DEFAULT_CODES.INVALID_USER.code,
+        message: DEFAULT_CODES.INVALID_USER.message,
+        success: true,
+        data: {
+            isUserExist : false
+        }
+    }
+
+    try {
+        let where = {
+            [Op.and]: [
+                {
+                    [Op.eq]: Sequelize.where( Sequelize.fn('lower', Sequelize.col('email')),Sequelize.fn('lower', username))                        
+                }
+            ]
+        }
+
+        let user = await models.user.findOne({ where: where})
+            
+        if (user != null) {            
+
+
+            const { email } = user;
+            response.success = true;
+            response.code = DEFAULT_CODES.VALID_USER;
+            response.message = DEFAULT_CODES.VALID_USER.message;
+            response.data.isUserExist = true
+            response.data.user = {
+                email: user.email,
+                userType: user.userType
+            }            
+            res.status(200).send(response)
+        } else {
+            res.status(200).send(response)
+        }
+    } catch (error) {
+        console.log('isUserEmailExist err ',error);
+        response = {
+            code: DEFAULT_CODES.INVALID_USER.code,
+            message: DEFAULT_CODES.INVALID_USER.message,
             success: false,
-            message: "internal server error",
-            error: error
+            data: {
+                user: {}
+            }
+        }
+        res.status(200).send(response)
+    }
+}
+
+const getPersonalDetails = async (req, res) => {
+    
+    try {       
+        const user = await models.user.findOne({ where: { id: req.user.userId }, attributes: ['fullName', 'email', 'verified', 'phone', 'phoneVerified', 'status', 'gender', 'dob', 'city', 'country'] })
+        if (user.phone) {
+            let countryCode = user.phone.split(" ")[0];
+            if (countryCode != '+91') {
+                user.phoneVerified = true
+            }
+        }
+
+        res.status(200).send({
+            message: "personal details updated successfully",
+            data: user,
+            success: true
+        })
+    } catch (error) {
+        console.log('getPersonalDetails err ',error);
+        res.status(200).send({
+            message: "Error getting personal details",
+            success: false
         })
     }
 }
+
+const editPersonalDetails = async (req, res) => {
+    let {fullName, city, dob, gender } = req.body
+    try {        
+        
+        if(calcAge(dob) < 16)
+            return res.status(200).send({
+                message: "Age must be atleast 16 years",
+                success: false
+            })
+        city = (city == "")? null: city;
+        dob = (dob == "")? null: dob;
+        gender = (gender == "")? null: gender;
+        await models.user.update({
+            fullName,
+            city,
+            dob,
+            gender
+        }, {
+            where: {
+                id: req.user.userId
+            }
+        });
+        
+        res.status(200).send({
+            message: "personal details updated successfully",
+            success: true
+        })
+    } catch (error) {
+        console.log('editPersonalDetails err ',error);
+        res.status(200).send({
+            message: "Error updating personal details",
+            success: false
+        })
+    }
+}
+
+const addEducation = async (req, res) => {
+    let {instituteName, degree, specialization, graduationYear, gradeType, grade } = req.body
+    try {        
+        
+        const user_education = await models.user_education.create({
+            userId: req.user.userId,
+            instituteName,
+            degree,
+            specialization,
+            graduationYear,
+            gradeType,
+            grade
+        })
+
+        res.status(200).send({
+            message: "Education added successfully",
+            success: true,
+            data: {
+                id: user_education.id,
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+            }
+        })
+    } catch (error) {
+        console.log('addEducation err ',error);
+        res.status(200).send({
+            message: "Error adding Education",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const editEducation = async (req, res) => {
+    let {id, instituteName, degree, specialization, graduationYear, gradeType, grade } = req.body
+    try {        
+        const user_education = await models.user_education.update(
+            {            
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+            },
+            {
+                where: {id:req.user.userId, id:id}
+            }
+        )
+
+        res.status(200).send({
+            message: "Education updated successfully",
+            success: true,
+            data: {
+                id: user_education.id,
+                instituteName,
+                degree,
+                specialization,
+                graduationYear,
+                gradeType,
+                grade
+
+            }
+        })
+
+    } catch (error) {
+        console.log('editEducation err ',error);
+        res.status(200).send({
+            message: "Error updating Education",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const deleteEducation = async (req, res) => {
+    let {id} = req.body
+    try {        
+        
+        await models.user_education.destroy({
+            where: {
+                id:id,
+                userId:req.user.userId
+            }
+        })
+
+        res.status(200).send({
+            message: "Education deleted successfully",
+            success: true            
+        })
+    } catch (error) {
+        console.log('deleteEducation err ',error);
+        res.status(200).send({
+            message: "Error deleting Education",
+            success: false
+        })
+    }
+}
+const getEducations = async (req, res) => {    
+    try {        
+        
+        const user_educations = await models.user_education.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade']
+        })
+
+        res.status(200).send({
+            message: "Education fetched successfully",
+            success: true,
+            data: user_educations             
+        })
+    } catch (error) {
+        console.log('getEducations err ',error);
+        res.status(200).send({
+            message: "Error fetching Education",
+            success: false
+        })
+    }
+}
+
+const addWorkExperience = async (req, res) => {
+    let {jobTitle, industry, company, currentCompany, experience } = req.body
+    try {        
+        
+        const user_Work_experience = await models.user_experience.create({
+            userId: req.user.userId,
+            jobTitle,
+            industry,
+            company,
+            currentCompany,
+            experience
+        })
+
+        res.status(200).send({
+            message: "Work experience added successfully",
+            success: true,
+            data: {
+                id: user_Work_experience.id,
+                jobTitle,
+                industry,
+                company,
+                currentCompany,
+                experience
+            }
+        })
+    } catch (error) {
+        console.log('addWorkExperience err ',error);
+        res.status(200).send({
+            message: "Error adding Work experience",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const editWorkExperience = async (req, res) => {
+    let {id, jobTitle, industry, company, currentCompany, experience  } = req.body
+    try {        
+        
+        const user_experience = await models.user_experience.update(
+            {            
+                jobTitle,
+                industry,
+                company,
+                currentCompany,
+                experience
+            },
+            {
+                where: {id:req.user.userId, id:id}
+            }
+        )
+
+        res.status(200).send({
+            message: "Work experience updated successfully",
+            success: true,
+            data: {
+                id: user_experience.id,
+                jobTitle,
+                industry,
+                company,
+                currentCompany,
+                experience
+            }
+        })
+    } catch (error) {
+        console.log('editWorkExperience err ',error);
+        res.status(200).send({
+            message: "Error adding Work experience",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const deleteWorkExperience = async (req, res) => {
+    let {id} = req.body
+    try {        
+        
+        await models.user_experience.destroy({
+            where: {
+                id:id,
+                userId:req.user.userId
+            }
+        })
+
+        res.status(200).send({
+            message: "Work Experience deleted successfully",
+            success: true            
+        })
+    } catch (error) {
+        console.log('WorkExperience err ',error);
+        res.status(200).send({
+            message: "Error deleting Education",
+            success: false
+        })
+    }
+}
+
+const getWorkExperiences = async (req, res) => {    
+    try {        
+        
+        const user_experiences = await models.user_experience.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+        })
+
+        res.status(200).send({
+            message: "Work Experiences fetched successfully",
+            success: true,
+            data: user_experiences             
+        })
+    } catch (error) {
+        console.log('getWorkExperiences err ',error);
+        res.status(200).send({
+            message: "Error fetching Education",
+            success: false
+        })
+    }
+}
+
+const getUserProfile = async (req, res) => {    
+    try {        
+        
+        const user = await models.user.findOne({
+            where: {
+                id:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_education,
+                    attributes: ["id",'instituteName', 'degree','specialization','graduationYear','gradeType','grade']
+                },
+                {
+                    model: models.user_experience,
+                    attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+                }
+            ],
+            attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
+        })
+        if(user.resumeFile)
+        {
+            try {
+                user.resumeFile = JSON.parse(user.resumeFile)
+
+            } catch (error) {
+
+                user.resumeFile ={
+                    filename:user.resumeFile,
+                    filepath:user.resumeFile,
+                    uploadDate:null,
+                    size:null
+                } 
+            }
+        }
+        if(user.phone){
+            let countryCode = user.phone.split(" ")[0];
+            if (countryCode != '+91') {
+                user.phoneVerified = true
+            }
+        }
+
+        //set desgination
+        if(user.user_experiences && user.user_experiences.length > 0)
+        {
+            for (let experience of user.user_experiences )
+            {
+                if(experience.jobTitle)
+                {
+                   
+                    user.setDataValue('designation', experience.jobTitle);                    
+                }
+            }
+        }
+        else{
+            user.setDataValue('designation', null); 
+        }
+
+        // Get key skills
+        let keyskill =  await getKeySkills(req); 
+        user.setDataValue('keyskill', keyskill);
+
+        // Get goals
+
+        let goals = await getGoals(req)
+        user.setDataValue('goals', goals);
+
+        if(goals != null && goals.length)
+            user.setDataValue('isGoals', true);
+        else
+            user.setDataValue('isGoals', false);
+
+        // get user profileProgress
+        let pendingActions = await  getUserPendingActions(req)
+
+        user.setDataValue('pendingActions', pendingActions);
+        user.setDataValue('profileProgress', pendingActions.profileProgress);
+        user.setDataValue('id', req.user.userId);
+        res.status(200).send({
+            message: "User Profile fetched successfully",
+            success: true,
+            data: user             
+        })
+    } catch (error) {
+        console.log('getUserProfile err ',error);
+        res.status(200).send({
+            message: "Error fetching Education",
+            success: false
+        })
+    }
+}
+
+const getSkills = async (req, res) => {    
+    try {        
+        
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary']
+                }
+            ],
+            attributes: ['topic']
+
+        })
+        res.status(200).send({
+            message: "User Skills fetched successfully",
+            success: true,
+            data: userData             
+        })
+    } catch (error) {
+        console.log('getSkills err ',error);
+        res.status(200).send({
+            message: "Error fetching Skill",
+            success: false
+        })
+    }
+}
+
+const getKeySkills = async (req, res=null) => {    
+    try {        
+        let keySkill = []
+        const userData = await models.user_topic.findAll({
+            where: {
+                userId:req.user.userId
+            },
+            include: [
+                {
+                    model: models.user_skill,
+                    attributes: ['skill','isPrimary'],
+                    where: { isPrimary: true }
+                }
+            ],
+            attributes: ['topic']
+
+        })
+
+        if(userData && userData.length > 0)
+        {
+            for(let data of userData)
+            {
+                for(let user_skill of data.user_skills)
+                {
+                    keySkill.push(user_skill.skill)
+                }   
+            }
+         }
+        if (res) {
+            res.status(200).send({
+                message: "User Key skills fetched successfully",
+                success: true,
+                data: keySkill
+            })
+        }
+        else {
+            return keySkill
+        }
+    } catch (error) {
+        console.log('getKeySkills err ',error);
+        if (res) {
+            res.status(200).send({
+                message: "Error fetching KeySkills",
+                success: false
+            })
+        } else {
+            return null
+        }
+    }
+}
+
 
 const recentlyViewedCourses = async (req, callback) => {
 
@@ -3294,6 +3936,68 @@ const addCategoryToRecentlyViewed = async (req, res) => {
     }
 }
 
+const addArticleToRecentlyViewed = async (req, res) => {
+    try {
+
+        const { user } = req;
+        const { articleId } = req.body;
+        if (!articleId) {
+            return res.status(400).json({
+                success: false,
+                "message": "article id is mandatory"
+
+            });
+        }
+        const unique_data = { userId: user.userId, articleId: articleId };
+        const SAVE_RECENTLY_VIEWED_ARTICLE_COUNT = process.env.SAVE_RECENTLY_VIEWED_ARTICLE_COUNT || 20;
+
+        //check if article exists for the user
+        const exists = await models.recently_viewed_articles.findOne({ where: unique_data });
+        if (exists) {
+            //if exists change updated at
+            await models.recently_viewed_articles.update({ userId: unique_data.userId, articleId: unique_data.articleId }, { where: unique_data });
+        } else {
+
+            const { count, rows } = await models.recently_viewed_articles.findAndCountAll(
+                {
+                    limit: 1,
+                    where: { userId: user.userId },
+                    order: [['createdAt', 'ASC']],
+                    attributes: {
+                        include: ['id']
+                    }
+                });
+
+            if (count >= SAVE_RECENTLY_VIEWED_ARTICLE_COUNT) {
+                //remove first entry
+                await models.recently_viewed_articles.destroy(
+                    { where: { id: rows[0].id } }
+                );
+            }
+
+            await models.recently_viewed_articles.create(unique_data);
+
+        }
+        return res.status(200).json({
+            success: true,
+            message: "Article added to recently viewed"
+
+        });
+
+    } catch (error) {
+
+        console.log("Error occured while adding article to recently viewed : ", error);
+        res.status(500).json({
+            success: false,
+            "message": "Internal Server Error"
+
+        });
+    }
+}
+
+
+
+
 const peopleAreAlsoViewing = async (req, callback) => {
 
     try {
@@ -3321,7 +4025,7 @@ const peopleAreAlsoViewing = async (req, callback) => {
                 }
             }
 
-            const sort = [{ "activity_count.all_time.course_views": "desc" }, { "ratings": "desc" }];
+            const sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }];
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort });
 
             if (result.hits && result.hits.length) {
@@ -3341,6 +4045,174 @@ const peopleAreAlsoViewing = async (req, callback) => {
     }
 }
 
+const addInstituteToWishList = async (req, res) => {
+    try {
+        const { user } = req;
+        const userId = user.userId
+        let instituteIdsFromClient = validators.validateIds(req.body)
+        if (!instituteIdsFromClient) {
+
+            return res.status(200).json({
+                success: false,
+                message: "invalid request sent"
+            })
+        }
+
+        let response = {
+            success: true,
+            data: {
+                wishlist: []
+            }
+        }
+        //check if provided instituteIdsFromClient are valid/exits in elastic
+        await validateIdsFromElastic("provider", instituteIdsFromClient).then(validIds => {instituteIdsFromClient = validIds})
+
+        if(!instituteIdsFromClient.length)
+            return res.status(200).json(response)
+
+        let existingIds = await models.user_meta.findAll({
+            attributes: ["value"], where: {
+                userId: userId,
+                key: 'institute_wishlist',
+                value: instituteIdsFromClient
+            }
+        });
+        let instituteIds = []
+        existingIds = existingIds.map((institute) => institute.value)
+        instituteIdsFromClient.forEach((instituteId) => {
+            if (!existingIds.includes(instituteId)) instituteIds.push(instituteId)
+        });
+
+        if (instituteIds.length) {
+
+            const dataToSave = instituteIds.map((instituteId) => {
+                return {
+                    key: "institute_wishlist",
+                    value: instituteId,
+                    userId: userId,
+                }
+            });
+            response.data.wishlist = await models.user_meta.bulkCreate(dataToSave)
+            await logActvity("INSTITUTE_WISHLIST", userId, instituteIds);
+
+            return res.status(200).json(response)
+
+        }
+        else
+            return res.status(200).json(response)
+
+    } catch (error) {
+      
+        console.log(error)
+        return res.status(500).json({
+            success: false,
+            message:"internal server error"
+        })
+    }
+}
+
+
+const fetchInstituteWishList = async (req, res) => {
+    try {
+        const { user } = req
+        const { page, limit } = validators.validatePaginationParams({ page: req.query.page, limit: req.query.limit })
+
+        const offset = (page - 1) * limit
+        let totalCount = 0
+
+        let where = {
+            userId: user.userId,
+            key: { [Op.in]: ['institute_wishlist'] },
+        }
+
+        const wishlistedInstitute = await models.user_meta.findAll({
+            attributes: ['value'],
+            where,
+            order: [["id", "DESC"]]
+        })
+
+        let  totalWishedListIds = wishlistedInstitute.map((rec) => rec.value)
+        totalWishedListIds = totalWishedListIds.filter(x => x != null)
+
+        const queryBody = {
+            "_source": [
+                "_id"
+            ],
+            "from": offset,
+            "size": limit,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "status.keyword": "approved"
+                            }
+                        },
+                        {
+                            "ids": {
+                                "values": totalWishedListIds
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        let activeWishListIds = []
+
+        const result = await elasticService.plainSearch('provider', queryBody);
+        if (result && result.hits) {
+            totalCount = result.hits.total.value
+            if (result.hits.hits.length) {
+                activeWishListIds = result.hits.hits.map((wishList) => wishList._id)
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                userId: user.userId,
+                institutes: activeWishListIds
+            },
+            pagination: {
+                page: page,
+                limit: limit,
+                total: totalCount
+            }
+        })
+
+    } catch(error) {
+        console.log(error);
+        return res.status(500).send({ message: "internal server error", success: false });
+
+    }
+
+}
+
+const removeInstituteFromWishList = async (req, res) => {
+
+    const { user} = req;
+    const { id } = req.body
+    const resMeta = await models.user_meta.destroy({ where: { key:"institute_wishlist", value: id, userId:user.userId}})
+    return res.status(200).json({
+        success:true,
+        data: {
+            wishlist:resMeta
+        }
+    })
+}
+
+const calcAge = (dob) => {
+
+    let today = new Date();
+    let birthDate = new Date(dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    let m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate()))
+        age--;
+
+    return age;
+}
+
 module.exports = {
     login,
     verifyOtp,
@@ -3348,6 +4220,7 @@ module.exports = {
     verifyUserToken,
     socialSignIn,
     signUp,
+    isUserEmailExist,
     resendVerificationLink,
     verifyAccount,
     resetPassword,
@@ -3355,6 +4228,9 @@ module.exports = {
     getProfileProgress,
     getCourseWishlist,
     addCourseToWishList,
+    addInstituteToWishList,
+    fetchInstituteWishList,
+    removeInstituteFromWishList,
     addGoals,
     getGoals,
     removeGoal,
@@ -3366,6 +4242,9 @@ module.exports = {
     removeLearnPathFromWishList,
     fetchWishListIds,
     fetchLearnPathWishListIds,
+    addCourseToShare,
+    addLearnPathToShare,
+    addArticleToShare,
     wishListCourseData,
     wishListLearnPathData,
     getEnquiryList,
@@ -3374,7 +4253,7 @@ module.exports = {
     uploadResumeFile,
     deleteResumeFile,
     removeProfilePic,
-    uploadSkills,
+    addSkills,
     uploadPrimarySkills,
     fetchUserMetaObjByUserId,
     bookmarkArticle,
@@ -3386,11 +4265,25 @@ module.exports = {
     updatePhone,
     getUserPendingActions,
     updateEmail,
+    getPersonalDetails,
+    editPersonalDetails,
+    addEducation,
+    editEducation,
+    deleteEducation,
+    getEducations,
+    addWorkExperience,
+    editWorkExperience,
+    deleteWorkExperience,
+    getWorkExperiences,
+    getUserProfile,
+    getSkills,
+    getKeySkills,    
     recentlyViewedCourses,
     getUserLastSearch,
     recentlySearchedCourses,
     peopleAreAlsoViewing,
     addCategoryToRecentlyViewed,
+    addArticleToRecentlyViewed ,
     saveUserLastSearch: async (req,callback) => {
                 
         const {search} =req.body
@@ -3405,8 +4298,8 @@ module.exports = {
         }
         if (!suggestionList[search.type].filter(e => e.title == search.title).length || suggestionList[search.type].filter(e => e.title == search.title).length == 0) {
 
-            if (search.type == 'learn-content') {
-                if (suggestionList[search.type].length == (process.env.LAST_COURSE_SEARCH_LIMIT||20)) {
+            if (search.type == 'learn-content'|| search.type == 'article') {
+                if (suggestionList[search.type].length == (process.env.LAST_COURSE_ARTICLE_SEARCH_LIMIT||20)) {
                     suggestionList[search.type].shift();
 
                 }

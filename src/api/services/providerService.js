@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const _ = require('underscore');
 let LearnContentService = new learnContentService();
-
+const helperService = require("../../utils/helper");
 const { 
     getFilterConfigs, 
     parseQueryFilters,
@@ -17,9 +17,10 @@ const {
     updateSelectedFilters,
     getRankingFilter,
     getRankingBySlug,
-    sortFilterOptions,
-    generateMetaInfo
+    sortFilterOptions,    
+    formatImageResponse
 } = require('../utils/general');
+const {generateMetaInfo} = require('../utils/metaInfo');
 
 const redisConnection = require('../../services/v1/redis');
 
@@ -27,9 +28,23 @@ const RedisConnection = new redisConnection();
 
 const MAX_RESULT = 10000;
 const keywordFields = ['name'];
-const filterFields = ['programs','study_modes','institute_types','city','gender_accepted'];
+const filterFields = ['programs','study_modes','institute_types','city','gender_accepted', 'region', 'country', 'state'];
 const allowZeroCountFields = ['programs','study_modes'];
 const FEATURED_RANK_LIMIT = 2;
+
+const sortOptions = {
+    'A-Z': ["name:asc"],
+    'Z-A' :["name:desc"],
+    'Most Relevant' : []
+}
+
+const ranksortOptions = {
+    'High To Low': "rank:asc",
+    'Low To High': "rank:desc",
+    'A-Z': "name:asc",
+    'Z-A' :"name:desc",
+}
+
 
 
 
@@ -73,6 +88,7 @@ const formatFilters = async (data, filterData, query) => {
             field: filter.elastic_attribute_name,
             filterable: filter.filterable,
             sortable: filter.sortable,
+            filter_postion: filter.filter_postion || 'vertical',            
             order: filter.order,
             is_singleton: filter.is_singleton,
             is_collapsed: filter.is_collapsed,
@@ -157,7 +173,7 @@ module.exports = class providerService {
 
     async getProviderList(req, callback, skipCache){
         let useCache = false;
-        let defaultSort = "name:asc";
+        let defaultSort = (req.query['q']) ? 'Most Relevant':'A-Z';
         let cacheName = "";
         if(
             req.query['instituteIds'] == undefined
@@ -182,7 +198,7 @@ module.exports = class providerService {
             if(skipCache != true) {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
-                    return callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }
         }
@@ -211,27 +227,43 @@ module.exports = class providerService {
         queryPayload.from = paginationQuery.from;
         queryPayload.size = paginationQuery.size;
 
-        if(!req.query['sort'] && !req.query['q']){
+        if(!req.query['sort']){
             if(req.query['rank']){
-                req.query['sort'] = "rank:asc";
+                req.query['sort'] = "High To Low";
             }else{
                 req.query['sort'] = defaultSort;
             }            
         }
 
         if(req.query['sort']){
-            let sort = req.query['sort'];
-            let splitSort = sort.split(":");
-            let sortField = splitSort[0];
-            
-            if((sortField == 'rank') && (req.query['rank'])){
-                sort = `ranking_${req.query['rank']}:${splitSort[1]}`;
-            }
+            queryPayload.sort = []
+           
+            if(req.query['rank']){
+                let sort = ranksortOptions[req.query['sort']];
+                let splitSort = sort.split(":");
+                 let sortField = splitSort[0];            
+                if((sortField == 'rank') && (req.query['rank'])){
+                    sort = `ranking_${req.query['rank']}:${splitSort[1]}`;
+                }
+                if(keywordFields.includes(splitSort[0])){
+                    sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                }
+                queryPayload.sort.push(sort)
+             }
+             else{
+                let sort = sortOptions[req.query['sort']];
+                let keywordFields = ['name']
+                if (sort && sort.length > 0) {
+                    for (let field of sort) {
 
-            if(keywordFields.includes(sortField)){
-                sort = `${sortField}.keyword:${splitSort[1]}`;
+                        let splitSort = field.split(":");
+                        if (keywordFields.includes(splitSort[0])) {
+                            field = `${splitSort[0]}.keyword:${splitSort[1]}`;
+                        }
+                        queryPayload.sort.push(field)
+                    }
+                }
             }
-            queryPayload.sort = [sort];
         }
 
         if(req.query['instituteIds']){
@@ -364,10 +396,11 @@ module.exports = class providerService {
                 ranking: ranking,
                 filters: filters,
                 pagination: pagination,
-                sort: req.query['sort']
+                sort: req.query['sort'],
+                sortOptions:(req.query['rank']) ? Object.keys(ranksortOptions) :  Object.keys(sortOptions)
             };
 
-            let meta_information = await generateMetaInfo  ('provider-list', result, list);
+            let meta_information = await generateMetaInfo  ('PROVIDER_LIST', result, list);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
@@ -377,7 +410,7 @@ module.exports = class providerService {
                RedisConnection.set(cacheName, data);
                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_LISTING_PROVIDER); 
             }
-            callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+            callback(null, {success: true, message: 'Fetched successfully!', data: data});
         }else{
             if(parsedFilters.length > 0){
                 
@@ -385,19 +418,21 @@ module.exports = class providerService {
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            callback(null, {status: 'success', message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
+            callback(null, {success: true, message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
 
     async getProvider(req, callback, skipCache){
         const slug = req.params.slug;
+        let providerId = null
         let cacheName = `single-provider-${slug}_${req.query.currency}`
         let useCache = false
         if(skipCache !=true) {
             let cacheData = await RedisConnection.getValuesSync(cacheName);
             if(cacheData.noCacheData != true) {
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: cacheData});
+                callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 useCache = true
+                providerId = cacheData.id
             }            
         }
         if(useCache !=true)
@@ -413,7 +448,8 @@ module.exports = class providerService {
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
                 RedisConnection.set(cacheName, data);
                 RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER); 
-                callback(null, {status: 'success', message: 'Fetched successfully!', data: data});
+                callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                providerId = data.id
             }else{
                 /***
                  * We are checking slug and checking(from the strapi backend APIs) if not there in the replacement.
@@ -423,14 +459,16 @@ module.exports = class providerService {
                     let urls = await response.json();
                     if(urls.length > 0){  
                         let slug = urls[0].new_url
-                        return callback({status: 'redirect',slug:slug, message: 'Redirect!'}, null);
+                        return callback({success: false,slug:slug, message: 'Redirect'}, null);
                     }else{
-                        return callback({status: 'failed', message: 'Not found!'}, null);
+                        return callback({success: false, message: 'Not found!'}, null);
                     }
                 }
-                callback({status: 'failed', message: 'Not found!'}, null);
+                callback({success: false, message: 'Not found!'}, null);
             }
-        }       
+        }
+        req.body = {providerId: providerId}
+        this.addActivity(req)      
     }
 
 
@@ -446,46 +484,21 @@ module.exports = class providerService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, rank = null){
-        let coverImageSize = 'large';
-        if(isList){
-            coverImageSize = 'thumbnail';
-        }
-        let cover_image = null;
-        let logo = null;
-        if(result.cover_image){
-            cover_image = getMediaurl(result.cover_image[coverImageSize]);
-            if(!cover_image){
-                cover_image = getMediaurl(result.cover_image['thumbnail']);
-            }
-        }
-        if(result.logo){
-            logo = getMediaurl(result.logo[coverImageSize]);
-            if(!logo){
-                logo = getMediaurl(result.logo['thumbnail']);
-            }
-        }
-
-        let courses = {
-            list: [],
-            total: 0
-        };
-        if(!isList){
-            courses = await this.getProviderCourses(result.name, currency);
-        }
 
         let data = {
             title: result.name,
             slug: result.slug,
             id: `PVDR_${result.id}`,
-            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : null,
-            cover_image: cover_image,
-            logo:logo,
+            cover_video: (result.cover_video) ? getMediaurl(result.cover_video) : ((result.embedded_video_url) ? result.embedded_video_url : null),
+            cover_image: (result.cover_image)? formatImageResponse(result.cover_image):null,
+            card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
+            card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_image)? formatImageResponse(result.cover_image) : null),
+            logo:(result.logo)? formatImageResponse(result.logo):null,
             embedded_video_url: (result.embedded_video_url) ? result.embedded_video_url : null,
             overview: result.overview,
             programs: (result.programs) ? result.programs : [],
             institute_types: (result.institute_types) ? result.institute_types : [],
             currency: result.currency,
-            facilities: result.facilities,
             gender_accepted: result.gender_accepted,
           //  establishment_year: result.establishment_year,
             study_modes: (result.study_modes) ? result.study_modes : [],
@@ -512,15 +525,17 @@ module.exports = class providerService {
                 phone: result.phone,
                 email: result.email,
                 website_link: result.website_link
-            },
-            courses: courses,
+            },            
             course_count: (result.course_count) ? result.course_count : 0,
             featured_ranks: [],
             placements: {},
+            gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
+            facilities: (result.facilities) ? result.facilities : null,
+            highlights: (result.highlights) ? result.highlights : null,
         };
 
         if(!isList){
-            let meta_information = await generateMetaInfo  ('provider', result);
+            let meta_information = await generateMetaInfo  ('PROVIDER', result);
             if(meta_information)
             {
                 data.meta_information  = meta_information;
@@ -547,26 +562,35 @@ module.exports = class providerService {
             if(result.work_experience && result.work_experience.length > 0){
                 data.placements['work_experience'] = result.work_experience;
             }
-        }
+            
+            let facilitiesData = await RedisConnection.getValuesSync('provider-facilties');
+            if(facilitiesData.noCacheData != true && data.facilities && Array.isArray(data.facilities) && data.facilities.length > 0) {
+                data.facilities = data.facilities.map(facility => facilitiesData[facility])
+            }
+            else
+                data.facilities = data.facilities.map(facility => { return {label: facility, description: null, icon:null}});
+            
+       
 
-        if(result.awards && result.awards.length > 0){
-            for(let award of result.awards){                
-                if(!isList){
-                    if(award.image){
-                        award.image = getMediaurl(award.image.thumbnail);                    
+            if(result.awards && result.awards.length > 0){
+                for(let award of result.awards){                
+                    if(!isList){
+                        if(award.image){
+                            award.image = getMediaurl(award.image.thumbnail);                    
+                        }
+                        data.awards.push(award);
                     }
-                    data.awards.push(award);
                 }
             }
-        }
 
-        if(result.accreditations && result.accreditations.length > 0){
-            for(let accr of result.accreditations){                
-                if(!isList){
-                    if(accr.logo){
-                        accr.logo = getMediaurl(accr.logo.thumbnail);                    
+            if(result.accreditations && result.accreditations.length > 0){
+                for(let accr of result.accreditations){                
+                    if(!isList){
+                        if(accr.logo){
+                            accr.logo = getMediaurl(accr.logo.thumbnail);                    
+                        }
+                        data.accreditations.push(accr);
                     }
-                    data.accreditations.push(accr);
                 }
             }
         }
@@ -606,22 +630,23 @@ module.exports = class providerService {
             data.ratings.average_rating = round(average_rating, 0.5);
             data.ratings.average_rating_actual = average_rating.toFixed(1);            
             let rating_distribution = [];           
-
-            //add missing ratings
-            for(let i=0; i<5; i++){
-                if(!ratings[i+1]){
-                    ratings[i+1] = 0;
-                }                
-            }
-            Object.keys(ratings)
-            .sort()
-            .forEach(function(v, i) {
-                rating_distribution.push({
-                    rating: v,
-                    percent: Math.round((ratings[v] * 100) / result.reviews.length)
+            if(!isList){
+                //add missing ratings
+                for(let i=0; i<5; i++){
+                    if(!ratings[i+1]){
+                        ratings[i+1] = 0;
+                    }                
+                }
+                Object.keys(ratings)
+                .sort()
+                .forEach(function(v, i) {
+                    rating_distribution.push({
+                        rating: v,
+                        percent: Math.round((ratings[v] * 100) / result.reviews.length)
+                    });
                 });
-            });
-            data.ratings.rating_distribution = rating_distribution.reverse();
+                data.ratings.rating_distribution = rating_distribution.reverse();
+            }
         } 
 
         if(rank !== null && result.ranks){
@@ -654,34 +679,96 @@ module.exports = class providerService {
         return data;
     }
 
+    async getInstituteLandingPage(req) {
+        let data = {};
+        try {
+            const query = {
+                "bool": {
+                    "filter": [
+                        { "term": { "id": 1 } }
+                    ]
+                }
+            };
+            const payload = {
+                "size": 1
+            };
 
-    async getProviderCourses(provider_name, currency){
-        let courses = {
-            list: [],
-            total: 0
-        };
-        const query = {
-            "bool": {
-                "must": [
-                    {term: { "status.keyword": 'published' }},
-                    {term: { "provider_name.keyword": provider_name }}
-                ]
-             }
-        };
+            let cacheData = await RedisConnection.getValuesSync('institute-home-page');
+            data = cacheData;
 
-        let queryPayload = {};
-        queryPayload.from = 0;
-        queryPayload.size = 4;
-        queryPayload.sort = "published_date:desc";
+            if (cacheData.noCacheData) {
+               let result = await elasticService.search('institute-home-page', query, payload, ["category_recommendations", "program_recommendations", "region_recommendations", "meta_description", "meta_keywords"]);
 
-        const result = await elasticService.search('learn-content', query, queryPayload);
-        if(result.hits && result.hits.length > 0){
-            courses.list = await LearnContentService.generateListViewData(result.hits, currency);
-            courses.total = result.total.value;
+                if (result.hits && result.hits.length) {
+                    data = result.hits[0]._source
+                    let meta_information = await generateMetaInfo('INSTITUTE_HOME_PAGE', result);
+
+                    if (meta_information) {
+                        data.meta_information = meta_information;
+                    }
+                    await RedisConnection.set('institute-home-page', data);
+                    RedisConnection.expire('institute-home-page', process.env.CACHE_EXPIRE_HOME_PAGE);
+                    return { success: true, data }
+                }
+                else {
+                    return { success: false, data: null }
+                }
+            }
+
+            return { success: false, data: data }
+
+        } catch (error) {
+            console.log("Error fetching top categories in institute-home-page", error);
+            return { success: false, data: null }
         }
-        return courses;        
     }
     
+      async addActivity(req){
+       try {           
+            const {user} = req;
+            const {providerId} = req.body	
+            const activity_log =  await helperService.logActvity("INSTITUTE_VIEW",(user)? user.userId : null, providerId)           
+       } catch (error) {
+           console.log("provider activity error",  error)
+       }        
+    }
 
+    async invalidateFacilities(callback, useCache = true){
+        const cacheKey = "provider-facilties";
 
+        if(useCache){
+            try {
+                let cacheData = await RedisConnection.getValuesSync(cacheKey);
+                if(cacheData.noCacheData != true) {
+                    return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
+                }
+            }catch(error){
+                console.warn("Redis cache failed for page provider-facilties: "+cacheKey,error);
+            }
+        }
+
+        let result = null;
+        try{
+            result = await fetch(`${apiBackendUrl}/facilities`);
+        }catch(e){
+            console.log('Error while retriving facilities data',e);
+            return callback(null, {success: false, message: 'backend server failed!', data: []});
+        }
+        if(result.ok) {
+            let response = await result.json();
+            let res = {};
+            for (let key in response) {
+                res[ response[key].facility] = {
+                    label:  response[key].facility,
+                    description:  response[key].description,
+                    icon: ( response[key].icon &&  response[key].icon.url)? response[key].icon.url:null,
+                }
+                
+            }
+            RedisConnection.set(cacheKey, res);
+            callback(null, {success: true, message: 'Fetched successfully!', data:res});
+        } else {
+            callback(null, {success: false, message: 'No data available!', data: []});
+        }
+    }
 }

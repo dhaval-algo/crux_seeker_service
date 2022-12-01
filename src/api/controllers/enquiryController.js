@@ -5,6 +5,7 @@ const elasticService = require("../../api/services/elasticService");
 const enquiryService = require("../../api/services/enquiryService");
 const eventEmitter = require("../../utils/subscriber");
 const validators = require("../../utils/validators")
+const helperService = require("../../utils/helper");
 const { sequelize } = require("../../../models");
 
 
@@ -137,7 +138,7 @@ const fetchEnquiry = async(req, res) => {
 }
 
 const createEnquiry = async (req, res) => {
-
+    const { user = null } = req;
     let { courseId = "" } = req.body
     courseId = courseId.trim()
 
@@ -175,42 +176,44 @@ const createEnquiry = async (req, res) => {
                 "must": [{ term: { "_id": "PTNR_" + enquiry.partnerId }}]
             }};
             
+            let data = {
+                courseImgUrl: courseImgUrl,
+                course_name: enquiry.courseName,
+                provider: provider,
+                full_name: enquiry.fullName,
+                email: enquiry.email,
+                phone: enquiry.phone,
+                student: enquiry.student,
+                highestDegree: enquiry.highestDegree,
+                experience: enquiry.experience,
+                enquiryMessage: enquiry.enquiryMessage,
+            }
             //fetch partner's email  frm partner index 
             const partner = await elasticService.search('partner', query);
-            if( partner.hits && partner.hits.length > 0 ){
-                let {  correspondence_email, correspondence_email1, correspondence_email2,
+            if (partner.hits && partner.hits.length > 0) {
+                let { correspondence_email, correspondence_email1, correspondence_email2,
                     correspondence_email3, correspondence_email4, send_enquiry_updates, status } = partner.hits[0]._source
-        
-        
-            if(send_enquiry_updates && status == "Active")
-            {
-                let data = {
-                    courseImgUrl: courseImgUrl,
-                    course_name: enquiry.courseName,
-                    provider: provider,
-                    full_name: enquiry.fullName,
-                    email: enquiry.email,
-                    phone: enquiry.phone,
-                    student: enquiry.student,
-                    highestDegree: enquiry.highestDegree,
-                    experience: enquiry.experience,
-                    enquiryMessage: enquiry.enquiryMessage,
-                }
-                if(correspondence_email !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email, data)
-                if(correspondence_email1 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email1, data)
-                if(correspondence_email2 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email2, data)
-                if(correspondence_email3 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email3, data)
-                if(correspondence_email4 !=  null)
-                    await enquiryService.sendEnquiryEmail(correspondence_email4, data)
 
-            }}
+                if (send_enquiry_updates && status == "Active") {
+
+                    if (correspondence_email != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email, data)
+                    if (correspondence_email1 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email1, data)
+                    if (correspondence_email2 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email2, data)
+                    if (correspondence_email3 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email3, data)
+                    if (correspondence_email4 != null)
+                        await enquiryService.sendEnquiryEmail(correspondence_email4, data)
+                }
+            }
+            await enquiryService.sendEnquiryEmailToAdmin(data)
+            const activity_log =  await helperService.logActvity("COURSE_ENQUIRED",(user)? user.userId : null, courseId);
             res.status(200).send({success:true,  message: "enquiry submitted"})
         })
         .catch(err => {
+            console.log("error sending email", err)
             return res.status(500).send({error:true, message: err.message}) 
         })
 
@@ -224,6 +227,7 @@ const createEnquiry = async (req, res) => {
 const createLearnpathEnquiry = async (req, res) => {
 
     try {
+        const { user = null} = req;
         let { learnpathId = "" } = req.body
         learnpathId = learnpathId.trim()
     
@@ -245,6 +249,7 @@ const createLearnpathEnquiry = async (req, res) => {
             // emit event to createLead in zoho
             if(enq.id != undefined )
                 eventEmitter.emit('learnpathenquiry',enq.id)
+            const activity_log =  await helperService.logActvity("LEARNPATH_ENQUIRED",(user)? user.userId : null, learnpathId);
             return res.status(200).send({success:true, message:"learnpath enquiry submitted"})
         })
         .catch(err => {

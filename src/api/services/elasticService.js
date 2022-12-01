@@ -33,7 +33,7 @@ const elasticClient = () => {
 
 module.exports = {
 
-  search: async (index, query, payload={}, fields = null) => {
+  search: async (index, query, payload={}, fields = null,suggest = null) => {
     if(index === "learn-content") index += LEARN_CONTENT_VERSION;
     const client = elasticClient();
     let finalQuery = {
@@ -42,6 +42,16 @@ module.exports = {
         query: query
       }
     };
+
+    if(suggest)
+    {
+      finalQuery = {
+        index: index,
+        body: {
+          suggest: suggest
+        }
+      };
+    }
 
     if(fields) {
       finalQuery.body._source = fields;
@@ -82,7 +92,12 @@ module.exports = {
     const result = await client.search(finalQuery);
     if(result && result.body){
         //return result.body.hits.hits;
-        return result.body.hits;
+        if(suggest)
+        {
+          return result.body.suggest;
+        }else{
+          return result.body.hits;
+        }
     }else{
         return [];
     } 
@@ -166,5 +181,24 @@ module.exports = {
         return 0;
     } 
   }, 
+
+  // each query in queries should be a complete query like :
+  //{ _source: ["field1", "field2", "fieldn"], size: size, query: query }
+  // the index and query must have same position in their respective array
+  multiSearch: async (indices, queries) => {
+
+    const searches = [];
+    indices.forEach((index, i) => {
+
+      searches.push({ index: index });
+      searches.push(queries[i]);
+
+    });
+
+    const client = elasticClient();
+    const { body } = await client.msearch({ body: searches });
+    return body.responses;
+
+  }
 
 };
