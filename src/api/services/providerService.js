@@ -23,8 +23,6 @@ const {
 const {generateMetaInfo} = require('../utils/metaInfo');
 
 const redisConnection = require('../../services/v1/redis');
-const { rankings } = require("match-sorter");
-
 const RedisConnection = new redisConnection();
 
 const MAX_RESULT = 10000;
@@ -876,8 +874,9 @@ module.exports = class providerService {
 
                 if(ranking.noCacheData != true)
                 {
+                    if(ranking[item.slug]){
                     image = ranking[item.slug].image; 
-                    logo = ranking[item.slug].logo;
+                    logo = ranking[item.slug].logo;}
                 }
 
                 if (item.year == rankYear[item.slug]) {
