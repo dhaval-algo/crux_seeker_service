@@ -312,7 +312,7 @@ module.exports = class providerService {
                 latestRankYear = cacheData
             else
                 latestRankYear = this.setLatestRankingYear();
-            let yearOptions = []
+            /*let yearOptions = []
             let yearoption = parseInt(latestRankYear[req.query['rank']]);
             for(let i =0; i< 11; i++ )  
             {
@@ -334,7 +334,7 @@ module.exports = class providerService {
                 is_collapsed: true,
                 filter_type: 'Checkboxes',
                 options: yearOptions
-            })
+            })*/
 
             useCache = true; // enable cache for ranks
         }
@@ -455,7 +455,7 @@ module.exports = class providerService {
                 }); */
             }
 
-            /*let year = null;
+            let year = null;
             for(const filter of parsedFilters)
             {
                 if(filter.key === "Year")
@@ -464,8 +464,8 @@ module.exports = class providerService {
                     rankYear[req.query['rank']] = year
                 }
             }
-            if(!year)*/
-            let year = rankYear[req.query['rank']];
+            if(!year)
+                year = rankYear[req.query['rank']];
 
                     //handles both the query for rank-attr and just rank also
             year = { "field" : `ranking_${year}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
