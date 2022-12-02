@@ -454,10 +454,22 @@ module.exports = class providerService {
                     "exists" : { "field" : `ranking_${req.query['rank']}` }
                 }); */
             }
+
+            /*let year = null;
+            for(const filter of parsedFilters)
+            {
+                if(filter.key === "Year")
+                {
+                    year = filter.value.reverse()[0];
+                    rankYear[req.query['rank']] = year
+                }
+            }
+            if(!year)*/
+            let year = rankYear[req.query['rank']];
+
                     //handles both the query for rank-attr and just rank also
-            query.bool.must.push({
-                "exists" : { "field" : `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
-            });
+            year = { "field" : `ranking_${year}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
+            query.bool.must.push({ "exists" : year });
         }
 
         if(useCache)
@@ -483,11 +495,11 @@ module.exports = class providerService {
                     path: "ranks"
                 },
                 aggs: {
-                    Year: {
+                    /*Year: {
                         terms: {
                             field: "ranks.year.keyword"
                         }
-                    },
+                    },*/
                      Ranking: {
                         terms: {
                             field: "ranks.name.keyword"
@@ -1218,7 +1230,7 @@ module.exports = class providerService {
         for(let i = 0; i < filters.length; i++)
         {
             const field = filters[i].label;
-            if( ['Year', 'Ranking'].includes(field) )
+            if( ['Ranking'].includes(field) )
             {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
