@@ -91,7 +91,7 @@ const oderDetails = async (req, res, next) => {
                                     card_image_mobile: courses[0].card_image_mobile,
                                     description: courses[0].description,
                                     faq: courses[0].faq,
-                                    courses: courses[0].courses
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null
                                 }
                             }
                         } catch (error) {
@@ -196,7 +196,7 @@ const cancellationDetails = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    courses: courses[0].courses
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null
                                 }
                             }
                         } catch (error) {
@@ -295,7 +295,7 @@ const cancellationProgress = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    courses: courses[0].courses
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null
                                 }
                             }
                         } catch (error) {
@@ -419,7 +419,7 @@ const orderHistory = async (req, res, next) => {
                                             cover_image: courses[0].cover_image,
                                             card_image: courses[0].card_image,
                                             card_image_mobile: courses[0].card_image_mobile,
-                                            courses: courses[0].courses
+                                            course_count: (courses[0].courses)? courses[0].courses.length : null
                                         }
                                     }
                                 } catch (error) {
