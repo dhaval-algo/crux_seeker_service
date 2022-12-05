@@ -705,7 +705,9 @@ module.exports = class learnPathService {
             },
             courses: result.courses,
             skills: (result.skills) ? result.skills :null,
-            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
+            is_subscription: (result.subscription_price)? result.subscription_price : false,
+            show_enquiry: (result.enquiry)? result.enquiry : false
         }
 
         if (!isList) {

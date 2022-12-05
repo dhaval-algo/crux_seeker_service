@@ -1435,7 +1435,9 @@ module.exports = class learnContentService {
             corporate_sponsors: (result.corporate_sponsors) ? result.corporate_sponsors : [],
             accreditations: [],
             ads_keywords:result.ads_keywords,
-            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
+            is_subscription: (result.subscription_price)? result.subscription_price : false,
+            show_enquiry: (result.enquiry)? result.enquiry : false
         };
 
         
