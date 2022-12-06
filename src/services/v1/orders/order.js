@@ -490,7 +490,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "EMI",
-                                selected: (requestData.cartTypes =="emi")? true:false,
+                                selected: (requestData.cartTypes =="emi") ? true:false,
                                 disabled: false
                             })
                         }
@@ -498,7 +498,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Single Purchased",
-                                selected: (requestData.cartTypes =="buynow")? true:false,
+                                selected: (requestData.cartTypes =="buynow") ? true:false,
                                 disabled: false
                             })
                         }
@@ -506,7 +506,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Enroll",
-                                selected: (requestData.cartTypes =="enrollnow")? true:false,
+                                selected: (requestData.cartTypes =="enrollnow") ? true:false,
                                 disabled: false
                             })
                         }
