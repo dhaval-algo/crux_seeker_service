@@ -20,7 +20,7 @@ const oderDetails = async (req, res, next) => {
         }
         let order_id = req.query.orderId
         let user_id = await encryptUserId(req.user.userId)
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/${user_id}/${order_id}`
+        let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
 
@@ -341,9 +341,9 @@ const orderHistory = async (req, res, next) => {
             limit : size,         
             sortBy : sortBy 
          }
-         requestData.itemType = ""
-         requestData.cartType = ""
-         requestData.orderStatus = ""
+         requestData.itemType = []
+         requestData.cartType = []
+         requestData.orderStatus = []
         if (req.query['f']) {
 
             let parsedFilters = parseQueryFilters(req.query['f']);
@@ -521,7 +521,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Successful",
-                                selected: (requestData.orderStatus =="Successful")? true:false,
+                                selected: (requestData.orderStatus.includes("Successful"))? true:false,
                                 disabled: false
                             })
                         }
@@ -529,7 +529,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Created",
-                                selected: (requestData.orderStatus =="Created")? true:false,
+                                selected: (requestData.orderStatus.includes("Create"))? true:false,
                                 disabled: false
                             })
                         }
@@ -537,7 +537,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Payment Failed",
-                                selected: (requestData.orderStatus =="Payment Failed")? true:false,
+                                selected: (requestData.orderStatus.includes("Payment Failedate"))? true:false,
                                 disabled: false
                             })
                         }
