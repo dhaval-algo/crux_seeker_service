@@ -461,7 +461,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Course",
                                 selected: (requestData.itemType =="course")? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         if(response.data.data.availableFilters.itemType.includes('learnpath'))
@@ -469,7 +470,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Learn Path",
                                 selected: (requestData.itemType =="learnpath")? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         filters.push({
@@ -491,7 +493,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "EMI",
                                 selected: (requestData.cartTypes =="emi") ? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         if(response.data.data.availableFilters.cartTypes.includes('buynow'))
@@ -499,7 +502,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Single Purchased",
                                 selected: (requestData.cartTypes =="buynow") ? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         if(response.data.data.availableFilters.cartTypes.includes('enrollnow'))
@@ -507,7 +511,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Enroll",
                                 selected: (requestData.cartTypes =="enrollnow") ? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         
@@ -530,7 +535,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Successful",
                                 selected: (requestData.orderStatus=="Successful")? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         if(response.data.data.availableFilters.orderStatus.includes('Created'))
@@ -538,7 +544,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Created",
                                 selected: (requestData.orderStatus=="Create")? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         if(response.data.data.availableFilters.orderStatus.includes('Payment Failed'))
@@ -546,7 +553,8 @@ const orderHistory = async (req, res, next) => {
                             options.push({
                                 label: "Payment Failed",
                                 selected: (requestData.orderStatus=="Payment Failedate")? true:false,
-                                disabled: false
+                                disabled: false,
+                                count:1
                             })
                         }
                         
