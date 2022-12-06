@@ -26,10 +26,10 @@ const oderDetails = async (req, res, next) => {
 
             if (response.data.status == 'OK' && response.data.data) {
                 finalData.orderData = response.data.data[0]
-                switch (finalData.orderData.orderItems[0].itemType) {
+                switch (finalData.orderData.orderItems[0].purchaseDetailsResponse.itemType) {
                     case 'course':
                         try {
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].itemId.toString() } });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -71,7 +71,7 @@ const oderDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].itemId.toString() } });
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -376,10 +376,10 @@ const orderHistory = async (req, res, next) => {
                 if (response.data.data.orderDetailResponseList && response.data.data.orderDetailResponseList.length > 0) {
                     list = await  Promise.all( response.data.data.orderDetailResponseList.map(async entity => {
                         let courseData = {}
-                        switch (entity.orderItems[0].itemType) {
+                        switch (entity.orderItems[0].purchaseDetailsResponse.itemType) {
                             case 'course':
                                 try {
-                                    let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].itemId.toString() } });
+                                    let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
                                             title: courses[0].title,
@@ -401,7 +401,7 @@ const orderHistory = async (req, res, next) => {
                                 break;
                             case 'learnpath':
                                 try {
-                                    let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].itemId.toString() } });
+                                    let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
                                             title: courses[0].title,
