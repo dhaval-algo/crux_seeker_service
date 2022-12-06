@@ -478,7 +478,7 @@ const orderHistory = async (req, res, next) => {
                             filterable: true,
                             filter_postion: "vertical",
                             display_count: false,
-                            filter_type: "Radio",
+                            filter_type: "Checkboxes",
                             options: options
                         })
                     }
@@ -556,7 +556,7 @@ const orderHistory = async (req, res, next) => {
                             filterable: true,
                             filter_postion: "horizontal",
                             display_count: false,
-                            filter_type: "Radio",
+                            filter_type: "Checkboxes",
                             options: options
                         })
                     }
