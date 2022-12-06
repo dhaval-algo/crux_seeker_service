@@ -19,7 +19,10 @@ const oderDetails = async (req, res, next) => {
             'data': {}
         }
         let order_id = req.query.orderId
+        order_id =  375 // delete this hardcoded value after testing
         let user_id = await encryptUserId(req.user.userId)
+        user_id = "L9zSdZgC1drQtaH5881HTw==" 
+
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
@@ -29,6 +32,7 @@ const oderDetails = async (req, res, next) => {
                 switch (finalData.orderData.orderItems[0].purchaseDetailsResponse.itemType) {
                     case 'course':
                         try {
+                            finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -71,6 +75,7 @@ const oderDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
+                            finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -332,6 +337,7 @@ const orderHistory = async (req, res, next) => {
         let sortOptions = ['Recently Purchansed','Purchansed Earlier']
         req.query.sort = req.query.sort || defaultSort 
         let userId = await encryptUserId(req.user.userId)
+        userId = "WKbJUbB9Ac6o3bM0TeJ26Q" // delete this hardcoded value after testing
         let page =  req.query.page || 1 
         let size =  req.query.size || 10 
         let sortBy = (req.query.sort ='Recently Purchansed')?'desc' : 'asc'
@@ -379,6 +385,7 @@ const orderHistory = async (req, res, next) => {
                         switch (entity.orderItems[0].purchaseDetailsResponse.itemType) {
                             case 'course':
                                 try {
+                                    entity.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
                                     let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
@@ -401,6 +408,7 @@ const orderHistory = async (req, res, next) => {
                                 break;
                             case 'learnpath':
                                 try {
+                                    entity.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
                                     let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
@@ -521,7 +529,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Successful",
-                                selected: (requestData.orderStatus.includes("Successful"))? true:false,
+                                selected: (requestData.orderStatus=="Successful")? true:false,
                                 disabled: false
                             })
                         }
@@ -529,7 +537,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Created",
-                                selected: (requestData.orderStatus.includes("Create"))? true:false,
+                                selected: (requestData.orderStatus=="Create")? true:false,
                                 disabled: false
                             })
                         }
@@ -537,7 +545,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Payment Failed",
-                                selected: (requestData.orderStatus.includes("Payment Failedate"))? true:false,
+                                selected: (requestData.orderStatus=="Payment Failedate")? true:false,
                                 disabled: false
                             })
                         }
