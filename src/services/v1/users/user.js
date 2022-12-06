@@ -18,7 +18,8 @@ const {
     sendDataForStrapi,
     sendSuspendedEmail,
     sendActivatedEmail,
-    logActvity
+    logActvity,
+    encryptUserId
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -3705,6 +3706,7 @@ const getUserProfile = async (req, res) => {
         user.setDataValue('pendingActions', pendingActions);
         user.setDataValue('profileProgress', pendingActions.profileProgress);
         user.setDataValue('id', req.user.userId);
+        user.setDataValue('encryptedUserId', await encryptUserId(req.user.userId));
         res.status(200).send({
             message: "User Profile fetched successfully",
             success: true,

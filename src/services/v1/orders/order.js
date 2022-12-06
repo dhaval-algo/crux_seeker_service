@@ -5,19 +5,10 @@ const learnPathService = require("../../../api/services/learnPathService");
 let LearnPathService = new learnPathService();
 const axios = require("axios");
 
-const AES = require("crypto-js/aes");
-const encUtf8 = require("crypto-js/enc-utf8");
-const modeEcb = require("crypto-js/mode-ecb");
+
 const { sortFilterOptions ,parseQueryFilters} = require("../../../api/utils/general");
+const { encryptUserId } = require("../../../utils/helper");
 
-
-const encryptUserId = async (userId) => {
-    let key = process.env.ECOM_USER_ENCRYPTION_KEY
-    let plaintext = encUtf8.parse(userId);
-    let secSpec = encUtf8.parse(key);
-    var encrypted = AES.encrypt(plaintext, secSpec, { mode: modeEcb });
-    return encrypted.toString();
-}
 
 
 const oderDetails = async (req, res, next) => {
