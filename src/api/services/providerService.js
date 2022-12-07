@@ -522,27 +522,6 @@ module.exports = class providerService {
         let filters = filterResponse.filters; */  
 
         let result = {};
-        //aggs for counting rankings and years
-        queryPayload.aggs = {
-            ranks: {
-                nested: {
-                    path: "ranks"
-                },
-                aggs: {
-                    /*Year: {
-                        terms: {
-                            field: "ranks.year.keyword"
-                        }
-                    },*/
-                     Ranking: {
-                        terms: {
-                            field: "ranks.name.keyword"
-                        }
-                    }
-                }
-
-            }
-        }
 
         try{
             result = await elasticService.searchWithAggregate('provider', query, queryPayload, queryString);
@@ -572,7 +551,7 @@ module.exports = class providerService {
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            filters = await this.updateRanksFilter(result, filters, parsedFilters);
+            filters = await this.updateRanksFilter( filters, parsedFilters);
 
             let data = {
                 list: list,
@@ -601,7 +580,7 @@ module.exports = class providerService {
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
-            filters = await this.updateRanksFilter(result, filters, parsedFilters);
+            filters = await this.updateRanksFilter(filters, parsedFilters);
             callback(null, {success: true, message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
@@ -1259,8 +1238,43 @@ module.exports = class providerService {
         }, false);
     }
 
-    async updateRanksFilter(result, filters, parsedFilters){
+    async updateRanksFilter(filters, parsedFilters){
+        let result = null;
+                //aggs for counting rankings and years
+        const aggs = {
+            ranks: {
+                nested: {
+                    path: "ranks"
+                },
+                aggs: {
+                    /*Year: {
+                        terms: {
+                            field: "ranks.year.keyword"
+                        }
+                    },*/
+                        Ranking: {
+                        terms: {
+                            field: "ranks.name.keyword"
+                        }
+                    }
+                }
 
+            }
+        }
+        const query = {
+            "bool": {
+                "must": [
+                    { term: { "status.keyword": 'approved' } }
+                ]
+            }
+        };
+
+        try {
+            result = await elasticService.searchWithAggregate('provider', query, {aggs, size:0 }, null);
+        }catch(err){
+            console.log("Provider service. updateRanksFilter aggs failed ..!",err);
+            return filters;
+        }
         for(let i = 0; i < filters.length; i++)
         {
             const field = filters[i].label;
