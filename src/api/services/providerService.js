@@ -166,6 +166,40 @@ const getFilterOption = (data, filter) => {
     options = sortFilterOptions(options);
     return options;
 };
+
+//cRanks cases covers are  ['a','A', "a+", "Z+"]; single character with '+' optional
+// 'a+' -> 1; 'a' -> 2; 'e+' -> 9; 'e' -> 10;  etc
+const characterRankToInt = (cRank) =>
+{
+    let r = cRank.trim();
+    if(r.length === 2 && r.match(/\+$/))
+        return ((2 * (cRank.toLowerCase().charCodeAt(0) - 96)) -1)
+    else if(r.match(/[a-zA-Z]/))
+        return (2 * (cRank.toLowerCase().charCodeAt(0) - 96))
+    else
+        return 0;    // else return 0 for invalid rank;
+}
+
+const convertRankToInt = (r) =>
+{
+    if(!isNaN(r))
+        return Number(r);
+
+    let rank = r.trim()
+
+    if(rank.includes('-'))
+    {
+        rank = r.split('-');
+        //cacl average of range;
+        return (parseInt(rank[0]) + parseInt(rank[1]))/2;
+    }
+
+    rank = parseFloat(rank);
+    if(!isNaN(rank))
+        return rank;
+
+    return characterRankToInt(r);
+}
 module.exports = class providerService {
 
     async getProviderList(req, callback, skipCache){
@@ -932,11 +966,11 @@ module.exports = class providerService {
                 let year = parseInt(Object.keys(data.compare_ranks).sort()[0]); //get base year
                 let r = 0, r1 = 0;
                 if(data.compare_ranks[year])
-                    r = data.compare_ranks[year].rank;
+                    r = convertRankToInt(data.compare_ranks[year].rank);
 
                 if( data.compare_ranks[year +1] )
                 {
-                    r1 = data.compare_ranks[year +1].rank;
+                    r1 = convertRankToInt(data.compare_ranks[year +1].rank);
                     if(r >= 1 )
                         data.compare_ranks[year +1].rank_change = r -r1;
                     r = r1;
@@ -944,14 +978,14 @@ module.exports = class providerService {
 
                 if( data.compare_ranks[year +2] )
                 {
-                    r1 = data.compare_ranks[year +2].rank;
+                    r1 = convertRankToInt(data.compare_ranks[year +2].rank);
                     if(r >= 1 )
                         data.compare_ranks[year +2].rank_change =  r -r1;
                     r = r1;
                 }
                 if( data.compare_ranks[year +3] )
                 {
-                    r1 = data.compare_ranks[year +3].rank;
+                    r1 = convertRankToInt(data.compare_ranks[year +3].rank);
                     if(r >= 1 )
                         data.compare_ranks[year +3].rank_change = r -r1;
                 }
