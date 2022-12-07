@@ -417,8 +417,6 @@ module.exports = class providerService {
                             
                         }
                     }
-                    cacheName = `listing-providers_${req.query['rank']}_${rankYear[req.query['rank']]}`; // ranking + year level cache
-                    
                 }
             }
         }
@@ -489,17 +487,8 @@ module.exports = class providerService {
                 }); */
             }
 
-            let year = null;
-            for(const filter of parsedFilters)
-            {
-                if(filter.key === "Year")
-                {
-                    year = filter.value.reverse()[0];
-                    rankYear[req.query['rank']] = year
-                }
-            }
-            if(!year)
-                year = rankYear[req.query['rank']];
+            let year = rankYear[req.query['rank']];
+            cacheName = `listing-providers_${req.query['rank']}_${year}`; // ranking + year cache
 
                     //handles both the query for rank-attr and just rank also
             year = { "field" : `ranking_${year}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
@@ -527,6 +516,7 @@ module.exports = class providerService {
             result = await elasticService.searchWithAggregate('provider', query, queryPayload, queryString);
         }catch(e){
             console.log("Error fetching elastic data <> ", e);
+            return callback(null, { success: true, message: 'elastic: no records/ failed!', data: {list: [], ranking, filters }});
         }
 
 
@@ -870,8 +860,12 @@ module.exports = class providerService {
                     
                     if(cacheData.noCacheData != true)
                     {
+                        if(ranking[item.slug]){
+                            image = ranking[item.slug].image;
                         image = ranking[item.slug].image; 
-                        logo = ranking[item.slug].logo;
+                            image = ranking[item.slug].image; 
+                            logo = ranking[item.slug].logo;
+                        }
                     }
 
                     data.ranks.push({
@@ -900,8 +894,11 @@ module.exports = class providerService {
                 if(ranking.noCacheData != true)
                 {
                     if(ranking[item.slug]){
+                        image = ranking[item.slug].image;
                     image = ranking[item.slug].image; 
-                    logo = ranking[item.slug].logo;}
+                        image = ranking[item.slug].image;
+                        logo = ranking[item.slug].logo;
+                    }
                 }
 
                 if (item.year == rankYear[item.slug]) {
