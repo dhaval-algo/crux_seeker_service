@@ -21,7 +21,7 @@ const oderDetails = async (req, res, next) => {
         let order_id = req.query.orderId
         order_id =  375 // delete this hardcoded value after testing
         let user_id = await encryptUserId(req.user.userId)
-        user_id = "L9zSdZgC1drQtaH5881HTw==" 
+        user_id = "L9zSdZgC1drQtaH5881HTw=="  // delete this hardcoded value after testing
 
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
@@ -132,39 +132,18 @@ const cancellationDetails = async (req, res, next) => {
             'data': {}
         }
         let orderId = req.query.orderId
-        let userId = await encryptUserId(req.user.userId)
-
-        let itemType = req.query.itemType
-        let itemId = req.query.itemId
-        let cartType = req.query.cartType
-        if (itemType == 'course') {
-            if (itemId.includes("LRN_CNT_PUB_")) {
-                itemId = itemId.replace('LRN_CNT_PUB_', '');
-            }
-        }
-        else if (itemType == 'learnpath') {
-            if (itemId.includes("LRN_PTH_")) {
-                itemId = itemId.replace('LRN_PTH_', '');
-            }
-        }
-        let requestData = {
-            orderId: orderId,
-            userId: userId,
-            itemId: itemId,
-            itemType: itemType,
-            cartType: cartType
-
-        }
-
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details`
+        let userId = await encryptUserId(req.user.userId)  
+        orderId = 376 // delete this hardcoded value after testing
+        userId ='L9zSdZgC1drQtaH5881HTw==' // delete this hardcoded value after testing
+        let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
         let finalData = {}
-        axios.post(request_url, requestData).then(async (response) => {
+        axios.get(request_url, requestData).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
                 finalData.cancellationData = response.data.data
-                switch (itemType) {
+                switch (finalData.cancellationData.itemType) {
                     case 'course':
                         try {
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: itemId.toString() } });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -183,7 +162,7 @@ const cancellationDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.courseId.toString() } });
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
