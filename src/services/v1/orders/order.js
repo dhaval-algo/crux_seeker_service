@@ -19,9 +19,12 @@ const oderDetails = async (req, res, next) => {
             'data': {}
         }
         let order_id = req.query.orderId
-        order_id =  375 // delete this hardcoded value after testing
+        if(order_id != 236  && order_id != 384 && order_id != 370  )  // delete this hardcoded value after testing
+        {
+            order_id != 236   // delete this hardcoded value after testing
+        }
         let user_id = await encryptUserId(req.user.userId)
-        user_id = "L9zSdZgC1drQtaH5881HTw=="  // delete this hardcoded value after testing
+        user_id = "WKbJUbB9Ac6o3bM0TeJ26Q=="  // delete this hardcoded value after testing
 
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
