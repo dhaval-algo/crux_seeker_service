@@ -143,6 +143,7 @@ const cancellationDetails = async (req, res, next) => {
                 switch (finalData.cancellationData.itemType) {
                     case 'course':
                         try {
+                            finalData.cancellationData.itemId = 18616
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -162,6 +163,7 @@ const cancellationDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
+                            finalData.cancellationData.itemId = 102 // delete this hardcoded value after testing
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
