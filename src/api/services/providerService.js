@@ -811,7 +811,7 @@ module.exports = class providerService {
                         }
                         if (hit._source.sector_wise_placement_graph) {
                             batch_profile.push({
-                                tab_label: 'Batches By Skills',
+                                tab_label: 'Sector wise Placements',
                                 type: "GRAPH",
                                 graph_id: hit._source.sector_wise_placement_graph
                             })
