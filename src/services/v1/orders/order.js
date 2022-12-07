@@ -136,7 +136,6 @@ const cancellationDetails = async (req, res, next) => {
         }
         let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)  
-        orderId = 376 // delete this hardcoded value after testing
         userId ='L9zSdZgC1drQtaH5881HTw==' // delete this hardcoded value after testing
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
         let finalData = {}
