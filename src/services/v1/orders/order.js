@@ -137,7 +137,7 @@ const cancellationDetails = async (req, res, next) => {
         userId ='L9zSdZgC1drQtaH5881HTw==' // delete this hardcoded value after testing
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
         let finalData = {}
-        axios.get(request_url, requestData).then(async (response) => {
+        axios.get(request_url).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
                 finalData.cancellationData = response.data.data
                 switch (finalData.cancellationData.itemType) {
