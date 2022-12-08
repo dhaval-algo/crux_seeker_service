@@ -219,7 +219,7 @@ const cancellationProgress = async (req, res, next) => {
             'message': 'something went wrong, Please try again',
             'data': {}
         }
-        let cancellationId = req.query.cancellationId
+        let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)
         userId = await encryptUserId(3) // delete this hardcoded value after testing
         let itemType = req.query.itemType
@@ -235,7 +235,7 @@ const cancellationProgress = async (req, res, next) => {
             }
         }
 
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/request_progress/user/${cancellationId}?user_id=${userId}`
+        let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/request_progress/user/${orderId}?user_id=${userId}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
