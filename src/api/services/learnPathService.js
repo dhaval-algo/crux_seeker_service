@@ -682,6 +682,7 @@ module.exports = class learnPathService {
         let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
         let data = {
             id: `LRN_PTH_${result.id}`,
+            numeric_id:result.id,
             title: result.title,
             slug: result.slug,
             description: result.description,

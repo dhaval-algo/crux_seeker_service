@@ -1338,6 +1338,7 @@ module.exports = class learnContentService {
             status:result.status,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
+            numeric_id:result.id,
             subtitle: result.subtitle,
             providers: result.providers_list,
             provider_course_url: result.provider_course_url,
