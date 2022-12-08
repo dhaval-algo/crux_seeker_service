@@ -142,11 +142,11 @@ const cancellationDetails = async (req, res, next) => {
         axios.get(request_url).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
                 finalData.cancellationData = response.data.data
-                switch (finalData.cancellationData.itemType) {
+                switch (finalData.cancellationData.refundSummary.itemType) {
                     case 'course':
                         try {
-                            finalData.cancellationData.itemId = 18616
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.itemId.toString() } });
+                            finalData.cancellationData.refundSummary.itemId = 18616
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -165,8 +165,8 @@ const cancellationDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                            finalData.cancellationData.itemId = 102 // delete this hardcoded value after testing
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.itemId.toString() } });
+                            finalData.cancellationData.refundSummary.itemId = 102 // delete this hardcoded value after testing
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString() } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
