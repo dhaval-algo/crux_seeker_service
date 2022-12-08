@@ -1755,6 +1755,7 @@ module.exports = class learnContentService {
             title: data.title,
             slug: data.slug,
             id: data.id,
+            numeric_id:data.numeric_id,
             providers: data.providers,
             partner: data.partner,
             cover_image: desktop_course_image ? desktop_course_image: data.cover_image,
