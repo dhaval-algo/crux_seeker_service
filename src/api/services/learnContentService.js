@@ -380,7 +380,15 @@ module.exports = class learnContentService {
         
         if(req.query['courseIds']){
             let courseIds = req.query['courseIds'].split(",");
-            
+            courseIds = courseIds.map(id => {
+                    
+                if(!id.includes("LRN_CNT_PUB_"))
+                {
+                    id = 'LRN_CNT_PUB_'+id
+                }
+
+                return id
+            })
             let filter_object = {
                 "terms": {
                   "_id": courseIds 

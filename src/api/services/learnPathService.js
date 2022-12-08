@@ -180,6 +180,15 @@ module.exports = class learnPathService {
 
             if (req.query['learnPathIds']) {
                 let learnPathIds = req.query['learnPathIds'].split(",");
+                learnPathIds = learnPathIds.map(id => {
+                    
+                    if(!id.includes("LRN_CNT_PUB_"))
+                    {
+                        id = 'LRN_PTH_'+id
+                    }
+    
+                    return id
+                })
 
                 let filter_object = {
                     "terms": {
