@@ -238,7 +238,8 @@ module.exports = class providerService {
         const query = { 
             "bool": {
                 "must": [
-                    {term: { "status.keyword": 'approved' }}                
+                    { term: { "status.keyword": "approved" } },
+                    { term: { "visible": true } }
                 ],
                 //"filter": []
             }
@@ -593,7 +594,8 @@ module.exports = class providerService {
             const query = { "bool": {
                 "must": [
                 {term: { "slug.keyword": slug }},
-                {term: { "status.keyword": 'approved' }}
+                { term: { "status.keyword": "approved" } },
+                { term: { "visible": true } }
                 ]
             }};
             const result = await elasticService.search('provider', query);

@@ -4545,7 +4545,8 @@ module.exports = class recommendationService {
                 let esQuery = {
                     "bool": {
                         "filter": [
-                            { "term": { "status.keyword": "approved" } }
+                            { term: { "status.keyword": "approved" } },
+                            { term: { "visible": true } }
                         ]
                     }
                 }
