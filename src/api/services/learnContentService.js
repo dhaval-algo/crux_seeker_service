@@ -1446,8 +1446,20 @@ module.exports = class learnContentService {
             ads_keywords:result.ads_keywords,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
+            buy_now: (result.buy_now)? result.buy_now : false,
             show_enquiry: (result.enquiry)? result.enquiry : false
         };
+
+        //Remove this hardocded after testing
+
+        if(data.id =='LRN_CNT_PUB_18616' || data.id =='LRN_CNT_PUB_24724' )
+        {
+            data.buy_now = true
+        }
+        if(data.id =='LRN_CNT_PUB_24724')
+        {
+            data.is_subscription = true
+        }
 
         
         //SET popular and trending keys
