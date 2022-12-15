@@ -875,6 +875,7 @@ module.exports = class providerService {
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
+                        score: item.total_score,
                         year: item.year,
                         precedence: item.precedence ? item.precedence: null,
                         image,
