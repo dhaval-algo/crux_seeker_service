@@ -339,14 +339,14 @@ module.exports = class providerService {
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
         let filters = filterResponse.filters; 
         let latestRankYear
+        const cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+        if(cacheData.noCacheData != true)
+            latestRankYear = cacheData
+        else
+            latestRankYear = await this.setLatestRankingYear();
 
         if(req.query['rank'])
         {
-            let cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
-            if(cacheData.noCacheData != true)
-                latestRankYear = cacheData
-            else
-                latestRankYear = this.setLatestRankingYear();
             /*let yearOptions = []
             let yearoption = parseInt(latestRankYear[req.query['rank']]);
             for(let i =0; i< 11; i++ )  
@@ -856,11 +856,12 @@ module.exports = class providerService {
                     
                 //get image/logo from cache
             let image, logo, ranking = await RedisConnection.getValuesSync(`rankings_slug_object`);
+            data.ranks = [];
             for (let item of result.ranks) {
                 
                 if ( item.year == rankYear[item.slug]) {
                     
-                    if(cacheData.noCacheData != true)
+                    if(ranking.noCacheData != true)
                     {
                         if(ranking[item.slug]){
                             image = ranking[item.slug].image;
