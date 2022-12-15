@@ -769,6 +769,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            score: item.total_score,
                             year: item.year,
                             precedence: item.precedence ? item.precedence  : 0,
                             image,
@@ -911,6 +912,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            score: item.total_score,
                             year: item.year,
                             precedence: item.precedence ? item.precedence: null,
                             logo,
@@ -931,6 +933,7 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            score: item.total_score,
                             year: item.year,
                             precedence: item.precedence ? item.precedence: null,
                             rank_change : 0
