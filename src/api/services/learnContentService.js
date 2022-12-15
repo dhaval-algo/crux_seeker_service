@@ -1446,7 +1446,7 @@ module.exports = class learnContentService {
             ads_keywords:result.ads_keywords,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
-            careervira_buy: (result.buy_now)? result.buy_now : false,
+            buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
             show_enquiry: (result.enquiry)? result.enquiry : false
         };
 
@@ -1454,11 +1454,11 @@ module.exports = class learnContentService {
 
         if(data.id =='LRN_CNT_PUB_18616' || data.id =='LRN_CNT_PUB_6186' )
         {
-            data.careervira_buy = true
+            data.buy_on_careervira = true
         }
         if(data.id =='LRN_CNT_PUB_24724')
         {
-            data.careervira_buy = true
+            data.buy_on_careervira = true
             data.is_subscription = true
         }
 
