@@ -2,6 +2,9 @@
 // all the meta information constants are defined below 
 const EXTRA_KEYWORDS_LEARN_CONTENT_LIST = ["online courses", "learning courses", "paid courses", "degrees", "certifications", "offline courses", "instructor courses", "courses near me", "top courses"];
 const EXTRA_KEYWORDS_PROVIDER = ['top institutes', 'indian institutes', 'free courses', 'online courses', 'top institutes', 'careervira institutes', 'institutes near me', 'free online courses', 'learning', 'list of institutes', 'top universities', 'universities'];
+const EXTRA_KEYWORDS_JOBS_LIST = ["Job Openings", "Careers", "Job Roles", "Work"]
+const DESCRIPTION_JOBS_LIST = "We are looking for change-makers who can work in a fast-paced environment, are self-driven and are problem-solvers. At Careervira, we are transforming the future of learning & career planning. Join us to be a part of this journey and help the Careervira community make faster and better career and learning decisions.";
+const TITLE_JOBS_LIST = "Career Opportunity | Careervira | Careervira.com"
 const EXTRA_KEYWORDS_PARTNER = ["free courses", "online courses", "courses near me", "careervira courses", "available courses", "self paced/instructors", "english courses", "degrees", "certifications"];
 const EXTRA_KEYWORDS_PROVIDER_LIST = ["courses", "free courses", "online courses", "courses near me", "careervira courses", "available courses", "self paced/instructors", "english courses", "degrees", "certifications"];
 const DESCRIPTION_PROVIDER_LIST = "Discover Highly Vetted and Curated online courses, executive education, boot camp, degrees, and certifications for professionals. Get a detailed analysis and ranking of the courses and programs from the top global institutions. Make better learning and career decisions.";
@@ -517,6 +520,40 @@ const getProviderListMetaInfo = (list) => {
 
 }
 
+
+const getJobListMetaInfo = (list) => {
+
+    let meta_keywords = [];
+    let locations = [];
+    for (let job of list)
+    {
+        job = job._source
+        meta_keywords.push(job.job_title);
+        meta_keywords.push(job.job_type);
+
+
+        if (job.city)
+            locations.push(job.city);
+
+        if (job.country)
+            locations.push(job.country);
+
+    }
+
+    locations = locations.filter((x, i, a) => a.indexOf(x) == i)
+
+    meta_keywords = [...meta_keywords, ...locations, EXTRA_KEYWORDS_JOBS_LIST];
+
+    if (meta_keywords.length > 0)
+    {
+        meta_keywords = [...new Set(meta_keywords)];
+        meta_keywords = meta_keywords.join(", ");
+    }
+
+    return { meta_title: TITLE_JOBS_LIST, meta_keywords: meta_keywords, meta_description: DESCRIPTION_JOBS_LIST };
+
+}
+
 const getPartnerMetaInfo = (result) => {
     try {
         let meta_description = '';
@@ -986,7 +1023,24 @@ const generateMetaInfo = async (page, result, list) => {
                 meta_keywords: (result.meta_keywords) ? result.meta_keywords : defaultLearnContentMetaInfo.meta_keywords
             }
             break;
-            
+        case 'JOBS_LIST':
+            meta_information = getJobListMetaInfo(list);
+            break;
+        case 'JOB':
+            let desc = result.job_title;
+            if(result.description)
+            {
+                desc = result.description
+                desc = desc.replace(/<[^>]*>/g, ''); //get rid of html tags if any
+                desc = desc.replace(/&[^;]*;/g,''); // get rid of html entities if any
+            }
+
+            meta_information = {
+                meta_title: `${result.job_title} | Careers | Careervira | Careervira.com`,
+                meta_description: desc,
+                meta_keywords: `${result.job_title}, ${result.job_department}, ${result.job_type.replace(/_/, ' ')}, ${result.country ? result.country : ''}, ${result.city ? result.city : ''}, Careervira, Careervira.com`
+            }
+            break;
 
 
         default:
