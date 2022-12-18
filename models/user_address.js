@@ -10,6 +10,8 @@ module.exports = (sequelize, DataTypes) => {
         notEmpty: { msg: "userId cannot be empty" }
       }
     },
+    firstName: DataTypes.STRING,
+    lastName: DataTypes.STRING,
     addressLine: DataTypes.STRING,
     locality: DataTypes.STRING,
     city: DataTypes.STRING,
