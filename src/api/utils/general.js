@@ -5,6 +5,7 @@ const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const { Engine } = require('json-rules-engine')
 const metaInfo = require('../utils/metaInfo')
+const axios = require("axios");
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
@@ -632,6 +633,238 @@ if(count > 1000){
   return count
 }
 
+const getlistPriceFromEcom = async (list, type, countryCode) => {
+
+    //remove this code after testing
+    let testIds,count
+    switch (type) {
+        case "learn_content":
+            testIds =  [3,501]
+            count = 0
+            list.map(item=> {
+               
+                let id = (item._source)? item._source.id: item.id
+                let is_subscription = (count < 4)? false: true
+                if (typeof id === 'string' && id.includes("LRN_CNT_PUB_")) {
+                    if(item._source)
+                    {
+                        item._source.id = "LRN_CNT_PUB_"+testIds[count]
+                        item._source.subscription_price = is_subscription
+                    }else
+                    {
+                        item.id = "LRN_CNT_PUB_"+testIds[count]
+                        item.is_subscription = is_subscription
+    
+                    }
+                }else{
+                    if(item._source)
+                    {
+                        item._source.id = testIds[count]
+                        item._source.subscription_price = is_subscription
+
+                    }else
+                    {
+                        item.id = testIds[count]
+                        item.is_subscription = is_subscription
+    
+                    }
+                }
+                count ++
+                if(count > 1){
+                    count = 0
+                }
+
+
+                return item
+            })
+            break;
+        case "learn_path":
+             testIds =  [11,7]
+            count = 0
+            list.map(item=> {
+               
+                let id = (item._source)? item._source.id: item.id
+                let is_subscription = (count < 4)? false: true
+                if (typeof id === 'string' && id.includes("LRN_PTH_")) {
+                    if(item._source)
+                    {
+                        item._source.id = "LRN_PTH_"+testIds[count]
+                        item._source.subscription_price = is_subscription
+                    }else
+                    {
+                        item.id = "LRN_PTH_"+testIds[count]
+                        item.is_subscription = is_subscription
+    
+                    }
+                }else{
+                    if(item._source)
+                    {
+                        item._source.id = testIds[count]
+                        item._source.subscription_price = is_subscription
+
+                    }else
+                    {
+                        item.id = testIds[count]
+                        item.is_subscription = is_subscription
+    
+                    }
+                }
+                count ++
+                if(count > 1){
+                    count = 0
+                }
+
+
+                return item
+            })
+            break;
+        default:
+            break;
+    }  
+
+
+    try {
+        let buyNow = {}
+        buyNow.courseIds = []
+        buyNow.learnPathIds = []
+
+        let subscription = {}
+        subscription.courseIds = []
+        subscription.learnPathIds = []
+        switch (type) {
+            case "learn_content":
+                for (let item of list) {
+                    let id = (item._source)? item._source.id: item.id
+                    let is_subscription = (item._source)? item._source.subscription_price: item.is_subscription
+                    if (typeof id === 'string' && id.includes("LRN_CNT_PUB_")) {
+                        id = parseInt(id.replace("LRN_CNT_PUB_", ""))
+                    }
+                    if (is_subscription) {
+                        subscription.courseIds.push(id)
+                    }
+                    else {
+                        buyNow.courseIds.push(id)
+                    }
+                }
+                break;
+            case "learn_path":
+                for (let item of list) {
+                    let id = (item._source)? item._source.id: item.id
+                    let is_subscription = (item._source)? item._source.subscription_price: item.is_subscription
+                    if (typeof id === 'string' && id.includes("LRN_PTH_")) {
+                        id = parseInt(id.replace("LRN_PTH_", ""))
+                    }
+                    if (is_subscription) {
+                        subscription.learnPathIds.push(id)
+                    }
+                    else {
+                        buyNow.learnPathIds.push(id)
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+        let payload = 
+        {
+            buyNow:{},
+            subscription:{},
+            "country": countryCode
+        }
+
+        if(buyNow.courseIds.length > 0)
+        {
+            payload.buyNow.courseIds = buyNow.courseIds
+        }
+        if(buyNow.learnPathIds.length > 0)
+        {
+            payload.buyNow.learnPathIds = buyNow.learnPathIds
+        }
+        if(subscription.courseIds.length > 0)
+        {
+            payload.subscription.courseIds = subscription.courseIds
+        }
+        if(subscription.learnPathIds.length > 0)
+        {
+            payload.subscription.learnPathIds = subscription.learnPathIds
+        }
+
+
+        const url = `${process.env.ECOM_API_URL}/ecommerce/listing_api/ids`;
+        console.log("payload", payload)
+        const response = await axios.post(url, payload);
+        console.log("response", response.data.data)
+
+        if (response.data.status == "OK") {
+            switch (type) {
+                case "learn_content":
+                    list.map(item=> {
+                        let id = (item._source)? item._source.id: item.id
+                        let is_subscription = (item._source)? item._source.subscription_price: item.is_subscription
+                        if (typeof id === 'string' && id.includes("LRN_CNT_PUB_")) {
+                            id = parseInt(id.replace("LRN_CNT_PUB_", ""))
+                        }
+                        if (is_subscription) {
+                            if(item._source)
+                            {
+                                item._source.pricing_details = response.data.data.subscriptionCourseTypeCourse[id] || null
+                            }else{
+                                item.pricing_details = response.data.data.subscriptionCourseTypeCourse[id] || null
+                            }
+                        }
+                        else {
+                            if(item._source)
+                            {
+                                item._source.pricing_details = response.data.data.buyNowCourseTypeCourse[id] || null
+                            }else{
+                                item.pricing_details = response.data.data.buyNowCourseTypeCourse[id] || null
+                            }
+                        }
+
+                        return item
+                    })
+                    break;
+                case "learn_path":
+                    list.map(item=> {
+                        let id = (item._source)? item._source.id: item.id
+                        let is_subscription = (item._source)? item._source.subscription_price: item.is_subscription
+                        if (typeof id === 'string' && id.includes("LRN_PTH_")) {
+                            id = parseInt(id.replace("LRN_PTH_", ""))
+                        }
+                        if (is_subscription) {
+                            if(item._source)
+                            {
+                                item._source.pricing_details = response.data.data.subscriptionCourseTypeLearnPath[id] || null
+                            }else{
+                                item.pricing_details = response.data.data.subscriptionCourseTypeLearnPath[id] || null
+                            }
+                        }
+                        else {
+                            if(item._source)
+                            {
+                                item._source.pricing_details = response.data.data.buyNowCourseTypeLearnPath[id] || null
+                            }else{
+                                item.pricing_details = response.data.data.buyNowCourseTypeLearnPath[id] || null
+                            }
+                        }
+                    })
+                    break;
+                default:
+                    break;
+            }           
+
+
+        }
+
+        return list;
+    } catch (error) {
+        console.log("error fetching price from Ecom", error)
+        return list;
+    }
+
+}
+
 
   module.exports = {
     isDateInRange,
@@ -657,7 +890,8 @@ if(count > 1000){
     paginate,
     formatResponseField,
     formatImageResponse,
-    formatCount
+    formatCount,
+    getlistPriceFromEcom
 }
 
 

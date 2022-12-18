@@ -15,7 +15,8 @@ const {
     getFilterAttributeName,
     updateSelectedFilters,
     paginate,
-    formatImageResponse
+    formatImageResponse,
+    getlistPriceFromEcom
 } = require('../utils/general');
 
 const redisConnection = require('../../services/v1/redis');
@@ -308,9 +309,9 @@ module.exports = class learnContentService {
             }
            
             if((req.query['pageType'] == "category" || req.query['pageType'] == "topic") && req.query['slug'] != undefined && (req.query['q'] == undefined || req.query['q'] == "")) {
-                cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')+"_"+apiCurrency;
+                cacheName = "listing-"+req.query['pageType']+"-"+req.query['slug'].replace(/,/g, '_')
             } else if((req.query['pageType'] == undefined || req.query['pageType'] == "search") && (req.query['q'] == undefined || req.query['q'] == '')) {
-                cacheName = "listing-search_"+apiCurrency;                
+                cacheName = "listing-search_";                
             }
             if(req.query['hardFilter'])
             {
@@ -323,6 +324,10 @@ module.exports = class learnContentService {
                 let cacheData = await RedisConnection.getValuesSync(cacheName);
                 if(cacheData.noCacheData != true) {
                     saveLearnContentListSessionKPIs(req , cacheData.page_details);
+                    if(cacheData.list)
+                    {
+                        cacheData.list = await getlistPriceFromEcom(cacheData.list,"learn_content",req.query['country'])
+                    }
                     return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                 }
             }
@@ -749,6 +754,7 @@ module.exports = class learnContentService {
 
               let list = [];
             if (result.total && result.total.value > 0) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 list = await this.generateListViewData(result.hits, req.query['currency'], useCache);
             }
 
@@ -1204,6 +1210,7 @@ module.exports = class learnContentService {
                 const result = await elasticService.search('learn-content', queryBody, queryPayload);
                 if(result.hits){
                     if(result.hits && result.hits.length > 0){
+                        result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                         for(const hit of result.hits){
                             const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
                             courses.push(course);
@@ -1447,7 +1454,8 @@ module.exports = class learnContentService {
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
             buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
-            show_enquiry: (result.enquiry)? result.enquiry : false
+            show_enquiry: (result.enquiry)? result.enquiry : false,
+            pricing_details: (result.pricing_details)? result.pricing_details : null,
         };
 
         //Remove this hardocded after testing
@@ -1763,7 +1771,10 @@ module.exports = class learnContentService {
         }
         if(result.enquiry)
             data.enquiry = result.enquiry
-
+        if(!data.buy_on_careervira)
+        {
+            data.pricing_details.couponCount = coupons.length
+        }
         let listData = {
             title: data.title,
             slug: data.slug,
@@ -1784,7 +1795,11 @@ module.exports = class learnContentService {
             isTrending:data.isTrending,
             isPopular:data.isPopular,
             isCvTake:data.isCvTake,
-            couponCount: coupons.length
+            couponCount: coupons.length,
+            is_subscription: data.is_subscription,
+            buy_on_careervira: data.buy_on_careervira,
+            show_enquiry: data.enquiry,
+            pricing_details:data.pricing_details
         }
 
         return isList ? listData : data;

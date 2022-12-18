@@ -6,7 +6,7 @@ const fetch = require("node-fetch");
 const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
-const {formatCount} = require("../utils/general")
+const {formatCount,getlistPriceFromEcom} = require("../utils/general")
 const {generateMetaInfo} = require("../utils/metaInfo")
 
 const redisConnection = require('../../services/v1/redis');
@@ -120,11 +120,14 @@ module.exports = class learnPathService {
                     apiCurrency = req.query['currency'];
                 }
                
-                cacheName += `_${apiCurrency}_${defaultSort}`;
+                cacheName += `_${defaultSort}`;
     
                 if(skipCache != true) {
                     let cacheData = await RedisConnection.getValuesSync(cacheName);
                     if(cacheData.noCacheData != true) {
+                        if(cacheData.list)
+                        cacheData.list = await getlistPriceFromEcom(cacheData.list,"learn_path",req.query['country'])
+
                         return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     }
                 }
@@ -532,6 +535,7 @@ module.exports = class learnPathService {
 
             let list = [];
             if (result.total && result.total.value > 0) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
                 list = await this.generateListViewData(result.hits, req.query['currency']);
             }
 
@@ -592,6 +596,8 @@ module.exports = class learnPathService {
             const result = await elasticService.plainSearch('learn-path', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
+                    result.hits.hits = await getlistPriceFromEcom(result.hits.hits,"learn_path",req.query['country'])
+
                     for(const hit of result.hits.hits){
                         const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency);
                         learnpaths.push(learnpath);
@@ -718,7 +724,8 @@ module.exports = class learnPathService {
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
             buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
-            show_enquiry: (result.enquiry)? result.enquiry : false
+            show_enquiry: (result.enquiry)? result.enquiry : false,
+            pricing_details: (result.pricing_details)? result.pricing_details : null,
         }       
 
         //Remove this hardocded after testing
