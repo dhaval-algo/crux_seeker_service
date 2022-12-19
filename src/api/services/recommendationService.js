@@ -6,7 +6,8 @@ const _ = require('underscore');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const mLService = require("./mLService");
-const { isDateInRange } = require('../utils/general');
+const { isDateInRange, getlistPriceFromEcom} = require('../utils/general');
+
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons","subscription_price","buy_on_careervira","enquiry"]
@@ -223,7 +224,10 @@ module.exports = class recommendationService {
         try {
             let cacheData = await RedisConnection.getValuesSync("popularSkillBasedRecommendation")
             if(cacheData.noCacheData != true)
+            {
+                cacheData = await getlistPriceFromEcom(cacheData,"learn_content",req.query['country'])
                 return { "success": true, message: "list fetched successfully", data: { list: cacheData, mlList: [], show: "logic", cacheHit:true} }
+            }
         }catch(err){
             console.log(err)
         }
@@ -290,6 +294,8 @@ module.exports = class recommendationService {
         try {
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
+
                 for (const hit of result.hits) {
                     const data = await this.generateCourseFinalResponse(hit._source, currency)
                     courses.push(data);
@@ -309,7 +315,10 @@ module.exports = class recommendationService {
         try {
             let cacheData = await RedisConnection.getValuesSync("popularGoalBasedRecommendation")
             if(cacheData.noCacheData != true)
+            {
+                cacheData = await getlistPriceFromEcom(cacheData,"learn_content",req.query['country'])
                 return { "success": true, message: "list fetched successfully", data: { list: cacheData, mlList: [], show: "logic", cacheHit:true} }
+            }
         }catch(err){
             console.log(err)
         }
@@ -371,6 +380,7 @@ module.exports = class recommendationService {
         try {
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
                     const data = await this.generateCourseFinalResponse(hit._source, currency)
                     courses.push(data);
@@ -446,13 +456,14 @@ module.exports = class recommendationService {
 
             let courses = [];
             if (result && result.hits.length > 0) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (let hit of result.hits) {
                     let course = await this.generateCourseFinalResponse(hit._source, currency);
                     courses.push(course);
                 }
             }
 
-            const mlCourses = await this.getSimilarCoursesML(courseId, currency, page, limit);
+            const mlCourses = await this.getSimilarCoursesML(courseId, req.query['country'], page, limit);
             let show = null;
             if ( await mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
                 show = 'ml';
@@ -479,10 +490,12 @@ module.exports = class recommendationService {
 
         let courses = [];
         try {
-            let cacheKey = `popular-courses-${subType}-${category || 'category'}-${sub_category || 'sub_category'}-${topic || 'topic'}-${provider || 'provider'}-${partner || 'partner'}-${priceType || 'priceType'}-${skill || 'skill'}-${currency}-${page}-${limit}`;
+            let cacheKey = `popular-courses-${subType}-${category || 'category'}-${sub_category || 'sub_category'}-${topic || 'topic'}-${provider || 'provider'}-${partner || 'partner'}-${priceType || 'priceType'}-${skill || 'skill'}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
+
             } else {
 
                 let esQuery = {
@@ -572,6 +585,7 @@ module.exports = class recommendationService {
                 let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
 
                 if (result.hits) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -591,12 +605,14 @@ module.exports = class recommendationService {
         }
     }
 
-    async getSimilarCoursesML(courseId, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6) {
+    async getSimilarCoursesML(courseId, country, page = 1, limit = 6) {
 
         const result = await mLService.getSimilarCoursesDataML(courseId);
         let courses = [];
         const offset = (page - 1) * limit;
         if (result && result.length) {
+            result = await getlistPriceFromEcom(result,"learn_content",country)
+
             for (const courseElasticData of result.slice(offset, offset + limit)) {
                 const courseData = await this.generateCourseFinalResponse(courseElasticData._source, currency);                
                 courses.push(courseData);
@@ -693,6 +709,7 @@ module.exports = class recommendationService {
                     esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
                     const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills ,_source: courseFields});
                     if (result.hits && result.hits.length) {
+                        result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                         for (const hit of result.hits) {
                             const data = await this.generateCourseFinalResponse(hit._source, currency)
                             courses.push(data);
@@ -705,6 +722,7 @@ module.exports = class recommendationService {
                     esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
                     const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp ,_source: courseFields});
                     if (result.hits && result.hits.length) {
+                        result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                         for (const hit of result.hits) {
                             const data = await this.generateCourseFinalResponse(hit._source, currency)
                             courses.push(data);
@@ -762,6 +780,7 @@ module.exports = class recommendationService {
                
                 const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
                 if (result.hits && result.hits.length) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         const data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -1622,7 +1641,8 @@ module.exports = class recommendationService {
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
             buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
-            show_enquiry: (result.enquiry)? result.enquiry : false
+            show_enquiry: (result.enquiry)? result.enquiry : false,
+            pricing_details:(result.pricing_details)?result.pricing_details :null
            
         };     
 
@@ -1899,6 +1919,7 @@ module.exports = class recommendationService {
 
             let learnPaths = [];
             if (result && result.hits.length > 0) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
                 for (let hit of result.hits) {
                     let learnPath = await this.generateLearnPathFinalResponse(hit._source, currency);
                     learnPaths.push(learnPath);
@@ -1922,10 +1943,11 @@ module.exports = class recommendationService {
         let { subType="Popular", priceType="Paid" } = req.query; // Populer, Trending,Free
         let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;  
 
-        let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${priceType || ''}-${currency}-${page}-${limit}`;
+        let cacheKey = `popular-learn-paths-${subType}-${category || ''}-${sub_category || ''}-${topic || ''}-${priceType || ''}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
         if (cachedData.noCacheData != true) {
+            cachedData = await getlistPriceFromEcom(cachedData,"learn_path",req.query['country'])
             return { "success": true, message: "list fetched successfully", data: { list: cachedData, mlList: [], show: "logic" } }
         }
         
@@ -1989,6 +2011,7 @@ module.exports = class recommendationService {
             let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort, _source :learnPathFields});
               
             if(result.hits){
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
                 for(const hit of result.hits){
                     var data = await this.generateLearnPathFinalResponse(hit._source,currency)
                     learnpaths.push(data);
@@ -2024,6 +2047,8 @@ module.exports = class recommendationService {
             
             if (cachedData.noCacheData != true) {
                 learnpaths = cachedData;
+                learnpaths = await getlistPriceFromEcom(learnpaths,"learn_path",req.query['country'])
+
             } else {
 
                 let esQuery = {
@@ -2121,6 +2146,7 @@ module.exports = class recommendationService {
                 let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, sortObject:sort, _source :learnPathFields});
 
                 if(result.hits){
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
                     for(const hit of result.hits){
                         var data = await this.generateLearnPathFinalResponse(hit._source,currency)
                         learnpaths.push(data);
@@ -2151,6 +2177,7 @@ module.exports = class recommendationService {
             
             if (cachedData.noCacheData != true) {
                 learnpaths = cachedData;
+                learnpaths = await getlistPriceFromEcom(learnpaths,"learn_path",req.query['country'])
             } else {
 
                 let esQuery = {
@@ -2165,6 +2192,7 @@ module.exports = class recommendationService {
                 
                 let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit, _source :learnPathFields});
                 if(result.hits){
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
                     for(const hit of result.hits){
                         var data = await this.generateLearnPathFinalResponse(hit._source,currency)
                         learnpaths.push(data);
@@ -2197,6 +2225,7 @@ module.exports = class recommendationService {
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
         if (cachedData.noCacheData != true) {
+            cachedData = await getlistPriceFromEcom(cachedData,"learn_path",req.query['country'])
             return { "success": true, message: "list fetched successfully", data: { list: cachedData, mlList: [], show: "logic" }}
         }
         try {
@@ -2336,6 +2365,7 @@ module.exports = class recommendationService {
             const result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit,_source :learnPathFields});
             
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
                 for (const hit of result.hits) {
                     const data = await this.generateLearnPathFinalResponse(hit._source, currency);
                     learnPaths.push(data);
@@ -2481,7 +2511,8 @@ module.exports = class recommendationService {
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
             buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
-            show_enquiry: (result.enquiry)? result.enquiry : false
+            show_enquiry: (result.enquiry)? result.enquiry : false,
+            pricing_details:(result.pricing_details)? result.pricing_details:null
         }       
 
         //TODO this logic is copied from course service
@@ -2552,6 +2583,7 @@ module.exports = class recommendationService {
             const result = await elasticService.search('learn-content', esQuery, {form: 0, size: 20,_source:courseFields});
     
             if(result.hits){
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for(const hit of result.hits){
                     let data = await this.generateCourseFinalResponse(hit._source, currency)
                     unsortedCourses.push(data);
@@ -2630,6 +2662,7 @@ module.exports = class recommendationService {
             const result = await elasticService.search("learn-content",esQuery,{from:offset,size:limit, _source: courseFields})
             
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
                     const data = await this.generateCourseFinalResponse(hit._source,  currency)
                     courses.push(data);
@@ -2677,6 +2710,7 @@ module.exports = class recommendationService {
                 const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source:courseFields });
     
                 if (result.hits && result.hits.length) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         const data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -2849,6 +2883,7 @@ module.exports = class recommendationService {
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
                     const data = await this.generateCourseFinalResponse(hit._source, currency)
                     courses.push(data);
@@ -3020,6 +3055,7 @@ module.exports = class recommendationService {
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
                     const data = await this.generateCourseFinalResponse(hit._source, currency)
                     courses.push(data);
@@ -3210,6 +3246,7 @@ module.exports = class recommendationService {
             const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit,_source :courseFields});
             
             if (result.hits && result.hits.length) {
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
                     const data = await this.generateCourseFinalResponse(hit._source,currency);
                     learnContents.push(data);
@@ -3245,6 +3282,8 @@ module.exports = class recommendationService {
             
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
+
             } else {
 
                 let esQuery = {
@@ -3355,6 +3394,7 @@ module.exports = class recommendationService {
                 let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort, _source :courseFields});
 
                 if(result.hits){
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for(const hit of result.hits){
                         var data = await this.generateCourseFinalResponse(hit._source,currency)
                         courses.push(data);
@@ -3390,6 +3430,8 @@ module.exports = class recommendationService {
             
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
+
             } else {
 
                 let esQuery = {
@@ -3520,6 +3562,7 @@ module.exports = class recommendationService {
                 let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject:sort, _source :courseFields});
 
                 if(result.hits){
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for(const hit of result.hits){
                         var data = await this.generateCourseFinalResponse(hit._source,currency)
                         courses.push(data);
@@ -4249,6 +4292,8 @@ module.exports = class recommendationService {
                 let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
                 if (cachedData.noCacheData != true) {
+                    cachedData = await getlistPriceFromEcom(cachedData,"learn_content",req.query['country'])
+
                     return { "success": true, message: "list fetched successfully", data: { list: cachedData, mlList: [], show: "logic" } }
                 }
 
@@ -4276,6 +4321,7 @@ module.exports = class recommendationService {
 
 
                 if (result.hits && result.hits.length) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         const data = await this.generateCourseFinalResponse(hit._source,currency);
                         learnContents.push(data);
@@ -4310,6 +4356,8 @@ module.exports = class recommendationService {
 
             if (cachedData.noCacheData != true) {
                 cachedData = await paginate(cachedData, page, limit)
+                cachedData = await getlistPriceFromEcom(cachedData,"learn_content",req.query['country'])
+
                 return { "success": true, message: "list fetched successfully", data: { list: cachedData } }
             }
 
@@ -4362,6 +4410,7 @@ module.exports = class recommendationService {
                             let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10, sortObject: sort, _source: courseFields });
 
                             if (result && result.hits.length > 0) {
+                                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                                 for (let hit of result.hits) {
                                     let course = await this.generateCourseFinalResponse(hit._source, currency);
                                     courses.push(course);
@@ -4388,6 +4437,7 @@ module.exports = class recommendationService {
                             let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
 
                             if (result && result.hits.length > 0) {
+                                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                                 for (let hit of result.hits) {
                                     let course = await this.generateCourseFinalResponse(hit._source, currency);
                                     courses.push(course);
@@ -4413,6 +4463,7 @@ module.exports = class recommendationService {
                             let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
 
                             if (result && result.hits.length > 0) {
+                                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                                 for (let hit of result.hits) {
                                     let course = await this.generateCourseFinalResponse(hit._source, currency);
                                     courses.push(course);
@@ -4440,6 +4491,7 @@ module.exports = class recommendationService {
                             let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
 
                             if (result && result.hits.length > 0) {
+                                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                                 for (let hit of result.hits) {
                                     let course = await this.generateCourseFinalResponse(hit._source, currency);
                                     courses.push(course);
@@ -4465,6 +4517,7 @@ module.exports = class recommendationService {
                             let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10 - courses.length, sortObject: sort, _source: courseFields });
 
                             if (result && result.hits.length > 0) {
+                                result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                                 for (let hit of result.hits) {
                                     let course = await this.generateCourseFinalResponse(hit._source, currency);
                                     courses.push(course);
@@ -4499,6 +4552,7 @@ module.exports = class recommendationService {
 
                 let result = await elasticService.search("learn-content", esQuery, { from: 0, size: 10, sortObject: sort, _source: courseFields });
                 if (result && result.hits.length > 0) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (let hit of result.hits) {
                         let course = await this.generateCourseFinalResponse(hit._source, currency);
                         courses.push(course);
@@ -4719,10 +4773,11 @@ module.exports = class recommendationService {
 
         let courses = [];
         try {
-            let cacheKey = `lg-Techinical-Skill-courses-${articleId}-${skill || 'skill'}-${region || 'region'}--${noRegion || 'noRegion'}-${currency}-${page}-${limit}`;
+            let cacheKey = `lg-Techinical-Skill-courses-${articleId}-${skill || 'skill'}-${region || 'region'}--${noRegion || 'noRegion'}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
             } else {
 
                 // Find category /sub-category or topic to which lg belogs to
@@ -4821,6 +4876,7 @@ module.exports = class recommendationService {
                 result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
                
                 if (result.hits) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -4847,10 +4903,12 @@ module.exports = class recommendationService {
         const offset = (page - 1) * limit
         let courses = [];
         try {
-            let cacheKey = `lg-how-to-learn-courses-${articleId}-${level || 'level'}--${learnType || 'learnType'}--${priceType || 'priceType'}-${region || 'region'}--${noRegion || 'noRegion'}-${currency}-${page}-${limit}`;
+            let cacheKey = `lg-how-to-learn-courses-${articleId}-${level || 'level'}--${learnType || 'learnType'}--${priceType || 'priceType'}-${region || 'region'}--${noRegion || 'noRegion'}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
+
             } else {
 
                 // Find category /sub-category or topic to which lg belogs to
@@ -4985,6 +5043,7 @@ module.exports = class recommendationService {
                 result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
                
                 if (result.hits) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -5011,10 +5070,11 @@ module.exports = class recommendationService {
         const offset = (page - 1) * limit
         let courses = [];
         try {
-            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${currency}-${page}-${limit}`;
+            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
             } else {
 
                 // Find category /sub-category or topic to which lg belogs to
@@ -5118,6 +5178,7 @@ module.exports = class recommendationService {
                 result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
                
                 if (result.hits) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -5144,10 +5205,11 @@ module.exports = class recommendationService {
         const offset = (page - 1) * limit
         let courses = [];
         try {
-            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${learnType || 'learnType'}--${currency}-${page}-${limit}`;
+            let cacheKey = `cg-courses-with-Placement-${articleId}-${region || 'region'}--${noRegion || 'noRegion'}--${learnType || 'learnType'}-${page}-${limit}`;
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
             } else {
 
                 // Find category /sub-category or topic to which lg belogs to
@@ -5245,6 +5307,7 @@ module.exports = class recommendationService {
                 result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
                
                 if (result.hits) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
@@ -5275,6 +5338,7 @@ module.exports = class recommendationService {
             let cachedData = await RedisConnection.getValuesSync(cacheKey);
             if (cachedData.noCacheData != true) {
                 courses = cachedData;
+                courses = await getlistPriceFromEcom(courses,"learn_content",req.query['country'])
             } else {
 
                 // Find category /sub-category or topic to which lg belogs to
@@ -5365,6 +5429,7 @@ module.exports = class recommendationService {
                 result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort ,_source: courseFields});
                
                 if (result.hits) {
+                    result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
                         var data = await this.generateCourseFinalResponse(hit._source, currency)
                         courses.push(data);
