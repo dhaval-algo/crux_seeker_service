@@ -1771,7 +1771,7 @@ module.exports = class learnContentService {
         }
         if(result.enquiry)
             data.enquiry = result.enquiry
-        if(!data.buy_on_careervira)
+        if(!data.buy_on_careervira && data.pricing_details)
         {
             data.pricing_details.couponCount = coupons.length
         }
