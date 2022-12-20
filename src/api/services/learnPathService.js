@@ -764,7 +764,7 @@ module.exports = class learnPathService {
 
             if (result.courses && result.courses.length > 0) {
                 let courseIds = result.courses.sort((a,b) => a.position - b.position).map(item => item.id).join();
-                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, currency: currency } });
+                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, country:req.query['country'] } });
                 if (courses) {
                     data.courses = courses;
                 }

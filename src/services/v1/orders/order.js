@@ -36,7 +36,7 @@ const oderDetails = async (req, res, next) => {
                     case 'course':
                         try {
                             finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() ,country:req.query['country']} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -79,7 +79,7 @@ const oderDetails = async (req, res, next) => {
                     case 'learnpath':
                         try {
                             finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString(),country:req.query['country'] } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -146,7 +146,7 @@ const cancellationDetails = async (req, res, next) => {
                     case 'course':
                         try {
                             finalData.cancellationData.refundSummary.itemId = 18616
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString() } });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString() ,country:req.query['country']} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -166,7 +166,7 @@ const cancellationDetails = async (req, res, next) => {
                     case 'learnpath':
                         try {
                             finalData.cancellationData.refundSummary.itemId = 102 // delete this hardcoded value after testing
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString() } });
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(),country:req.query['country'] } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -243,7 +243,7 @@ const cancellationProgress = async (req, res, next) => {
                 switch (itemType) {
                     case 'course':
                         try {
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: itemId.toString() } });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: itemId.toString(),country:req.query['country'] } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -266,7 +266,7 @@ const cancellationProgress = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.courseId.toString() } });
+                            let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.courseId.toString(),country:req.query['country'] } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
@@ -370,7 +370,7 @@ const orderHistory = async (req, res, next) => {
                             case 'course':
                                 try {
                                     entity.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
-                                    let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
+                                    let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() ,country:req.query['country']} });
                                     if (courses && courses.length > 0) {
                                         courseData = {
                                             title: courses[0].title,
@@ -393,7 +393,7 @@ const orderHistory = async (req, res, next) => {
                             case 'learnpath':
                                 try {
                                     entity.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
-                                    let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() } });
+                                    let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString(), country:req.query['country'] } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
                                             title: courses[0].title,
