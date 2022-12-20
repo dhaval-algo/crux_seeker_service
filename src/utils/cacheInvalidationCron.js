@@ -6,6 +6,7 @@ const providerService = require("../api/services/providerService");
 let ProviderService = new providerService();
 const  FooterService = require("../api/services/footerService")
 const footerService = new FooterService()
+const faqService = require("../api/services/faqService");
 
 
 const {
@@ -165,7 +166,13 @@ const invalidateFacilities = async () => {
     }  
 }
 
-
+const invalidateFaqCategories = async () => {
+    try {
+        await faqService.getFaqCategories(true)
+    } catch (error) {
+        console.log("Skills cache invalidation Error",error)
+    }  
+}
 
 
    
@@ -187,5 +194,6 @@ module.exports = {
     invalidatePP,
     invalidatSkills,
     invalidPopularCategories,
-    invalidateFacilities
+    invalidateFacilities,
+    invalidateFaqCategories
 }

@@ -24,6 +24,8 @@ const listUsersController = require("../../../controllers/listUsersController")
 const listEnquiriesController = require("../../../controllers/listEnquiriesController")
 const sessionKPIController = require("../../../controllers/sessionController")
 const graphController = require("../../../controllers/graphController")
+const faqController = require("../../../controllers/faqController");
+
 
 //course API
 router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
@@ -149,6 +151,10 @@ router.get('/data-table/:id', graphController.getDataTable)
 
 
 router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
+
+router.get('/faq', faqController.getFaq)
+router.get('/faq-categories', faqController.getFaqCategories)
+
 
 router.get('/getIpDetails', geoIpController.getIpDetails )
 module.exports = router;
