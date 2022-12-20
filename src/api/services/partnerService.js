@@ -87,7 +87,25 @@ module.exports = class partnerService {
                 }
             );            
         }
-        
+        if (req.query['partnerIds']) {
+            let partnerIds = req.query['partnerIds'].split(",");
+            partnerIds = partnerIds.map(id => {
+                
+                if(!id.includes("PTNR_"))
+                {
+                    id = 'PTNR_'+id
+                }
+
+                return id
+            })
+            let filter_object = {
+                "terms": {
+                    "_id": partnerIds
+                }
+            }
+
+            query.bool.must.push(filter_object)
+        }
 
         const result = await elasticService.search('partner', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -160,6 +178,7 @@ module.exports = class partnerService {
             name: result.name,
             slug: result.slug,            
             id: `PTNR_${result.id}`,
+            numeric_id:result.id,
             short_description: result.short_description || null,
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
