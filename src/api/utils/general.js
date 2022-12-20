@@ -724,6 +724,10 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
 
 
     try {
+        if(!countryCode)
+        {
+            return list
+        }
         let buyNow = {}
         buyNow.courseIds = []
         buyNow.learnPathIds = []
