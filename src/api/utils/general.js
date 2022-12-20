@@ -636,6 +636,7 @@ if(count > 1000){
 const getlistPriceFromEcom = async (list, type, countryCode) => {
 
     //remove this code after testing
+    return list
     let testIds,count
     switch (type) {
         case "learn_content":
