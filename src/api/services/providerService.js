@@ -347,7 +347,7 @@ module.exports = class providerService {
 
         if(req.query['rank'])
         {
-            /*let yearOptions = []
+            let yearOptions = []
             let yearoption = parseInt(latestRankYear[req.query['rank']]);
             for(let i =0; i< 11; i++ )  
             {
@@ -367,10 +367,9 @@ module.exports = class providerService {
                 filterable: false,
                 filter_postion: 'horizontal',   
                 is_collapsed: true,
-                filter_type: 'Checkboxes',
+                filter_type: 'Radio',
                 options: yearOptions
-            })*/
-
+            })
             useCache = true; // enable cache for ranks
         }
         if(req.query['f']){
@@ -1251,11 +1250,11 @@ module.exports = class providerService {
                     path: "ranks"
                 },
                 aggs: {
-                    /*Year: {
+                    Year: {
                         terms: {
                             field: "ranks.year.keyword"
                         }
-                    },*/
+                    },
                         Ranking: {
                         terms: {
                             field: "ranks.name.keyword"
@@ -1282,7 +1281,7 @@ module.exports = class providerService {
         for(let i = 0; i < filters.length; i++)
         {
             const field = filters[i].label;
-            if( ['Ranking'].includes(field) )
+            if( ['Year', 'Ranking'].includes(field) )
             {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
