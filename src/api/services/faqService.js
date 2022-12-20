@@ -176,7 +176,8 @@ const getFaqCategories = async (skipCache) => {
                 data = data.map(function (el) {
                     return {
                         'label': el["default_display_label"],
-                        'image': el["image"] ? el["image"].url :null
+                        'image': el["image"] ? el["image"].url :null,
+                        'description':el['description']
                     }
                 })
                 if (data) {
