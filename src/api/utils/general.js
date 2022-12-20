@@ -790,13 +790,10 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
             payload.subscription.learnPathIds = subscription.learnPathIds
         }
 
-
         const url = `${process.env.ECOM_API_URL}/ecommerce/listing_api/ids`;
-        console.log("payload", payload)
         const response = await axios.post(url, payload);
-        console.log("response", response.data.data)
 
-        if (response.data.status == "OK") {
+        if (response.status ==200 && response.data.status == "OK") {
             switch (type) {
                 case "learn_content":
                     list.map(item=> {
