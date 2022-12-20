@@ -636,7 +636,6 @@ if(count > 1000){
 const getlistPriceFromEcom = async (list, type, countryCode) => {
 
     //remove this code after testing
-    return list
     let testIds,count
     switch (type) {
         case "learn_content":
@@ -791,15 +790,10 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
             payload.subscription.learnPathIds = subscription.learnPathIds
         }
         
-        let response = null
-        try {
-            const url = `${process.env.ECOM_API_URL}/ecommerce/listing_api/ids`;
-            response = await axios.post(url, payload);
-        } catch (error) {
-            console.log("error fetching list price from ecom")
-             return list   
-        }
-        if (response && response.status ==200 && response.data.status == "OK") {
+        const url = `${process.env.ECOM_API_URL}/ecommerce/listing_api/ids`;
+        let response = await axios.post(url, payload);
+
+        if (response && response.data && response.data.status == "OK") {
             switch (type) {
                 case "learn_content":
                     list.map(item=> {
