@@ -1210,7 +1210,10 @@ module.exports = class learnContentService {
                 const result = await elasticService.search('learn-content', queryBody, queryPayload);
                 if(result.hits){
                     if(result.hits && result.hits.length > 0){
-                        result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
+                        if(!req.query.skipPrice)
+                        {
+                            result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
+                        }
                         for(const hit of result.hits){
                             const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
                             courses.push(course);
