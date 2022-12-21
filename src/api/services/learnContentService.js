@@ -383,7 +383,7 @@ module.exports = class learnContentService {
             
             let filter_object = {
                 "terms": {
-                  "id": courseIds 
+                  "_id": courseIds 
                 }
             }
 
@@ -1465,7 +1465,9 @@ module.exports = class learnContentService {
 
                 for(let coupon of result.coupons)
                 {
-                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    if(coupon.validity_start_date == null )
+                        coupon.validity_start_date == new Date();
+                    if(coupon.validity_end_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
                         if(coupon.discount){
                             const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency.iso_code, currency)
