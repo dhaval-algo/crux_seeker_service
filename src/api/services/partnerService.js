@@ -302,7 +302,15 @@ module.exports = class partnerService {
                     data.corporate_partners.push(cpartner);
                 }
             }
-        }       
+        }
+        
+        if(result.partner_benefits && result.partner_benefits.length > 0){
+            data.partner_benefits = result.partner_benefits.map(partner_benefit => partner_benefit.benefit)
+        }
+        else
+        {
+            data.partner_benefits = null
+        }
 
         return data;
     }
