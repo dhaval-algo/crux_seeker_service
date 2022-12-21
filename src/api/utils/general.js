@@ -634,6 +634,10 @@ if(count > 1000){
 }
 
 const getlistPriceFromEcom = async (list, type, countryCode) => {
+    if(typeof countryCode == "undefined")
+    {
+        return list
+    }
 
     //remove this code after testing
     let testIds,count
@@ -724,10 +728,7 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
 
 
     try {
-        if(countryCode == undefined)
-        {
-            return list
-        }
+        
         let buyNow = {}
         buyNow.courseIds = []
         buyNow.learnPathIds = []
