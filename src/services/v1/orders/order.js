@@ -146,7 +146,7 @@ const cancellationDetails = async (req, res, next) => {
                     case 'course':
                         try {
                             finalData.cancellationData.refundSummary.itemId = 18616
-                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(), "country":req.query['country']} });
+                            let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(), "country":req.query['country'], skipPrice:true} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
