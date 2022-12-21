@@ -724,7 +724,7 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
 
 
     try {
-        if(!countryCode)
+        if(countryCode == undefined)
         {
             return list
         }
