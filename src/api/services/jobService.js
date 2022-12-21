@@ -3,6 +3,8 @@ const elasticService = require("./elasticService");
 const { uploadResumeToS3 } = require("../../services/v1/AWS")
 const models = require("../../../models");
 const communication = require('../../communication/v1/communication');
+const { generateMetaInfo } = require('../utils/metaInfo');
+
 const getJobListing = async (req, callback) => {
 
     try {
@@ -11,7 +13,7 @@ const getJobListing = async (req, callback) => {
             from: 0,
             size: 100,
             query: { "match_all": {} },
-            _source: ["job_department", "job_title", "id","city","country"]
+            _source: ["job_department", "job_title", "id","city","country", "slug"]
         }
 
         const jobs = {};
@@ -23,14 +25,17 @@ const getJobListing = async (req, callback) => {
                 const job = jobData._source;
                 if (job.job_department in jobs) {
 
-                    jobs[job.job_department].push({ id: jobData._id, job_title: job.job_title, city:job.city, country:job.country});
+                    jobs[job.job_department].push({ id: jobData._id, job_title: job.job_title, city:job.city, country:job.country, slug: job.slug});
 
                 } else {
-                    jobs[job.job_department] = [{ id: jobData._id, job_title: job.job_title, city:job.city, country:job.country }];
+                    jobs[job.job_department] = [{ id: jobData._id, job_title: job.job_title, city:job.city, country:job.country, slug: job.slug }];
 
                 }
             }
         }
+        let meta_information = await generateMetaInfo('JOBS_LIST', {}, result.hits.hits);
+        if(meta_information)
+            jobs.meta_information  = meta_information;
 
         callback(null, { success: true, message: "list fetched successfully", data: jobs });
 
@@ -46,17 +51,10 @@ const getJobListing = async (req, callback) => {
 const getJobData = async (req, callback) => {
     try {
 
-        const { jobId } = req.query;
+        const { slug } = req.query;
         const esQuery = {
             bool: {
-                must: [
-
-                    {
-                        ids: {
-                            values: jobId
-                        }
-                    }
-                ]
+                must: [ {term: { "slug.keyword" : slug }} ]
             }
         }
 
@@ -66,6 +64,9 @@ const getJobData = async (req, callback) => {
 
             jobData = result.hits[0]._source;
         }
+        let meta_information = await generateMetaInfo('JOB', result.hits[0]._source);
+        if(meta_information)
+            jobData.meta_information  = meta_information;
         callback(null, { success: true, message: "data fetched successfully", data: jobData });
 
     }
