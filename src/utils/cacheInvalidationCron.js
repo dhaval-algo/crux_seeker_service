@@ -7,6 +7,7 @@ let ProviderService = new providerService();
 const  FooterService = require("../api/services/footerService")
 const footerService = new FooterService()
 const faqService = require("../api/services/faqService");
+const geoIpService = require("../api/services/geoIpService");
 
 
 const {
@@ -174,8 +175,14 @@ const invalidateFaqCategories = async () => {
     }  
 }
 
+const invalidateCountries = async () => {
+    try {
+        await geoIpService.getCountries(true)
+    } catch (error) {
+        console.log("Skills cache invalidation Error",error)
+    }  
+}
 
-   
 module.exports = {
     invalidatePartnerWithUs,
     invalidateLearnersPage,
@@ -195,5 +202,6 @@ module.exports = {
     invalidatSkills,
     invalidPopularCategories,
     invalidateFacilities,
-    invalidateFaqCategories
+    invalidateFaqCategories,
+    invalidateCountries
 }

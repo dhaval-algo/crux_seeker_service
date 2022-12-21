@@ -157,4 +157,5 @@ router.get('/faq-categories', faqController.getFaqCategories)
 
 
 router.get('/getIpDetails', geoIpController.getIpDetails )
+router.get('/countries', geoIpController.getCountries )
 module.exports = router;

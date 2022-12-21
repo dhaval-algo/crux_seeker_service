@@ -1,4 +1,8 @@
 const models = require("../../../models");
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
 const regionToCurrency = {
     "India" : "INR",
     "Europe": "EUR",
@@ -55,5 +59,39 @@ const regionToCurrency = {
             }
     
     
+        },
+        getCountries: async (skipCache) => {
+            try {
+                let cacheName = `countries`
+                let useCache = false
+                if (skipCache != true) {
+                    let cacheData = await RedisConnection.getValuesSync(cacheName);
+                    if (cacheData.noCacheData != true) {
+                        return cacheData
+                    }
+                    else {
+                        return []
+                    }
+                }
+                if (useCache != true) {
+                    let response = await fetch(`${apiBackendUrl}/countries?_limit=-1`);
+                    let data
+                    if (response.ok) {
+                        data = await response.json();
+                        data = data.map(function (el) {
+                            return {
+                                'name': el["name"],
+                                'code': el["code"]
+                            }
+                        })
+                        if (data) {
+                            RedisConnection.set(cacheName, data);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log("err", err)
+                return []
+            }
         }
     }
