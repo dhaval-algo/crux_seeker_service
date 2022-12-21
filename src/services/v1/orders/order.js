@@ -370,7 +370,7 @@ const orderHistory = async (req, res, next) => {
                             case 'course':
                                 try {
                                     entity.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
-                                    let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:false} });
+                                    let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                                     if (courses && courses.length > 0) {
                                         courseData = {
                                             title: courses[0].title,
