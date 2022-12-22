@@ -640,91 +640,91 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
     }
 
     //remove this code after testing
-    let testIds,count
-    switch (type) {
-        case "learn_content":
-            testIds =  [3,501]
-            count = 0
-            list.map(item=> {
+    // let testIds,count
+    // switch (type) {
+    //     case "learn_content":
+    //         testIds =  [3,501]
+    //         count = 0
+    //         list.map(item=> {
                
-                let id = (item._source)? item._source.id: item.id
-                let is_subscription = (count < 4)? false: true
-                if (typeof id === 'string' && id.includes("LRN_CNT_PUB_")) {
-                    if(item._source)
-                    {
-                        item._source.id = "LRN_CNT_PUB_"+testIds[count]
-                        item._source.subscription_price = is_subscription
-                    }else
-                    {
-                        item.id = "LRN_CNT_PUB_"+testIds[count]
-                        item.is_subscription = is_subscription
+    //             let id = (item._source)? item._source.id: item.id
+    //             let is_subscription = (count < 4)? false: true
+    //             if (typeof id === 'string' && id.includes("LRN_CNT_PUB_")) {
+    //                 if(item._source)
+    //                 {
+    //                     item._source.id = "LRN_CNT_PUB_"+testIds[count]
+    //                     item._source.subscription_price = is_subscription
+    //                 }else
+    //                 {
+    //                     item.id = "LRN_CNT_PUB_"+testIds[count]
+    //                     item.is_subscription = is_subscription
     
-                    }
-                }else{
-                    if(item._source)
-                    {
-                        item._source.id = testIds[count]
-                        item._source.subscription_price = is_subscription
+    //                 }
+    //             }else{
+    //                 if(item._source)
+    //                 {
+    //                     item._source.id = testIds[count]
+    //                     item._source.subscription_price = is_subscription
 
-                    }else
-                    {
-                        item.id = testIds[count]
-                        item.is_subscription = is_subscription
+    //                 }else
+    //                 {
+    //                     item.id = testIds[count]
+    //                     item.is_subscription = is_subscription
     
-                    }
-                }
-                count ++
-                if(count > 1){
-                    count = 0
-                }
+    //                 }
+    //             }
+    //             count ++
+    //             if(count > 1){
+    //                 count = 0
+    //             }
 
 
-                return item
-            })
-            break;
-        case "learn_path":
-             testIds =  [11,7]
-            count = 0
-            list.map(item=> {
+    //             return item
+    //         })
+    //         break;
+    //     case "learn_path":
+    //          testIds =  [11,7]
+    //         count = 0
+    //         list.map(item=> {
                
-                let id = (item._source)? item._source.id: item.id
-                let is_subscription = (count < 4)? false: true
-                if (typeof id === 'string' && id.includes("LRN_PTH_")) {
-                    if(item._source)
-                    {
-                        item._source.id = "LRN_PTH_"+testIds[count]
-                        item._source.subscription_price = is_subscription
-                    }else
-                    {
-                        item.id = "LRN_PTH_"+testIds[count]
-                        item.is_subscription = is_subscription
+    //             let id = (item._source)? item._source.id: item.id
+    //             let is_subscription = (count < 4)? false: true
+    //             if (typeof id === 'string' && id.includes("LRN_PTH_")) {
+    //                 if(item._source)
+    //                 {
+    //                     item._source.id = "LRN_PTH_"+testIds[count]
+    //                     item._source.subscription_price = is_subscription
+    //                 }else
+    //                 {
+    //                     item.id = "LRN_PTH_"+testIds[count]
+    //                     item.is_subscription = is_subscription
     
-                    }
-                }else{
-                    if(item._source)
-                    {
-                        item._source.id = testIds[count]
-                        item._source.subscription_price = is_subscription
+    //                 }
+    //             }else{
+    //                 if(item._source)
+    //                 {
+    //                     item._source.id = testIds[count]
+    //                     item._source.subscription_price = is_subscription
 
-                    }else
-                    {
-                        item.id = testIds[count]
-                        item.is_subscription = is_subscription
+    //                 }else
+    //                 {
+    //                     item.id = testIds[count]
+    //                     item.is_subscription = is_subscription
     
-                    }
-                }
-                count ++
-                if(count > 1){
-                    count = 0
-                }
+    //                 }
+    //             }
+    //             count ++
+    //             if(count > 1){
+    //                 count = 0
+    //             }
 
 
-                return item
-            })
-            break;
-        default:
-            break;
-    }  
+    //             return item
+    //         })
+    //         break;
+    //     default:
+    //         break;
+    // }  
 
 
     try {
