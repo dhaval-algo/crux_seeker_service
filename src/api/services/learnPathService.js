@@ -726,6 +726,7 @@ module.exports = class learnPathService {
             buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details: (result.pricing_details)? result.pricing_details : null,
+            partner: (result.partner)? result.partner : null,
         }       
 
         //Remove this hardocded after testing
