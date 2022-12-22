@@ -310,8 +310,11 @@ const generateSingleViewData = async (result, isList = false, currency = process
         if(result.course)//custom
         {
             data.course = result.course;
-            if(data.course.learn_content.id)
-                data.course.learn_content = await getCourseCoupons([result.banner.learn_content.id], currency, true);
+            if(data.course.learn_contents && data.course.learn_contents.length > 0){
+                let learn_contents_ids = data.course.learn_contents.map(learn_content => learn_content.id)
+                data.course.learn_content = await getCourseCoupons(learn_contents_ids, currency, true);
+
+            }
         }
         else
             data.course = {}
