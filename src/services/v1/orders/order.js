@@ -19,12 +19,12 @@ const oderDetails = async (req, res, next) => {
             'data': {}
         }
         let order_id = req.query.orderId
-        if(order_id != 236  && order_id != 384 && order_id != 370  )  // delete this hardcoded value after testing
-        {
-            order_id != 236   // delete this hardcoded value after testing
-        }
+        // if(order_id != 236  && order_id != 384 && order_id != 370  )  // delete this hardcoded value after testing
+        // {
+        //     order_id != 236   // delete this hardcoded value after testing
+        // }
         let user_id = await encryptUserId(req.user.userId)
-        user_id = "WKbJUbB9Ac6o3bM0TeJ26Q=="  // delete this hardcoded value after testing
+        //user_id = "WKbJUbB9Ac6o3bM0TeJ26Q=="  // delete this hardcoded value after testing
 
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
@@ -35,7 +35,7 @@ const oderDetails = async (req, res, next) => {
                 switch (finalData.orderData.orderItems[0].purchaseDetailsResponse.itemType) {
                     case 'course':
                         try {
-                            finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
+                           // finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -78,7 +78,7 @@ const oderDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                            finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
+                           // finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString(),"country" : req.query['country'], skipPrice:true } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -136,7 +136,7 @@ const cancellationDetails = async (req, res, next) => {
         }
         let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)  
-        userId ='L9zSdZgC1drQtaH5881HTw==' // delete this hardcoded value after testing
+       // userId ='L9zSdZgC1drQtaH5881HTw==' // delete this hardcoded value after testing
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
@@ -145,7 +145,7 @@ const cancellationDetails = async (req, res, next) => {
                 switch (finalData.cancellationData.refundSummary.itemType) {
                     case 'course':
                         try {
-                            finalData.cancellationData.refundSummary.itemId = 18616
+                          //  finalData.cancellationData.refundSummary.itemId = 18616
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(), "country":req.query['country'], skipPrice:true} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -165,7 +165,7 @@ const cancellationDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                            finalData.cancellationData.refundSummary.itemId = 102 // delete this hardcoded value after testing
+                           // finalData.cancellationData.refundSummary.itemId = 102 // delete this hardcoded value after testing
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(),"country" : req.query['country'], skipPrice:true } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -221,7 +221,7 @@ const cancellationProgress = async (req, res, next) => {
         }
         let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)
-        userId = await encryptUserId(3) // delete this hardcoded value after testing
+      //  userId = await encryptUserId(3) // delete this hardcoded value after testing
         let itemType = req.query.itemType
         let itemId = req.query.itemId
         if (itemType == 'course') {
@@ -321,7 +321,7 @@ const orderHistory = async (req, res, next) => {
         let sortOptions = ['Recently Purchansed','Purchansed Earlier']
         req.query.sort = req.query.sort || defaultSort 
         let userId = await encryptUserId(req.user.userId)
-        userId = "WKbJUbB9Ac6o3bM0TeJ26Q" // delete this hardcoded value after testing
+       // userId = "WKbJUbB9Ac6o3bM0TeJ26Q" // delete this hardcoded value after testing
         let page =  req.query.page || 1 
         let size =  req.query.size || 10 
         let sortBy = (req.query.sort ='Recently Purchansed')?'desc' : 'asc'
@@ -369,7 +369,7 @@ const orderHistory = async (req, res, next) => {
                         switch (entity.orderItems[0].purchaseDetailsResponse.itemType) {
                             case 'course':
                                 try {
-                                    entity.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
+                                   // entity.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
                                     let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                                     if (courses && courses.length > 0) {
                                         courseData = {
@@ -392,7 +392,7 @@ const orderHistory = async (req, res, next) => {
                                 break;
                             case 'learnpath':
                                 try {
-                                    entity.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
+                                   // entity.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
                                     let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString(), "country" : req.query['country'], skipPrice:true } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
