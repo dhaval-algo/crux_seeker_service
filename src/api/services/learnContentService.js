@@ -1354,6 +1354,7 @@ module.exports = class learnContentService {
             provider_course_url: result.provider_course_url,
             original_course_url: result.original_course_url,
             partner: {
+                id: result.parpartner_id,
                 name: result.partner_name,
                 slug: result.partner_slug,
                 partner_url: result.partner_url
