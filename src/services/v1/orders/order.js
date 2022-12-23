@@ -446,7 +446,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Course",
                                 selected: (requestData.itemType =="course")? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         if(response.data.data.availableFilters.itemType.includes('learnpath'))
@@ -455,7 +455,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Learn Path",
                                 selected: (requestData.itemType =="learnpath")? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         filters.push({
@@ -479,7 +479,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "EMI",
                                 selected: (requestData.cartTypes =="emi") ? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         if(response.data.data.availableFilters.cartTypes.includes('buynow'))
@@ -488,7 +488,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Single Purchased",
                                 selected: (requestData.cartTypes =="buynow") ? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         if(response.data.data.availableFilters.cartTypes.includes('enrollnow'))
@@ -497,7 +497,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Enroll",
                                 selected: (requestData.cartTypes =="enrollnow") ? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         
@@ -522,7 +522,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Successful",
                                 selected: (requestData.orderStatus=="Successful")? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         if(response.data.data.availableFilters.orderStatus.includes('Created'))
@@ -531,7 +531,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Created",
                                 selected: (requestData.orderStatus=="Create")? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         if(response.data.data.availableFilters.orderStatus.includes('Payment Failed'))
@@ -540,7 +540,7 @@ const orderHistory = async (req, res, next) => {
                                 label: "Payment Failed",
                                 selected: (requestData.orderStatus=="Payment Failedate")? true:false,
                                 disabled: false,
-                                count:1
+                                count:2
                             })
                         }
                         
