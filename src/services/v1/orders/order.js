@@ -427,8 +427,8 @@ const orderHistory = async (req, res, next) => {
                     "page": page,
                     "count": list.length || 0,
                     "perPage": size,
-                    "totalCount": 25,
-                    "total": 25
+                    "totalCount": response.data.data.totalCount || list.length,
+                    "total": response.data.data.totalCount || list.length
                 }
 
                 let sort = req.query.sort
