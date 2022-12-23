@@ -463,6 +463,7 @@ const orderHistory = async (req, res, next) => {
                             field: "itemType",
                             filterable: true,
                             filter_postion: "vertical",
+                            order:1,
                             display_count: false,
                             filter_type: "Checkboxes",
                             options: options
@@ -505,6 +506,7 @@ const orderHistory = async (req, res, next) => {
                             field: "cartType",
                             filterable: true,
                             filter_postion: "vertical",
+                            order:2,
                             display_count: false,
                             filter_type: "Checkboxes",
                             options: options
@@ -546,6 +548,7 @@ const orderHistory = async (req, res, next) => {
                             label: "Order Status",
                             field: "orderStatus",
                             filterable: true,
+                            order:3,
                             filter_postion: "horizontal",
                             display_count: false,
                             filter_type: "Checkboxes",
