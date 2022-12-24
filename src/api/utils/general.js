@@ -103,6 +103,17 @@ const getFilterConfigsUncached = async (entity_type) => {
     let response = await fetch(`${apiBackendUrl}/entity-facet-configs?entity_type=${entity_type}&filterable_eq=true&_sort=order:ASC`);
     if (response.ok) {
     let json = await response.json();
+    
+    // replacing basePriceRound with default_price
+
+        if (entity_type == 'Learn_Content') {
+            for (const filter of json) {
+                if (filter.elastic_attribute_name == "basePriceRound") {
+                    filter.elastic_attribute_name = "default_price";
+                    filter.entity_attribute_path = "default_price";
+                }
+            }
+        }
     RedisConnection.set(`${FILTER_CONFIG_CACHE_KEY}-${entity_type}`, json);
     return json;
     } else {
