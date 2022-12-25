@@ -106,7 +106,7 @@ const getFilterConfigsUncached = async (entity_type) => {
     
     // replacing basePriceRound with default_price
 
-        if (entity_type == 'Learn_Content') {
+        if (entity_type == 'Learn_Content' || entity_type == 'Learn_Path') {
             for (const filter of json) {
                 if (filter.elastic_attribute_name == "basePriceRound") {
                     filter.elastic_attribute_name = "default_price";

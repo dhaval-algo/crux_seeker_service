@@ -49,8 +49,8 @@ const sortOptions = {
     'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["created_at:desc"],
-    'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"],
+    'Price Low To High': ["default_price:asc"],
+    'Price High To Low': ["default_price:desc"],
     'Most Relevant' : []
 
 }
@@ -466,7 +466,7 @@ module.exports = class learnPathService {
 
                 if (filter.filter_type == "RangeSlider") {
 
-                    if (filter.elastic_attribute_name === "basePriceRound") {
+                    if (filter.elastic_attribute_name === "default_price") {
                         facet.min.value = facet.min.value > 0 ? getCurrencyAmount(facet.min.value, currencies, 'USD', req.query['currency']) : facet.min.value;
                         facet.max.value = facet.max.value > 0 ? getCurrencyAmount(facet.max.value, currencies, 'USD', req.query['currency']) : facet.max.value;
                     }
