@@ -1,5 +1,7 @@
 const elasticService = require("./elasticService");
 const reviewService = require("./reviewService");
+const partnerService = require("./partnerService");
+let PartnerService = new partnerService();
 const ReviewService = new reviewService();
 const fetch = require("node-fetch");
 const pluralize = require('pluralize')
@@ -1457,22 +1459,31 @@ module.exports = class learnContentService {
             ads_keywords:result.ads_keywords,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
-            buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details: (result.pricing_details)? result.pricing_details : null,
         };
 
+
+        
+        data.buy_on_careervira = false
+        //get buy_on_careervira from partner
+        let partnerData = await PartnerService.getPartner({params : {slug:result.partner_slug},query:{currency:currency}})
+        if(partnerData && partnerData.buy_on_careervira)
+        {
+            data.buy_on_careervira =true
+        }
+        
         //Remove this hardocded after testing
 
-        if(data.id =='LRN_CNT_PUB_18616' || data.id =='LRN_CNT_PUB_6186' )
-        {
-            data.buy_on_careervira = true
-        }
-        if(data.id =='LRN_CNT_PUB_24724')
-        {
-            data.buy_on_careervira = true
-            data.is_subscription = true
-        }
+        // if(data.id =='LRN_CNT_PUB_18616' || data.id =='LRN_CNT_PUB_6186' )
+        // {
+        //     data.buy_on_careervira = true
+        // }
+        // if(data.id =='LRN_CNT_PUB_24724')
+        // {
+        //     data.buy_on_careervira = true
+        //     data.is_subscription = true
+        // }
 
         
         //SET popular and trending keys
@@ -1801,7 +1812,6 @@ module.exports = class learnContentService {
             isCvTake:data.isCvTake,
             couponCount: coupons.length,
             is_subscription: data.is_subscription,
-            buy_on_careervira: data.buy_on_careervira,
             show_enquiry: data.enquiry,
             pricing_details:data.pricing_details
         }

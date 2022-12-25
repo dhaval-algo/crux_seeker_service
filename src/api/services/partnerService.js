@@ -147,17 +147,29 @@ module.exports = class partnerService {
             //console.log("result <> ", result);
             if(result.hits && result.hits.length > 0){
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-                callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                if(callback)
+                    callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                else
+                    return data
             }else{
                 let redirectUrl = await helperService.getRedirectUrl(req);
                 if (redirectUrl) {
-                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    if(callback)
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    else
+                        return null
                 }
-                return callback(null, { success: false, message: 'Not found!' });
+                if(callback)
+                    return callback(null, { success: false, message: 'Not found!' });
+                else
+                    return null
             }  
         } catch (error) {
                 console.log("partner erorr!!!!!!!!!!!!!!", error)
-                callback({success: false, message: 'Not found!'}, null);
+                if(callback)
+                    callback({success: false, message: 'Not found!'}, null);
+                else 
+                  return null
         }      
     }
 
@@ -218,7 +230,8 @@ module.exports = class partnerService {
             accreditations: [],
             report: (result.report)? result.report : null,
             highlights: (result.highlights)? result.highlights : null,
-            facts: (result.facts)? result.facts : null
+            facts: (result.facts)? result.facts : null,
+            buy_on_careervira:(result.buy_on_careervira)? result.buy_on_careervira : false,
         };
         if(!isList){
             // get course count 

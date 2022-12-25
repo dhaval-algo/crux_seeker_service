@@ -723,23 +723,36 @@ module.exports = class learnPathService {
             skills: (result.skills) ? result.skills :null,
             isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
             is_subscription: (result.subscription_price)? result.subscription_price : false,
-            buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details: (result.pricing_details)? result.pricing_details : null,
             partner: (result.partner)? result.partner : null,
         }       
 
+        if(!isList)
+        {
+            data.buy_on_careervira = false
+            //get buy_on_careervira from partner
+            if(data.partner)
+            {
+                let partnerData = await PartnerService.getPartner({params : {slug:data.partner.slug},query:{currency:currency}})
+                if(partnerData && partnerData.buy_on_careervira)
+                {
+                    data.buy_on_careervira =true
+                }
+            }
+        }
+        
         //Remove this hardocded after testing
 
-        if(data.id =='LRN_PTH_102' || data.id =='LRN_PTH_15' )
-        {
-            data.buy_on_careervira = true
-        }
-        if(data.id =='LRN_PTH_43')
-        {
-            data.buy_on_careervira = true
-            data.is_subscription = true
-        }
+        // if(data.id =='LRN_PTH_102' || data.id =='LRN_PTH_15' )
+        // {
+        //     data.buy_on_careervira = true
+        // }
+        // if(data.id =='LRN_PTH_43')
+        // {
+        //     data.buy_on_careervira = true
+        //     data.is_subscription = true
+        // }
 
 
         if (!isList) {
