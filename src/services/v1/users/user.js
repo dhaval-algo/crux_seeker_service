@@ -1013,7 +1013,11 @@ const resendEmailVerificationOPT = async (req, res) => {
         }
     }        
     await sendEmail(emailPayload);
-     res.status(200).send(response)
+    res.status(200).send({
+        "success": true,
+        "code": "OTP_SENT",
+        "message": "Otp has been sent."        
+    })
 }
 
 const verifyAccount = async (req, res) => {
