@@ -3642,7 +3642,7 @@ const getUserProfile = async (req, res) => {
                 },
                 {
                     model: models.user_address,
-                    attributes: ["id","firstName","lastName","addressLine", "locality", "city", "state", "country", "zipCode"]
+                    attributes: ["id","firstName","lastName","addressLine","street", "locality", "city", "state", "country", "zipCode"]
 
                 }
             ],
@@ -4221,7 +4221,7 @@ const calcAge = (dob) => {
 }
 
 const addAddress = async (req, res) => {
-    let {firstName,lastName,addressLine, locality, city, state, country, zipCode } = req.body
+    let {firstName,lastName,addressLine,street, locality, city, state, country, zipCode } = req.body
     try {        
         
         const user_address = await models.user_address.create({
@@ -4229,6 +4229,7 @@ const addAddress = async (req, res) => {
             firstName,
             lastName,
             addressLine,
+            street,
             locality,
             city,
             state,
@@ -4244,6 +4245,7 @@ const addAddress = async (req, res) => {
                 firstName,
                 lastName,
                 addressLine,
+                street,
                 locality,
                 city,
                 state,
@@ -4262,13 +4264,14 @@ const addAddress = async (req, res) => {
 }
 
 const editAddress = async (req, res) => {
-    let {firstName,lastName,addressLine, locality, city, state, country, zipCode } = req.body
+    let {firstName,lastName,addressLine,street, locality, city, state, country, zipCode } = req.body
     try {        
         const user_address = await models.user_address.update(
             {     
                 firstName,
                 lastName,       
                 addressLine,
+                street,
                 locality,
                 city,
                 state,
@@ -4288,6 +4291,7 @@ const editAddress = async (req, res) => {
                 firstName,
                 lastName,
                 addressLine,
+                street,
                 locality,
                 city,
                 state,
@@ -4314,7 +4318,7 @@ const getAddress = async (req, res) => {
             where: {
                 userId:req.user.userId
             },
-            attributes: ["id","firstName","lastName","addressLine", "locality", "city", "state", "country", "zipCode"]         
+            attributes: ["id","firstName","lastName","addressLine","street", "locality", "city", "state", "country", "zipCode"]         
         })
 
         res.status(200).send({

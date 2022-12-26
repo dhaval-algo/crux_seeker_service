@@ -20,6 +20,9 @@ module.exports = {
       addressLine: {
         type: Sequelize.STRING
       },
+      street: {
+        type: Sequelize.STRING
+      },
       locality: {
         type: Sequelize.STRING
       },
