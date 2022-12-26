@@ -1013,7 +1013,7 @@ const resendEmailVerificationOPT = async (req, res) => {
         }
     }        
     await sendEmail(emailPayload);
-     res.status(200).send(tokenRes)
+     res.status(200).send(response)
 }
 
 const verifyAccount = async (req, res) => {
