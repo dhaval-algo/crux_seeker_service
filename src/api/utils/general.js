@@ -783,26 +783,28 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
         }
 
         let payload = 
-        {
-            buyNow:{},
-            subscription:{},
+        {          
             "country": countryCode
         }
 
         if(buyNow.courseIds.length > 0)
         {
+            if(!payload.buyNow) payload.buyNow = {}
             payload.buyNow.courseIds = buyNow.courseIds
         }
         if(buyNow.learnPathIds.length > 0)
         {
+            if(!payload.buyNow) payload.buyNow = {}
             payload.buyNow.learnPathIds = buyNow.learnPathIds
         }
         if(subscription.courseIds.length > 0)
         {
+            if(!payload.subscription) payload.subscription = {}
             payload.subscription.courseIds = subscription.courseIds
         }
         if(subscription.learnPathIds.length > 0)
         {
+            if(!payload.subscription) payload.subscription = {}
             payload.subscription.learnPathIds = subscription.learnPathIds
         }
         
