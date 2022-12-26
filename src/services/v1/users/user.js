@@ -993,6 +993,29 @@ const resendVerificationLink = async (req, res) => {
     })
 }
 
+const resendEmailVerificationOPT = async (req, res) => {
+    const { user } = req
+        
+    let userData = await models.user.findOne({ where: {id:user.userId}})
+
+    let userId = user.userId
+    const OTP_TYPE = OTP_TYPES.MAINEMAILVERIFICATION
+    const response = await generateOtp({ username:userData.email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+    if(!response.success){
+        return res.status(500).json(response);
+    }
+    let emailPayload = {
+        fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+        toemail: userData.email,
+        email_type: "email_verification_otp",
+        email_data: {
+            otp: response.data.otp
+        }
+    }        
+    await sendEmail(emailPayload);
+     res.status(200).send(tokenRes)
+}
+
 const verifyAccount = async (req, res) => {
     const { verification_token } = req.body;
 
@@ -4380,6 +4403,7 @@ module.exports = {
     signUp,
     isUserEmailExist,
     resendVerificationLink,
+    resendEmailVerificationOPT,
     verifyAccount,
     resetPassword,
     forgotPassword,

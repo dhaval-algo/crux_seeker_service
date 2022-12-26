@@ -16,6 +16,7 @@ router.post('/social-signin', userService.socialSignIn);
 router.post('/sign-up',rateLimiter, injectTokenPayload, userService.signUp);
 router.post('/user-exist',rateLimiter, userService.isUserEmailExist);
 router.post('/resend-verification-link',authenticateJWT, userService.resendVerificationLink);
+router.post('/resend-email-verification-OTP',authenticateJWT, userService.resendEmailVerificationOPT);
 router.post('/verify-account', userService.verifyAccount);
 router.post('/forgot-password', forgotPasswordLimiter, userService.forgotPassword);
 router.post('/reset-password', rateLimiter, userService.resetPassword);
