@@ -129,7 +129,7 @@ module.exports = {
         let template = handlebars.compile(source);
         let emailTemplate = template({otp:messagData.otp, resource_link:process.env.SERVER_URL });
          
-        let templateData = {subject:'Careervira- Reset Email',message:emailTemplate};
+        let templateData = {subject:'Verify Your Careervira Account Email',message:emailTemplate};
         return templateData 
          
     },

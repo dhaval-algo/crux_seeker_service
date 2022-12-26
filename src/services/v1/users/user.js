@@ -217,7 +217,7 @@ const verifyOtp = async (req, res, next) => {
                 data: {}
             })
         }
-        if(email){
+        if(email & otpType!= OTP_TYPES.MAINEMAILVERIFICATION){
             let where = {
                 [Op.and]: [
                     {
@@ -313,6 +313,22 @@ const verifyOtp = async (req, res, next) => {
             await invalidateTokens({userId},'verification');
            // let data = {old_email:username, new_email:email}
             //sendDataForStrapi(data, "update-email");
+        }
+        if(otpType == OTP_TYPES.MAINEMAILVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
+        {
+            const userEntry = await models.user.findOne({where:{id:userId}})
+            if(userEntry){
+                if(!userEntry.verified){
+                    await models.user.update(
+                        {
+                            verified: true 
+                        },
+                        {
+                            where: { id: userId }
+                        }
+                    )
+                }
+            }    
         }
         return res.status(200).json(response);
     } catch (error) {
@@ -438,7 +454,7 @@ const signUp = async (req, res) => {
         // send email varification link
        // await sendVerifcationLink(payload)
        let userId = user.id
-       const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
+       const OTP_TYPE = OTP_TYPES.MAINEMAILVERIFICATION
        const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
        if(!response.success){
            return res.status(500).json(response);
@@ -837,6 +853,10 @@ const startVerifyOtp = async (resData) => {
             }
 
             if(otpType == OTP_TYPES.EMAILVERIFICATION)
+            {
+                return resolve(otpRes);
+            }
+            if(otpType == OTP_TYPES.MAINEMAILVERIFICATION)
             {
                 return resolve(otpRes);
             }
