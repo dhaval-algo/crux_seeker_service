@@ -444,7 +444,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Course",
-                                selected: (requestData.itemType.includes("course"))? true:false,
+                                selected: (requestData.itemType && requestData.itemType.includes("course"))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -453,7 +453,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Learn Path",
-                                selected: (requestData.itemType.includes("learnpath"))? true:false,
+                                selected: (requestData.itemType && requestData.itemType.includes("learnpath"))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -477,7 +477,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "EMI",
-                                selected: (requestData.cartTypes.includes("emi")) ? true:false,
+                                selected: (requestData.cartTypes && requestData.cartTypes.includes("emi")) ? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -486,7 +486,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Single Purchased",
-                                selected: (requestData.cartTypes.includes("buynow")) ? true:false,
+                                selected: (requestData.cartTypes && requestData.cartTypes.includes("buynow")) ? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -495,7 +495,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Enroll",
-                                selected: (requestData.cartTypes.includes("enrollnow")) ? true:false,
+                                selected: (requestData.cartTypes && requestData.cartTypes.includes("enrollnow")) ? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -520,7 +520,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Successful",
-                                selected: (requestData.orderStatus.includes("Successful"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Successful"))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -529,7 +529,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Created",
-                                selected: (requestData.orderStatus.includes("Create"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Create"))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -538,7 +538,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Payment Failed",
-                                selected: (requestData.orderStatus.includes("Payment Failedate"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Payment Failedate"))? true:false,
                                 disabled: false,
                                 count:2
                             })
