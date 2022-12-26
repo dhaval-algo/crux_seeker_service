@@ -423,20 +423,35 @@ const signUp = async (req, res) => {
         tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
 
         // send OTP for phone verification
-        if (phone) {
-            let countryCode = phone.split(" ")[0];
-            let phoneWithoutcode = phone.split(" ")[1];
-            if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
-                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-                let userId = user.id
-                const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
-                await sendSMSOTP(phoneWithoutcode, response.data.otp);
-                tokenRes.data.verifyPhone = true
-            }
-        }
+        // if (phone) {
+        //     let countryCode = phone.split(" ")[0];
+        //     let phoneWithoutcode = phone.split(" ")[1];
+        //     if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
+        //         const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+        //         let userId = user.id
+        //         const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
+        //         await sendSMSOTP(phoneWithoutcode, response.data.otp);
+        //         tokenRes.data.verifyPhone = true
+        //     }
+        // }
 
         // send email varification link
-        await sendVerifcationLink(payload)
+       // await sendVerifcationLink(payload)
+       let userId = user.id
+       const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
+       const response = await generateOtp({ username:oldEmail, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+       if(!response.success){
+           return res.status(500).json(response);
+       }
+       let emailPayload = {
+           fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+           toemail: email,
+           email_type: "email_verification_otp",
+           email_data: {
+               otp: response.data.otp
+           }
+       }        
+       await sendEmail(emailPayload);
         res.status(200).send(tokenRes)
     } catch (error) {
         console.log(error)
