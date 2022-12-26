@@ -439,7 +439,7 @@ const signUp = async (req, res) => {
        // await sendVerifcationLink(payload)
        let userId = user.id
        const OTP_TYPE = OTP_TYPES.EMAILVERIFICATION
-       const response = await generateOtp({ username:oldEmail, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+       const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
        if(!response.success){
            return res.status(500).json(response);
        }
