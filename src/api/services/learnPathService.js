@@ -763,6 +763,10 @@ module.exports = class learnPathService {
                 {
                     data.buy_on_careervira =true
                 }
+                if(partnerData && partnerData.logo)
+                {
+                    data.partner.logo =partnerData.logo
+                }
             }
         }
         
