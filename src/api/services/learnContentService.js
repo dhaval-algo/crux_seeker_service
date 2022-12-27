@@ -1495,6 +1495,10 @@ module.exports = class learnContentService {
         {
             data.buy_on_careervira =true
         }
+        if(partnerData && partnerData.logo)
+        {
+            data.partner.logo =partnerData.logo
+        }
         
         //Remove this hardocded after testing
 
