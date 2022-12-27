@@ -1,12 +1,5 @@
 const elasticService = require("./elasticService");
 
-const learnContentService = require("./learnContentService");
-let LearnContentService = new learnContentService();
-const articleService = require("./articleService");
-let ArticleService = new articleService();
-
-const categoryService = require("./categoryService");
-const CategoryService = new categoryService();
 const helperService = require("../../utils/helper");
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
@@ -54,103 +47,6 @@ const getMediaurl = (mediaUrl) => {
     }    
     return mediaUrl;
 };
-
-const getPartnerCoursesData = async (partner_name) => {
-    const query = {
-        "bool": {
-            "must": [
-                {term: { "status.keyword": 'published' }},
-                {term: { "partner_name.keyword": partner_name }}
-            ]
-         }
-    };
-     
-    const result = await elasticService.search('learn-content', query, {from: 0, size: MAX_RESULT});
-    if(result.total && result.total.value > 0){
-        return result.hits;
-    }else{
-        return [];
-    }
-};
-
-const getAllCategoryTree = async () => {
-    let category_tree = [];
-    category_tree = CategoryService.getTreeV2(false) || [];
-    return category_tree;
-};
-
-const getSubCategories = async (partner_name) => {
-    let data = await getPartnerCoursesData(partner_name);
-    let options = [];
-    let others = null;
-    for(const esData of data){
-        const entity = esData._source;
-        let entityData = entity['sub_categories'];
-        if(entityData && entityData.length > 0)
-        {
-            for(const entry of entityData){
-                if(entry == 'Others'){
-                    if(others != null){
-                        others.count++;
-                    }else{
-                        others = {
-                            label: entry,
-                            slug: null,
-                            count: 1
-                        }
-                    }                        
-                    continue;
-                }
-
-                let existing = options.find(o => o.label === entry);
-                if(existing){
-                    existing.count++;
-                }else{
-                    options.push({
-                        label: entry,
-                        slug: null,
-                        count: 1
-                    });
-                }
-            }
-        }
-    }
-    if(others != null){
-        options.push(others);
-    }
-    return options;
-};
-
-const getCategoryTree = async (partner_name) => {
-    const tree = [];
-    const subCategories = await getSubCategories(partner_name);
-    const allCategories = await getAllCategoryTree();
-
-    for(const cat of allCategories){
-        const category = {
-            label: cat.label,
-            slug: cat.slug,
-            count: 0,
-            child: []
-        };
-        for(const subcat of cat.child){
-            let ex_subcat = subCategories.find(o => o.label === subcat.label);
-            if(ex_subcat){
-                ex_subcat.slug = subcat.slug;
-                category.child.push(ex_subcat);
-                category.count++;
-            }
-        }
-        if(category.child.length > 0){
-            tree.push(category);
-        }
-    }    
-    return tree;
-};
-
-
-
-
 
 module.exports = class partnerService {
 
@@ -259,22 +155,7 @@ module.exports = class partnerService {
 
 
 
-    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){       
-
-
-       
-
-        let articles = {
-            list: [],
-            total: 0
-        };
- 
-        if(!isList){
-            
-            articles = await this.getPartnerArticles(result.id);
-                        
-        }
-        
+    async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY){    
         let data = {
             name: result.name,
             slug: result.slug,            
@@ -306,7 +187,6 @@ module.exports = class partnerService {
             linkedin_url: result.linkedin_url,
             facebook_url: result.facebook_url,
             twitter_url: result.twitter_url,
-            articles:articles,
             user_first_name: result.user_first_name,
             user_last_name: result.user_last_name,
             user_email: result.user_email,
@@ -409,69 +289,6 @@ module.exports = class partnerService {
     }
 
 
-    async getPartnerCourses(partner_name, currency){
-        let courses = {
-            list: [],
-            total: 0
-        };
-        try {
-            const query = {
-                "bool": {
-                    "must": [
-                        {term: { "status.keyword": 'published' }},
-                        {term: { "partner_name.keyword": partner_name }}
-                    ]
-                 }
-            };
-    
-            let queryPayload = {};
-            queryPayload.from = 0;
-            queryPayload.size = 4;
-            queryPayload.sort = "published_date:desc";
-    
-            const result = await elasticService.search('learn-content', query, queryPayload);
-            if(result.hits && result.hits.length > 0){
-                courses.list = await LearnContentService.generateListViewData(result.hits, currency);
-                courses.total = result.total.value;
-            }
-        } catch (error) {
-            console.log("error in fetching partner courses",error)
-        }
-       
-        return courses;        
-    }
-
-    async getPartnerArticles(partners ){
-        let articles = {
-            list: [],
-            total: 0
-        };
-        try {
-            const query = {
-                "bool": {
-                    "must": [
-                        {term: { "status.keyword": 'published' }},
-                        {term: { "partners": partners}}
-                    ]
-                 }
-            };
-    
-            let queryPayload = {};
-            // queryPayload.from = 0;
-            // queryPayload.size = 4;
-            queryPayload.sort = "published_date:desc";
-            const result = await elasticService.search('article', query, queryPayload);
-            if(result.hits && result.hits.length > 0){
-                articles.list = await ArticleService.generateListViewData(result.hits);
-                articles.total = result.total.value;
-            }
-        } catch (error) {
-            console.log("error in fetching partner articles",error)
-        }
-       
-        return articles;        
-    }
-
     async cachePartnersCourseImages(){
 
         try {
@@ -497,7 +314,4 @@ module.exports = class partnerService {
         }
 
     }
-    
-
-
 }

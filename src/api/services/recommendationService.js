@@ -791,7 +791,7 @@ module.exports = class recommendationService {
 
         try {
             const { user } = req;
-            const { limit = 5, page = 1, order = "DESC" } = req.query;
+            const { limit = 20, page = 1, order = "DESC" } = req.query;
             const query = {
                 limit: limit,
                 offset: (page - 1) * limit,
@@ -879,7 +879,7 @@ module.exports = class recommendationService {
     async getPeopleAreAlsoViewingArticles(req) {
         try {
             const userId = req.user.userId;
-            const { page = 1, limit = 6 ,currency} = req.query;
+            const { page = 1, limit = 20 ,currency} = req.query;
             const offset = (page - 1) * limit;
             const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
             const categoriesNames = categories.map((category) => category.name);
@@ -1563,6 +1563,22 @@ module.exports = class recommendationService {
             desktop_course_image = partnerCourseImage.desktop_course_image;
             mobile_course_image = partnerCourseImage.mobile_course_image;
         }
+        else
+        {
+            const query = {
+                bool: {
+                    "must": [{ "exists": {"field": "desktop_course_image"} },{term: { "slug.keyword": result.partner_slug }}]
+                }
+            };
+            
+            const imageResult = await elasticService.search('partner', query, {size:2000}, ["mobile_course_image", "desktop_course_image", "logo"]);
+
+            if(imageResult.hits && imageResult.hits.length > 0){                
+                desktop_course_image = (imageResult.hits[0]._source.desktop_course_image)? imageResult.hits[0]._source.desktop_course_image : desktop_course_image ;
+                mobile_course_image = (imageResult.hits[0]._source.mobile_course_image) ? imageResult.hits[0]._source.mobile_course_image : mobile_course_image;
+            }
+        }
+
 
         let data = {
             canBuy: canBuy,
@@ -2628,7 +2644,7 @@ module.exports = class recommendationService {
 
         try {
             const userId = req.user.userId;
-            const { page = 1, limit = 6, currency = process.env.DEFAULT_CURRENCY } = req.query;
+            const { page = 1, limit = 20, currency = process.env.DEFAULT_CURRENCY } = req.query;
             const offset = (page - 1) * limit;
             const categories = await models.recently_viewed_categories.findAll({ where: { userId: userId } });
             const categoriesNames = categories.map((category) => category.name);
@@ -3018,7 +3034,7 @@ module.exports = class recommendationService {
             return { "success": false, message: "failed to fetch", data: { list: [] } };
         }
         const userId = user.userId
-        const { page = 1, limit = 4, partner_slug=null } = req.query;
+        const { page = 1, limit = 4, partner_slug=null, currency } = req.query;
         const offset = (page - 1) * limit;
 
         let cacheKey = `learn-content-recommendations-${userId}`;
@@ -3189,7 +3205,7 @@ module.exports = class recommendationService {
             
             if (result.hits && result.hits.length) {
                 for (const hit of result.hits) {
-                    const data = await this.generateCourseFinalResponse(hit._source);
+                    const data = await this.generateCourseFinalResponse(hit._source,currency);
                     learnContents.push(data);
                 }
             }
@@ -4220,7 +4236,7 @@ module.exports = class recommendationService {
                 user_experiences.map(user_experience => jobTitles.push(user_experience.jobTitle))
                 //console.log("user_experiences", user_experiences);
 
-                const { page = 1, limit = 4 } = req.query;
+                const { page = 1, limit = 4 , currency} = req.query;
                 const offset = (page - 1) * limit;
 
                 let cacheKey = `jobTitleBasedRecommendation-${userId}`;
@@ -4255,7 +4271,7 @@ module.exports = class recommendationService {
 
                 if (result.hits && result.hits.length) {
                     for (const hit of result.hits) {
-                        const data = await this.generateCourseFinalResponse(hit._source);
+                        const data = await this.generateCourseFinalResponse(hit._source,currency);
                         learnContents.push(data);
                     }
                 }
@@ -4831,34 +4847,15 @@ module.exports = class recommendationService {
                     );
                 }
 
-                esQuery.bool.should =  [
+                esQuery.bool.must.push(
                     {
-                        bool: {
-                            must: [
-                                {
-                                    query_string: {
-                                        fields: ["title"],
-                                        query: skill
-                                    }
-                                }
-                            ],
-                            boost: 1000
-                        }
-                    },
-                    {
-                        bool: {
-                            must: [
-                                {
-                                    "term": {
-                                        "skills.keyword": skill,
+                        "term": {
+                            "skills.keyword": skill,
 
-                                    }
-                                }
-                            ],
-                            boost: 10
                         }
                     }
-                ]
+                );               
+               
                
                 let sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }]
                 sort = null
