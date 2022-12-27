@@ -143,6 +143,7 @@ const getRankingFilter = async (useCache = true) => {
             filter_postion: 'vertical',   
             is_collapsed: true,
             filter_type: 'Checkboxes',
+            order: 1,
             options: []
         };
     
