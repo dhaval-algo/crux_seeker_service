@@ -385,7 +385,7 @@ module.exports = class learnContentService {
             
             let filter_object = {
                 "terms": {
-                  "id": courseIds 
+                  "_id": courseIds 
                 }
             }
 
@@ -1549,7 +1549,9 @@ module.exports = class learnContentService {
 
                 for(let coupon of result.coupons)
                 {
-                    if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
+                    if(coupon.validity_start_date == null )
+                        coupon.validity_start_date == new Date();
+                    if(coupon.validity_end_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
                     {
                         if(coupon.discount){
                             const discount = getCurrencyAmount(coupon.discount.value, currencies, coupon.discount.currency.iso_code, currency)
@@ -1667,7 +1669,7 @@ module.exports = class learnContentService {
                 {
                     result.indian_student_installments = result.indian_student_installments.map(installment =>{
 
-                        installment.payment_deadline = new Date(installment.payment_deadline)
+                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) : null
                         return installment
                     })
                 }
@@ -1678,7 +1680,7 @@ module.exports = class learnContentService {
                 {
                     result.international_student_installments = result.international_student_installments.map(installment =>{
 
-                        installment.payment_deadline = new Date(installment.payment_deadline)
+                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) :null
                         return installment
                     })
                 }
@@ -1716,8 +1718,8 @@ module.exports = class learnContentService {
                         additional_batch.total_duration_unit = batch.total_duration_unit
                         additional_batch.batch_type = (batch.batch_type)? batch.batch_type.value : null                   
                         additional_batch.batch_timings = {
-                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset: "-",
-                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: "-",
+                            'time_zone_offset':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_offset:null,
+                            'time_zone_name':(batch.batch_time_zone)? batch.batch_time_zone.time_zone_name: null,
                             'start_time':(batch.batch_start_time)? batch.batch_start_time: null,
                             'end_time':(batch.batch_end_time)?batch.batch_end_time:null,
                         }                    
