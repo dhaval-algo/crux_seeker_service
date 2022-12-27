@@ -368,7 +368,7 @@ module.exports = class providerService {
                 filter_postion: 'vertical',
                 is_collapsed: true,
                 filter_type: 'Radios',
-                order: 2,
+                order: 3,
                 options: yearOptions
             })
 
@@ -405,7 +405,7 @@ module.exports = class providerService {
         {
             for (let  parsedFilter of parsedFilters)
             {
-                if( parsedFilter.key == 'year')
+                if( parsedFilter.key == 'Year')
                 {
                     rankYear = []
                     for(let filter of filters)
