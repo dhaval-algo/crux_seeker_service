@@ -82,7 +82,8 @@ const regionToCurrency = {
                             return {
                                 'name': el["name"],
                                 'code': el["code"],
-                                'currency':'USD'
+                                'currency':'USD',
+                                'region' : 'USA'
                             }
                         })
                         if (data) {
