@@ -81,7 +81,8 @@ const regionToCurrency = {
                         data = data.map(function (el) {
                             return {
                                 'name': el["name"],
-                                'code': el["code"]
+                                'code': el["code"],
+                                'currency':'USD'
                             }
                         })
                         if (data) {
