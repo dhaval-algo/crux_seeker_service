@@ -798,8 +798,7 @@ module.exports = class providerService {
                     let placement_data = {}
                     for (const hit of result.hits) {
                         years.push(hit._source.year)
-                        programs.push(hit._source.program_name)
-                        if (!placement_data[hit._source.year]) placement_data[hit._source.year] = {}
+                        programs.push(hit._source.program_name)                       
 
                         let batch_profile = []
                         if (hit._source.gender_diversity_graph_id) {
@@ -924,21 +923,29 @@ module.exports = class providerService {
                                 graph_id: hit._source.sector_wise_highest_CTC_graph_id
                             })
                         }
-
-
-                        placement_data[hit._source.year][hit._source.program_name] = {
-                            batch_profile,
-                            recruiter_profile,
-                            salary_CTC
+                        if(batch_profile.length > 0 || recruiter_profile.length || salary_CTC.length)  
+                        {
+                            if (!placement_data[hit._source.year]) placement_data[hit._source.year] = {}
+                            placement_data[hit._source.year][hit._source.program_name] = {
+                                batch_profile,
+                                recruiter_profile,
+                                salary_CTC
+                            }
                         }
                     }
 
                     data.years = years.filter((x, i, a) => a.indexOf(x) == i)
                     data.programs = programs.filter((x, i, a) => a.indexOf(x) == i)
-                    data.placement_data = placement_data
-                    await RedisConnection.set(cacheName, data);
-                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER);
-                    return { success: true, data }
+                    if((placement_data && Object.keys(placement_data).length != 0))
+                    {
+                        data.placement_data = placement_data 
+                        await RedisConnection.set(cacheName, data);
+                        RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_SINGLE_PROVIDER);
+                        return { success: true, data }
+                    }else
+                    {
+                        return { success: false, data: null }
+                    }
                 }
                 else {
                     return { success: false, data: null }
