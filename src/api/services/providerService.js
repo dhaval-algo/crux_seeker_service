@@ -372,6 +372,7 @@ module.exports = class providerService {
                 options: yearOptions
             })
 
+            query.bool.must.pop(); // remove visible check
             useCache = true; // enable cache for ranks
         }
         if(req.query['f']){
