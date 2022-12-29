@@ -1327,7 +1327,6 @@ module.exports = class providerService {
                     {
                         if(each.key == option.label)
                         {
-                            let option = {label: each.key, count: 0, selected: false, disabled: false}
                             option.count = each.top_reverse_nested.doc_count;
                             if(seleteddFilter && seleteddFilter.value.includes(option.label))
                                 option.selected = true;
