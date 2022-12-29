@@ -689,6 +689,7 @@ module.exports = class providerService {
             gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
             facilities: (result.facilities) ? result.facilities : null,
             highlights: (result.highlights) ? result.highlights : null,
+            visible: result.visible || false,
         };
 
         if(!isList){
