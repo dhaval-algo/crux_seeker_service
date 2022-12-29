@@ -873,7 +873,7 @@ module.exports = class providerService {
                             })
                         }
 
-                        if (hit._source.top_recruiter) {
+                        if (hit._source.top_recruiter && hit._source.top_recruiter.length > 0) {
                             recruiter_profile.push({
                                 tab_label: 'Top Recruiters',
                                 type: "TABLE",
