@@ -349,7 +349,7 @@ module.exports = class providerService {
         {
             let yearOptions = []
             let yearoption = parseInt(latestRankYear[req.query['rank']]);
-            for(let i =0; i< 11; i++ )  
+            for(let i =0; i< 20; i++ )
             {
                
                 yearOptions.push (
@@ -1322,17 +1322,17 @@ module.exports = class providerService {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
                 await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
-                    /*for(let option of filters[i].options)
+                    for(let option of filters[i].options)
                     {
                         if(each.key == option.label)
-                        {*/
-                    let option = {label: each.key, count: 0, selected: false, disabled: false}
-                    option.count = each.top_reverse_nested.doc_count;
-                    if(seleteddFilter && seleteddFilter.value.includes(option.label))
-                        option.selected = true;
-                    options.push(option);
-                        /*}
-                    }*/
+                        {
+                            let option = {label: each.key, count: 0, selected: false, disabled: false}
+                            option.count = each.top_reverse_nested.doc_count;
+                            if(seleteddFilter && seleteddFilter.value.includes(option.label))
+                                option.selected = true;
+                            options.push(option);
+                        }
+                    }
                 }));
 
                 filters[i].options = options;
