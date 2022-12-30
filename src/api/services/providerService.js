@@ -1323,16 +1323,26 @@ module.exports = class providerService {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
                 await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
-                    for(let option of filters[i].options)
-                    {
-                        if(each.key == option.label)
+
+                    if(seleteddFilter){
+                        for(let option of filters[i].options)
                         {
-                            option.count = each.top_reverse_nested.doc_count;
-                            if(seleteddFilter && seleteddFilter.value.includes(option.label))
+                           if( each.key == option.label &&  seleteddFilter.value.includes(each.key) )
+                            {
+                                option.count = each.top_reverse_nested.doc_count;
                                 option.selected = true;
-                            options.push(option);
+                                options.push(option);
+                                break;
+                            }
                         }
                     }
+                    else
+                        for(let option of filters[i].options){
+                            if(each.key == option.label){
+                                option.count = each.top_reverse_nested.doc_count;
+                                options.push(option);
+                            }
+                        }
                 }));
 
                 filters[i].options = options;
