@@ -1,6 +1,8 @@
 const elasticService = require("./elasticService");
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
+const partnerService = require("./partnerService");
+let PartnerService = new partnerService();
 const fetch = require("node-fetch");
 
 const reviewService = require("./reviewService");
