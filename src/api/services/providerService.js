@@ -366,7 +366,7 @@ module.exports = class providerService {
                 label: 'Year',
                 filterable: false,
                 filter_postion: 'vertical',
-                is_collapsed: true,
+                is_collapsed: false,
                 filter_type: 'Radios',
                 order: 3,
                 options: yearOptions
