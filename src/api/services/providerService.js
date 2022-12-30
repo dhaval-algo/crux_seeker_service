@@ -1318,7 +1318,7 @@ module.exports = class providerService {
         for(let i = 0; i < filters.length; i++)
         {
             const field = filters[i].label;
-            if( ['Ranking','Year'].includes(field) )
+            if( ['Ranking'].includes(field) )
             {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
@@ -1343,6 +1343,26 @@ module.exports = class providerService {
                                 options.push(option);
                             }
                         }
+                }));
+
+                filters[i].options = options;
+            }
+            else if( ['Year'].includes(field) )
+            {
+                const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
+                let options = [];
+                await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
+
+                    for(let option of filters[i].options)
+                    {
+                       if( each.key == option.label)
+                        {
+                            option.count = each.top_reverse_nested.doc_count;
+                            if(seleteddFilter &&  seleteddFilter.value.includes(each.key))
+                                option.selected = true;
+                            options.push(option);
+                        }
+                    }
                 }));
 
                 filters[i].options = options;
