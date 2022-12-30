@@ -560,7 +560,7 @@ module.exports = class learnPathService {
             let list = [];
             if (result.total && result.total.value > 0) {
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
-                list = await this.generateListViewData(result.hits, req.query['currency']);
+                list = await this.generateListViewData(result.hits, req.query['currency'],req.query['country']);
             }
 
             let data = {
@@ -623,7 +623,7 @@ module.exports = class learnPathService {
                     result.hits.hits = await getlistPriceFromEcom(result.hits.hits,"learn_path",req.query['country'])
 
                     for(const hit of result.hits.hits){
-                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency,req.query['country']);
                         learnpaths.push(learnpath);
                     }
                     for(const id of ids){
@@ -666,7 +666,7 @@ module.exports = class learnPathService {
                             this.addPopularEntities("skill", name)
                         }
                     }
-                    const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
+                    const data = await this.generateSingleViewData(learnPath, false, req.query.currency, req.query.country);
                     learnpathId = data.id
                     callback(null, { success: true, message: 'Fetched successfully!', data: data });
                     RedisConnection.set(cacheName, data); 
@@ -707,7 +707,7 @@ module.exports = class learnPathService {
         }
     }
 
-    async generateSingleViewData(result, isList = false, currency = process.env.DEFAULT_CURRENCY) {
+    async generateSingleViewData(result, isList = false, currency = process.env.DEFAULT_CURRENCY,country) {
         let currencies = await getCurrencies();
         let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
         let data = {
@@ -806,7 +806,7 @@ module.exports = class learnPathService {
 
             if (result.courses && result.courses.length > 0) {
                 let courseIds = result.courses.sort((a,b) => a.position - b.position).map(item => item.id).join();
-                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, country:req.query['country'] } });
+                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, country:country } });
                 if (courses) {
                     data.courses = courses;
                 }
@@ -873,13 +873,13 @@ module.exports = class learnPathService {
         return data;
     }
 
-    async generateListViewData(rows, currency) {
+    async generateListViewData(rows, currency, country) {
         if (currencies.length == 0) {
             currencies = await getCurrencies();
         }
         let datas = [];
         for (let row of rows) {
-            const data = await this.generateSingleViewData(row._source, true, currency);
+            const data = await this.generateSingleViewData(row._source, true, currency, country);
             datas.push(data);
         }
         return datas;
@@ -1108,7 +1108,7 @@ module.exports = class learnPathService {
 
     async getPopularLearnPaths(req, callback, returnData){
         let { type, priceType="Paid" } = req.params; // Populer, Trending,Free
-        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        let { category, sub_category, topic, currency, country,page = 1, limit =20} = req.query;       
         
         let offset= (page -1) * limit
         
@@ -1177,7 +1177,7 @@ module.exports = class learnPathService {
                 
             if(result.hits){
                 for(const hit of result.hits){
-                    var data = await this.generateSingleViewData(hit._source,true,currency)
+                    var data = await this.generateSingleViewData(hit._source,true,currency, country)
                     learnpaths.push(data);
                 }
             }
