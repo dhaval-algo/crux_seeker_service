@@ -9,6 +9,40 @@ const regionToCurrency = {
     "UK" : "GBP",
     "USA" : "USD"
 }
+
+const countryToCurrency = {
+    "AU": "AUD",
+    "IN": "INR",
+    "CA": "CAD",
+    "HK": "HKD",
+    "SG": "SGD",
+    "UK": "GBP",
+    "GB": "GBP",
+    "USA": "USD",
+    "AE": "AED",
+    "AT": "EUR",
+    "BE": "EUR",
+    "CY": "EUR",
+    "EE": "EUR",
+    "FI": "EUR",
+    "FR": "EUR",
+    "DE": "EUR",
+    "GR": "EUR",
+    "IE": "EUR",
+    "IT": "EUR",
+    "LV": "EUR",
+    "LT": "EUR",
+    "LU": "EUR",
+    "MT": "EUR",
+    "NL": "EUR",
+    "PT": "EUR",
+    "SK": "EUR",
+    "SI": "EUR",
+    "ES": "EUR"
+}
+
+
+
     module.exports = {
         getIpDetails: async(ip) => {
 
@@ -49,7 +83,7 @@ const regionToCurrency = {
                         data.region ="USA"
                     }
                     data.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6 = data.region
-                    data.currency = regionToCurrency[data.region]
+                    data.currency = (countryToCurrency[data.country_code])? countryToCurrency[data.country_code] : 'USD'
                 }
                 return {success:true, data: data }
             }
@@ -82,7 +116,7 @@ const regionToCurrency = {
                             return {
                                 'name': el["name"],
                                 'code': el["code"],
-                                'currency':'USD',
+                                'currency':(countryToCurrency[ el["code"]])? countryToCurrency[ el["code"]] : 'USD',
                                 'c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6' : 'USA'
                             }
                         })
