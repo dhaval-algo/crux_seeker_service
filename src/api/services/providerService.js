@@ -1295,7 +1295,7 @@ module.exports = class providerService {
                 ]
             }
         };
-        if(rank)
+        /*if(rank)
             query.bool.must.push({
                     "nested": {
                         "path": "ranks",
@@ -1307,7 +1307,7 @@ module.exports = class providerService {
                             }
                         }
                     }
-            })
+            })*/
 
         try {
             result = await elasticService.searchWithAggregate('provider', query, {aggs, size:0 }, null);
@@ -1318,36 +1318,7 @@ module.exports = class providerService {
         for(let i = 0; i < filters.length; i++)
         {
             const field = filters[i].label;
-            if( [].includes(field) ) // unreachable code
-            {
-                const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
-                let options = [];
-                await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
-
-                    if(seleteddFilter){
-                        for(let option of filters[i].options)
-                        {
-                           if( each.key == option.label &&  seleteddFilter.value.includes(each.key) )
-                            {
-                                option.count = each.top_reverse_nested.doc_count;
-                                option.selected = true;
-                                options.push(option);
-                                break;
-                            }
-                        }
-                    }
-                    else
-                        for(let option of filters[i].options){
-                            if(each.key == option.label){
-                                option.count = each.top_reverse_nested.doc_count;
-                                options.push(option);
-                            }
-                        }
-                }));
-
-                filters[i].options = options;
-            }
-            else if( ['Year', 'Ranking'].includes(field) )
+            if( ['Year', 'Ranking'].includes(field) )
             {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
