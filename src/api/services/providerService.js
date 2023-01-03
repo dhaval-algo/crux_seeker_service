@@ -1295,19 +1295,24 @@ module.exports = class providerService {
                 ]
             }
         };
-        /*if(rank)
-            query.bool.must.push({
-                    "nested": {
-                        "path": "ranks",
-                        "query": {
-                            "bool": {
-                                "must": [
-                                    { "term": { "ranks.slug.keyword": rank }}
-                                ]
-                            }
+        if(rank)
+            aggs.ranks.aggs["Year"] = {
+                "multi_terms": {
+                    "terms": [
+                        {
+                            "field": "ranks.slug.keyword"
+                        },
+                        {
+                            "field": "ranks.year.keyword"
                         }
+                    ]
+                },
+                "aggs": {
+                    "top_reverse_nested": {
+                        "reverse_nested": {}
                     }
-            })*/
+                }
+            }
 
         try {
             result = await elasticService.searchWithAggregate('provider', query, {aggs, size:0 }, null);
@@ -1330,6 +1335,27 @@ module.exports = class providerService {
                         {
                             option.count = each.top_reverse_nested.doc_count;
                             if(seleteddFilter &&  seleteddFilter.value.includes(each.key))
+                                option.selected = true;
+                            options.push(option);
+                        }
+                    }
+                }));
+                if(options.length)
+                    filters[i].options = options;
+            }
+            if( rank && ['Year'].includes(field) )
+            {
+                const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
+                let options = [];
+
+                await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
+
+                    for(let option of filters[i].options)
+                    {
+                       if( each.key[1] == option.label && each.key[0] == rank)
+                        {
+                            option.count = each.top_reverse_nested.doc_count;
+                            if(seleteddFilter &&  seleteddFilter.value.includes(each.key[1]))
                                 option.selected = true;
                             options.push(option);
                         }
