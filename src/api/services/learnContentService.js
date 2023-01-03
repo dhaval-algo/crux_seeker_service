@@ -1491,7 +1491,7 @@ module.exports = class learnContentService {
         data.buy_on_careervira = false
         //get buy_on_careervira from partner
         let partnerData = await PartnerService.getPartner({params : {slug:result.partner_slug},query:{currency:currency}})
-        if(partnerData && partnerData.buy_on_careervira)
+        if(partnerData && partnerData.buy_on_careervira  && data.course_details.instruction_type !='Instructor Paced')
         {
             data.buy_on_careervira =true
         }
