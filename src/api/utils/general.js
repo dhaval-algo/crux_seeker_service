@@ -141,7 +141,7 @@ const getRankingFilter = async (useCache = true) => {
             label: 'Ranking',
             filterable: true,
             filter_postion: 'vertical',   
-            is_collapsed: true,
+            is_collapsed: false,
             filter_type: 'Checkboxes',
             order: 2,
             options: []
