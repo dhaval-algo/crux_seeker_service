@@ -710,7 +710,6 @@ module.exports = class learnPathService {
     }
 
     async generateSingleViewData(result, isList = false, currency = process.env.DEFAULT_CURRENCY,country) {
-        let currencies = await getCurrencies();
         let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
         let data = {
             id: `LRN_PTH_${result.id}`,
@@ -727,13 +726,9 @@ module.exports = class learnPathService {
             reviews_extended: [],
             life_stages: result.life_stages,
             topics: result.topics,
-            pricing: {
-                regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),
-                sale_price: getCurrencyAmount(result.sale_price, currencies, result.currency, currency),
+            pricing: {               
                 display_price: result.display_price,
-                pricing_type: result.pricing_type,
-                currency: currency,
-                offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
+                pricing_type: result.pricing_type
             },
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
@@ -771,20 +766,13 @@ module.exports = class learnPathService {
                 }
             }
         }
+
+        if(data.pricing_details)
+        {
+            data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
+            data.pricing_details.pricing_type =  result.pricing_type
+        }  
         
-        //Remove this hardocded after testing
-
-        // if(data.id =='LRN_PTH_102' || data.id =='LRN_PTH_15' )
-        // {
-        //     data.buy_on_careervira = true
-        // }
-        // if(data.id =='LRN_PTH_43')
-        // {
-        //     data.buy_on_careervira = true
-        //     data.is_subscription = true
-        // }
-
-
         if (!isList) {
             data.meta_information = await generateMetaInfo('LEARN_PATH', result);         
 
@@ -792,15 +780,7 @@ module.exports = class learnPathService {
             if(result.cv_take && result.cv_take.display_cv_take)
             {
                 data.cv_take = result.cv_take
-            }
-
-            // send prices in all currencies
-            data.pricing.regular_prices = {}
-            data.pricing.sale_prices = {}
-            currencies.map(currency => {
-                data.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, result.currency, currency.iso_code)
-                data.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, result.currency, currency.iso_code)
-            })
+            }            
 
             let reviews = await this.getReviews({ params: { learnPathId: data.id }, query: {} });
             if (reviews)

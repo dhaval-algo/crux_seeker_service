@@ -1,4 +1,6 @@
 const elasticService = require("./elasticService");
+const partnerService = require("./partnerService");
+let PartnerService = new partnerService();
 const models = require("../../../models");
 const Sequelize = require('sequelize');
 const fetch = require("node-fetch");
@@ -1564,17 +1566,6 @@ module.exports = class recommendationService {
     }
 
     async generateCourseFinalResponse(result, currency=process.env.DEFAULT_CURRENCY){
-        let currencies = await getCurrencies();
-        const baseCurrency = getBaseCurrency(result);
-        let partnerPrice = roundOff(result.finalPrice, 2);   //final price in ES
-        let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
-        let conversionRate = roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
-        let tax = 0.0;
-        let canBuy = false;
-        if(result.learn_content_pricing_currency && result.learn_content_pricing_currency.iso_code === "INR" && result.pricing_type !="Free") {
-            canBuy = true;
-            tax = roundOff(0.18 * partnerPrice, 2);
-        }
         const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
         let desktop_course_image = null , mobile_course_image = null, partner_logo = null;
         if(partnerCourseImage.noCacheData != true)
@@ -1600,7 +1591,6 @@ module.exports = class recommendationService {
 
 
         let data = {
-            canBuy: canBuy,
             title: result.title,
             slug: result.slug,
             id: `LRN_CNT_PUB_${result.id}`,
@@ -1624,13 +1614,7 @@ module.exports = class recommendationService {
                 medium: (result.medium) ? result.medium : null,
                 pricing: {                    
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
-                    pricing_type: result.pricing_type,                   
-                    regular_price: getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency),
-                    sale_price: getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency),
-                    offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
-                    schedule_of_sale_price: result.schedule_of_sale_price,
-                    conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
-                    user_currency: currency
+                    pricing_type: result.pricing_type
                 },          
             },
             ratings: {
@@ -1646,16 +1630,34 @@ module.exports = class recommendationService {
            
         };     
 
-        data.couponsCount = -1;
+        data.couponCount = -1;
         if(result.pricing_type == "Paid")
         {
-            data.couponsCount = 0;
+            data.couponCount = 0;
             if(result.coupons && result.coupons.length > 0){
                 for(let coupon of result.coupons)
                     if(coupon.validity_end_date == null || coupon.validity_start_date == null || isDateInRange(coupon.validity_start_date,  coupon.validity_end_date))
-                        data.couponsCount++
+                        data.couponCount++
             }
-        } 
+        }
+
+        data.buy_on_careervira = false
+        //get buy_on_careervira from partner
+        let partnerData = await PartnerService.getPartner({params : {slug:result.partner_slug},query:{currency:currency}})
+        if(partnerData && partnerData.buy_on_careervira  && data.course_details.instruction_type !='Instructor Paced')
+        {
+            data.buy_on_careervira =true
+        }
+        if(partnerData && partnerData.logo)
+        {
+            data.partner.logo =partnerData.logo
+        }       
+       
+        if(data.pricing_details)
+        {
+            data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
+            data.pricing_details.pricing_type =  result.pricing_type
+        }
         
         if(data.course_details.medium == 'Others'){
             data.course_details.medium = null;
@@ -1700,6 +1702,11 @@ module.exports = class recommendationService {
             data.ratings.average_rating = round(average_rating, 0.5);
             data.ratings.average_rating_actual = average_rating.toFixed(1);      
 
+        }
+
+        if(!data.buy_on_careervira && data.pricing_details)
+        {
+            data.pricing_details.couponCount = data.couponCount
         }
 
         return data;
@@ -2479,7 +2486,6 @@ module.exports = class recommendationService {
     }
 
     async generateLearnPathFinalResponse(result, currency = process.env.DEFAULT_CURRENCY) {
-        let currencies = await getCurrencies();
         let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
         let data = {
             id: `LRN_PTH_${result.id}`,
@@ -2490,13 +2496,9 @@ module.exports = class recommendationService {
             card_image:(result.card_image)? formatImageResponse(result.card_image) : ((result.images)? formatImageResponse(result.images) : null),
             card_image_mobile:(result.card_image_mobile)? formatImageResponse(result.card_image_mobile) : ((result.cover_iimagesmage)? formatImageResponse(result.images) : null),
             levels: result.levels ? orderedLevels.filter(value=> result.levels.includes(value)) : [],          
-            pricing: {
-                regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),
-                sale_price: getCurrencyAmount(result.sale_price, currencies, result.currency, currency),
+            pricing: {              
                 display_price: result.display_price,
-                pricing_type: result.pricing_type,
-                currency: currency,
-                offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
+                pricing_type: result.pricing_type               
             },
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
@@ -2513,7 +2515,13 @@ module.exports = class recommendationService {
             buy_on_careervira: (result.buy_on_careervira)? result.buy_on_careervira : false,
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details:(result.pricing_details)? result.pricing_details:null
-        }       
+        }
+        
+        if(data.pricing_details)
+        {
+            data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
+            data.pricing_details.pricing_type =  result.pricing_type
+        }
 
         //TODO this logic is copied from course service
         //but this aggreation logic should be put in elastic search add added in the reviews_extended object for both course and learn-path.

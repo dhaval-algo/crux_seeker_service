@@ -1304,10 +1304,7 @@ module.exports = class learnContentService {
 
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
-        if(currencies.length == 0){
-            currencies = await getCurrencies();
-        }
-        const baseCurrency = getBaseCurrency(result);        
+        
 
         let effort = null;
         if(result.recommended_effort_per_week){
@@ -1319,24 +1316,9 @@ module.exports = class learnContentService {
             if(result.reviews[i]['reviewer_name'] == 'Other'){
                 result.reviews.splice(i, 1);
             }
-        }      
-
-        let partnerPrice = helperService.roundOff(result.finalPrice, 2);   //final price in ES
-        let partnerPriceInUserCurrency = parseFloat(getCurrencyAmount(result.finalPrice, currencies, baseCurrency, currency));
-        let conversionRate = helperService.roundOff((partnerPrice / partnerPriceInUserCurrency), 2);
-        let tax = 0.0;
-        let canBuy = false;
-        if(result.learn_content_pricing_currency && result.learn_content_pricing_currency.iso_code === "INR" && result.pricing_type !="Free") {
-            canBuy = true;
-            tax = helperService.roundOff(0.18 * partnerPrice, 2);
-        }
-        let regular_price = null, sale_price = null;
-        if(result.pricing_type == "Paid" )
-        {
-            regular_price = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency);
-            sale_price = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency);
-        }
-            //temp patch for old object format; scatter attributes 
+        }       
+       
+        //temp patch for old object format; scatter attributes 
         if(result.providers_list == undefined){
             let provider = {name: result.provider_name, slug: result.provider_slug,
                         currency: result.provider_currency, url:result.provider_course_url}
@@ -1368,7 +1350,6 @@ module.exports = class learnContentService {
         }
 
         let data = {
-            canBuy: canBuy,
             title: result.title,
             status:result.status,
             slug: result.slug,
@@ -1424,18 +1405,7 @@ module.exports = class learnContentService {
                 pricing: {
                     
                     display_price: ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true,
-                    pricing_type: result.pricing_type,
-                    base_currency: baseCurrency,
-                    user_currency: currency,
-                    regular_price,
-                    sale_price,
-                    offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
-                    schedule_of_sale_price: result.schedule_of_sale_price,
-                    free_condition_description: result.free_condition_description,
-                    conditional_price: getCurrencyAmount(result.conditional_price, currencies, baseCurrency, currency),
-                    pricing_additional_details: result.pricing_additional_details,
-                    course_financing_options: result.course_financing_options,                  
-                    tax: tax
+                    pricing_type: result.pricing_type                  
                 },
                 course_start_date: result.course_start_date || null,
                 course_end_date: result.course_end_date || null,
@@ -1485,8 +1455,6 @@ module.exports = class learnContentService {
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details: (result.pricing_details)? result.pricing_details : null,
         };
-
-
         
         data.buy_on_careervira = false
         //get buy_on_careervira from partner
@@ -1498,19 +1466,13 @@ module.exports = class learnContentService {
         if(partnerData && partnerData.logo)
         {
             data.partner.logo =partnerData.logo
+        }       
+       
+        if(data.pricing_details)
+        {
+            data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
+            data.pricing_details.pricing_type =  result.pricing_type
         }
-        
-        //Remove this hardocded after testing
-
-        // if(data.id =='LRN_CNT_PUB_18616' || data.id =='LRN_CNT_PUB_6186' )
-        // {
-        //     data.buy_on_careervira = true
-        // }
-        // if(data.id =='LRN_CNT_PUB_24724')
-        // {
-        //     data.buy_on_careervira = true
-        //     data.is_subscription = true
-        // }
 
         
         //SET popular and trending keys
@@ -1601,14 +1563,7 @@ module.exports = class learnContentService {
             data.meta_information = result.meta_information
         }
 
-        if(!isList){
-            // send prices in all currencies
-            data.course_details.pricing.regular_prices = {}
-            data.course_details.pricing.sale_prices = {}
-            currencies.map(currency => {
-                data.course_details.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, baseCurrency, currency.iso_code)
-                data.course_details.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, baseCurrency, currency.iso_code)
-            })
+        if(!isList){     
             
             if(result.instructors && result.instructors.length > 0){
                 for(let instructor of result.instructors){
@@ -1648,35 +1603,8 @@ module.exports = class learnContentService {
                     name:result.syllabus.name,
                     url:result.syllabus.url
                 }
-            }
-            
-            if(data.course_details.pricing.display_price && data.course_details.pricing.course_financing_options)
-            {
-                data.course_details.pricing.indian_students_program_fee = result.indian_students_program_fee
-                data.course_details.pricing.indian_students_payment_deadline = (result.indian_students_payment_deadline)? new Date(result.indian_students_payment_deadline) : null
-                data.course_details.pricing.indian_students_GST = result.indian_students_GST
-                if(result.indian_student_installments && result.indian_student_installments.length > 0)
-                {
-                    result.indian_student_installments = result.indian_student_installments.map(installment =>{
+            }            
 
-                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) : null
-                        return installment
-                    })
-                }
-                data.course_details.pricing.indian_student_installments = result.indian_student_installments
-                data.course_details.pricing.international_students_program_fee = result.international_students_program_fee
-                data.course_details.pricing.international_students_payment_deadline = (result.international_students_payment_deadline)? new Date(result.international_students_payment_deadline) : null
-                if(result.international_student_installments && result.international_student_installments.length > 0)
-                {
-                    result.international_student_installments = result.international_student_installments.map(installment =>{
-
-                        installment.payment_deadline = (installment.payment_deadline)? new Date(installment.payment_deadline) :null
-                        return installment
-                    })
-                }
-                data.course_details.pricing.international_student_installments = result.international_student_installments
-            }
-            
             if(result.faq){
                 data.faq = result.faq
             }
