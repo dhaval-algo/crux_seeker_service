@@ -1266,7 +1266,8 @@ module.exports = class providerService {
                 aggs: {
                     Year: {
                         terms: {
-                            field: "ranks.year.keyword"
+                            field: "ranks.year.keyword",
+                            "size": 50
                         },
                         "aggs": {
                             "top_reverse_nested": {
@@ -1276,7 +1277,8 @@ module.exports = class providerService {
                     },
                         Ranking: {
                         terms: {
-                            field: "ranks.name.keyword"
+                            field: "ranks.name.keyword",
+                            "size": 50
                         },
                         "aggs": {
                             "top_reverse_nested": {
@@ -1305,7 +1307,8 @@ module.exports = class providerService {
                         {
                             "field": "ranks.year.keyword"
                         }
-                    ]
+                    ],
+                    "size": 300
                 },
                 "aggs": {
                     "top_reverse_nested": {
