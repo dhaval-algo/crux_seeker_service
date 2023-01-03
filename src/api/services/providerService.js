@@ -1318,7 +1318,7 @@ module.exports = class providerService {
         for(let i = 0; i < filters.length; i++)
         {
             const field = filters[i].label;
-            if( ['Ranking'].includes(field) )
+            if( [].includes(field) ) // unreachable code
             {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
@@ -1347,7 +1347,7 @@ module.exports = class providerService {
 
                 filters[i].options = options;
             }
-            else if( ['Year'].includes(field) )
+            else if( ['Year', 'Ranking'].includes(field) )
             {
                 const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
                 let options = [];
