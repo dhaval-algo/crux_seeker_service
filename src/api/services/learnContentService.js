@@ -1840,7 +1840,8 @@ module.exports = class learnContentService {
             couponCount: coupons.length,
             is_subscription: data.is_subscription,
             show_enquiry: data.enquiry,
-            pricing_details:data.pricing_details
+            pricing_details:data.pricing_details,
+            buy_on_careervira:data.buy_on_careervira
         }
 
         return isList ? listData : data;
