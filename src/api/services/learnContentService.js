@@ -1305,7 +1305,10 @@ module.exports = class learnContentService {
 
     async generateSingleViewData(result, isList = false, currency=process.env.DEFAULT_CURRENCY, isCaching = false){
         
-
+        if(currencies.length == 0){
+            currencies = await getCurrencies();
+        }
+        const baseCurrency = getBaseCurrency(result);  
         let effort = null;
         if(result.recommended_effort_per_week){
             let efforUnit = (result.recommended_effort_per_week > 1) ? 'hours per week' : 'hour per week';
