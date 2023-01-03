@@ -517,7 +517,49 @@ const getPartnerDetails = async (partnerSlug) =>
         return { name: partnerSlug, slug: partnerSlug, logo: null }
 }
 
+const getNewsByIds = async (req, callback) => {
+    try {
+
+        if(!currencies.length)
+            currencies = await getCurrencies();
+
+        let news = [];
+        const newsOrdered = [], { currency = process.env.DEFAULT_CURRENCY } = req.query;
+        let ids = [];
+        if(req.query['ids'])
+            ids = req.query['ids'].split(",");
+
+        if(ids.length){
+
+            const queryBody =  {
+                "ids": {
+                    "values": ids
+                }
+            };
+            const queryPayload = { size : 100 }
+            const result = await elasticService.search('news', queryBody, queryPayload);
+            if(result.hits){
+
+                news = await generateListViewData(result.hits, currency);
+                for(const id of ids){
+                    const n = news.find(o => o.id === id);
+                    if(n)
+                        newsOrdered.push(n);
+                }
+            }
+        }
+        if(callback)
+            callback(null, {success: true, message: 'Fetched successfully!', data: newsOrdered});
+        else
+            return newsOrdered;
+    } catch (error) {
+        callback(null, {success: false, message: 'Failed to Fetch', data: null});
+        console.log("[news by id] error",error)
+    }
+
+    }
 module.exports = {
+    getNewsByIds,
     generateSingleViewData,
     getNewsList,
     getNewsBySlug,

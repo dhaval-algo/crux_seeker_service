@@ -20,5 +20,15 @@ module.exports = {
                 res.status(200).send(err);
             }
         });      
-    }
+    },
+
+    getNewsByIds: async (req, res) => {
+
+        newsService.getNewsByIds(req, (err, data) => {
+            if (data)
+                res.status(200).send(data);
+            else
+                res.status(200).send(err);
+        });
+    },
 }

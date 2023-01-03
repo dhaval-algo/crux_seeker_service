@@ -55,6 +55,7 @@ router.get('/get-top-categories/', learnContentController.getTopCategories);
 //news endpoints
 router.get('/news', injectTokenPayload, newsController.getNewsList);
 router.get('/news/:slug', injectTokenPayload, newsController.getNewsBySlug);
+router.get('/news-by-ids', newsController.getNewsByIds);
 
 // static content API
 router.get('/footer', footerController.getFooter);
