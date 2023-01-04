@@ -130,10 +130,7 @@ const countryToCurrency = {
                             {
                                  region ="Europe"
                             }
-                            else
-                            {
-                               
-                            }
+                            
                             return {
                                 'name': el["name"],
                                 'code': el["code"],
