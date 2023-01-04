@@ -79,6 +79,7 @@ router.get('/providers/:slug', providerController.getSingleProvider);
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
+router.get('/partners-by-ids', partnerController.partnersByCourseId);
 
 router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
@@ -118,7 +119,8 @@ router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
 
 //listing all users for admin; temporarily added to this path 
-router.post('/listUsers', listUsersController.list)
+router.get('/listUsers', listUsersController.list)
+router.get('/usersByIds', listUsersController.usersByids)
 router.get("/detailedUser/:id", listUsersController.getDetailedUser)
 router.post("/listEnquiries", listEnquiriesController.list)
 router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)

@@ -1,7 +1,7 @@
 'use strict';
 
 const models = require("../../../models")
-const {buildConfig, queryUser} = require("../../api/services/listUsersService")
+const {buildConfig, queryUser, buildConfigUsersById} = require("../../api/services/listUsersService")
 
 const list = async (req, res) => {
     
@@ -9,8 +9,8 @@ const list = async (req, res) => {
         let config = buildConfig(req)
         if(config.err)
             throw config.err
-        const {count , rows } = await models.user.findAndCountAll(config)
-        res.status(200).send({success: true, data: rows, count})      
+        const {count , rows } = await models.user.findAndCountAll(config.where);
+        res.status(200).send({success: true, data: rows, count, sort: config.sort, perPage: config.where.limit })    
     }
 
     catch(err){
@@ -38,7 +38,27 @@ const getDetailedUser = async (req, res)=>{
         return res.status(500).send({error: true, message: err.message})
     }
 }
+
+const usersByids = async (req, res) => {
+    
+    try{
+        let config = buildConfigUsersById(req)
+        if(config.err)
+            throw config.err;
+
+        const {count , rows } = await models.user.findAndCountAll(config.where);
+        res.status(200).send({success: true, data: rows, count, sort: config.sort, perPage: config.where.limit })
+    }
+
+    catch(err){
+        console.log(err);
+        return res.status(500).send({error: true, message: err.message});
+    }
+}
+
+
 module.exports = {
+    usersByids,
     list,
     getDetailedUser,
 }
