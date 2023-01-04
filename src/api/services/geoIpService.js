@@ -1,10 +1,49 @@
 const models = require("../../../models");
+const redisConnection = require('../../services/v1/redis');
+const RedisConnection = new redisConnection();
+const fetch = require("node-fetch");
+const apiBackendUrl = process.env.API_BACKEND_URL;
 const regionToCurrency = {
     "India" : "INR",
     "Europe": "EUR",
     "UK" : "GBP",
     "USA" : "USD"
 }
+
+const europeCountry = ["AT","BE","CY","EE","FI","FR","DE","GR","IE","IT","LV","LT","LU","MT","NL","PT","SK","SI","ES" ]
+const countryToCurrency = {
+    "AU": "AUD",
+    "IN": "INR",
+    "CA": "CAD",
+    "HK": "HKD",
+    "SG": "SGD",
+    "UK": "GBP",
+    "GB": "GBP",
+    "USA": "USD",
+    "AE": "AED",
+    "AT": "EUR",
+    "BE": "EUR",
+    "CY": "EUR",
+    "EE": "EUR",
+    "FI": "EUR",
+    "FR": "EUR",
+    "DE": "EUR",
+    "GR": "EUR",
+    "IE": "EUR",
+    "IT": "EUR",
+    "LV": "EUR",
+    "LT": "EUR",
+    "LU": "EUR",
+    "MT": "EUR",
+    "NL": "EUR",
+    "PT": "EUR",
+    "SK": "EUR",
+    "SI": "EUR",
+    "ES": "EUR"
+}
+
+
+
     module.exports = {
         getIpDetails: async(ip) => {
 
@@ -44,8 +83,7 @@ const regionToCurrency = {
                     {
                         data.region ="USA"
                     }
-                    data.c697d2981bf416569a16cfbcdec1542b5398f3cc77d2b905819aa99c46ecf6f6 = data.region
-                    data.currency = regionToCurrency[data.region]
+                    data.currency = (countryToCurrency[data.country_code])? countryToCurrency[data.country_code] : 'USD'
                 }
                 return {success:true, data: data }
             }
@@ -55,5 +93,59 @@ const regionToCurrency = {
             }
     
     
+        },
+        getCountries: async (skipCache) => {
+            try {
+                let cacheName = `countries`
+                let useCache = false
+                if (skipCache != true) {
+                    let cacheData = await RedisConnection.getValuesSync(cacheName);
+                    if (cacheData.noCacheData != true) {
+                        return cacheData
+                    }
+                    else {
+                        return []
+                    }
+                }
+                if (useCache != true) {
+                    let response = await fetch(`${apiBackendUrl}/countries?_limit=-1`);
+                    let data
+                    if (response.ok) {
+                        data = await response.json();
+                        data = data.map(function (el) {
+                            let region ="USA"
+                            if(el["code"] =="IN")
+                            {
+                                region ="India"
+                            }
+                            else if(el["code"] =="UK" || el["code"] =="GB" )
+                            {
+                                region ="UK"
+                            }
+                            else if(el["code"] =="USA")
+                            {
+                                region ="USA"
+                            }
+                            else if(europeCountry.includes[el["code"]])
+                            {
+                                 region ="Europe"
+                            }
+                            
+                            return {
+                                'name': el["name"],
+                                'code': el["code"],
+                                'currency':(countryToCurrency[ el["code"]])? countryToCurrency[ el["code"]] : 'USD',
+                                'region' :  region
+                            }
+                        })
+                        if (data) {
+                            RedisConnection.set(cacheName, data);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log("err", err)
+                return []
+            }
         }
     }

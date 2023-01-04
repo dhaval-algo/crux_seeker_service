@@ -80,6 +80,36 @@ app.use(renameHeaderOrigin);
     }
    })
 
+   // if country is not send set it  
+  app.use(async function (req, res, next) {
+    if(!req.query || (req.query && !req.query['country']))
+    {
+     try {
+        if(!req.query) req.query = {}
+         let locationData = await geoIpService.getIpDetails(req.ip)
+         if( locationData && locationData.success && locationData.data)
+         {
+             req.query['country'] = locationData.data.country_code
+             next()
+         }
+         else{
+            req.query['country'] ='US'
+             next()
+         }
+     } catch (error) {
+         console.log("Error detecting location",error )
+         req.query['country'] = 'US'
+
+         next()
+     }
+     
+    }
+    else
+    {
+     next()
+    }
+   })
+
 app.use("/api", require("./src/api/routes"));
 
 // Set up routes

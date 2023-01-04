@@ -137,6 +137,8 @@ module.exports = {
                 return emailTemplate.enquiryEmailToAdmins(templateData)
             case 'job_application_email':
                 return emailTemplate.jobApplicationEmail(templateData)
+            case 'email_verification_otp':
+                return emailTemplate.emailVerificationOtp(templateData)
             default:
                 return false
                 break;

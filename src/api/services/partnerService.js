@@ -87,7 +87,25 @@ module.exports = class partnerService {
                 }
             );            
         }
-        
+        if (req.query['partnerIds']) {
+            let partnerIds = req.query['partnerIds'].split(",");
+            partnerIds = partnerIds.map(id => {
+                
+                if(!id.includes("PTNR_"))
+                {
+                    id = 'PTNR_'+id
+                }
+
+                return id
+            })
+            let filter_object = {
+                "terms": {
+                    "_id": partnerIds
+                }
+            }
+
+            query.bool.must.push(filter_object)
+        }
 
         const result = await elasticService.search('partner', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -129,17 +147,29 @@ module.exports = class partnerService {
             //console.log("result <> ", result);
             if(result.hits && result.hits.length > 0){
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-                callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                if(callback)
+                    callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                else
+                    return data
             }else{
                 let redirectUrl = await helperService.getRedirectUrl(req);
                 if (redirectUrl) {
-                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    if(callback)
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    else
+                        return null
                 }
-                return callback(null, { success: false, message: 'Not found!' });
+                if(callback)
+                    return callback(null, { success: false, message: 'Not found!' });
+                else
+                    return null
             }  
         } catch (error) {
                 console.log("partner erorr!!!!!!!!!!!!!!", error)
-                callback({success: false, message: 'Not found!'}, null);
+                if(callback)
+                    callback({success: false, message: 'Not found!'}, null);
+                else 
+                  return null
         }      
     }
 
@@ -160,6 +190,7 @@ module.exports = class partnerService {
             name: result.name,
             slug: result.slug,            
             id: `PTNR_${result.id}`,
+            numeric_id:result.id,
             short_description: result.short_description || null,
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
@@ -199,7 +230,8 @@ module.exports = class partnerService {
             accreditations: [],
             report: (result.report)? result.report : null,
             highlights: (result.highlights)? result.highlights : null,
-            facts: (result.facts)? result.facts : null
+            facts: (result.facts)? result.facts : null,
+            buy_on_careervira:(result.buy_on_careervira)? result.buy_on_careervira : false,
         };
         if(!isList){
             // get course count 
@@ -283,7 +315,15 @@ module.exports = class partnerService {
                     data.corporate_partners.push(cpartner);
                 }
             }
-        }       
+        }
+        
+        if(result.partner_benefits && result.partner_benefits.length > 0){
+            data.partner_benefits = result.partner_benefits.map(partner_benefit => partner_benefit.benefit)
+        }
+        else
+        {
+            data.partner_benefits = null
+        }
 
         return data;
     }

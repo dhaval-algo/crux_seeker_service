@@ -121,6 +121,18 @@ module.exports = {
         return templateData 
          
     },
+
+    emailVerificationOtp: function(messagData){
+        let templatesPath = path.join(__dirname, './templates/email-verification-otp.hbs');
+
+        let source = fs.readFileSync(templatesPath, 'utf8');
+        let template = handlebars.compile(source);
+        let emailTemplate = template({otp:messagData.otp, resource_link:process.env.SERVER_URL });
+         
+        let templateData = {subject:'Verify Your Careervira Account Email',message:emailTemplate};
+        return templateData 
+         
+    },
     
     enquiryEmailToPartner: function(messagData){
         let templatesPath = path.join(__dirname, './templates/enquiryEmailToPartner.hbs');

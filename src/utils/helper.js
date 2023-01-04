@@ -20,6 +20,9 @@ const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
+const AES = require("crypto-js/aes");
+const encUtf8 = require("crypto-js/enc-utf8");
+const modeEcb = require("crypto-js/mode-ecb");
 
 const encryptStr = (str) => {
     return crypt.encrypt(str);
@@ -1311,6 +1314,14 @@ const getTreeUrl = async (type, label, onlySulg = false) => {
     }
    
 }
+
+const encryptUserId = async (userId) => {
+    let key = process.env.ECOM_USER_ENCRYPTION_KEY
+    let plaintext = encUtf8.parse(userId);
+    let secSpec = encUtf8.parse(key);
+    var encrypted = AES.encrypt(plaintext, secSpec, { mode: modeEcb });
+    return encrypted.toString();
+}
    
 module.exports = {
     validateIdsFromElastic,
@@ -1337,5 +1348,6 @@ module.exports = {
     logActvity,
     logPopularEntities,
     getRedirectUrl,
-    getTreeUrl
+    getTreeUrl,
+    encryptUserId
 }

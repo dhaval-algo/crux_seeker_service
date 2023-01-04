@@ -30,9 +30,6 @@ const entityKPIKeyElasticFieldMap = {
         "skills": "skills",
         "categories": "categories",
         "sub_categories": "sub_categories"
-
-
-
     },
     "learn-path": {
         "topics": "topics",
@@ -49,21 +46,52 @@ const entityKPIKeyElasticFieldMap = {
     }
 }
 
+const getSessionBasedFunctionScoreFunctions = async (entity, userId, weight = weightForKeywordBoosting) => {
 
-const getFunctionScoreFunction = (entity, kpiKey, kpis, weight = weightForKeywordBoosting) => {
-    return {
-        filter: {
-            terms: {
+    const functions = [];
 
-                [`${entityKPIKeyElasticFieldMap[entity][kpiKey]}.keyword`]: kpis
+    if (userId) {
+        const recentSessionKPIs = await getRecentSessionKPIs(userId);
+        const allTimeSessionKPIs = await getAllTimeSessionKPIs(userId);
+        const entityKpiKeys = entityQueryMapping[entity].kpis;
+
+        for (const kpiKey of entityKpiKeys) {
+
+            let kpis = [];
+
+            if (recentSessionKPIs[kpiKey]) kpis.push(...recentSessionKPIs[kpiKey]);
+            if (allTimeSessionKPIs.topKPIs && allTimeSessionKPIs.topKPIs[kpiKey]) kpis.push(...allTimeSessionKPIs.topKPIs[kpiKey]);
+
+            kpis = Array.from(new Set(kpis));
+            if (kpis.length) {
+
+                functions.push({
+                    filter: {
+                        terms: {
+
+                            [`${entityKPIKeyElasticFieldMap[entity][kpiKey]}.keyword`]: kpis
+
+                        }
+                    },
+                    weight: weight
+                });
 
             }
-        },
-        weight: weight
+
+        }
+
     }
+
+    return functions;
+
 }
 
 
+const getUserKpis = async (entity, userId, weight = weightForKeywordBoosting) => {
+
+    return await getSessionBasedFunctionScoreFunctions(entity , userId , weight);
+
+}
 
 const getSearchTemplate = async (entity, query, userId = null, req = null) => {
 
@@ -199,27 +227,8 @@ const getSearchTemplate = async (entity, query, userId = null, req = null) => {
         })
     }
 
-    if (userId) {
-        const recentSessionKPIs = await getRecentSessionKPIs(userId);
-        const allTimeSessionKPIs = await getAllTimeSessionKPIs(userId);
-        for (const kpiKey of entityQueryFields.kpis) {
-
-            let kpis = [];
-
-            if (recentSessionKPIs[kpiKey]) kpis.push(...recentSessionKPIs[kpiKey]);
-            if (allTimeSessionKPIs.topKPIs && allTimeSessionKPIs.topKPIs[kpiKey]) kpis.push(...allTimeSessionKPIs.topKPIs[kpiKey]);
-
-            kpis = Array.from(new Set(kpis));
-            if (kpis.length) {
-
-                const functionScoreFunction = getFunctionScoreFunction(entity, kpiKey, kpis);
-                template.function_score.functions.push(functionScoreFunction);
-
-            }
-
-        }
-
-    }
+    const functions = await getUserKpis(entity, userId);
+    template.function_score.functions.push(...functions);
 
     return template;
 
@@ -289,5 +298,6 @@ const getProviderSearchTemplate = (query) => {
 
 module.exports = {
 
-    getSearchTemplate
+    getSearchTemplate,
+    getUserKpis
 }

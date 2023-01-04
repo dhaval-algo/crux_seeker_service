@@ -1,19 +1,21 @@
 const elasticService = require("./elasticService");
 const learnContentService = require("./learnContentService");
 let LearnContentService = new learnContentService();
+const partnerService = require("./partnerService");
+let PartnerService = new partnerService();
 const fetch = require("node-fetch");
 
 const reviewService = require("./reviewService");
 const ReviewService = new reviewService();
 const helperService = require("../../utils/helper");
-const {formatCount} = require("../utils/general")
+const {formatCount,getlistPriceFromEcom} = require("../utils/general")
 const {generateMetaInfo} = require("../utils/metaInfo")
 
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 
 const categoryService = require("./categoryService");
-const {getSearchTemplate} = require("../../utils/searchTemplates");
+const {getSearchTemplate,getUserKpis} = require("../../utils/searchTemplates");
 const CategoryService = new categoryService();
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -49,8 +51,8 @@ const sortOptions = {
     'Trending' : ["activity_count.last_x_days.trending_score:desc","ratings:desc"],
     'Highest Rated': ["ratings:desc"],
     'Newest' :["created_at:desc"],
-    'Price Low To High': ["basePrice:asc"],
-    'Price High To Low': ["basePrice:desc"],
+    'Price Low To High': ["default_price:asc"],
+    'Price High To Low': ["default_price:desc"],
     'Most Relevant' : []
 
 }
@@ -94,12 +96,12 @@ module.exports = class learnPathService {
         try {
             let searchTemplate = null;
             let defaultSize = ENTRY_PER_PAGE;
-            let defaultSort = req.query['q']? 'Most Relevant' :"Highest Rated";
+            let defaultSort =  'Most Relevant';
             let useCache = false;
             let cacheName = "learnpath";
             const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
 
-            if(
+            if(!userId &&
                 req.query['learnPathIds'] == undefined
                 && req.query['f'] == undefined
                 && (req.query['q'] == undefined || req.query['q'] == '')
@@ -120,11 +122,14 @@ module.exports = class learnPathService {
                     apiCurrency = req.query['currency'];
                 }
                
-                cacheName += `_${apiCurrency}_${defaultSort}`;
+                cacheName += `_${defaultSort}`;
     
                 if(skipCache != true) {
                     let cacheData = await RedisConnection.getValuesSync(cacheName);
                     if(cacheData.noCacheData != true) {
+                        if(cacheData.list)
+                        cacheData.list = await getlistPriceFromEcom(cacheData.list,"learn_path",req.query['country'])
+
                         return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
                     }
                 }
@@ -138,17 +143,41 @@ module.exports = class learnPathService {
             if (req.query['q']) {
 
                 searchTemplate = await getSearchTemplate('learn-path',decodeURIComponent(req.query['q']).replace("+","//+").trim(),userId);
-                query = searchTemplate.function_score.query;
                 esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
                 
             } else {
-                query = {
-                    "bool": {
-                        "must": [
-                            { term: { "status.keyword": 'approved' } }
-                        ],
+                const functions = [];
+
+                searchTemplate = {
+                    function_score: {
+                        score_mode: "multiply",
+                        boost_mode: "multiply",
+                        query: {
+                            bool: {
+                                must: [
+                                    { term: { "status.keyword": 'approved' } }
+                                ],
+                            }
+                        }
                     }
-                };
+                }
+
+                if (req.query.sort && req.query.sort == 'Most Relevant') {
+
+                    functions.push({
+                        field_value_factor: {
+                            field: "activity_count.all_time.learnpath_views",
+                            modifier: "log2p",
+                            missing: 8
+                        }
+                    });
+                }
+
+                functions.push(...await getUserKpis('learn-path', userId));
+
+                if (functions.length) {
+                    searchTemplate.function_score.functions = functions
+                }
             };
 
             let queryPayload = {};
@@ -180,6 +209,15 @@ module.exports = class learnPathService {
 
             if (req.query['learnPathIds']) {
                 let learnPathIds = req.query['learnPathIds'].split(",");
+                learnPathIds = learnPathIds.map(id => {
+                    
+                    if(!id.includes("LRN_CNT_PUB_"))
+                    {
+                        id = 'LRN_PTH_'+id
+                    }
+    
+                    return id
+                })
 
                 let filter_object = {
                     "terms": {
@@ -187,7 +225,7 @@ module.exports = class learnPathService {
                     }
                 }
 
-                query.bool.must.push(filter_object)
+                searchTemplate.function_score.query.bool.must.push(filter_object)
                 esFilters['courseIds'] = filter_object;
             }
 
@@ -216,12 +254,12 @@ module.exports = class learnPathService {
                             "terms": { [attribute_name]: filter.value }
                         };
 
-                        query.bool.must.push(filter_object);
+                        searchTemplate.function_score.query.bool.must.push(filter_object);
                         esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                     }
                 }
                 if (req.query['f'].includes("Price Type:")) {
-                    query.bool.must.push({
+                    searchTemplate.function_score.query.bool.must.push({
                         "bool": {
                             "must_not": [
                                 {
@@ -281,7 +319,7 @@ module.exports = class learnPathService {
                             }
                         };
 
-                        query.bool.must.push(filter_object);
+                        searchTemplate.function_score.query.bool.must.push(filter_object);
                         esFilters[elasticAttribute.elastic_attribute_name] = filter_object;
                     }
                 }
@@ -368,7 +406,7 @@ module.exports = class learnPathService {
 
             // --Aggreation query build
 
-            let result = await elasticService.searchWithAggregate('learn-path', searchTemplate ? searchTemplate : query, queryPayload);
+            let result = await elasticService.searchWithAggregate('learn-path', searchTemplate , queryPayload);
 
             /**
              * Aggregation object from elastic search
@@ -442,7 +480,7 @@ module.exports = class learnPathService {
 
                 if (filter.filter_type == "RangeSlider") {
 
-                    if (filter.elastic_attribute_name === "basePriceRound") {
+                    if (filter.elastic_attribute_name === "default_price") {
                         facet.min.value = facet.min.value > 0 ? getCurrencyAmount(facet.min.value, currencies, 'USD', req.query['currency']) : facet.min.value;
                         facet.max.value = facet.max.value > 0 ? getCurrencyAmount(facet.max.value, currencies, 'USD', req.query['currency']) : facet.max.value;
                     }
@@ -523,7 +561,8 @@ module.exports = class learnPathService {
 
             let list = [];
             if (result.total && result.total.value > 0) {
-                list = await this.generateListViewData(result.hits, req.query['currency']);
+                result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
+                list = await this.generateListViewData(result.hits, req.query['currency'],req.query['country']);
             }
 
             let data = {
@@ -563,6 +602,15 @@ module.exports = class learnPathService {
             ids = req.query['ids'].split(",");
         }
         if(ids.length > 0){
+            ids = ids.map(id => {
+                    
+                if(!id.includes("LRN_CNT_PUB_"))
+                {
+                    id = 'LRN_PTH_'+id
+                }
+
+                return id
+            })
             const queryBody = {
                 "query": {
                   "ids": {
@@ -574,8 +622,10 @@ module.exports = class learnPathService {
             const result = await elasticService.plainSearch('learn-path', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
+                    result.hits.hits = await getlistPriceFromEcom(result.hits.hits,"learn_path",req.query['country'])
+
                     for(const hit of result.hits.hits){
-                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                        const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency,req.query['country']);
                         learnpaths.push(learnpath);
                     }
                     for(const id of ids){
@@ -618,7 +668,7 @@ module.exports = class learnPathService {
                             this.addPopularEntities("skill", name)
                         }
                     }
-                    const data = await this.generateSingleViewData(learnPath, false, req.query.currency);
+                    const data = await this.generateSingleViewData(learnPath, false, req.query.currency, req.query.country);
                     learnpathId = data.id
                     callback(null, { success: true, message: 'Fetched successfully!', data: data });
                     RedisConnection.set(cacheName, data); 
@@ -659,11 +709,11 @@ module.exports = class learnPathService {
         }
     }
 
-    async generateSingleViewData(result, isList = false, currency = process.env.DEFAULT_CURRENCY) {
-        let currencies = await getCurrencies();
+    async generateSingleViewData(result, isList = false, currency = process.env.DEFAULT_CURRENCY,country) {
         let orderedLevels = ["Beginner","Intermediate","Advanced","Ultimate","All Level","Others"]; //TODO. ordering should be sorting while storing in elastic search.
         let data = {
             id: `LRN_PTH_${result.id}`,
+            numeric_id:result.id,
             title: result.title,
             slug: result.slug,
             description: result.description,
@@ -676,13 +726,9 @@ module.exports = class learnPathService {
             reviews_extended: [],
             life_stages: result.life_stages,
             topics: result.topics,
-            pricing: {
-                regular_price: getCurrencyAmount(result.regular_price, currencies, result.currency, currency),
-                sale_price: getCurrencyAmount(result.sale_price, currencies, result.currency, currency),
+            pricing: {               
                 display_price: result.display_price,
-                pricing_type: result.pricing_type,
-                currency: currency,
-                offer_percent: (result.sale_price) ? (Math.round(((result.regular_price-result.sale_price) * 100) / result.regular_price)) : null,
+                pricing_type: result.pricing_type
             },
             ratings: {
                 total_review_count: result.reviews ? result.reviews.length : 0,
@@ -696,9 +742,37 @@ module.exports = class learnPathService {
             },
             courses: result.courses,
             skills: (result.skills) ? result.skills :null,
-            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false
+            isCvTake:(result.cv_take && result.cv_take.display_cv_take)? true: false,
+            is_subscription: (result.subscription_price)? result.subscription_price : false,
+            show_enquiry: (result.enquiry)? result.enquiry : false,
+            pricing_details: (result.pricing_details)? result.pricing_details : null,
+            partner: (result.partner)? result.partner : null,
+        }       
+
+        if(!isList)
+        {
+            data.buy_on_careervira = false
+            //get buy_on_careervira from partner
+            if(data.partner)
+            {
+                let partnerData = await PartnerService.getPartner({params : {slug:data.partner.slug},query:{currency:currency}})
+                if(partnerData && partnerData.buy_on_careervira)
+                {
+                    data.buy_on_careervira =true
+                }
+                if(partnerData && partnerData.logo)
+                {
+                    data.partner.logo =partnerData.logo
+                }
+            }
         }
 
+        if(data.pricing_details)
+        {
+            data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
+            data.pricing_details.pricing_type =  result.pricing_type
+        }  
+        
         if (!isList) {
             data.meta_information = await generateMetaInfo('LEARN_PATH', result);         
 
@@ -706,15 +780,7 @@ module.exports = class learnPathService {
             if(result.cv_take && result.cv_take.display_cv_take)
             {
                 data.cv_take = result.cv_take
-            }
-
-            // send prices in all currencies
-            data.pricing.regular_prices = {}
-            data.pricing.sale_prices = {}
-            currencies.map(currency => {
-                data.pricing.regular_prices[currency.iso_code] = getCurrencyAmount(result.regular_price, currencies, result.currency, currency.iso_code)
-                data.pricing.sale_prices[currency.iso_code] = getCurrencyAmount(result.sale_price, currencies, result.currency, currency.iso_code)
-            })
+            }            
 
             let reviews = await this.getReviews({ params: { learnPathId: data.id }, query: {} });
             if (reviews)
@@ -722,7 +788,7 @@ module.exports = class learnPathService {
 
             if (result.courses && result.courses.length > 0) {
                 let courseIds = result.courses.sort((a,b) => a.position - b.position).map(item => item.id).join();
-                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, currency: currency } });
+                let courses = await LearnContentService.getCourseByIds({ query: { ids: courseIds, country:country } });
                 if (courses) {
                     data.courses = courses;
                 }
@@ -789,13 +855,13 @@ module.exports = class learnPathService {
         return data;
     }
 
-    async generateListViewData(rows, currency) {
+    async generateListViewData(rows, currency, country) {
         if (currencies.length == 0) {
             currencies = await getCurrencies();
         }
         let datas = [];
         for (let row of rows) {
-            const data = await this.generateSingleViewData(row._source, true, currency);
+            const data = await this.generateSingleViewData(row._source, true, currency, country);
             datas.push(data);
         }
         return datas;
@@ -1024,7 +1090,7 @@ module.exports = class learnPathService {
 
     async getPopularLearnPaths(req, callback, returnData){
         let { type, priceType="Paid" } = req.params; // Populer, Trending,Free
-        let { category, sub_category, topic, currency, page = 1, limit =20} = req.query;       
+        let { category, sub_category, topic, currency, country,page = 1, limit =20} = req.query;       
         
         let offset= (page -1) * limit
         
@@ -1093,7 +1159,7 @@ module.exports = class learnPathService {
                 
             if(result.hits){
                 for(const hit of result.hits){
-                    var data = await this.generateSingleViewData(hit._source,true,currency)
+                    var data = await this.generateSingleViewData(hit._source,true,currency, country)
                     learnpaths.push(data);
                 }
             }

@@ -158,7 +158,7 @@ const saveSessionKPIs = async (userId, newSessionKPIs, action) => {
 
     const allTimeSessionKPIs = await computeAllTimeSessionKPIs(userId, newSessionKPIs, action);
     redisConnection.set(allTimeSessionKPIsCachename, allTimeSessionKPIs);
-    redisConnection.expire(allTimeSessionKPIsCachename, process.env.CACHE_EXPIRE_ALL_TIME_SESSION_KPIS || 2628000);
+    redisConnection.expire(allTimeSessionKPIsCachename, process.env.CACHE_EXPIRE_ALL_TIME_SESSION_KPIS || 604800);
 
 }
 

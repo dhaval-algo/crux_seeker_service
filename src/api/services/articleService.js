@@ -28,7 +28,7 @@ const MAX_RESULT = 10000;
 const keywordFields = ['title', 'slug'];
 const filterFields = ['title','section_name','categories','levels','tags', 'slug','author_slug','article_sub_categories','article_job_roles','article_skills','article_topics'];
 const allowZeroCountFields = ['section_name','categories','levels','tags', 'author_slug'];
-const {getSearchTemplate} = require("../../utils/searchTemplates");
+const {getSearchTemplate,getUserKpis} = require("../../utils/searchTemplates");
 const sortOptions = {
     'Newest' :["created_at:desc"],
     'Popular' : ["activity_count.all_time.popularity_score:desc"],
@@ -88,24 +88,47 @@ module.exports = class articleService {
         let publishedFilter = {term: { "status.keyword": 'published' }};
         esFilters['published'] = publishedFilter;
 
-        let query = null;
         if (req.query['q']) {
 
             searchTemplate = await getSearchTemplate('article', decodeURIComponent(req.query['q']).replace("+", "//+").trim(), userId);
-            query = searchTemplate.function_score.query;
             esFilters['q'] = searchTemplate.function_score.query.bool.must[0];
 
         } else {
-            query = {
-                "bool": {
-                    "must": [
-                        publishedFilter
-                    ],
+            const functions = [];
+
+                searchTemplate = {
+                    function_score: {
+                        score_mode: "multiply",
+                        boost_mode: "multiply",
+                        query: {
+                            bool: {
+                                must: [
+                                    { term: { "status.keyword": 'published' } }
+                                ],
+                            }
+                        }
+                    }
                 }
-            };
+
+                if (req.query.sort && req.query.sort == 'Most Relevant') {
+
+                    functions.push({
+                        field_value_factor: {
+                            field: "activity_count.all_time.article_views",
+                            modifier: "log2p",
+                            missing: 8
+                        }
+                    });
+                }
+
+                functions.push(...await getUserKpis('article', userId));
+
+                if (functions.length) {
+                    searchTemplate.function_score.functions = functions
+                }
         }
 
-        query.bool.must.push({
+        searchTemplate.function_score.query.bool.must.push({
             "bool": {
               "should": [
                 {
@@ -155,7 +178,7 @@ module.exports = class articleService {
                     "values": req.query.articleIds
                 }}
 
-            query.bool.must.push(filterObject);
+            searchTemplate.function_score.query.bool.must.push(filterObject);
         }
 
         let queryPayload = {};
@@ -165,7 +188,7 @@ module.exports = class articleService {
         
 
         if(!req.query['sort']){
-            req.query['sort'] = (req.query['q']) ? 'Most Relevant': 'Newest';
+            req.query['sort'] =  'Most Relevant';
         }
         if (req.query['sort']) {
             queryPayload.sort = []
@@ -212,7 +235,7 @@ module.exports = class articleService {
                         "terms": {[attribute_name == "author_first_name" ? "author_slug.keyword" : attribute_name ]: filter.value}
                     }
 
-                    query.bool.must.push(filterObject);
+                    searchTemplate.function_score.query.bool.must.push(filterObject);
                     esFilters[elasticAttribute.elastic_attribute_name] = filterObject;
 
                 }
@@ -268,7 +291,7 @@ module.exports = class articleService {
 
         queryPayload.aggs = aggs;
         
-        let result = await elasticService.searchWithAggregate('article', searchTemplate ? searchTemplate : query, queryPayload, queryString);
+        let result = await elasticService.searchWithAggregate('article', searchTemplate , queryPayload, queryString);
         let aggs_result = result.aggregations;
         result = result.hits;
 

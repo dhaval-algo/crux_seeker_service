@@ -18,7 +18,8 @@ const {
     sendDataForStrapi,
     sendSuspendedEmail,
     sendActivatedEmail,
-    logActvity
+    logActvity,
+    encryptUserId
 } = require("../../../utils/helper");
 const { DEFAULT_CODES, LOGIN_TYPES, TOKEN_TYPES, OTP_TYPES } = require("../../../utils/defaultCode");
 const { fetchFormValues } = require("../forms/enquirySubmission");
@@ -216,7 +217,7 @@ const verifyOtp = async (req, res, next) => {
                 data: {}
             })
         }
-        if(email){
+        if(email & otpType!= OTP_TYPES.MAINEMAILVERIFICATION){
             let where = {
                 [Op.and]: [
                     {
@@ -312,6 +313,22 @@ const verifyOtp = async (req, res, next) => {
             await invalidateTokens({userId},'verification');
            // let data = {old_email:username, new_email:email}
             //sendDataForStrapi(data, "update-email");
+        }
+        if(otpType == OTP_TYPES.MAINEMAILVERIFICATION && response.success && response.code==DEFAULT_CODES.VALID_OTP.code)
+        {
+            const userEntry = await models.user.findOne({where:{id:userId}})
+            if(userEntry){
+                if(!userEntry.verified){
+                    await models.user.update(
+                        {
+                            verified: true 
+                        },
+                        {
+                            where: { id: userId }
+                        }
+                    )
+                }
+            }    
         }
         return res.status(200).json(response);
     } catch (error) {
@@ -422,20 +439,39 @@ const signUp = async (req, res) => {
         tokenRes.message = DEFAULT_CODES.USER_REGISTERED.message
 
         // send OTP for phone verification
-        if (phone) {
-            let countryCode = phone.split(" ")[0];
-            let phoneWithoutcode = phone.split(" ")[1];
-            if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
-                const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
-                let userId = user.id
-                const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
-                await sendSMSOTP(phoneWithoutcode, response.data.otp);
-                tokenRes.data.verifyPhone = true
-            }
-        }
+        // if (phone) {
+        //     let countryCode = phone.split(" ")[0];
+        //     let phoneWithoutcode = phone.split(" ")[1];
+        //     if (process.env.PHONEVERIFICATION == 'true' && country == "India" && countryCode == '+91') {
+        //         const OTP_TYPE = OTP_TYPES.PHONEVERIFICATION
+        //         let userId = user.id
+        //         const response = await generateOtp({ username: email, userId, provider: LOGIN_TYPES.LOCAL, otpType: OTP_TYPE });
+        //         await sendSMSOTP(phoneWithoutcode, response.data.otp);
+        //         tokenRes.data.verifyPhone = true
+        //     }
+        // }
 
         // send email varification link
-        await sendVerifcationLink(payload)
+       // await sendVerifcationLink(payload)
+
+
+    //    let userId = user.id
+    //    const OTP_TYPE = OTP_TYPES.MAINEMAILVERIFICATION
+    //    const response = await generateOtp({ username:email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+    //    if(!response.success){
+    //        return res.status(500).json(response);
+    //    }
+    //    let emailPayload = {
+    //        fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+    //        toemail: email,
+    //        email_type: "email_verification_otp",
+    //        email_data: {
+    //            otp: response.data.otp
+    //        }
+    //    }   
+
+    //    await sendEmail(emailPayload);
+
         res.status(200).send(tokenRes)
     } catch (error) {
         console.log(error)
@@ -824,6 +860,10 @@ const startVerifyOtp = async (resData) => {
             {
                 return resolve(otpRes);
             }
+            if(otpType == OTP_TYPES.MAINEMAILVERIFICATION)
+            {
+                return resolve(otpRes);
+            }
             //Verify 
             const verificationRes = await userExist(username, LOGIN_TYPES.LOCAL);
             if (!verificationRes.success) {
@@ -954,6 +994,33 @@ const resendVerificationLink = async (req, res) => {
     return res.status(200).json({
         success: true,
         message: DEFAULT_CODES.USER_REGISTERED.message
+    })
+}
+
+const resendEmailVerificationOPT = async (req, res) => {
+    const { user } = req
+        
+    let userData = await models.user.findOne({ where: {id:user.userId}})
+
+    let userId = user.userId
+    const OTP_TYPE = OTP_TYPES.MAINEMAILVERIFICATION
+    const response = await generateOtp({ username:userData.email, userId, provider: LOGIN_TYPES.LOCAL, otpType:OTP_TYPE });
+    if(!response.success){
+        return res.status(500).json(response);
+    }
+    let emailPayload = {
+        fromemail: process.env.FROM_EMAIL_RESET_PASSWORD_EMAIL,
+        toemail: userData.email,
+        email_type: "email_verification_otp",
+        email_data: {
+            otp: response.data.otp
+        }
+    }        
+    await sendEmail(emailPayload);
+    res.status(200).send({
+        "success": true,
+        "code": "OTP_SENT",
+        "message": "Otp has been sent."        
     })
 }
 
@@ -3425,7 +3492,7 @@ const editEducation = async (req, res) => {
                 grade
             },
             {
-                where: {id:req.user.userId, id:id}
+                where: {userId:req.user.userId, id:id}
             }
         )
 
@@ -3549,7 +3616,7 @@ const editWorkExperience = async (req, res) => {
                 experience
             },
             {
-                where: {id:req.user.userId, id:id}
+                where: {userId:req.user.userId, id:id}
             }
         )
 
@@ -3638,6 +3705,11 @@ const getUserProfile = async (req, res) => {
                 {
                     model: models.user_experience,
                     attributes: ["id",'jobTitle', 'industry','company','currentCompany','experience']
+                },
+                {
+                    model: models.user_address,
+                    attributes: ["id","firstName","lastName","addressLine","street", "locality", "city", "phone", "state", "country", "zipCode"]
+
                 }
             ],
             attributes: ['fullName', 'email','verified','phone','phoneVerified','status','gender','dob','city','country','profilePicture','resumeFile']
@@ -3700,6 +3772,7 @@ const getUserProfile = async (req, res) => {
         user.setDataValue('pendingActions', pendingActions);
         user.setDataValue('profileProgress', pendingActions.profileProgress);
         user.setDataValue('id', req.user.userId);
+        user.setDataValue('encryptedUserId', await encryptUserId(req.user.userId));
         res.status(200).send({
             message: "User Profile fetched successfully",
             success: true,
@@ -4213,6 +4286,126 @@ const calcAge = (dob) => {
     return age;
 }
 
+const addAddress = async (req, res) => {
+    let {firstName,lastName,addressLine,street, locality, city, phone, state, country, zipCode } = req.body
+    try {        
+        
+        const user_address = await models.user_address.create({
+            userId: req.user.userId,
+            firstName,
+            lastName,
+            addressLine,
+            street,
+            locality,
+            city,
+            phone,
+            state,
+            country,
+            zipCode
+        })
+
+        res.status(200).send({
+            message: "Address added successfully",
+            success: true,
+            data: {
+                id: user_address.id,
+                firstName,
+                lastName,
+                addressLine,
+                street,
+                locality,
+                city,
+                phone,
+                state,
+                country,
+                zipCode
+            }
+        })
+    } catch (error) {
+        console.log('addAddress err ',error);
+        res.status(200).send({
+            message: "Error adding Address",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const editAddress = async (req, res) => {
+    let {firstName,lastName,addressLine,street, locality, city, phone, state, country, zipCode } = req.body
+    try {        
+        const user_address = await models.user_address.update(
+            {     
+                firstName,
+                lastName,       
+                addressLine,
+                street,
+                locality,
+                city,
+                phone,
+                state,
+                country,
+                zipCode
+            },
+            {
+                where: {userId:req.user.userId}
+            }
+        )
+
+        res.status(200).send({
+            message: "Address updated successfully",
+            success: true,
+            data: {
+                id: user_address.id,
+                firstName,
+                lastName,
+                addressLine,
+                street,
+                locality,
+                city,
+                phone,
+                state,
+                country,
+                zipCode
+
+            }
+        })
+
+    } catch (error) {
+        console.log('editAddress  err ',error);
+        res.status(200).send({
+            message: "Error updating Address ",
+            success: false,
+            data: {}
+        })
+    }
+}
+
+const getAddress = async (req, res) => {    
+    try {        
+        
+        const user_address = await models.user_address.findOne({
+            where: {
+                userId:req.user.userId
+            },
+            attributes: ["id","firstName","lastName","addressLine","street", "locality", "city", "phone", "state", "country", "zipCode"]         
+        })
+
+        res.status(200).send({
+            message: "Address fetched successfully",
+            success: true,
+            data: user_address             
+        })
+    } catch (error) {
+        console.log('getAddress err ',error);
+        res.status(200).send({
+            message: "Error fetching Address",
+            success: false
+        })
+    }
+}
+
+
 module.exports = {
     login,
     verifyOtp,
@@ -4222,6 +4415,7 @@ module.exports = {
     signUp,
     isUserEmailExist,
     resendVerificationLink,
+    resendEmailVerificationOPT,
     verifyAccount,
     resetPassword,
     forgotPassword,
@@ -4268,9 +4462,12 @@ module.exports = {
     getPersonalDetails,
     editPersonalDetails,
     addEducation,
-    editEducation,
+    editEducation,    
     deleteEducation,
     getEducations,
+    addAddress,
+    editAddress,
+    getAddress,
     addWorkExperience,
     editWorkExperience,
     deleteWorkExperience,
