@@ -51,6 +51,7 @@ const oderDetails = async (req, res, next) => {
                                     faq: courses[0].faq,
                                     course_start_date: courses[0].course_start_date,
                                     course_end_date: courses[0].course_end_date,
+                                    course_access_link: courses[0].course_access_link,
                                     features: {
                                         accessibilities: courses[0].course_details.accessibilities,
                                         level: courses[0].course_details.level,
@@ -92,7 +93,8 @@ const oderDetails = async (req, res, next) => {
                                     card_image_mobile: courses[0].card_image_mobile,
                                     description: courses[0].description,
                                     faq: courses[0].faq,
-                                    course_count: (courses[0].courses)? courses[0].courses.length : null
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                    course_access_link: courses[0].course_access_link,
                                 }
                             }
                         } catch (error) {
@@ -157,7 +159,8 @@ const cancellationDetails = async (req, res, next) => {
                                     partner: courses[0].partner,
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
-                                    card_image_mobile: courses[0].card_image_mobile
+                                    card_image_mobile: courses[0].card_image_mobile,
+                                    course_access_link: courses[0].course_access_link,
                                 }
                             }
                         } catch (error) {
@@ -177,7 +180,8 @@ const cancellationDetails = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    course_count: (courses[0].courses)? courses[0].courses.length : null
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                    course_access_link: courses[0].course_access_link,
                                 }
                             }
                         } catch (error) {
@@ -257,6 +261,7 @@ const cancellationProgress = async (req, res, next) => {
                                     card_image_mobile: courses[0].card_image_mobile,
                                     course_start_date: courses[0].course_start_date,
                                     course_end_date: courses[0].course_end_date,
+                                    course_access_link: courses[0].course_access_link,
 
                                 }
                                 // finalData.coursesdata = courses[0]
@@ -277,7 +282,8 @@ const cancellationProgress = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    course_count: (courses[0].courses)? courses[0].courses.length : null
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                    course_access_link: courses[0].course_access_link,
                                 }
                             }
                         } catch (error) {
@@ -384,6 +390,7 @@ const orderHistory = async (req, res, next) => {
                                             card_image_mobile: courses[0].card_image_mobile,
                                             course_start_date: courses[0].course_start_date,
                                             course_end_date: courses[0].course_end_date,
+                                            course_access_link: courses[0].course_access_link,
 
                                         }
                                     }
@@ -404,7 +411,8 @@ const orderHistory = async (req, res, next) => {
                                             cover_image: courses[0].cover_image,
                                             card_image: courses[0].card_image,
                                             card_image_mobile: courses[0].card_image_mobile,
-                                            course_count: (courses[0].courses)? courses[0].courses.length : null
+                                            course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                            course_access_link: courses[0].course_access_link,
                                         }
                                     }
                                 } catch (error) {
