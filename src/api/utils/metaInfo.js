@@ -1083,7 +1083,7 @@ const generateMetaInfo = async (page, result, list) => {
             if(result.regions)
                 meta_keywords += result.regions.join(',')
             meta_information = {
-                meta_title: `News | Careervira | Careervira.com`,
+                meta_title: `${result.title} | Careervira News| Careervira.com`,
                 meta_description: (result.short_description) ? result.short_description : defaultLearnContentMetaInfo.meta_description,
                 meta_keywords
             }
