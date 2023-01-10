@@ -312,13 +312,13 @@ const orderHistory = async (req, res, next) => {
             'message': 'something went wrong, Please try again',
             'data': {}
         }
-        let defaultSort = 'Recently Purchansed'
-        let sortOptions = ['Recently Purchansed','Purchansed Earlier']
+        let defaultSort = 'Recently Purchased'
+        let sortOptions = ['Recently Purchased','Purchased Earlier']
         req.query.sort = req.query.sort || defaultSort 
         let userId = await encryptUserId(req.user.userId)
         let page =  req.query.page || 1 
         let size =  req.query.size || 25 
-        let sortBy = (req.query.sort ='Recently Purchansed')?'desc' : 'asc'
+        let sortBy = (req.query.sort ='Recently Purchased')?'desc' : 'asc'
         let requestData = {
             userId :userId,
             pageNo : page,
@@ -337,16 +337,16 @@ const orderHistory = async (req, res, next) => {
                 {
                     if(parsedFilter.key =='Course Type')
                     {
-                        requestData.itemType = parsedFilter.value
+                        requestData.itemType.push(parsedFilter.value)
                     }
                     if(parsedFilter.key =='Payment Type')
                     {
-                        requestData.cartType = parsedFilter.value
+                        requestData.cartType.push(parsedFilter.value)
 
                     }
                     if(parsedFilter.key =='Order Status')
                     {
-                        requestData.orderStatus = parsedFilter.value
+                        requestData.orderStatus.push(parsedFilter.value)
                     }
                 }
             }
