@@ -314,7 +314,7 @@ const orderHistory = async (req, res, next) => {
         }
         let defaultSort = 'Recently Purchased'
         let sortOptions = ['Recently Purchased','Purchased Earlier']
-        req.query.sort = req.query.sort || defaultSort 
+        req.query.sort = (req.query.sort)? req.query.sort :  defaultSort 
         let userId = await encryptUserId(req.user.userId)
         let page =  req.query.page || 1 
         let size =  req.query.size || 25 
