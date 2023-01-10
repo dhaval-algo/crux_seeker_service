@@ -311,6 +311,17 @@ const orderHistory = async (req, res, next) => {
         'message': 'something went wrong, Please try again',
         'data': {}
     }
+    let itemTypeFilters = {
+        "Course" : "course",
+        "Learn Path" : "learnpath"
+    }
+
+    let cartTypeFilters = {
+        "EMI" : "emi",
+        "Single Purchased" : "buynow",
+        "Enroll" : "enrollnow",
+    }
+
     try {
         
         let defaultSort = 'Recently Purchased'
@@ -338,11 +349,11 @@ const orderHistory = async (req, res, next) => {
                 {
                     if(parsedFilter.key =='Course Type')
                     {
-                        requestData.itemType = parsedFilter.value
+                        requestData.itemType = parsedFilter.value.map(value=> itemTypeFilters[value])
                     }
                     if(parsedFilter.key =='Payment Type')
                     {
-                        requestData.cartType = parsedFilter.value
+                        requestData.cartType = parsedFilter.value.map(value=> cartTypeFilters[value])
 
                     }
                     if(parsedFilter.key =='Order Status')
