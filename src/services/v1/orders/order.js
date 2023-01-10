@@ -555,7 +555,7 @@ const orderHistory = async (req, res, next) => {
                 return res.status(200).json({
                     'success': true,
                     'message': 'Fetch successfully!',
-                    'data': {list:list,filters:filters,pagination:pagination,sort:sort,sortOptions:sortOptions}
+                    'data': {list:list,filters:filters,pagination:pagination,sort:req.query.sort,sortOptions:sortOptions}
                 });
 
                 
