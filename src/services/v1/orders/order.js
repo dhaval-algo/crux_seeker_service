@@ -306,12 +306,13 @@ const cancellationProgress = async (req, res, next) => {
 }
 
 const orderHistory = async (req, res, next) => {
+    let errorResponse = {
+        'success': false,
+        'message': 'something went wrong, Please try again',
+        'data': {}
+    }
     try {
-        let errorResponse = {
-            'success': false,
-            'message': 'something went wrong, Please try again',
-            'data': {}
-        }
+        
         let defaultSort = 'Recently Purchased'
         let sortOptions = ['Recently Purchased','Purchased Earlier']
         req.query.sort = (req.query.sort)? req.query.sort :  defaultSort 
