@@ -709,7 +709,7 @@ module.exports = class recommendationService {
                 if (skillsKeywords.length) {
                     const offset = (page - 1) * limitForSkills;
                     esQuery.bool.should[0].query_string.query = skillsKeywords.join(" OR ");
-                    const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills ,_source: courseFields});
+                    let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForSkills ,_source: courseFields});
                     if (result.hits && result.hits.length) {
                         result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                         for (const hit of result.hits) {
@@ -722,7 +722,7 @@ module.exports = class recommendationService {
                 if (workExpKeywords.length) {
                     const offset = (page - 1) * limitForWorkExp;
                     esQuery.bool.should[0].query_string.query = workExpKeywords.join(" OR ");
-                    const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp ,_source: courseFields});
+                    let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limitForWorkExp ,_source: courseFields});
                     if (result.hits && result.hits.length) {
                         result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                         for (const hit of result.hits) {
@@ -780,7 +780,7 @@ module.exports = class recommendationService {
                 }
                 const offset = (page - 1) * limit
                
-                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
+                let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit ,_source: courseFields});
                 if (result.hits && result.hits.length) {
                     result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                     for (const hit of result.hits) {
@@ -2369,7 +2369,7 @@ module.exports = class recommendationService {
                     }
                 );
             }
-            const result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit,_source :learnPathFields});
+            let result = await elasticService.search("learn-path", esQuery, { from: offset, size: limit,_source :learnPathFields});
             
             if (result.hits && result.hits.length) {
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_path",req.query['country'])
@@ -2588,7 +2588,7 @@ module.exports = class recommendationService {
             };    
            
     
-            const result = await elasticService.search('learn-content', esQuery, {form: 0, size: 20,_source:courseFields});
+            let result = await elasticService.search('learn-content', esQuery, {form: 0, size: 20,_source:courseFields});
     
             if(result.hits){
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
@@ -2667,7 +2667,7 @@ module.exports = class recommendationService {
                 }
             }
             const courses  =[];
-            const result = await elasticService.search("learn-content",esQuery,{from:offset,size:limit, _source: courseFields})
+            let result = await elasticService.search("learn-content",esQuery,{from:offset,size:limit, _source: courseFields})
             
             if (result.hits && result.hits.length) {
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
@@ -2715,7 +2715,7 @@ module.exports = class recommendationService {
                 }
     
                 const sort = [{ "activity_count.all_time.popularity_score": "desc" }, { "ratings": "desc" }];
-                const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source:courseFields });
+                let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source:courseFields });
     
                 if (result.hits && result.hits.length) {
                     result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
@@ -2889,7 +2889,7 @@ module.exports = class recommendationService {
             }
         
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
-            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
@@ -3061,7 +3061,7 @@ module.exports = class recommendationService {
             }
             
             let  sort = [{ "activity_count.all_time.course_views": "desc" }]
-            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit, sortObject: sort, _source: courseFields });
             if (result.hits && result.hits.length) {
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                 for (const hit of result.hits) {
@@ -3251,7 +3251,7 @@ module.exports = class recommendationService {
                     }
                 );
             }
-            const result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit,_source :courseFields});
+            let result = await elasticService.search("learn-content", esQuery, { from: offset, size: limit,_source :courseFields});
             
             if (result.hits && result.hits.length) {
                 result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
