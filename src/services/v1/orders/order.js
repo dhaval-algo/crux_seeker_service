@@ -338,16 +338,16 @@ const orderHistory = async (req, res, next) => {
                 {
                     if(parsedFilter.key =='Course Type')
                     {
-                        requestData.itemType.push(parsedFilter.value)
+                        requestData.itemType = parsedFilter.value
                     }
                     if(parsedFilter.key =='Payment Type')
                     {
-                        requestData.cartType.push(parsedFilter.value)
+                        requestData.cartType = parsedFilter.value
 
                     }
                     if(parsedFilter.key =='Order Status')
                     {
-                        requestData.orderStatus.push(parsedFilter.value)
+                        requestData.orderStatus  = parsedFilter.value
                     }
                 }
             }
