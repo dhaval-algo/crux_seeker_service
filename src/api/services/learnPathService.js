@@ -747,6 +747,7 @@ module.exports = class learnPathService {
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details: (result.pricing_details)? result.pricing_details : null,
             partner: (result.partner)? result.partner : null,
+            course_access_link: result.course_access_link
         }       
 
         if(!isList)

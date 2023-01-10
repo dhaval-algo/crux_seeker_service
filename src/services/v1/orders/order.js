@@ -18,13 +18,8 @@ const oderDetails = async (req, res, next) => {
             'message': 'something went wrong, Please try again',
             'data': {}
         }
-        let order_id = req.query.orderId
-        // if(order_id != 236  && order_id != 384 && order_id != 370  )  // delete this hardcoded value after testing
-        // {
-        //     order_id != 236   // delete this hardcoded value after testing
-        // }
+        let order_id = req.query.orderId      
         let user_id = await encryptUserId(req.user.userId)
-        //user_id = "WKbJUbB9Ac6o3bM0TeJ26Q=="  // delete this hardcoded value after testing
 
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
@@ -35,13 +30,13 @@ const oderDetails = async (req, res, next) => {
                 switch (finalData.orderData.orderItems[0].purchaseDetailsResponse.itemType) {
                     case 'course':
                         try {
-                           // finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
                                     slug: courses[0].slug,
                                     id: courses[0].id,
+                                    numeric_id: courses[0].numeric_id,
                                     partner: courses[0].partner,
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
@@ -50,6 +45,7 @@ const oderDetails = async (req, res, next) => {
                                     faq: courses[0].faq,
                                     course_start_date: courses[0].course_start_date,
                                     course_end_date: courses[0].course_end_date,
+                                    course_access_link: courses[0].course_access_link || null,
                                     features: {
                                         accessibilities: courses[0].course_details.accessibilities,
                                         level: courses[0].course_details.level,
@@ -69,7 +65,6 @@ const oderDetails = async (req, res, next) => {
                                         language: courses[0].course_details.language,
                                     }
                                 }
-                                // finalData.coursesdata = courses[0]
                             }
                         } catch (error) {
                             console.log("No course for id", error)
@@ -78,19 +73,20 @@ const oderDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                           // finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString(),"country" : req.query['country'], skipPrice:true } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
                                     title: courses[0].title,
                                     slug: courses[0].slug,
                                     id: courses[0].id,
+                                    numeric_id: courses[0].numeric_id,
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
                                     description: courses[0].description,
                                     faq: courses[0].faq,
-                                    course_count: (courses[0].courses)? courses[0].courses.length : null
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                    course_access_link: courses[0].course_access_link || null
                                 }
                             }
                         } catch (error) {
@@ -136,7 +132,6 @@ const cancellationDetails = async (req, res, next) => {
         }
         let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)  
-       // userId ='L9zSdZgC1drQtaH5881HTw==' // delete this hardcoded value after testing
         let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
@@ -145,7 +140,6 @@ const cancellationDetails = async (req, res, next) => {
                 switch (finalData.cancellationData.refundSummary.itemType) {
                     case 'course':
                         try {
-                          //  finalData.cancellationData.refundSummary.itemId = 18616
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(), "country":req.query['country'], skipPrice:true} });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -155,7 +149,8 @@ const cancellationDetails = async (req, res, next) => {
                                     partner: courses[0].partner,
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
-                                    card_image_mobile: courses[0].card_image_mobile
+                                    card_image_mobile: courses[0].card_image_mobile,
+                                    course_access_link: courses[0].course_access_link || null
                                 }
                             }
                         } catch (error) {
@@ -165,7 +160,6 @@ const cancellationDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         try {
-                           // finalData.cancellationData.refundSummary.itemId = 102 // delete this hardcoded value after testing
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.cancellationData.refundSummary.itemId.toString(),"country" : req.query['country'], skipPrice:true } });
                             if (courses && courses.length > 0) {
                                 finalData.itemData = {
@@ -175,7 +169,8 @@ const cancellationDetails = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    course_count: (courses[0].courses)? courses[0].courses.length : null
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                    course_access_link: courses[0].course_access_link || null
                                 }
                             }
                         } catch (error) {
@@ -221,7 +216,6 @@ const cancellationProgress = async (req, res, next) => {
         }
         let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)
-      //  userId = await encryptUserId(3) // delete this hardcoded value after testing
         let itemType = req.query.itemType
         let itemId = req.query.itemId
         if (itemType == 'course') {
@@ -255,9 +249,9 @@ const cancellationProgress = async (req, res, next) => {
                                     card_image_mobile: courses[0].card_image_mobile,
                                     course_start_date: courses[0].course_start_date,
                                     course_end_date: courses[0].course_end_date,
+                                    course_access_link: courses[0].course_access_link || null
 
                                 }
-                                // finalData.coursesdata = courses[0]
                             }
                         } catch (error) {
                             console.log("No course for id", error)
@@ -275,7 +269,8 @@ const cancellationProgress = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    course_count: (courses[0].courses)? courses[0].courses.length : null
+                                    course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                    course_access_link: courses[0].course_access_link || null
                                 }
                             }
                         } catch (error) {
@@ -311,20 +306,31 @@ const cancellationProgress = async (req, res, next) => {
 }
 
 const orderHistory = async (req, res, next) => {
+    let errorResponse = {
+        'success': false,
+        'message': 'something went wrong, Please try again',
+        'data': {}
+    }
+    let itemTypeFilters = {
+        "Course" : "course",
+        "Learn Path" : "learnpath"
+    }
+
+    let cartTypeFilters = {
+        "EMI" : "emi",
+        "Single Purchased" : "buynow",
+        "Enroll" : "enrollnow",
+    }
+
     try {
-        let errorResponse = {
-            'success': false,
-            'message': 'something went wrong, Please try again',
-            'data': {}
-        }
-        let defaultSort = 'Recently Purchansed'
-        let sortOptions = ['Recently Purchansed','Purchansed Earlier']
-        req.query.sort = req.query.sort || defaultSort 
+        
+        let defaultSort = 'Recently Purchased'
+        let sortOptions = ['Recently Purchased','Purchased Earlier']
+        req.query.sort = (req.query.sort)? req.query.sort :  defaultSort 
         let userId = await encryptUserId(req.user.userId)
-       // userId = "WKbJUbB9Ac6o3bM0TeJ26Q" // delete this hardcoded value after testing
         let page =  req.query.page || 1 
-        let size =  req.query.size || 10 
-        let sortBy = (req.query.sort ='Recently Purchansed')?'desc' : 'asc'
+        let size =  req.query.size || 25 
+        let sortBy = (req.query.sort ='Recently Purchased')?'desc' : 'asc'
         let requestData = {
             userId :userId,
             pageNo : page,
@@ -343,16 +349,16 @@ const orderHistory = async (req, res, next) => {
                 {
                     if(parsedFilter.key =='Course Type')
                     {
-                        requestData.itemType = parsedFilter.value
+                        requestData.itemType = parsedFilter.value.map(value=> itemTypeFilters[value])
                     }
                     if(parsedFilter.key =='Payment Type')
                     {
-                        requestData.cartType = parsedFilter.value
+                        requestData.cartType = parsedFilter.value.map(value=> cartTypeFilters[value])
 
                     }
                     if(parsedFilter.key =='Order Status')
                     {
-                        requestData.orderStatus = parsedFilter.value
+                        requestData.orderStatus  = parsedFilter.value
                     }
                 }
             }
@@ -369,7 +375,6 @@ const orderHistory = async (req, res, next) => {
                         switch (entity.orderItems[0].purchaseDetailsResponse.itemType) {
                             case 'course':
                                 try {
-                                   // entity.orderItems[0].purchaseDetailsResponse.itemId = 18616 // delete this hardcoded value after testing
                                     let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                                     if (courses && courses.length > 0) {
                                         courseData = {
@@ -382,6 +387,7 @@ const orderHistory = async (req, res, next) => {
                                             card_image_mobile: courses[0].card_image_mobile,
                                             course_start_date: courses[0].course_start_date,
                                             course_end_date: courses[0].course_end_date,
+                                            course_access_link: courses[0].course_access_link || null
 
                                         }
                                     }
@@ -392,7 +398,6 @@ const orderHistory = async (req, res, next) => {
                                 break;
                             case 'learnpath':
                                 try {
-                                   // entity.orderItems[0].purchaseDetailsResponse.itemId = 102 // delete this hardcoded value after testing
                                     let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString(), "country" : req.query['country'], skipPrice:true } });
                                     if (courses && courses.length > 0) {
                                         courseData = {
@@ -402,7 +407,8 @@ const orderHistory = async (req, res, next) => {
                                             cover_image: courses[0].cover_image,
                                             card_image: courses[0].card_image,
                                             card_image_mobile: courses[0].card_image_mobile,
-                                            course_count: (courses[0].courses)? courses[0].courses.length : null
+                                            course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                            course_access_link: courses[0].course_access_link || null
                                         }
                                     }
                                 } catch (error) {
@@ -477,7 +483,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "EMI",
-                                selected: (requestData.cartTypes && requestData.cartTypes.includes("emi")) ? true:false,
+                                selected: (requestData.cartType && requestData.cartType.includes("emi")) ? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -486,7 +492,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Single Purchased",
-                                selected: (requestData.cartTypes && requestData.cartTypes.includes("buynow")) ? true:false,
+                                selected: (requestData.cartType && requestData.cartType.includes("buynow")) ? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -495,7 +501,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Enroll",
-                                selected: (requestData.cartTypes && requestData.cartTypes.includes("enrollnow")) ? true:false,
+                                selected: (requestData.cartType && requestData.cartType.includes("enrollnow")) ? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -529,7 +535,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Created",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Create"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Created"))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -538,7 +544,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Payment Failed",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Payment Failedate"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes('Payment Failed'))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -561,7 +567,7 @@ const orderHistory = async (req, res, next) => {
                 return res.status(200).json({
                     'success': true,
                     'message': 'Fetch successfully!',
-                    'data': {list:list,filters:filters,pagination:pagination,sort:sort,sortOptions:sortOptions}
+                    'data': {list:list,filters:filters,pagination:pagination,sort:req.query.sort,sortOptions:sortOptions}
                 });
 
                 

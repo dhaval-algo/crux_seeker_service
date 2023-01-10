@@ -1457,6 +1457,7 @@ module.exports = class learnContentService {
             is_subscription: (result.subscription_price)? result.subscription_price : false,
             show_enquiry: (result.enquiry)? result.enquiry : false,
             pricing_details: (result.pricing_details)? result.pricing_details : null,
+            course_access_link: result.course_access_link
         };
         
         data.buy_on_careervira = false
@@ -1772,7 +1773,8 @@ module.exports = class learnContentService {
             is_subscription: data.is_subscription,
             show_enquiry: data.enquiry,
             pricing_details:data.pricing_details,
-            buy_on_careervira:data.buy_on_careervira
+            buy_on_careervira:data.buy_on_careervira,
+            course_access_link: data.course_access_link,
         }
 
         return isList ? listData : data;
