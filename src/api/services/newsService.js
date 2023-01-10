@@ -217,7 +217,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
         slug: result.slug,
         short_description: result.short_description ? result.short_description : null, //check if optional
         id: result._id,
-        cover_image: result.cover_image? result.cover_image :null,
+        cover_image: result.logo? result.logo : result.card_image? result.card_image: null,
         sidebar_listing_image: result.sidebar_listing_image? result.sidebar_listing_image : null,            
         logo: result.logo? result.logo: null,
         card_image: result.card_image? result.card_image: null,
