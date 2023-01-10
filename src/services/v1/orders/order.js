@@ -523,7 +523,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Created",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Create"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Created"))? true:false,
                                 disabled: false,
                                 count:2
                             })
@@ -532,7 +532,7 @@ const orderHistory = async (req, res, next) => {
                         {
                             options.push({
                                 label: "Payment Failed",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Payment Failedate"))? true:false,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes('Payment Failed'))? true:false,
                                 disabled: false,
                                 count:2
                             })
