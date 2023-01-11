@@ -23,8 +23,6 @@ const {
 const {generateMetaInfo} = require('../utils/metaInfo');
 
 const redisConnection = require('../../services/v1/redis');
-const { rankings } = require("match-sorter");
-
 const RedisConnection = new redisConnection();
 
 const MAX_RESULT = 10000;
@@ -168,6 +166,40 @@ const getFilterOption = (data, filter) => {
     options = sortFilterOptions(options);
     return options;
 };
+
+//cRanks cases covers are  ['a','A', "a+", "Z+"]; single character with '+' optional
+// 'a+' -> 1; 'a' -> 2; 'e+' -> 9; 'e' -> 10;  etc
+const characterRankToInt = (cRank) =>
+{
+    let r = cRank.trim();
+    if(r.length === 2 && r.match(/\+$/))
+        return ((2 * (cRank.toLowerCase().charCodeAt(0) - 96)) -1)
+    else if(r.match(/[a-zA-Z]/))
+        return (2 * (cRank.toLowerCase().charCodeAt(0) - 96))
+    else
+        return 0;    // else return 0 for invalid rank;
+}
+
+const convertRankToInt = (r) =>
+{
+    if(!isNaN(r))
+        return Number(r);
+
+    let rank = r.trim()
+
+    if(rank.includes('-'))
+    {
+        rank = r.split('-');
+        //cacl average of range;
+        return (parseInt(rank[0]) + parseInt(rank[1]))/2;
+    }
+
+    rank = parseFloat(rank);
+    if(!isNaN(rank))
+        return rank;
+
+    return characterRankToInt(r);
+}
 module.exports = class providerService {
 
     async getProviderList(req, callback, skipCache){
@@ -206,7 +238,8 @@ module.exports = class providerService {
         const query = { 
             "bool": {
                 "must": [
-                    {term: { "status.keyword": 'approved' }}                
+                    { term: { "status.keyword": "approved" } },
+                    { term: { "visible": true } }
                 ],
                 //"filter": []
             }
@@ -306,21 +339,22 @@ module.exports = class providerService {
         let filterResponse = await getAllFilters(filterQuery, filterQueryPayload, filterConfigs); 
         let filters = filterResponse.filters; 
         let latestRankYear
+        const cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+        if(cacheData.noCacheData != true)
+            latestRankYear = cacheData
+        else
+            latestRankYear = await this.setLatestRankingYear();
 
         if(req.query['rank'])
         {
-            let cacheData = await RedisConnection.getValuesSync('provider_ranking_latest_year');
-            if(cacheData.noCacheData != true) {
-                latestRankYear = cacheData
-            }
             let yearOptions = []
             let yearoption = parseInt(latestRankYear[req.query['rank']]);
-            for(let i =0; i< 11; i++ )  
+            for(let i =0; i< 20; i++ )
             {
                
                 yearOptions.push (
                     {
-                        "label": yearoption,
+                        "label": String(yearoption),
                         "count": 0,
                         "selected": false,
                         "disabled": false
@@ -331,12 +365,14 @@ module.exports = class providerService {
             filters.push({
                 label: 'Year',
                 filterable: false,
-                filter_postion: 'horizontal',   
-                is_collapsed: true,
-                filter_type: 'Checkboxes',
+                filter_postion: 'vertical',
+                is_collapsed: false,
+                filter_type: 'Radios',
+                order: 3,
                 options: yearOptions
             })
 
+            query.bool.must.pop(); // remove visible check
             useCache = true; // enable cache for ranks
         }
         if(req.query['f']){
@@ -370,7 +406,7 @@ module.exports = class providerService {
         {
             for (let  parsedFilter of parsedFilters)
             {
-                if( parsedFilter.key == 'year')
+                if( parsedFilter.key == 'Year')
                 {
                     rankYear = []
                     for(let filter of filters)
@@ -384,13 +420,13 @@ module.exports = class providerService {
                             
                         }
                     }
-                    cacheName = `listing-providers_${req.query['rank']}_${rankYear[req.query['rank']]}`; // ranking + year level cache
-                    
                 }
             }
         }
-        if(!rankYear)
+        if(!rankYear){
             rankYear = latestRankYear;
+            parsedFilters.push({key: 'Year', value: [latestRankYear[req.query['rank']]]}); // set default year
+        }
 
         if(!req.query['sort'] && !req.query['q']){
             if(req.query['rank']){   
@@ -440,11 +476,13 @@ module.exports = class providerService {
 
         if(req.query['rank']){
             ranking = await getRankingBySlug(req.query['rank']);
-            ranking.image = ranking.image ? formatImageResponse(ranking.image) : null;
-            ranking.logo = ranking.logo ? formatImageResponse(ranking.logo) : null;
-            ranking.program = ranking.program ? ranking.program.default_display_label : null;
 
             if(ranking){
+
+                ranking.image = ranking.image ? formatImageResponse(ranking.image) : null;
+                ranking.logo = ranking.logo ? formatImageResponse(ranking.logo) : null;
+                ranking.program = ranking.program ? ranking.program.default_display_label : null;
+
                 parsedFilters.push({
                     key: 'Ranking',
                     value: [ranking.name]
@@ -453,10 +491,13 @@ module.exports = class providerService {
                     "exists" : { "field" : `ranking_${req.query['rank']}` }
                 }); */
             }
+
+            let year = rankYear[req.query['rank']];
+            cacheName = `listing-providers_${req.query['rank']}_${year}`; // ranking + year cache
+
                     //handles both the query for rank-attr and just rank also
-            query.bool.must.push({
-                "exists" : { "field" : `ranking_${rankYear[req.query['rank']]}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
-            });
+            year = { "field" : `ranking_${year}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
+            query.bool.must.push({ "exists" : year });
         }
 
         if(useCache)
@@ -475,21 +516,24 @@ module.exports = class providerService {
         let filters = filterResponse.filters; */  
 
         let result = {};
+
         try{
-            result = await elasticService.search('provider', query, queryPayload, queryString);
+            result = await elasticService.searchWithAggregate('provider', query, queryPayload, queryString);
         }catch(e){
             console.log("Error fetching elastic data <> ", e);
+            return callback(null, { success: true, message: 'elastic: no records/ failed!', data: {list: [], ranking, filters }});
         }
 
-        if(result.total && result.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits, req.query['rank'], rankYear);
+        if(result.hits.total && result.hits.total.value > 0){
+
+            const list = await this.generateListViewData(result.hits.hits, req.query['rank'], rankYear);
 
             let pagination = {
                 page: paginationQuery.page,
                 count: list.length,
                 perPage: paginationQuery.size,
-                totalCount: result.total.value,
+                totalCount: result.hits.total.value,
                 total: filterResponse.total
             }
 
@@ -502,6 +546,7 @@ module.exports = class providerService {
                 filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
+            filters = await this.updateRanksFilter( filters, parsedFilters, req.query['rank']);
 
             let data = {
                 list: list,
@@ -527,9 +572,10 @@ module.exports = class providerService {
             if(parsedFilters.length > 0){
                 
                 //filters = updateFilterCount(filters, parsedFilters, filterConfigs, result.hits, allowZeroCountFields);
-                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits, filterResponse.total, query, allowZeroCountFields);
+                filters = await calculateFilterCount(filters, parsedFilters, filterConfigs, 'provider', result.hits.hits, filterResponse.total, query, allowZeroCountFields);
                 filters = updateSelectedFilters(filters, parsedFilters, parsedRangeFilters);
             }
+            filters = await this.updateRanksFilter(filters, parsedFilters, req.query['rank'] );
             callback(null, {success: true, message: 'No records found!', data: {list: [], ranking: ranking, pagination: {total: filterResponse.total}, filters: filters}});
         }        
     }
@@ -552,7 +598,8 @@ module.exports = class providerService {
             const query = { "bool": {
                 "must": [
                 {term: { "slug.keyword": slug }},
-                {term: { "status.keyword": 'approved' }}
+                { term: { "status.keyword": "approved" } },
+                { term: { "visible": true } }
                 ]
             }};
             const result = await elasticService.search('provider', query);
@@ -640,11 +687,11 @@ module.exports = class providerService {
                 website_link: result.website_link
             },            
             course_count: (result.course_count) ? result.course_count : 0,
-            featured_ranks: [],
             placements: {},
             gallery: (result.gallery)? (result.gallery).map(image =>formatImageResponse(image) ) : null,
             facilities: (result.facilities) ? result.facilities : null,
             highlights: (result.highlights) ? result.highlights : null,
+            visible: result.visible || false,
         };
 
         if(!isList){
@@ -706,6 +753,54 @@ module.exports = class providerService {
                     }
                 }
             }
+
+            if(result.ranks && result.ranks.length)
+            {
+                let ranks = [], rankings = await RedisConnection.getValuesSync(`rankings_slug_object`);
+                let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+                data.rank = {};
+
+                for (let item of result.ranks) {
+                        //send latest year rank only
+                    if( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
+                            //get image/logo from cache
+                        let image = null, logo = null;
+                        if(rankings.noCacheData != true){
+                                image = rankings[item.slug].image;
+                                logo = rankings[item.slug].logo;
+                        }
+
+                        ranks.push({
+                            name: item.name,
+                            slug: item.slug,
+                            rank: item.rank,
+                            score: item.total_score,
+                            year: item.year,
+                            precedence: item.precedence ? item.precedence  : 0,
+                            image,
+                            logo
+                        });
+                    }
+                }
+                //send only one rank with higher precedence
+                if(ranks.length > 1)
+                {
+                    // track precedence
+                    let highP = 0, highPIndex = 0;
+
+                    ranks.map((rank, i) => {
+                        if(highP < rank.precedence)
+                        {
+                            highP = rank.precedence;
+                            highPIndex = i;
+                        }
+                    })
+                    data.rank = ranks[highPIndex]
+                }
+                else if(ranks.length == 1)
+                    data.rank = ranks[0]
+
+            }
         }
 
         // if(result.alumni && result.alumni.length > 0){
@@ -764,27 +859,31 @@ module.exports = class providerService {
 
         // ranking data for list view on institute listing 
         if(rank == null && isList && result.ranks && rankYear ){
-            let cacheData = await RedisConnection.getValuesSync(`ranking-list`);
+                    
+                //get image/logo from cache
+            let image, logo, ranking = await RedisConnection.getValuesSync(`rankings_slug_object`);
+            data.ranks = [];
             for (let item of result.ranks) {
                 
                 if ( item.year == rankYear[item.slug]) {
                     
-                        //get image/logo from cache
-                    let image = logo = null;
-                    if(cacheData.noCacheData != true){
-                        for(const eachRank of cacheData)
-                            if(eachRank.slug === item.slug)
-                            {
-                                image = eachRank.image; 
-                                logo = eachRank.logo;
-                            }
-                        
+                    if(ranking.noCacheData != true)
+                    {
+                        if(ranking[item.slug]){
+                            image = ranking[item.slug].image;
+                        image = ranking[item.slug].image; 
+                            image = ranking[item.slug].image; 
+                            logo = ranking[item.slug].logo;
+                        }
                     }
 
                     data.ranks.push({
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
+                        score: item.total_score,
+                        year: item.year,
+                        precedence: item.precedence ? item.precedence: null,
                         image,
                         logo
                     });
@@ -796,21 +895,21 @@ module.exports = class providerService {
         if(rank != null && isList && result.ranks && rankYear ){
 
                 //get image/logo from cache
-            let image, logo, cacheData = await RedisConnection.getValuesSync(`ranking-list`);
-            if(cacheData.noCacheData != true)
-            {
-                for(const eachRank of cacheData)
-                    if(eachRank.slug === rank)
-                    {
-                        image = eachRank.image; 
-                        logo = eachRank.logo;
-                    }
-                
-            }
+            let image, logo, ranking = await RedisConnection.getValuesSync(`rankings_slug_object`);
 
             data.ranks = {}
             data.compare_ranks = {}
             for (let item of result.ranks) {
+
+                if(ranking.noCacheData != true)
+                {
+                    if(ranking[item.slug]){
+                        image = ranking[item.slug].image;
+                    image = ranking[item.slug].image; 
+                        image = ranking[item.slug].image;
+                        logo = ranking[item.slug].logo;
+                    }
+                }
 
                 if (item.year == rankYear[item.slug]) {
                     data.ranks[item.slug] = 
@@ -818,15 +917,19 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
-                            logo: logo,
-                            image: image,
+                            score: item.total_score,
+                            year: item.year,
+                            precedence: item.precedence ? item.precedence: null,
+                            logo,
+                            image,
                             attributes: item.attributes
                         }
                 }
             }
             let compareYear = parseInt(rankYear[rank])
-            for (let i=1; i < 4 ; i++)
+            for (let i= 0; i < 4 ; i++)
             {
+                data.compare_ranks[compareYear] = null
                 for (let item of result.ranks) {
 
                     if (item.year == compareYear && item.slug == rank) {
@@ -835,8 +938,12 @@ module.exports = class providerService {
                             name: item.name,
                             slug: item.slug,
                             rank: item.rank,
+                            score: item.total_score,
+                            year: item.year,
+                            precedence: item.precedence ? item.precedence: null,
                             rank_change : 0
                         }
+
                     }
                 }
                 compareYear--
@@ -845,16 +952,30 @@ module.exports = class providerService {
             if(Object.keys(data.compare_ranks).length >= 2)
             {
                 let year = parseInt(Object.keys(data.compare_ranks).sort()[0]); //get base year
+                let r = 0, r1 = 0;
+                if(data.compare_ranks[year])
+                    r = convertRankToInt(data.compare_ranks[year].rank);
 
-                let r1 = data.compare_ranks[year].rank;
-                let r2 = data.compare_ranks[year +1].rank
-                data.compare_ranks[year +1].rank_change = r1 -r2;
-                
-
-                if(Object.keys(data.compare_ranks).length === 3)
+                if( data.compare_ranks[year +1] )
                 {
-                    let r3 = data.compare_ranks[year +2].rank
-                    data.compare_ranks[year +2].rank_change = r2 -r3;
+                    r1 = convertRankToInt(data.compare_ranks[year +1].rank);
+                    if(r >= 1 )
+                        data.compare_ranks[year +1].rank_change = r -r1;
+                    r = r1;
+                }
+
+                if( data.compare_ranks[year +2] )
+                {
+                    r1 = convertRankToInt(data.compare_ranks[year +2].rank);
+                    if(r >= 1 )
+                        data.compare_ranks[year +2].rank_change =  r -r1;
+                    r = r1;
+                }
+                if( data.compare_ranks[year +3] )
+                {
+                    r1 = convertRankToInt(data.compare_ranks[year +3].rank);
+                    if(r >= 1 )
+                        data.compare_ranks[year +3].rank_change = r -r1;
                 }
 
                     
@@ -979,7 +1100,6 @@ module.exports = class providerService {
                         }
                         years = years.sort(function (a, b) { return b - a });
                         programs = programs.filter((x, i, a) => a.indexOf(x) == i);
-                        console.log(rankings)
                     }
 
                     let finalData = {
@@ -1029,6 +1149,7 @@ module.exports = class providerService {
 
         }
         RedisConnection.set("provider_ranking_latest_year", rank_latest_year);
+        return rank_latest_year;
     }
    }
 
@@ -1056,7 +1177,7 @@ module.exports = class providerService {
         }
         if(result.ok) {
             let response = await result.json();
-            let list = []
+            let list = [], ranking = {}
             for(const rank of response){
 
                 if(rank.key_attributes && rank.key_attributes.length)
@@ -1078,8 +1199,10 @@ module.exports = class providerService {
 
                 }
                 list.push(tmp);
+                ranking[rank.slug] = tmp;
             }
             RedisConnection.set(cacheKey, list);
+            RedisConnection.set("rankings_slug_object",ranking); //also cache ranking as array object with key as it slug
             callback(null, {success: true, message: 'Fetched successfully!', data:list});
         } else {
             callback(null, {success: false, message: 'No data available!', data: []});
@@ -1133,4 +1256,121 @@ module.exports = class providerService {
                 console.log("ranking invalidation: ",err)
         }, false);
     }
+
+    async updateRanksFilter(filters, parsedFilters, rank = null){
+        let result = null;
+                //aggs for counting rankings and years
+        const aggs = {
+            ranks: {
+                nested: {
+                    path: "ranks"
+                },
+                aggs: {
+                    Year: {
+                        terms: {
+                            field: "ranks.year.keyword",
+                            "size": 50
+                        },
+                        "aggs": {
+                            "top_reverse_nested": {
+                                "reverse_nested": {}
+                            }
+                        }
+                    },
+                        Ranking: {
+                        terms: {
+                            field: "ranks.name.keyword",
+                            "size": 50
+                        },
+                        "aggs": {
+                            "top_reverse_nested": {
+                                "reverse_nested": {}
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+        const query = {
+            "bool": {
+                "must": [
+                    { term: { "status.keyword": 'approved' } }
+                ]
+            }
+        };
+        if(rank)
+            aggs.ranks.aggs["Year"] = {
+                "multi_terms": {
+                    "terms": [
+                        {
+                            "field": "ranks.slug.keyword"
+                        },
+                        {
+                            "field": "ranks.year.keyword"
+                        }
+                    ],
+                    "size": 300
+                },
+                "aggs": {
+                    "top_reverse_nested": {
+                        "reverse_nested": {}
+                    }
+                }
+            }
+
+        try {
+            result = await elasticService.searchWithAggregate('provider', query, {aggs, size:0 }, null);
+        }catch(err){
+            console.log("Provider service. updateRanksFilter aggs failed ..!",err);
+            return filters;
+        }
+        for(let i = 0; i < filters.length; i++)
+        {
+            const field = filters[i].label;
+            if( ['Year', 'Ranking'].includes(field) )
+            {
+                const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
+                let options = [];
+                await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
+
+                    for(let option of filters[i].options)
+                    {
+                       if( each.key == option.label)
+                        {
+                            option.count = each.top_reverse_nested.doc_count;
+                            if(seleteddFilter &&  seleteddFilter.value.includes(each.key))
+                                option.selected = true;
+                            options.push(option);
+                        }
+                    }
+                }));
+                if(options.length)
+                    filters[i].options = options;
+            }
+            if( rank && ['Year'].includes(field) )
+            {
+                const seleteddFilter = parsedFilters.find(o => o.key === filters[i].label);
+                let options = [];
+
+                await Promise.all(result.aggregations.ranks[field].buckets.map(each => {
+
+                    for(let option of filters[i].options)
+                    {
+                       if( each.key[1] == option.label && each.key[0] == rank)
+                        {
+                            option.count = each.top_reverse_nested.doc_count;
+                            if(seleteddFilter &&  seleteddFilter.value.includes(each.key[1]))
+                                option.selected = true;
+                            options.push(option);
+                        }
+                    }
+                }));
+
+                filters[i].options = options;
+            }
+        }
+        return filters;
+    }
+
 }

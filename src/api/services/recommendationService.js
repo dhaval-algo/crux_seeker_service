@@ -4562,7 +4562,8 @@ module.exports = class recommendationService {
                 let esQuery = {
                     "bool": {
                         "filter": [
-                            { "term": { "status.keyword": "approved" } }
+                            { term: { "status.keyword": "approved" } },
+                            { term: { "visible": true } }
                         ]
                     }
                 }
@@ -4648,39 +4649,54 @@ module.exports = class recommendationService {
                 website_link: result.website_link
             },
             course_count: (result.course_count) ? result.course_count : 0,
-            ranks: [],
+            rank: {},
             ratings:{}
         };
 
         if(result.ranks && result.ranks.length)
         {
-            let rankings = await RedisConnection.getValuesSync(`ranking-list`);
-            //let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+            let ranks = [], rankings = await RedisConnection.getValuesSync(`rankings_slug_object`);
+            let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
 
             for (let item of result.ranks) {
                     //send latest year rank only
-                //if ( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
+                if( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
                         //get image/logo from cache
-                    let image, logo;
+                    let image = null, logo = null; 
                     if(rankings.noCacheData != true){
-                        for(const eachRank of rankings)
-                            if(eachRank.slug === item.slug)
-                            {
-                                image = eachRank.image;
-                                logo = eachRank.logo;
-                            }
-
+                            image = rankings[item.slug].image;
+                            logo = rankings[item.slug].logo;
                     }
 
-                    data.ranks.push({
+                    ranks.push({
                         name: item.name,
                         slug: item.slug,
                         rank: item.rank,
+                        year: item.year,
+                        precedence: item.precedence ? item.precedence  : 0,
                         image,
                         logo
                     });
-                //}
+                }
             }
+            //send only one rank with higher precedence
+            if(ranks.length > 1)
+            {
+                // track precedence
+                let highP = 0, highPIndex = 0;
+
+                ranks.map((rank, i) => {
+                    if(highP < rank.precedence)
+                    {
+                        highP = rank.precedence;
+                        highPIndex = i;
+                    }
+                })
+                data.rank = ranks[highPIndex]
+             }
+            else if(ranks.length == 1)
+                data.rank = ranks[0]
+
         }
 
         if (result.reviews && result.reviews.length > 0) {
