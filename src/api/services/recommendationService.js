@@ -4561,7 +4561,8 @@ module.exports = class recommendationService {
                 let esQuery = {
                     "bool": {
                         "filter": [
-                            { "term": { "status.keyword": "approved" } }
+                            { term: { "status.keyword": "approved" } },
+                            { term: { "visible": true } }
                         ]
                     }
                 }
@@ -4647,9 +4648,56 @@ module.exports = class recommendationService {
                 website_link: result.website_link
             },
             course_count: (result.course_count) ? result.course_count : 0,
-            featured_ranks: [],
+            rank: {},
             ratings:{}
         };
+
+        if(result.ranks && result.ranks.length)
+        {
+            let ranks = [], rankings = await RedisConnection.getValuesSync(`rankings_slug_object`);
+            let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+
+            for (let item of result.ranks) {
+                    //send latest year rank only
+                if( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
+                        //get image/logo from cache
+                    let image = null, logo = null; 
+                    if(rankings.noCacheData != true){
+                            image = rankings[item.slug].image;
+                            logo = rankings[item.slug].logo;
+                    }
+
+                    ranks.push({
+                        name: item.name,
+                        slug: item.slug,
+                        rank: item.rank,
+                        year: item.year,
+                        precedence: item.precedence ? item.precedence  : 0,
+                        image,
+                        logo
+                    });
+                }
+            }
+            //send only one rank with higher precedence
+            if(ranks.length > 1)
+            {
+                // track precedence
+                let highP = 0, highPIndex = 0;
+
+                ranks.map((rank, i) => {
+                    if(highP < rank.precedence)
+                    {
+                        highP = rank.precedence;
+                        highPIndex = i;
+                    }
+                })
+                data.rank = ranks[highPIndex]
+             }
+            else if(ranks.length == 1)
+                data.rank = ranks[0]
+
+        }
+
         if (result.reviews && result.reviews.length > 0) {
             let totalRating = 0;
             let ratings = {};

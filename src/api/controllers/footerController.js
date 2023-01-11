@@ -3,16 +3,6 @@ const footerService = new FooterService();
 
 
 module.exports = {
-
-    ranking(req,res){
-        footerService.ranking((err, data) => {
-            if (data) {
-                res.status(200).send(data);
-            } else {
-                res.status(200).send(err);
-            }
-        });      
-    },
     partnerWithUs(req,res){
         footerService.partnerWithUs((err, data) => {
             if (data) {

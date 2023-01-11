@@ -11,7 +11,7 @@ const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeIma
     invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter,
     invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam,
     invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills,
-    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage, invalidateFacilities} = require('./src/utils/cacheInvalidationCron');
+    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage, setLatestRankingYear, invalidateFacilities, invalidateRankings} = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 const PartnerService = require("./src/api/services/partnerService");
 let partnerService = new PartnerService();
@@ -128,7 +128,9 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidPopularCategories()
             await invalidatePartnerWithUs()
             await invalidateLearnersPage()
-            await invalidateFacilities()
+            await setLatestRankingYear()
+            await invalidateFacilities();
+            await invalidateRankings();
             await partnerService.cachePartnersCourseImages();
             await setTrendingPopularityThreshold()
         } catch (error) {
