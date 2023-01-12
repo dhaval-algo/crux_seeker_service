@@ -808,7 +808,7 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
             payload.subscription.learnPathIds = subscription.learnPathIds
         }
         
-        const url = `${process.env.ECOM_API_URL}/ecommerce/listing_api/ids`;
+        const url = `${process.env.ECOM_API_URL}/listing_api/ids`;
         let response = await axios.post(url, payload);
 
         if (response && response.data && response.data.status == "OK") {

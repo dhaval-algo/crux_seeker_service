@@ -21,7 +21,7 @@ const oderDetails = async (req, res, next) => {
         let order_id = req.query.orderId      
         let user_id = await encryptUserId(req.user.userId)
 
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/order_details/user/${order_id}?user_id=${user_id}`
+        let request_url = `${process.env.ECOM_API_URL}/user/order_details/user/${order_id}?user_id=${user_id}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
 
@@ -132,7 +132,7 @@ const cancellationDetails = async (req, res, next) => {
         }
         let orderId = req.query.orderId
         let userId = await encryptUserId(req.user.userId)  
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
+        let request_url = `${process.env.ECOM_API_URL}/cancellation/cancellation_details/user/${orderId}?user_id=${userId}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
@@ -150,7 +150,8 @@ const cancellationDetails = async (req, res, next) => {
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
-                                    course_access_link: courses[0].course_access_link || null
+                                    course_access_link: courses[0].course_access_link || null,
+                                    course_details:courses[0].course_details                                
                                 }
                             }
                         } catch (error) {
@@ -229,7 +230,7 @@ const cancellationProgress = async (req, res, next) => {
             }
         }
 
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/cancellation/request_progress/user/${orderId}?user_id=${userId}`
+        let request_url = `${process.env.ECOM_API_URL}/cancellation/request_progress/user/${orderId}?user_id=${userId}`
         let finalData = {}
         axios.get(request_url).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
@@ -367,7 +368,7 @@ const orderHistory = async (req, res, next) => {
             }
         }
 
-        let request_url = `${process.env.ECOM_API_URL}/ecommerce/user/payment_details`
+        let request_url = `${process.env.ECOM_API_URL}/user/payment_details`
 
         axios.post(request_url, requestData).then(async (response) => {
             if (response.data.status == 'OK' && response.data.data) {
