@@ -526,33 +526,15 @@ const orderHistory = async (req, res, next) => {
                     if(response.data.data.availableFilters.orderStatus)
                     {
                         let options = []
-                        if(response.data.data.availableFilters.orderStatus.includes('Successful'))
+                        for(let orderStatus of response.data.data.availableFilters.orderStatus)
                         {
                             options.push({
-                                label: "Successful",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Successful"))? true:false,
+                                label: orderStatus,
+                                selected: (requestData.orderStatus && requestData.orderStatus.includes(orderStatus))? true:false,
                                 disabled: false,
                                 count:2
                             })
-                        }
-                        if(response.data.data.availableFilters.orderStatus.includes('Created'))
-                        {
-                            options.push({
-                                label: "Created",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes("Created"))? true:false,
-                                disabled: false,
-                                count:2
-                            })
-                        }
-                        if(response.data.data.availableFilters.orderStatus.includes('Payment Failed'))
-                        {
-                            options.push({
-                                label: "Payment Failed",
-                                selected: (requestData.orderStatus && requestData.orderStatus.includes('Payment Failed'))? true:false,
-                                disabled: false,
-                                count:2
-                            })
-                        }
+                        }                      
                         
                         filters.push({
                             label: "Order Status",
