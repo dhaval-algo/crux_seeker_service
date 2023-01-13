@@ -609,7 +609,7 @@ module.exports = class recommendationService {
 
     async getSimilarCoursesML(courseId, country, page = 1, limit = 6) {
 
-        const result = await mLService.getSimilarCoursesDataML(courseId);
+        let result = await mLService.getSimilarCoursesDataML(courseId);
         let courses = [];
         const offset = (page - 1) * limit;
         if (result && result.length) {
