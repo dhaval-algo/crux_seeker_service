@@ -465,7 +465,7 @@ module.exports = class recommendationService {
                 }
             }
 
-            const mlCourses = await this.getSimilarCoursesML(courseId, req.query['country'], page, limit);
+            const mlCourses = await this.getSimilarCoursesML(courseId, req.query['country'], currency,page, limit);
             let show = null;
             if ( await mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
                 show = 'ml';
@@ -607,7 +607,7 @@ module.exports = class recommendationService {
         }
     }
 
-    async getSimilarCoursesML(courseId, country, page = 1, limit = 6) {
+    async getSimilarCoursesML(courseId, country, currency, page = 1, limit = 6) {
 
         let result = await mLService.getSimilarCoursesDataML(courseId);
         let courses = [];
