@@ -1630,7 +1630,7 @@ module.exports = class recommendationService {
            
         };     
 
-        data.couponCount = -1;
+        data.couponCount = 0;
         if(result.pricing_type == "Paid")
         {
             data.couponCount = 0;
