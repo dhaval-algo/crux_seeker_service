@@ -22,7 +22,6 @@ const oderDetails = async (req, res, next) => {
         let user_id = await encryptUserId(req.user.userId)
 
         let request_url = `${process.env.ECOM_API_URL}/user/order_details/user/${order_id}?user_id=${user_id}`
-        console.log("request_url", request_url)
         let finalData = {}
         axios.get(request_url).then(async (response) => {
 
