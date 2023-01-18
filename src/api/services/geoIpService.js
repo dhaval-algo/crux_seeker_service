@@ -70,6 +70,7 @@ const countryToCurrency = {
                     else if(data.country_name =="United Kingdom")
                     {
                         data.region ="UK"
+                        data.country_code = "UK"
                     }
                     else if(data.country_name =="United States")
                     {
