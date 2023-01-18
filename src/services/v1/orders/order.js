@@ -335,7 +335,7 @@ const orderHistory = async (req, res, next) => {
         let userId = await encryptUserId(req.user.userId)
         let page =  req.query.page || 1 
         let size =  req.query.size || 25 
-        let sortBy = (req.query.sort ='Recently Purchased')?'desc' : 'asc'
+        let sortBy = (req.query.sort =='Recently Purchased')?'desc' : 'asc'
         let requestData = {
             userId :userId,
             pageNo : page,
