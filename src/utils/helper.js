@@ -1320,7 +1320,7 @@ const encryptUserId = async (userId) => {
     let plaintext = encUtf8.parse(userId);
     let secSpec = encUtf8.parse(key);
     var encrypted = AES.encrypt(plaintext, secSpec, { mode: modeEcb });
-    return Buffer.from(encrypted, 'utf8').toString('hex');
+    return Buffer.from(encrypted.toString(), 'utf8').toString('hex');
 }
    
 module.exports = {
