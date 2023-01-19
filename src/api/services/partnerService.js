@@ -432,4 +432,5 @@ module.exports = class partnerService {
         }
 
     }
+
 }

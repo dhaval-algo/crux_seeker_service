@@ -8,6 +8,8 @@ const  FooterService = require("../api/services/footerService")
 const footerService = new FooterService()
 const faqService = require("../api/services/faqService");
 const geoIpService = require("../api/services/geoIpService");
+const providerContentService = require("../api/services/providerService");
+let ProviderContentService = new providerContentService();
 
 
 const {
@@ -159,6 +161,14 @@ const invalidPopularCategories = async () => {
     }  
 }
 
+const setLatestRankingYear  = async () => {
+    try {
+        await ProviderContentService.setLatestRankingYear();
+    } catch (error) {
+        console.log("Error setting latest ranking year",error)
+    }  
+}
+
 const invalidateFacilities = async () => {
     try {
         await ProviderService.invalidateFacilities( (err, data) => {}, false);
@@ -182,8 +192,17 @@ const invalidateCountries = async () => {
         console.log("Skills cache invalidation Error",error)
     }  
 }
+const invalidateRankings = async () => {
+    try {
+        await ProviderService.invalidateRankings();
+    }
+    catch (err){ console.log("Ranking cache invalidation Error",err); }  
+}
+
+
 
 module.exports = {
+    invalidateRankings,
     invalidatePartnerWithUs,
     invalidateLearnersPage,
     invalidateCategoryTree,
@@ -200,6 +219,7 @@ module.exports = {
     invalidateTNM,
     invalidatePP,
     invalidatSkills,
+    setLatestRankingYear,
     invalidPopularCategories,
     invalidateFacilities,
     invalidateFaqCategories,

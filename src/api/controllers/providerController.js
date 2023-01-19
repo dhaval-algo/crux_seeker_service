@@ -66,7 +66,23 @@ module.exports = {
             }
         });        
     },
-
+    getSingleProviderRanking: async (req, res) => {        
+        ProviderService.getSingleProviderRanking(req, (err, data) => {
+            if (data) {
+                let finalData = {}
+              if(req.query['fields']){                    
+                  finalData =  formatResponseField(req.query['fields'], data.data )                    
+                  res.status(200).send({success: true, message: 'Fetched successfully!', data: finalData});
+              }
+              else
+              {
+                  res.status(200).send(data);
+              }
+            } else {
+                res.status(200).send(err);
+            }
+        });        
+    },
     getInstituteLandingPage: async (req, res) => {
         let result = await ProviderService.getInstituteLandingPage(req);
         if (req.query['fields']) {
@@ -75,6 +91,25 @@ module.exports = {
         } else {
             res.status(200).send(result);
         }
+    },    
+    getProviderPlacements: async (req, res) => {  
+        let result = await ProviderService.getProviderPlacements(req);
+        if (req.query['fields']) {
+            let finalData = formatResponseField(req.query['fields'], result.data)
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: finalData });
+        } else {
+            res.status(200).send(result);
+        }  
+             
+    },
+    ranking(req,res){
+        ProviderService.ranking((err, data) => {
+            if (data) {
+                res.status(200).send(data);
+            } else {
+                res.status(200).send(err);
+            }
+        });      
     },
 
 };

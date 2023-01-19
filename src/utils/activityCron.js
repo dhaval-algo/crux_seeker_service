@@ -10,6 +10,7 @@ const RedisConnection = new redisConnection();
 const COURSE_POPULAR_TRENDING_PERCENTAGE = process.env.COURSE_POPULAR_TRENDING_PERCENTAGE || 4
 const LEARN_PATH_POPULAR_TRENDING_PERCENTAGE = process.env.LEARN_PATH_POPULAR_TRENDING_PERCENTAGE || 15
 const ARTICLE_POPULAR_TRENDING_PERCENTAGE = process.env.ARTICLE_POPULAR_TRENDING_PERCENTAGE || 10
+const NEWS_POPULAR_TRENDING_PERCENTAGE = process.env.NEWS_POPULAR_TRENDING_PERCENTAGE || 10
 
 const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
@@ -837,6 +838,38 @@ const setTrendingPopularityThreshold = async () => {
             RedisConnection.set("ARTICLE_PATH_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
         }
     }
+
+    // Get total news count
+    esQuery = {
+        "bool": {
+            "filter": [
+                { "term": { "status.keyword": "approved" } }
+            ]
+        }
+    }
+    count = await elasticService.count("news", {"query": esQuery});
+
+    if(count)
+    {
+        //calculate popular/trending Threshold
+        let thresholdCount = Math.ceil((count.count * NEWS_POPULAR_TRENDING_PERCENTAGE)/100)        
+        let result = await elasticService.search("news", esQuery, { from: thresholdCount,
+                                size: 1,
+                                sortObject: { "activity_count.all_time.popularity_score" : "desc" },
+                                _source: [ "activity_count" ] });
+
+         if (result.hits)
+            RedisConnection.set("NEWS_POPULARITY_SCORE_THRESHOLD", result.hits[0]._source.activity_count.all_time.popularity_score); 
+
+        result = await elasticService.search("news", esQuery, { from: thresholdCount,
+                                size: 1,
+                                sortObject: { "activity_count.last_x_days.trending_score" : "desc" },
+                                _source: [ "activity_count" ] });
+
+        if (result.hits)
+            RedisConnection.set("NEWS_TRENDING_SCORE_THRESHOLD", result.hits[0]._source.activity_count.last_x_days.trending_score); 
+
+    }
 }
 
 
@@ -1041,11 +1074,400 @@ const providerActivity = async () => {
         }
     }
 }
+
+const trendingListActivity = async () => {
+    let activity_types = {}
+    let activity_count = {}
+    let activity_ids = []
+    const activities =  await models.activity.findAll({
+        attributes: ["id","type"],     
+        where:{
+            "type": ["TRENDING_LIST_VIEW"]
+        },   
+        raw:true
+    })
+    
+    for (activity_type of activities)
+    {
+        activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
+    }
+    
+    // All time counts for logged in user 
+    const activity_logs_all =  await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+    
+    const activity_log_x_days = await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+
+    for (let activity of activity_logs_all)
+    {
+        if(activity.resource){
+            if(!activity_count[activity.resource])
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    trending_list_views:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    trending_list_views:0
+                }
+            }           
+            
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].all_time.trending_list_views= Number(activity.count)              
+                    break;               
+                default:
+                    break;
+            }
+        }  
+    }
+
+    for (let activity of activity_log_x_days)
+    {
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].last_x_days.trending_list_views= Number(activity.count)
+                    break; 
+                default:
+                break;             
+            }
+        }
+    }
+
+    // All time counts for non-logged in user 
+    const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+
+    const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource","activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+    
+    for (let activity of activity_logs_loggedout_all)
+    {
+        if(activity.resource){
+            if(!activity_count[activity.resource] )
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    trending_list_views:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    trending_list_views:0
+                }
+            }            
+
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].all_time.trending_list_views += Number(activity.count)             
+                    break;
+               
+                default:
+                    break;
+            }
+        }   
+    }
+
+    for (let activity of activity_logs_loggedout_x_days)
+    {
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "TRENDING_LIST_VIEW": 
+                    activity_count[activity.resource].last_x_days.trending_list_views += Number(activity.count)
+                    break;               
+                default:
+                    break;
+            }
+        }
+    }   
+    if(Object.keys(activity_count).length){
+        for ( const [key, value] of Object.entries(activity_count))
+        {
+            let payload = {
+                trending_list_id:key,
+                activity_count:value,
+            }
+            publishToSNS(process.env.TRENDING_LIST_ACTIVITY_TOPIC_ARN, payload, "TRENDING_LIST_ACTIVITY_COUNT")
+        }
+    }
+}
+
+const newsActivity = async () => {
+    let activity_types = {};
+    let activity_count = {};
+    let activity_ids = [];
+    const activities =  await models.activity.findAll({
+        attributes: ["id", "type"],     
+        where:{
+            "type": ["NEWS_VIEW","NEWS_WISHLIST", "NEWS_SHARE"]
+        },   
+        raw:true
+    })
+    
+    for (activity_type of activities)
+    {
+        activity_types[activity_type.id] = activity_type.type
+        activity_ids.push(activity_type.id)
+    }
+    
+    // All time counts for logged in user 
+    const activity_logs_all =  await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "resource", "activityId"],         
+        group: ['activityId', "resource"],
+        raw: true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+    
+    const activity_log_x_days = await models.activity_log.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"], "resource", "activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    }) 
+    
+    const re = /C_NEWS|NEWS/;
+    for (let activity of activity_logs_all)
+    {
+        if(activity.resource){
+
+            if(!re.test(activity.resource))
+                continue;
+
+            if(!activity_count[activity.resource])
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    views:0,
+                    wishlists:0,
+                    share:0,
+                    popularity_score:0
+                }
+                activity_count[activity.resource].last_x_days = {
+                    views:0,
+                    wishlists:0,
+                    share:0,
+                    trending_score:0
+                }
+            }
+            
+            
+            switch (activity_types[activity.activityId]) {
+                case "NEWS_VIEW":
+                    activity_count[activity.resource].all_time.views = Number(activity.count)              
+                    break;
+                case "NEWS_WISHLIST":
+                    activity_count[activity.resource].all_time.wishlists = Number(activity.count)              
+                    break;
+                case "NEWS_SHARE":
+                    activity_count[activity.resource].all_time._share = Number(activity.count)              
+                    break;
+                default:
+                    break;
+            }
+        }  
+    }
+
+    for (let activity of activity_log_x_days)
+    {
+        if(!re.test(activity.resource))
+                continue;
+
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "NEWS_VIEW": 
+                    activity_count[activity.resource].last_x_days.views = Number(activity.count)
+                    break;
+                case "NEWS_WISHLIST":
+                    activity_count[activity.resource].last_x_days.wishlists = Number(activity.count)
+                    break;
+                case "NEWS_SHARE":
+                    activity_count[activity.resource].last_x_days.share = Number(activity.count)              
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    // All time counts for non-logged in user 
+    const activity_logs_loggedout_all =  await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource", "activityId"],         
+        group: ['activityId', "resource"],
+        raw:true,
+        where: {
+            activityId: activity_ids
+        }
+    })
+
+    const activity_logs_loggedout_x_days = await models.activity_log_loggedout.findAll({
+        attributes: [[Sequelize.fn('count', Sequelize.col('id')), "count"],"resource", "activityId"],       
+        where: {
+            createdAt: {
+                [Op.gte]: moment().subtract(process.env.LAST_X_DAYS_COUNT, 'days').toDate()
+            },
+            activityId: activity_ids
+        },
+        group: ['activityId', "resource"],
+        raw:true
+    })
+
+    for (let activity of activity_logs_loggedout_all)
+    {
+        if(activity.resource){
+
+            if(!re.test(activity.resource))
+                continue;
+            
+            if( !activity_count[activity.resource] )
+            {
+                activity_count[activity.resource] = {}
+                activity_count[activity.resource].all_time = {
+                    views:0,
+                    wishlists:0,
+                    share:0,
+                    popularity_score:0
+                }
+
+                activity_count[activity.resource].last_x_days = {
+                    views:0,
+                    wishlists:0,
+                    share:0,
+                    trending_score:0
+                }
+            }
+
+            switch (activity_types[activity.activityId]) {
+                case "NEWS_VIEW": 
+                    activity_count[activity.resource].all_time.views += Number(activity.count)             
+                    break;
+                case "NEWS_WISHLIST":
+                    activity_count[activity.resource].all_time.wishlists += Number(activity.count)
+                    break;
+                case "NEWS_SHARE":
+                    activity_count[activity.resource].all_time.share += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }   
+    }
+
+    for (let activity of activity_logs_loggedout_x_days)
+    {
+        if(!re.test(activity.resource))
+                continue;
+
+        if(activity.resource){
+            switch (activity_types[activity.activityId]) {
+                case "NEWS_VIEW": 
+                    activity_count[activity.resource].last_x_days.views += Number(activity.count)
+                    break;
+                case "NEWS_WISHLIST":
+                    activity_count[activity.resource].last_x_days.wishlists += Number(activity.count)
+                    break;
+                case "NEWS_SHARE":
+                    activity_count[activity.resource].last_x_days.share += Number(activity.count)
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+        // define default values
+    let newsWeightDistribution = { NEWS_VIEW: 0.5, NEWS_WISHLIST: 0.25, NEWS_SHARE: 0.25 }
+
+    try{
+                        // using same wieghts of articles; as news is also a type of article
+        let response = await fetch(`${apiBackendUrl}/article-weight?_limit=-1`)
+        if (response.ok) {
+            let json = await response.json();
+            if(json){
+                newsWeightDistribution.NEWS_VIEW = json.priority_weights.view
+                newsWeightDistribution.NEWS_WISHLIST = json.priority_weights.wishlist
+                newsWeightDistribution.NEWS_SHARE = json.priority_weights.share
+            }
+        }
+        else{
+            console.log("err in access weights")
+            return ;
+        }
+    }catch(err){
+        console.log(err)
+    }
+
+    try{
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                value.all_time.popularity_score = (newsWeightDistribution.NEWS_VIEW * value.all_time.views) + 
+                                                  (newsWeightDistribution.NEWS_WISHLIST * value.all_time.wishlists) +
+                                                    (newsWeightDistribution.NEWS_SHARE * value.all_time.share);
+                value.last_x_days.trending_score = (newsWeightDistribution.NEWS_VIEW * value.last_x_days.views) + 
+                                                    (newsWeightDistribution.NEWS_WISHLIST * value.last_x_days.wishlists) +
+                                                    (newsWeightDistribution.NEWS_SHARE * value.last_x_days.share);
+            }
+        }
+        if(Object.keys(activity_count).length){
+            for ( const [key, value] of Object.entries(activity_count))
+            {
+                let payload = {
+                    news_id:key,
+                    activity_count:value,
+                }
+                publishToSNS(process.env.NEWS_ACTIVITY_TOPIC_ARN, payload, "NEWS_ACTIVITY_COUNT")
+            }
+        }
+    }catch(err){
+        console.log(err)
+    }
+}
    
 module.exports = {
+    newsActivity,
     storeActivity,
     learnpathActivity,
     articleActivity,
     providerActivity,
+    trendingListActivity,
     setTrendingPopularityThreshold
 }

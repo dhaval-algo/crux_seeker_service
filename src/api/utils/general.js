@@ -153,8 +153,9 @@ const getRankingFilter = async (useCache = true) => {
             label: 'Ranking',
             filterable: true,
             filter_postion: 'vertical',   
-            is_collapsed: true,
+            is_collapsed: false,
             filter_type: 'Checkboxes',
+            order: 2,
             options: []
         };
     
@@ -421,9 +422,126 @@ const updateSelectedFilters = (filters, parsedFilters, parsedRangeFilters) => {
 
 
 const sortFilterOptions = (options) => {
-    if(options.length){
+    if(options.length)
         options = _.sortBy( options, 'count' ).reverse();
+
+    return options;
+};
+
+
+// generic getAllfilters from specified index
+const getAllFilters = async (index, query, queryPayload, filterConfigs) => {
+
+    if(queryPayload.from !== null && queryPayload.size !== null)
+    {
+        delete queryPayload['from'];
+        delete queryPayload['size'];
     }
+
+
+    let fields = filterConfigs.map((filter)=> filter.elastic_attribute_name);
+
+    const result = await elasticService.search(index, query, {from: 0, size: MAX_RESULT},fields);
+    if(result.total && result.total.value > 0)
+    {
+        return {
+            filters: await formatFilters(result.hits, filterConfigs),
+            total: result.total.value };
+    }
+};
+
+
+const formatFilters = async (data, filterData) => {
+
+    let filters = [];
+    let emptyOptions = [];
+
+    for(const filter of filterData){
+
+        let formatedFilters = {
+            label: filter.label,
+            field: filter.elastic_attribute_name,
+            filterable: filter.filterable,
+            sortable: filter.sortable,
+            filter_postion: filter.filter_postion || 'vertical',
+            order: filter.order,
+            is_singleton: filter.is_singleton,
+            is_collapsed: filter.is_collapsed,
+            display_count: filter.display_count,
+            disable_at_zero_count: filter.disable_at_zero_count,
+            is_attribute_param: filter.is_attribute_param,
+            filter_type: filter.filter_type,
+            is_essential: filter.is_essential,
+            sort_on: filter.sort_on,
+            sort_order: filter.sort_order,
+            false_facet_value: filter.false_facet_value,
+            implicit_filter_skip: filter.implicit_filter_skip,
+            implicit_filter_default_value: filter.implicit_filter_default_value,
+            options: (filter.filter_type == "Checkboxes") ? getFilterOption(data, filter)  : [],
+        };
+
+        if(filter.filter_type !== 'RangeSlider')
+        {
+            if(formatedFilters.options.length <= 0)
+                emptyOptions.push(filter.label);
+
+        }
+
+        filters.push(formatedFilters);
+    }
+
+    if(emptyOptions.length > 0)
+    {
+        filters = filters.filter(function( obj ) {
+            return !emptyOptions.includes(obj.label);
+          });
+    }
+    return filters;
+};
+
+
+const getFilterOption = (data, filter) =>
+{
+    let options = [];
+    for(const esData of data){
+        const entity = esData._source;
+        let entityData = entity[filter.elastic_attribute_name];
+        if(entityData)
+        {
+            if(Array.isArray(entityData))
+            {
+                for(const entry of entityData)
+                {
+                    let existing = options.find(o => o.label === entry);
+                    if(existing)
+                        existing.count++;
+                    else
+                    {
+                        options.push({
+                            label: entry,
+                            count: 1,
+                            selected: false,
+                            disabled: false
+                        });
+                    }
+                }
+            }else{
+                let existing = options.find(o => o.label === entityData);
+                if(existing)
+                    existing.count++;
+                else
+                {
+                    options.push({
+                        label: entityData,
+                        count: 1,
+                        selected: false,
+                        disabled: false
+                    });
+                }
+            }
+        }
+    }
+    options = sortFilterOptions(options);
     return options;
 };
 
@@ -882,6 +1000,7 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
 
 
   module.exports = {
+    getAllFilters,
     isDateInRange,
     getUserCurrency,
     getCurrencies,

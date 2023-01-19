@@ -15,6 +15,7 @@ const pluralize = require('pluralize')
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons","subscription_price","buy_on_careervira","enquiry"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile","subscription_price","buy_on_careervira","enquiry"]
+const trendingListFields = ["id","title","slug","image","list_topic", "list_category", "short_description","region"]
 const FEATURED_RANK_LIMIT = 2;
 
 function formatQueryForCG (req){  
@@ -4629,7 +4630,8 @@ module.exports = class recommendationService {
                 let esQuery = {
                     "bool": {
                         "filter": [
-                            { "term": { "status.keyword": "approved" } }
+                            { term: { "status.keyword": "approved" } },
+                            { term: { "visible": true } }
                         ]
                     }
                 }
@@ -4715,9 +4717,56 @@ module.exports = class recommendationService {
                 website_link: result.website_link
             },
             course_count: (result.course_count) ? result.course_count : 0,
-            featured_ranks: [],
+            rank: {},
             ratings:{}
         };
+
+        if(result.ranks && result.ranks.length)
+        {
+            let ranks = [], rankings = await RedisConnection.getValuesSync(`rankings_slug_object`);
+            let latestRankYear = await RedisConnection.getValuesSync('provider_ranking_latest_year');
+
+            for (let item of result.ranks) {
+                    //send latest year rank only
+                if( item.year == (latestRankYear[item.slug] || new Date().getFullYear()) ) {
+                        //get image/logo from cache
+                    let image = null, logo = null; 
+                    if(rankings.noCacheData != true){
+                            image = rankings[item.slug].image;
+                            logo = rankings[item.slug].logo;
+                    }
+
+                    ranks.push({
+                        name: item.name,
+                        slug: item.slug,
+                        rank: item.rank,
+                        year: item.year,
+                        precedence: item.precedence ? item.precedence  : 0,
+                        image,
+                        logo
+                    });
+                }
+            }
+            //send only one rank with higher precedence
+            if(ranks.length > 1)
+            {
+                // track precedence
+                let highP = 0, highPIndex = 0;
+
+                ranks.map((rank, i) => {
+                    if(highP < rank.precedence)
+                    {
+                        highP = rank.precedence;
+                        highPIndex = i;
+                    }
+                })
+                data.rank = ranks[highPIndex]
+             }
+            else if(ranks.length == 1)
+                data.rank = ranks[0]
+
+        }
+
         if (result.reviews && result.reviews.length > 0) {
             let totalRating = 0;
             let ratings = {};
@@ -5533,5 +5582,85 @@ module.exports = class recommendationService {
     
         return { highPriorityKeywords: highPriorityKeywords, lowPriorityKeywords: lowPriorityKeywords };
     
-    }    
+    } 
+    async getRelatedTrendingList(req){
+        try {
+            const trendingListId = req.query.trendingListId.toString();
+            const { page = 1, limit = 6 } = req.query;
+            const offset = (page - 1) * limit;
+
+            //priority 1 category list
+            let priorityList1 = ['list_topic.keyword, list_sub_category.keyword', 'skills.keyword', 'list_topic.keyword'];
+            let priorityList2 = ['region.keyword', 'level.keyword', 'price_type.keyword'];
+
+            const relationData = {
+                index: "trending-list",
+                id: trendingListId
+            }
+
+            let esQuery = {
+                "bool": {
+                    "filter": [
+                        { "term": { "status.keyword": "approved" } }
+                    ],
+                    must_not: {
+                        term: {
+                            "_id": trendingListId
+                        }
+                    }
+                }
+            }
+
+            function buildQueryTerms(key, i) {
+                let termQuery = { "terms": {} };
+                termQuery.terms[key] = { ...relationData, "path": key };
+                termQuery.terms.boost = 5 - (i * 0.1);
+                return termQuery;
+            }
+
+            esQuery.bool.should = [{
+                bool: {
+                    boost: 1000,
+                    should: priorityList1.map(buildQueryTerms)
+                }
+            }];
+
+            esQuery.bool.should.push({
+                bool: {
+                    boost: 10,
+                    should: priorityList2.map(buildQueryTerms)
+                }
+            })
+
+            let result = await elasticService.search("trending-list", esQuery, { from: offset, size: limit ,_source: trendingListFields});
+
+            let trendingLists = [];
+            if (result && result.hits.length > 0) {
+                for (let hit of result.hits) {
+                    let data = {
+                        id: `TRND_LST_${hit._source.id}`,
+                        slug: hit._source.slug,
+                        region: hit._source.region,
+                        category: hit._source.list_category,
+                        sub_category: hit._source.list_sub_category,
+                        topic: hit._source.list_topic,
+                        short_description: hit._source.short_description,
+                        image: hit._source.image,
+                    }
+                    trendingLists.push(data);
+                }
+            }
+
+            let show = "logic";
+
+            const response = { success: true, message: "list fetched successfully", data:{list:trendingLists,mlList:[],show:show} };
+            
+            return response
+        } catch (error) {
+            console.log("Error while processing data for related trending list", error);
+            const response = { success: false, message: "list fetched successfully", data:{list:[]} };
+            
+            return response
+        }
+    }   
 }
