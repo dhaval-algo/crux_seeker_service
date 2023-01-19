@@ -1476,6 +1476,11 @@ module.exports = class learnContentService {
         {
             data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
             data.pricing_details.pricing_type =  result.pricing_type
+            if(data.buy_on_careervira)
+            {
+                data.pricing_details.display_price = true
+            }
+            
         }
 
         
