@@ -109,7 +109,8 @@ const countryToCurrency = {
                     }
                 }
                 if (useCache != true) {
-                    let response = await fetch(`${apiBackendUrl}/countries?_limit=-1`);
+                    let response = await fetch(`${apiBackendUrl}/countries?_sort=order&_limit=-1`);
+                    console.log("response", response)
                     let data
                     if (response.ok) {
                         data = await response.json();
