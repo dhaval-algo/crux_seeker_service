@@ -404,6 +404,12 @@ module.exports = class recommendationService {
             const { currency, page = 1, limit = 6 } = req.query;
             const offset = (page - 1) * limit;
 
+            const mLCourses = await this.getSimilarCoursesML(courseId, req.query['country'], currency, page, limit);
+            if (mLCourses && mLCourses.length) {
+
+                return { success: true, message: "list fetched successfully", data: { list: mLCourses, type: 'ml' } };
+            }
+            
             //fields to fetch 
             let fields = [
                 "sub_categories",
@@ -465,17 +471,9 @@ module.exports = class recommendationService {
                 }
             }
 
-            const mlCourses = await this.getSimilarCoursesML(courseId, req.query['country'], currency,page, limit);
-            let show = null;
-            if ( await mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
-                show = 'ml';
-            }
-            else {
-                show = 'logic';
-            }
-            const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
+            return { success: true, message: "list fetched successfully", data: { list: courses, type: 'logic' } };
             
-            return response
+            
         } catch (error) {
             console.log("Error while processing data for related courses", error);
             const response = { success: false, message: "Failed to fetch", data: { list: [], mlList: [], show: null } };

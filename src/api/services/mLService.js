@@ -74,72 +74,77 @@ const getSimilarCoursesDataML = async (courseId) => {
         if (!cacheData.noCacheData) {
 
             return cacheData;
-
         }
 
         else {
 
-            const url = `${process.env.ML_SERVICE_PUBLIC_V1}/get-similar-courses?course_id=${courseId}&count=${count}`;
+            const url = `${process.env.ML_SERVICE_PUBLIC_V1}/similar-course/${courseId}?count=${count}`;
             const response = await axios.get(url);
             if (response.status == 200) {
 
                 let scores = {};
                 const course_ids = [];
-                response.data["data"].forEach((course,i) => {
+                let courses_data = [];
 
-                    scores[`LRN_CNT_PUB_${course.course_id}`] = i;
-                    course_ids.push(`LRN_CNT_PUB_${course.course_id}`);
+                if (response.data.courses) {
 
-                });
+                    response.data.courses.forEach((course_id, i) => {
 
-                let esQuery = {
-                    "from": 0,
-                    "size": count,
-                    "sort": [
-                        {
-                            "_script": {
-                                "order": "asc",
-                                "type": "number",
-                                "script": {
-                                    "lang": "painless",
-                                    "inline": "return params.scores[doc['_id'].value];",
-                                    "params": {
-                                        "scores": scores
+                        scores[`LRN_CNT_PUB_${course_id}`] = i;
+                        course_ids.push(`LRN_CNT_PUB_${course_id}`);
+
+                    });
+
+                    let esQuery = {
+                        "from": 0,
+                        "size": count,
+                        "sort": [
+                            {
+                                "_script": {
+                                    "order": "asc",
+                                    "type": "number",
+                                    "script": {
+                                        "lang": "painless",
+                                        "inline": "return params.scores[doc['_id'].value];",
+                                        "params": {
+                                            "scores": scores
+                                        }
                                     }
                                 }
                             }
-                        }
-                    ],
-                    "query": {
-                        "bool": {
-                            "must_not": {
-                                "term": {
-                                    "_id": `LRN_CNT_PUB_${courseId}`
-                                }
-                            },
-                            "must": [
-                                {
+                        ],
+                        "query": {
+                            "bool": {
+                                "must_not": {
                                     "term": {
-                                        "status.keyword": "published"
+                                        "_id": `LRN_CNT_PUB_${courseId}`
                                     }
                                 },
-                                {
-                                    "ids": {
-                                        "values": course_ids
+                                "must": [
+                                    {
+                                        "term": {
+                                            "status.keyword": "published"
+                                        }
+                                    },
+                                    {
+                                        "ids": {
+                                            "values": course_ids
+                                        }
                                     }
-                                }
-                            ]
+                                ]
+                            }
                         }
                     }
-                }
-                const result = await elasticService.plainSearch("learn-content", esQuery);
-                if (result && result.hits && result.hits.hits && result.hits.hits.length) {
-                    const data = result.hits.hits;
-                    RedisConnection.set(cacheName, data);
-                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
-                    return data;
+                    const result = await elasticService.plainSearch("learn-content", esQuery);
+                    if (result && result.hits && result.hits.hits && result.hits.hits.length) {
+                        courses_data = result.hits.hits;
+                    }
 
                 }
+
+                RedisConnection.set(cacheName, courses_data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
+                return courses_data;
             }
         }
 
