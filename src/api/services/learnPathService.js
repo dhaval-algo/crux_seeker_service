@@ -764,6 +764,7 @@ module.exports = class learnPathService {
                 if(partnerData && partnerData.logo)
                 {
                     data.partner.logo =partnerData.logo
+                    data.partner.name_image =partnerData.name_image
                 }
             }
         }

@@ -1470,6 +1470,7 @@ module.exports = class learnContentService {
         if(partnerData && partnerData.logo)
         {
             data.partner.logo =partnerData.logo
+            data.partner.name_image =partnerData.name_image
         }       
        
         if(data.pricing_details)
