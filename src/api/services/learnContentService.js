@@ -1470,12 +1470,18 @@ module.exports = class learnContentService {
         if(partnerData && partnerData.logo)
         {
             data.partner.logo =partnerData.logo
+            data.partner.name_image =partnerData.name_image
         }       
        
         if(data.pricing_details)
         {
             data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
             data.pricing_details.pricing_type =  result.pricing_type
+            if(data.buy_on_careervira)
+            {
+                data.pricing_details.display_price = true
+            }
+            
         }
 
         

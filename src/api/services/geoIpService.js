@@ -109,10 +109,15 @@ const countryToCurrency = {
                     }
                 }
                 if (useCache != true) {
-                    let response = await fetch(`${apiBackendUrl}/countries?_limit=-1`);
+                    let response = await fetch(`${apiBackendUrl}/countries?_sort=order&_limit=-1`);
+                    console.log("response", response)
                     let data
                     if (response.ok) {
                         data = await response.json();
+                        let finalData = {
+                            top_countries: [],
+                            other_counties: []
+                        }
                         data = data.map(function (el) {
                             let region ="USA"
                             if(el["code"] =="IN")
@@ -131,16 +136,30 @@ const countryToCurrency = {
                             {
                                  region ="Europe"
                             }
-                            
-                            return {
-                                'name': el["name"],
-                                'code': el["code"],
-                                'currency':(countryToCurrency[ el["code"]])? countryToCurrency[ el["code"]] : 'USD',
-                                'region' :  region
+                            if(el["top_country"])
+                            {
+                                finalData.top_countries.push({
+                                    'name': el["name"],
+                                    'code': el["code"],
+                                    'currency':(countryToCurrency[ el["code"]])? countryToCurrency[ el["code"]] : 'USD',
+                                    'region' :  region
+                                })
                             }
+                            else
+                            {
+                                finalData.other_counties.push({
+                                    'name': el["name"],
+                                    'code': el["code"],
+                                    'currency':(countryToCurrency[ el["code"]])? countryToCurrency[ el["code"]] : 'USD',
+                                    'region' :  region
+                                })
+                            }
+                            
+                            
+                            return finalData
                         })
-                        if (data) {
-                            RedisConnection.set(cacheName, data);
+                        if (finalData) {
+                            RedisConnection.set(cacheName, finalData);
                         }
                     }
                 }
