@@ -448,6 +448,7 @@ const getAllFilters = async (index, query, queryPayload, filterConfigs) => {
             filters: await formatFilters(result.hits, filterConfigs),
             total: result.total.value };
     }
+    return { filters: [] , total: 0 };
 };
 
 
