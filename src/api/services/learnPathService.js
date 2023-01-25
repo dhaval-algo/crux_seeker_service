@@ -779,6 +779,7 @@ module.exports = class learnPathService {
             if(data.buy_on_careervira)
             {
                 data.pricing_details.display_price = true
+                data.pricing.display_price = true
             }
         }  
         
