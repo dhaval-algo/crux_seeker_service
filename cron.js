@@ -135,6 +135,8 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
     cron.schedule( process.env.CACHE_INVALIDATION_CRON_TIME, async function () {
         try {    
             await invalidateCategoryTree()
+            await invalidateFaqCategories()
+            await invalidateCountries()
             await invalidateEntityLabelCache()
             await invalidateLearnTypeImages()
             await invalidateCurrencies()
@@ -156,8 +158,7 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidateRankings();
             await partnerService.cachePartnersCourseImages();
             await setTrendingPopularityThreshold()
-            await invalidateFaqCategories()
-            await invalidateCountries()
+           
         } catch (error) {
             console.log("Error in cron", error);
         }
