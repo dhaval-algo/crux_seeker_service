@@ -1023,7 +1023,7 @@ module.exports = class providerService {
                 }
             }
 
-            return { success: false, data: data }
+            return { success: true, data: data }
 
         } catch (error) {
             console.log("Error fetching top categories in institute-home-page", error);
