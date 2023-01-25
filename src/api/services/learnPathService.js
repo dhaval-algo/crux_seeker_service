@@ -750,28 +750,27 @@ module.exports = class learnPathService {
             course_access_link: result.course_access_link
         }       
 
-        if(!isList)
+       
+        data.buy_on_careervira = false
+        //get buy_on_careervira from partner
+        if(data.partner)
         {
-            data.buy_on_careervira = false
-            //get buy_on_careervira from partner
-            if(data.partner)
+            let partnerData = await PartnerService.getPartner({params : {slug:data.partner.slug},query:{currency:currency}})
+            if(partnerData && partnerData.buy_on_careervira)
             {
-                let partnerData = await PartnerService.getPartner({params : {slug:data.partner.slug},query:{currency:currency}})
-                if(partnerData && partnerData.buy_on_careervira)
-                {
-                    data.buy_on_careervira =true
-                }
-                if(partnerData && partnerData.logo)
-                {
-                    data.partner.logo =partnerData.logo                  
-                }
+                data.buy_on_careervira =true
+            }
+            if(partnerData && partnerData.logo)
+            {
+                data.partner.logo =partnerData.logo                  
+            }
 
-                if(partnerData && partnerData.name_image)
-                {                  
-                    data.partner.name_image =partnerData.name_image
-                }
+            if(partnerData && partnerData.name_image)
+            {                  
+                data.partner.name_image =partnerData.name_image
             }
         }
+        
 
         if(data.pricing_details)
         {
