@@ -408,6 +408,7 @@ const orderHistory = async (req, res, next) => {
                                             title: courses[0].title,
                                             slug: courses[0].slug,
                                             id: courses[0].id,
+                                            partner: courses[0].partner,
                                             cover_image: courses[0].cover_image,
                                             card_image: courses[0].card_image,
                                             card_image_mobile: courses[0].card_image_mobile,
