@@ -1562,10 +1562,12 @@ module.exports = class learnContentService {
             data.pricing_details.pricing_type =  result.pricing_type
             if(data.buy_on_careervira)
             {
-                data.pricing_details.display_price = true
-                data.pricing.display_price = true
+                data.pricing_details.display_price = true                
             }
-            
+            if(data.buy_on_careervira && data.pricing)
+            {
+                data.pricing.display_price = true   
+            }  
         }
 
         
