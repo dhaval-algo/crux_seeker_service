@@ -423,7 +423,7 @@ module.exports = class providerService {
                 }
             }
         }
-        if(!rankYear){
+        if(req.query['rank'] && !rankYear){
             rankYear = latestRankYear;
             parsedFilters.push({key: 'Year', value: [latestRankYear[req.query['rank']]]}); // set default year
         }
