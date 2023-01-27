@@ -310,6 +310,7 @@ module.exports = class partnerService {
             highlights: (result.highlights)? result.highlights : null,
             facts: (result.facts)? result.facts : null,
             buy_on_careervira:(result.buy_on_careervira)? result.buy_on_careervira : false,
+            name_image:(result.name_image)? result.name_image : null,
         };
         if(!isList){
             // get course count 

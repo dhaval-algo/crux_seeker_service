@@ -4390,15 +4390,15 @@ module.exports = class recommendationService {
             let courses = []
             let compares = []
 
-            let cacheKey = `popular_compares-${req.query.courseId}`;
-            let cachedData = await RedisConnection.getValuesSync(cacheKey);
+            // let cacheKey = `popular_compares-${req.query.courseId}`;
+            // let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
-            if (cachedData.noCacheData != true) {
-                cachedData = await paginate(cachedData, page, limit)
-                cachedData = await getlistPriceFromEcom(cachedData,"learn_content",req.query['country'])
+            // if (cachedData.noCacheData != true) {
+            //     cachedData = await paginate(cachedData, page, limit)
+            //     cachedData = await getlistPriceFromEcom(cachedData,"learn_content",req.query['country'])
 
-                return { "success": true, message: "list fetched successfully", data: { list: cachedData } }
-            }
+            //     return { "success": true, message: "list fetched successfully", data: { list: cachedData } }
+            // }
 
             if (req.query.courseId) {
                 const courseId = req.query.courseId.toString();
@@ -4624,8 +4624,8 @@ module.exports = class recommendationService {
                         compares.push({ course_1: course, course_2: final_course })
                 }
             }
-            await RedisConnection.set(cacheKey, compares);
-            RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
+            // await RedisConnection.set(cacheKey, compares);
+            // RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
 
             compares = await paginate(compares, page, limit)
             let response = { "success": true, message: "list fetched successfully", data: { list: compares }  };
