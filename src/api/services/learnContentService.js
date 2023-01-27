@@ -1315,7 +1315,7 @@ module.exports = class learnContentService {
                     }
                 };
                 let queryPayload = {size : 1000}
-                const result = await elasticService.search('learn-content', queryBody, queryPayload);
+                let result = await elasticService.search('learn-content', queryBody, queryPayload);
                 if(result.hits){
                     if(result.hits && result.hits.length > 0){
                         if(!req.query.skipPrice)

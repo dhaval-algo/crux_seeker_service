@@ -619,11 +619,13 @@ module.exports = class learnPathService {
                 }
             };
 
-            const result = await elasticService.plainSearch('learn-path', queryBody);
+            let result = await elasticService.plainSearch('learn-path', queryBody);
             if(result.hits){
                 if(result.hits.hits && result.hits.hits.length > 0){
-                    result.hits.hits = await getlistPriceFromEcom(result.hits.hits,"learn_path",req.query['country'])
-
+                    if(!req.query.skipPrice)
+                    {
+                        result.hits.hits = await getlistPriceFromEcom(result.hits.hits,"learn_path",req.query['country'])
+                    }
                     for(const hit of result.hits.hits){
                         const learnpath = await this.generateSingleViewData(hit._source, false, req.query.currency,req.query['country']);
                         learnpaths.push(learnpath);
