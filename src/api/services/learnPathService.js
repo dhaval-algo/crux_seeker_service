@@ -771,7 +771,7 @@ module.exports = class learnPathService {
             }
         }
         
-
+        if(!isList)  data.pricing_details = {}    
         if(data.pricing_details)
         {
             data.pricing_details.pricing_type =  result.pricing_type      

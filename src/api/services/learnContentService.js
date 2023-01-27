@@ -1554,11 +1554,11 @@ module.exports = class learnContentService {
         {
             data.partner.logo =partnerData.logo
             data.partner.name_image =partnerData.name_image
-        }       
-       
+        }  
+        if(!isList)  data.pricing_details = {}    
         if(data.pricing_details)
         {
-            data.pricing_details.pricing_type =  result.pricing_type      
+            data.pricing_details.pricing_type =  result.pricing_type
             data.pricing_details.display_price =  true     
         }
 
