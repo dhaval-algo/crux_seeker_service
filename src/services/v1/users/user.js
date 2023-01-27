@@ -53,6 +53,7 @@ const elasticService = require("../../../api/services/elasticService");
 const { sequelize } = require("../../../../models");
 const { getBucketNames, uploadImageToS3, deleteObject,uploadResumeToS3 } = require("../AWS");
 const {saveSessionKPIs}=require("../../../utils/sessionActivity");
+const {initiateUserCourseModelTraining} = require("../../../api/services/mLService");
 
 const login = async (req, res, next) => {
     try {
@@ -1475,6 +1476,8 @@ const addGoals = async (req, res) => {
             }
         }
 
+        initiateUserCourseModelTraining(userId, "goals");
+
         return res.status(200).json({
             success: true,
             message: "Data is successfully saved."
@@ -1563,6 +1566,8 @@ const editGoal = async (req, res) => {
                 }
             }
         }
+
+        initiateUserCourseModelTraining(userId, "goals");
         
         return res.status(200).json({
             success: true,
@@ -2808,7 +2813,8 @@ const addSkills = async (req,res) => {
              }
              
         }
-         return res.status(200).json({success:true,data:data})
+        initiateUserCourseModelTraining(user.userId, "learn_profile");
+        return res.status(200).json({success:true,data:data})
     } catch (error) {
         console.log("add skill", error)
         return res.status(200).json({success:false,data:{}, message:"Error updating Skills"})
