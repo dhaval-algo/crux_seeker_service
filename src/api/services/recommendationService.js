@@ -12,7 +12,7 @@ const { isDateInRange, getlistPriceFromEcom} = require('../utils/general');
 
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const pluralize = require('pluralize')
-const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons","subscription_price","buy_on_careervira","enquiry"]
+const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons","subscription_price","buy_on_careervira","enquiry","default_price"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
 const learnPathFields = ["id","title","slug","images","total_duration","total_duration_unit","levels","finalPrice","sale_price","average_rating_actual","currency","pricing_type","medium","regular_price","ratings","reviews","display_price","courses","activity_count","cv_take", "listing_image", "card_image", "card_image_mobile","subscription_price","buy_on_careervira","enquiry"]
 const trendingListFields = ["id","title","slug","image","list_topic", "list_category", "short_description","region"]
@@ -4601,21 +4601,21 @@ module.exports = class recommendationService {
             for (let course of courses) {
                 req.query.courseId = course.id.replace('LRN_CNT_PUB_','')
                 let related_courses = await this.getRelatedCourses(req)
-                if (course.course_details.pricing.pricing_type == "FREE") course.course_details.pricing.sale_price = 0
+                if (course.course_details.pricing.pricing_type == "FREE") course.default_price = 0
 
                 if (related_courses && related_courses.data && related_courses.data.list && related_courses.data.list.length > 0) {
                     let final_course = null
                     let price_diff = null
                     for (let related_course of related_courses.data.list) {
-                        if (related_course.course_details.pricing.pricing_type == "FREE") related_course.course_details.pricing.sale_price = 0
-                        if (price_diff && price_diff > Math.abs(related_course.course_details.pricing.sale_price - course.course_details.pricing.sale_price)) {
+                        if (related_course.course_details.pricing.pricing_type == "FREE") related_course.default_price = 0
+                        if (price_diff && price_diff > Math.abs(related_course.default_price - course.default_price)) {
                             final_course = related_course
-                            price_diff = Math.abs(related_course.course_details.pricing.sale_price - course.course_details.pricing.sale_price)
+                            price_diff = Math.abs(related_course.default_price - course.default_price)
 
                         } else if (!price_diff) {
                             if (related_course.course_details && course.course_details) {
                                 final_course = related_course;
-                                price_diff = Math.abs(related_course.course_details.pricing.sale_price - course.course_details.pricing.sale_price)
+                                price_diff = Math.abs(related_course.default_price - course.default_price)
                             }
 
                         }
