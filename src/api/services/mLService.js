@@ -177,7 +177,6 @@ const getUserCourseRecommendations = async (userId, recommendationType, count = 
         }
 
         const url = `${process.env.ML_SERVICE_PUBLIC_V1}/user-course-recommendation/${userId}?recommendation_type=${recommendationType}&count=${count}`;
-        console.log(url);
         const response = await axios.get(url);
         if (response.status == 200) {
 
@@ -257,8 +256,32 @@ const getUserCourseRecommendations = async (userId, recommendationType, count = 
 
 }
 
+const initiateUserCourseModelTraining = async (userId, recommendationType) => {
+
+    try {
+
+        const url = `${process.env.ML_SERVICE_PUBLIC_V1}/user-course-recommendation/train/${userId}?recommendation_type=${recommendationType}`;
+        const response = await axios.put(url)
+        if (response.status != 200) {
+
+            console.error(`Can't intiate model training for user ${userId} and recommendation type ${recommendationType} : `, response);
+        }
+
+    } catch (error) {
+
+        console.error(`Can't intiate model training for user ${userId} and recommendation type ${recommendationType} : `);
+        if (error.response) {
+            console.error(error.response.data);
+        }
+        else {
+            console.error(error);
+        }
+    }
+}
+
 module.exports = {
     getSimilarCoursesDataML,
     getUserCourseRecommendations,
+    initiateUserCourseModelTraining,
     whetherShowMLCourses
 }
