@@ -405,6 +405,12 @@ module.exports = class recommendationService {
             const { currency, page = 1, limit = 6 } = req.query;
             const offset = (page - 1) * limit;
 
+            const mLCourses = await this.getSimilarCoursesML(courseId, req.query['country'], currency, page, limit);
+            if (mLCourses && mLCourses.length) {
+
+                return { success: true, message: "list fetched successfully", data: { list: mLCourses, type: 'ml' } };
+            }
+            
             //fields to fetch 
             let fields = [
                 "sub_categories",
@@ -466,17 +472,9 @@ module.exports = class recommendationService {
                 }
             }
 
-            const mlCourses = await this.getSimilarCoursesML(courseId, req.query['country'], currency,page, limit);
-            let show = null;
-            if ( await mLService.whetherShowMLCourses("get-similar-courses") && mlCourses && mlCourses.length) {
-                show = 'ml';
-            }
-            else {
-                show = 'logic';
-            }
-            const response = { success: true, message: "list fetched successfully", data:{list:courses,mlList:mlCourses,show:show} };
+            return { success: true, message: "list fetched successfully", data: { list: courses, type: 'logic' } };
             
-            return response
+            
         } catch (error) {
             console.log("Error while processing data for related courses", error);
             const response = { success: false, message: "Failed to fetch", data: { list: [], mlList: [], show: null } };
@@ -597,7 +595,7 @@ module.exports = class recommendationService {
                     RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
                 }
             }
-            let response = { success: true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } };            
+            let response = { success: true, message: "list fetched successfully", data: { list: courses, type:'logic' } };            
             return response;
            
 
@@ -625,6 +623,22 @@ module.exports = class recommendationService {
 
     }
 
+    async getMLUserCourseRecommendations(user_id, recommendationType, country, currency, page = 1, limit = 6) {
+        
+        let result = await mLService.getUserCourseRecommendations(user_id, recommendationType);
+        let courses = [];
+        const offset = (page - 1) * limit;
+        if (result && result.length) {
+            result = await getlistPriceFromEcom(result, "learn_content", country)
+
+            for (const courseElasticData of result.slice(offset, offset + limit)) {
+                const courseData = await this.generateCourseFinalResponse(courseElasticData._source, currency);
+                courses.push(courseData);
+            }
+        }
+        return courses;
+    }
+
     async exploreCoursesFromTopCatgeories(req) {
 
         try {            
@@ -641,8 +655,17 @@ module.exports = class recommendationService {
     async getTopPicksForYou(req, callback) {
 
         try {
+            
             const userId = req.user.userId;
             const { profileType, category, sub_category, topic, currency = process.env.DEFAULT_CURRENCY, page = 1, limit = 6 } = req.query;
+            
+            const mLCourses = await this.getMLUserCourseRecommendations(userId, profileType == 'profile' ? 'learn_profile' : 'goals', req.query['country'], currency, page, limit);
+            if (mLCourses && mLCourses.length) {
+
+                return { "success": true, message: "list fetched successfully", data: { list: mLCourses, type: 'ml' } }
+
+            }
+
             const { skillsKeywords = [], workExpKeywords = [] } = await this.getUserProfileKeywords(userId);           
 
             const esQuery = {
@@ -799,7 +822,7 @@ module.exports = class recommendationService {
                 return reposnse
             }
            
-            return { "success": true, message: "list fetched successfully", data: { list: courses, mlList: [], show: "logic" } }
+            return { "success": true, message: "list fetched successfully", data: { list: courses, type:'logic' } }
         } catch (error) {
             console.log("Error occured while fetching top picks for you : ", error);
             return{ "success": false, message: "failed to fetch", data: { list: [] } }
@@ -3088,6 +3111,13 @@ module.exports = class recommendationService {
         const { page = 1, limit = 4, partner_slug=null, currency } = req.query;
         const offset = (page - 1) * limit;
 
+        const mLCourses = await this.getMLUserCourseRecommendations(userId, 'combined', req.query['country'], currency, page, limit);
+        if (mLCourses && mLCourses.length) {
+
+            return { "success": true, message: "list fetched successfully", data: { list: mLCourses, type: 'ml' } }
+
+        }
+
         let cacheKey = `learn-content-recommendations-${userId}`;
         let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
@@ -3263,7 +3293,7 @@ module.exports = class recommendationService {
             }
             await RedisConnection.set(cacheKey, learnContents);
             RedisConnection.expire(cacheKey, process.env.CACHE_EXPIRE_COURSE_RECOMMENDATION); 
-            let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, mlList: [], show: "logic" } };
+            let response = { "success": true, message: "list fetched successfully", data: { list: learnContents, type: 'logic' } };
             
             return response;
            
