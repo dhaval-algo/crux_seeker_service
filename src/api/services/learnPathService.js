@@ -727,7 +727,7 @@ module.exports = class learnPathService {
             life_stages: result.life_stages,
             topics: result.topics,
             pricing: {               
-                display_price: result.display_price,
+                display_price: true,
                 pricing_type: result.pricing_type
             },
             ratings: {
@@ -774,14 +774,9 @@ module.exports = class learnPathService {
 
         if(data.pricing_details)
         {
-            data.pricing_details.display_price = ( typeof result.display_price !='undefined' && result.display_price !=null)? result.display_price :true
-            data.pricing_details.pricing_type =  result.pricing_type
-            if(data.buy_on_careervira)
-            {
-                data.pricing_details.display_price = true
-                data.pricing.display_price = true
-            }
-        }  
+            data.pricing_details.pricing_type =  result.pricing_type      
+            data.pricing_details.display_price =  true     
+        } 
         
         if (!isList) {
             data.meta_information = await generateMetaInfo('LEARN_PATH', result);         
