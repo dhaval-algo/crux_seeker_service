@@ -80,6 +80,7 @@ const oderDetails = async (req, res, next) => {
                                     slug: courses[0].slug,
                                     id: courses[0].id,
                                     numeric_id: courses[0].numeric_id,
+                                    partner: courses[0].partner,
                                     cover_image: courses[0].cover_image,
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
