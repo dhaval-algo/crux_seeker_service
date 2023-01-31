@@ -1476,15 +1476,41 @@ module.exports = class providerService {
                         }
 
                         if (hit._source.top_recruiter && hit._source.top_recruiter.length > 0) {
-                            recruiter_profile.push({
-                                tab_label: 'Top Recruiters',
-                                type: "TABLE",
-                                heading: 'Top Recruiters For Final Placements',
-                                table_data: {
-                                    head: ["Companies", "#Offers"],
-                                    rows: hit._source.top_recruiter.map(item => [item.recruiter, item.number_of_offers])
+                            let is_offers = false
+                            {
+                                for(let item of hit._source.top_recruiter)
+                                {
+                                    if(item.number_of_offers)
+                                    {
+                                        is_offers = true
+                                    }
                                 }
-                            })
+                            }
+                            
+                            if(is_offers)
+                            {
+                                recruiter_profile.push({
+                                    tab_label: 'Top Recruiters',
+                                    type: "TABLE",
+                                    heading: 'Top Recruiters For Final Placements',
+                                    table_data: {
+                                        head: ["Companies", "#Offers"],
+                                        rows: hit._source.top_recruiter.map(item => [item.recruiter, (item.number_of_offers)? item.number_of_offers :'-' ])
+                                    }
+                                })
+                            }
+                            else
+                            {
+                                recruiter_profile.push({
+                                    tab_label: 'Top Recruiters',
+                                    type: "TABLE",
+                                    heading: 'Top Recruiters For Final Placements',
+                                    table_data: {
+                                        head: ["Companies"],
+                                        rows: hit._source.top_recruiter.map(item => [item.recruiter])
+                                    }
+                                })
+                            }
                         }
 
                         if (hit._source.percentage_of_students_placed && hit._source.percentage_of_students_placed.students_placed) {
