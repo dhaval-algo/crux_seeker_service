@@ -20,7 +20,7 @@ const getFaq = async (req) => {
         const payload = {
             "size": 1000,
             "_source": ['question', 'answer'],
-            "sort" : [{ "id": "desc" }]
+            "sortObject" : [{ "id": "desc" }]
         }
         const faqs = [];
         if (learn_content_id) {
