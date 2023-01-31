@@ -375,7 +375,8 @@ module.exports = class providerService {
             })
 
             query.bool.must.pop(); // remove visible check
-            useCache = true; // enable cache for ranks
+            if(!req.query['f'])
+                useCache = true; // enable cache for ranks
         }
         if(req.query['f']){
             parsedFilters = parseQueryFilters(req.query['f']);
@@ -495,7 +496,6 @@ module.exports = class providerService {
             }
 
             let year = rankYear[req.query['rank']];
-            cacheName = `listing-providers_${req.query['rank']}_${year}`; // ranking + year cache
 
                     //handles both the query for rank-attr and just rank also
             year = { "field" : `ranking_${year}_${req.query['rank']}${ req.query['rank-attr']? `_${req.query['rank-attr']}` :'' }` }
