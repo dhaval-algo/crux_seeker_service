@@ -255,6 +255,8 @@ module.exports = class providerService {
         if(!req.query['sort']){
             if(req.query['rank']){
                 req.query['sort'] = "High To Low";
+                if(req.query['rank-attr'])
+                    req.query['sort'] = "Low To High Attr";
             }else{
                 req.query['sort'] = defaultSort;
             }            
@@ -441,7 +443,7 @@ module.exports = class providerService {
             let rank_query = req.query['rank'];
            
             if(rank_query){
-                let sort = ranksortOptions[req.query['sort']] || (req.query['rank-attr'] ? 'rank-atr:asc' :'rank:asc');
+                let sort = ranksortOptions[req.query['sort']];
                 let splitSort = sort.split(":");
                 let sortField = splitSort[0]; 
                 if((sortField == 'rank') && rank_query){
