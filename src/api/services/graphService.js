@@ -66,8 +66,8 @@ module.exports = class graphService {
 
     async getGraph(req) {
         const id = req.params.id;
-        let currency = req.query['currency'];
-        let currencies = await getCurrencies();
+        // let currency = req.query['currency'];
+        // let currencies = await getCurrencies();
         let cacheName = `graph_${id}`;
         try {
 
@@ -97,7 +97,8 @@ module.exports = class graphService {
                                     finalData.graph_values.push(
                                         {
                                             label: value.pie_chart_label,
-                                            value: (!data.region && data.currency) ? getCurrencyAmount(value.pie_chart_value, currencies, data.currency, currency) : value.pie_chart_value
+                                            value: value.pie_chart_value
+                                            //value: (!data.region && data.currency) ? getCurrencyAmount(value.pie_chart_value, currencies, data.currency, currency) : value.pie_chart_value
                                         }
                                     )
                                 }
@@ -109,7 +110,8 @@ module.exports = class graphService {
                                     finalData.graph_values.push(
                                         {
                                             label: value.donut_chart_label,
-                                            value: (!data.region && data.currency) ? getCurrencyAmount(value.donut_chart_value, currencies, data.currency, currency) : value.donut_chart_value
+                                            value: value.donut_chart_value
+                                            //value: (!data.region && data.currency) ? getCurrencyAmount(value.donut_chart_value, currencies, data.currency, currency) : value.donut_chart_value
                                         }
                                     )
                                 }
@@ -122,7 +124,8 @@ module.exports = class graphService {
                                     finalData.graph_values.push(
                                         {
                                             x_axis: value.bar_graph_x_axis_value,
-                                            y_axix: (!data.region && data.currency) ? getCurrencyAmount(value.bar_graph_y_axis_value, currencies, data.currency, currency) : value.bar_graph_y_axis_value
+                                            y_axix: value.bar_graph_y_axis_value
+                                           // y_axix: (!data.region && data.currency) ? getCurrencyAmount(value.bar_graph_y_axis_value, currencies, data.currency, currency) : value.bar_graph_y_axis_value
                                         }
                                     )
                                 }
@@ -137,7 +140,8 @@ module.exports = class graphService {
                                     finalData.graph_values.push(
                                         {
                                             y_axis: value.line_graph_x_axis_value,
-                                            x_axix: (!data.region && data.currency) ? getCurrencyAmount(value.line_graph_y_axis_value, currencies, data.currency, currency) : value.line_graph_y_axis_value
+                                            x_axix: value.line_graph_y_axis_value
+                                           // x_axix: (!data.region && data.currency) ? getCurrencyAmount(value.line_graph_y_axis_value, currencies, data.currency, currency) : value.line_graph_y_axis_value
                                         }
                                     )
                                 }
@@ -152,7 +156,7 @@ module.exports = class graphService {
                         finalData.extra_info = detail.extra_info
                         return finalData
                     })
-                    data.userCurrency = currency
+                    data.userCurrency = data.currency
                     delete data.currency
 
                     let prepend = null
