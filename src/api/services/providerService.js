@@ -1487,7 +1487,7 @@ module.exports = class providerService {
                             })
                         }
 
-                        if (hit._source.percentage_of_students_placed) {
+                        if (hit._source.percentage_of_students_placed && hit._source.percentage_of_students_placed.students_placed) {
                             recruiter_profile.push({
                                 tab_label: 'Percentage Of Students Placed',
                                 type: "TABLE",
