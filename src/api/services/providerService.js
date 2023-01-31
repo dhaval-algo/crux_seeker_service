@@ -1491,7 +1491,7 @@ module.exports = class providerService {
                                 type: "TABLE",
                                 heading: 'Percentage Of Students Placed',
                                 table_data: {
-                                    head: ["Perticulars", hit._source.year],
+                                    head: ["Particulars", hit._source.year],
                                     rows: [
                                         [
                                             'Numbers of students registered',
