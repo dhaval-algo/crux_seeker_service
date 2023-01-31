@@ -3122,6 +3122,7 @@ module.exports = class recommendationService {
         let cachedData = await RedisConnection.getValuesSync(cacheKey);
 
         if (cachedData.noCacheData != true) {
+            cachedData = await getlistPriceFromEcom(cachedData,"learn_content",req.query['country'])
             return { "success": true, message: "list fetched successfully", data: { list: cachedData, mlList: [], show: "logic" }}
         }
         try {
