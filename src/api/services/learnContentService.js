@@ -1288,7 +1288,7 @@ module.exports = class learnContentService {
 
 
 
-    async getCourseByIds(req, callback){
+    async getCourseByIds(req, callback, isList = false){
         try {
             if(currencies.length == 0){
                 currencies = await getCurrencies();
@@ -1323,7 +1323,7 @@ module.exports = class learnContentService {
                             result.hits = await getlistPriceFromEcom(result.hits,"learn_content",req.query['country'])
                         }
                         for(const hit of result.hits){
-                            const course = await this.generateSingleViewData(hit._source, false, req.query.currency);
+                            const course = await this.generateSingleViewData(hit._source, isList, req.query.currency);
                             courses.push(course);
                         }
                         for(const id of ids){
