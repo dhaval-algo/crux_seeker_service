@@ -1341,7 +1341,6 @@ const formatCount = (count) => {
         {
             count = count.toLocaleString('en-US')
         }
-        console.log("count", count)
         return count
     }
    
