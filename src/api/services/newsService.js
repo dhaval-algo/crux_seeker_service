@@ -4,6 +4,8 @@ const elasticService = require("./elasticService");
 const { logActvity } = require("../../utils/helper");
 const RedisConnection = require('../../services/v1/redis');
 const redisConnection = new RedisConnection();
+const LearnContentService = require("../services/learnContentService");
+const learnContentService = new LearnContentService();
 const {getPaginationQuery, formatImageResponse, isDateInRange, getFilterConfigs, updateSelectedFilters, calculateFilterCount, getAllFilters,
     getCurrencies, getCurrencyAmount, parseQueryFilters, getFilterAttributeName} = require("../utils/general");
  const { generateMetaInfo } = require('../utils/metaInfo');
@@ -312,7 +314,8 @@ const generateSingleViewData = async (result, isList = false, currency = process
             data.course = result.course;
             if(data.course.learn_contents && data.course.learn_contents.length > 0){
                 let learn_contents_ids = data.course.learn_contents.map(learn_content => learn_content.id)
-                data.course.learn_contents = await getCourseCoupons(learn_contents_ids, currency, false);
+                const req = {query: {ids: learn_contents_ids.join() }};
+                data.course.learn_contents = await learnContentService.getCourseByIds(req, null, true);
 
             }
         }
