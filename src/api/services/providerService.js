@@ -1130,7 +1130,7 @@ module.exports = class providerService {
             ]
         }
     };
-    const result = await elasticService.search('provider', query, { size:1000,_source: ['ranks'] });
+    const result = await elasticService.search('provider', query, { size:10000,_source: ['ranks'] });
    
     if (result.hits && result.hits.length > 0) 
     {
