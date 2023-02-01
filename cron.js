@@ -137,6 +137,7 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidateCategoryTree()
             await invalidateFaqCategories()
             await invalidateCountries()
+            await setLatestRankingYear()
             await invalidateEntityLabelCache()
             await invalidateLearnTypeImages()
             await invalidateCurrencies()
@@ -152,8 +153,7 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidatSkills()
             await invalidPopularCategories()
             await invalidatePartnerWithUs()
-            await invalidateLearnersPage()
-            await setLatestRankingYear()
+            await invalidateLearnersPage()            
             await invalidateFacilities();
             await invalidateRankings();
             await partnerService.cachePartnersCourseImages();
