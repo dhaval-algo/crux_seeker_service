@@ -803,6 +803,34 @@ module.exports = class providerService {
                     data.rank = ranks[0]
 
             }
+
+            //get plcament data to be shown in highlits
+            const query = {
+                "bool": {
+                    "filter": [
+                        { "term": { "provider_id": result.id } }
+                    ]
+                }
+            };
+
+            const payload = {
+                "size": 1000,
+                "_source": ['highlights_section'],
+                "sortObject" : [{ "year": "desc" }]
+            }
+            let placements = await elasticService.search('institute-placement', query,payload);
+
+            if (placements.hits && placements.hits.length) {
+                let _source =  placements.hits[0]._source
+                if(_source.highlights_section.average_placement)
+                {
+                data.highlights.average_placement = _source.highlights_section.currency.currency_symbol+helperService.formatCount( _source.highlights_section.average_placement)
+                }
+                if(_source.highlights_section.highest_placement)
+                {
+                data.highlights.highest_placement = _source.highlights_section.currency.currency_symbol+helperService.formatCount( _source.highlights_section.highest_placement)
+                }
+            }   
         }
 
         // if(result.alumni && result.alumni.length > 0){

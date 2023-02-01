@@ -1333,6 +1333,17 @@ const encryptUserId = async (userId) => {
     var encrypted = AES.encrypt(plaintext, secSpec, { mode: modeEcb });
     return Buffer.from(encrypted.toString(), 'utf8').toString('hex');
 }
+
+const formatCount = (count) => {
+    if(count > 1000){
+        count = Math.floor(count/1000).toLocaleString('en-US')+'k';
+        }else 
+        {
+            count = count.toLocaleString('en-US')
+        }
+        console.log("count", count)
+        return count
+    }
    
 module.exports = {
     validateIdsFromElastic,
@@ -1360,5 +1371,6 @@ module.exports = {
     logPopularEntities,
     getRedirectUrl,
     getTreeUrl,
-    encryptUserId
+    encryptUserId,
+    formatCount
 }
