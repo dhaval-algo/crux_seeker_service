@@ -1575,7 +1575,7 @@ module.exports = class providerService {
                         }
                         if (hit._source.sector_wise_highest_CTC_graph_id) {
                             salary_CTC.push({
-                                tab_label: 'CTC By skill',
+                                tab_label: 'CTC By Sector',
                                 type: "GRAPH",
                                 graph_id: hit._source.sector_wise_highest_CTC_graph_id
                             })
