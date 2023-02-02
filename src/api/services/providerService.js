@@ -529,7 +529,7 @@ module.exports = class providerService {
 
         if(result.hits.total && result.hits.total.value > 0){
 
-            const list = await this.generateListViewData(result.hits.hits, req.query['rank'], rankYear);
+            const list = await this.generateListViewData(result.hits.hits, req.query['rank'], rankYear || latestRankYear);
 
             let pagination = {
                 page: paginationQuery.page,

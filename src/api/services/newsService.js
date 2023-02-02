@@ -315,7 +315,12 @@ const generateSingleViewData = async (result, isList = false, currency = process
             if(data.course.learn_contents && data.course.learn_contents.length > 0){
                 let learn_contents_ids = data.course.learn_contents.map(learn_content => learn_content.id)
                 const req = {query: {ids: learn_contents_ids.join() }};
-                data.course.learn_contents = await learnContentService.getCourseByIds(req, null, true);
+                data.course.learn_contents = await learnContentService.getCourseByIds(req, null);
+                data.course.learn_contents = data.course.learn_contents.map(each => {
+
+                    each.daysLeft = Math.ceil(( new Date(each.course_enrollment_end_date).getTime() - new Date().getTime())/ (1000 * 3600 * 24)) || -1;
+                    return each;
+                })
 
             }
         }
