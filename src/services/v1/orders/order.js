@@ -29,6 +29,39 @@ const oderDetails = async (req, res, next) => {
                 finalData.orderData = response.data.data[0]
                 switch (finalData.orderData.orderItems[0].purchaseDetailsResponse.itemType) {
                     case 'course':
+                        finalData.itemData =  {
+                            title: entity.orderItems[0].courseName,
+                            slug: '404',
+                            id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                            numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
+                            partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                            cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                            card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                            card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                            description: "This course is no longer available.",
+                            faq: [],
+                            course_start_date: null,
+                            course_end_date: null,
+                            course_access_link: null,
+                            features: {
+                                accessibilities: null,
+                                level: null,
+                                course_enrollment_start_date: null,
+                                course_enrollment_end_date: null,
+                                instruction_type:null,
+                                medium: null,
+                                availabilities: null,
+                                availabilities: null,
+                                duration: null,
+                                total_duration_unit: null,
+                                total_video_content: null,
+                                total_video_content_unit: null,
+                                effort: null,
+                                course_batch: null,
+                                subtitles: null,
+                                language: null
+                            }
+                        }
                         try {
                             let courses = await LearnContentService.getCourseByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                             if (courses && courses.length > 0) {
@@ -104,6 +137,20 @@ const oderDetails = async (req, res, next) => {
                         }
                         break;
                     case 'learnpath':
+                        finalData.itemData =  {
+                            title: entity.orderItems[0].courseName,
+                            slug: '404',
+                            id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                            numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
+                            partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                            cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                            card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                            card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                            description: "This Learn path is no longer available.",
+                            faq: [],
+                            course_count: 0,
+                            course_access_link: courses[0].course_access_link || null                               
+                        }
                         try {
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString(),"country" : req.query['country'], skipPrice:true } });
                             if (courses && courses.length > 0) {
@@ -424,6 +471,18 @@ const orderHistory = async (req, res, next) => {
                         let courseData = {}
                         switch (entity.orderItems[0].purchaseDetailsResponse.itemType) {
                             case 'course':
+                                courseData = {
+                                    title: entity.orderItems[0].courseName,
+                                    slug: '404',
+                                    id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                    partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                    cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    course_start_date: null,
+                                    course_end_date: null,
+                                    course_access_link:  null
+                                }
                                 try {
                                     let courses = await LearnContentService.getCourseByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString() ,"country" : req.query['country'], skipPrice:true} });
                                     if (courses && courses.length > 0) {
@@ -459,6 +518,20 @@ const orderHistory = async (req, res, next) => {
                                 }
                                 break;
                             case 'learnpath':
+                                let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString(), "country" : req.query['country'], skipPrice:true } });
+                                if (courses && courses.length > 0) {
+                                    courseData = {
+                                        title: courses[0].title,
+                                        slug: courses[0].slug,
+                                        id: courses[0].id,
+                                        partner: courses[0].partner,
+                                        cover_image: courses[0].cover_image,
+                                        card_image: courses[0].card_image,
+                                        card_image_mobile: courses[0].card_image_mobile,
+                                        course_count: (courses[0].courses)? courses[0].courses.length : null,
+                                        course_access_link: courses[0].course_access_link || null
+                                    }
+                                }
                                 try {
                                     let courses = await LearnPathService.getLearnpathByIds({ query: { ids: entity.orderItems[0].purchaseDetailsResponse.itemId.toString(), "country" : req.query['country'], skipPrice:true } });
                                     if (courses && courses.length > 0) {
