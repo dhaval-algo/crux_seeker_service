@@ -88,8 +88,8 @@ const getNewsList = async (req, callback) =>
     };
     let { currency = process.env.DEFAULT_CURRENCY } = req.query;       
 
-    let queryPayload = {}, cacheKey = `news-listing-with-${currency}-`;
     let paginationQuery = await getPaginationQuery(req.query);
+    let queryPayload = {}, cacheKey = `news-listing-with-${currency}-p-${paginationQuery.page}-s-${paginationQuery.size}-`;
     queryPayload.from = paginationQuery.from;
     queryPayload.size = paginationQuery.size;
 
