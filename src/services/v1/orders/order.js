@@ -30,11 +30,11 @@ const oderDetails = async (req, res, next) => {
                 switch (finalData.orderData.orderItems[0].purchaseDetailsResponse.itemType) {
                     case 'course':
                         finalData.itemData =  {
-                            title: entity.orderItems[0].courseName,
+                            title: finalData.orderData.orderItems[0].courseName,
                             slug: '404',
-                            id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                            numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
-                            partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                            id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                            numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                            partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
                             cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -102,11 +102,11 @@ const oderDetails = async (req, res, next) => {
                         } catch (error) {
                             console.log("No course for id", error)                         
                             finalData.itemData =  {
-                                title: entity.orderItems[0].courseName,
+                                title: finalData.orderData.orderItems[0].courseName,
                                 slug: '404',
-                                id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                                numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                                partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
                                 cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -138,11 +138,11 @@ const oderDetails = async (req, res, next) => {
                         break;
                     case 'learnpath':
                         finalData.itemData =  {
-                            title: entity.orderItems[0].courseName,
+                            title: finalData.orderData.orderItems[0].courseName,
                             slug: '404',
-                            id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                            numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
-                            partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                            id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                            numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                            partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
                             cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -172,11 +172,11 @@ const oderDetails = async (req, res, next) => {
                         } catch (error) {
                             console.log("No course for id", error)
                             finalData.itemData =  {
-                                title: entity.orderItems[0].courseName,
+                                title: finalData.orderData.orderItems[0].courseName,
                                 slug: '404',
-                                id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                                numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
+                                partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
                                 cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
