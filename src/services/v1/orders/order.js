@@ -67,8 +67,40 @@ const oderDetails = async (req, res, next) => {
                                 }
                             }
                         } catch (error) {
-                            console.log("No course for id", error)
-                            finalData.itemData = null
+                            console.log("No course for id", error)                         
+                            finalData.itemData =  {
+                                title: entity.orderItems[0].courseName,
+                                slug: '404',
+                                id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                description: "This course is no longer available.",
+                                faq: [],
+                                course_start_date: null,
+                                course_end_date: null,
+                                course_access_link: null,
+                                features: {
+                                    accessibilities: null,
+                                    level: null,
+                                    course_enrollment_start_date: null,
+                                    course_enrollment_end_date: null,
+                                    instruction_type:null,
+                                    medium: null,
+                                    availabilities: null,
+                                    availabilities: null,
+                                    duration: null,
+                                    total_duration_unit: null,
+                                    total_video_content: null,
+                                    total_video_content_unit: null,
+                                    effort: null,
+                                    course_batch: null,
+                                    subtitles: null,
+                                    language: null
+                                }
+                            }
                         }
                         break;
                     case 'learnpath':
@@ -92,7 +124,20 @@ const oderDetails = async (req, res, next) => {
                             }
                         } catch (error) {
                             console.log("No course for id", error)
-                            finalData.itemData = null
+                            finalData.itemData =  {
+                                title: entity.orderItems[0].courseName,
+                                slug: '404',
+                                id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                numeric_id: entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                description: "This Learn path is no longer available.",
+                                faq: [],
+                                course_count: 0,
+                                course_access_link: courses[0].course_access_link || null                               
+                            }
                         }
                         break;
                     default:
@@ -398,7 +443,19 @@ const orderHistory = async (req, res, next) => {
                                     }
                                 } catch (error) {
                                     console.log("No course for id", error)
-                                    courseData = null
+                                    courseData = {
+                                        title: entity.orderItems[0].courseName,
+                                        slug: '404',
+                                        id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                        partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                        cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        course_start_date: null,
+                                        course_end_date: null,
+                                        course_access_link:  null
+                                    }
+                                   
                                 }
                                 break;
                             case 'learnpath':
@@ -419,7 +476,18 @@ const orderHistory = async (req, res, next) => {
                                     }
                                 } catch (error) {
                                     console.log("No course for id", error)
-                                    courseData = null
+                                    courseData = {
+                                        title: entity.orderItems[0].courseName,
+                                        slug: '404',
+                                        id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
+                                        partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                        cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        course_count: 0,                                        
+                                        course_access_link:  null
+
+                                    }
                                 }
                                 break;
                             default:
