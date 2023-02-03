@@ -35,6 +35,13 @@ const oderDetails = async (req, res, next) => {
                             id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
                             numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
                             partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                            partner: {
+                                "name": finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                                "slug": "404",
+                                "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                            },
                             cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -106,7 +113,13 @@ const oderDetails = async (req, res, next) => {
                                 slug: '404',
                                 id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
                                 numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
-                                partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                                partner: {
+                                    "name": finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                                    "slug": "404",
+                                    "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                                },
                                 cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -142,7 +155,13 @@ const oderDetails = async (req, res, next) => {
                             slug: '404',
                             id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
                             numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
-                            partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                            partner: {
+                                "name": finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                                "slug": "404",
+                                "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                            },
                             cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                             card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -176,7 +195,13 @@ const oderDetails = async (req, res, next) => {
                                 slug: '404',
                                 id:  finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
                                 numeric_id: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId,
-                                partner: finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                                partner: {
+                                    "name": finalData.orderData.orderItems[0].purchaseDetailsResponse.partnerName,
+                                    "slug": "404",
+                                    "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                    "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                                },
                                 cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                 card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -475,7 +500,13 @@ const orderHistory = async (req, res, next) => {
                                     title: entity.orderItems[0].courseName,
                                     slug: '404',
                                     id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                    partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                    partner: {
+                                        "name":  entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                        "slug": "404",
+                                        "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                        "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                                    },
                                     cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                     card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                     card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -506,7 +537,13 @@ const orderHistory = async (req, res, next) => {
                                         title: entity.orderItems[0].courseName,
                                         slug: '404',
                                         id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                        partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                        partner: {
+                                            "name":  entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                            "slug": "404",
+                                            "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                            "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                            "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                                        },
                                         cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                         card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                         card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
@@ -524,7 +561,13 @@ const orderHistory = async (req, res, next) => {
                                         title: courses[0].title,
                                         slug: courses[0].slug,
                                         id: courses[0].id,
-                                        partner: courses[0].partner,
+                                        partner: {
+                                            "name":  entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                            "slug": "404",
+                                            "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                            "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                            "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                                        },
                                         cover_image: courses[0].cover_image,
                                         card_image: courses[0].card_image,
                                         card_image_mobile: courses[0].card_image_mobile,
@@ -553,7 +596,13 @@ const orderHistory = async (req, res, next) => {
                                         title: entity.orderItems[0].courseName,
                                         slug: '404',
                                         id:  entity.orderItems[0].purchaseDetailsResponse.itemId,
-                                        partner: entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                        partner: {
+                                            "name":  entity.orderItems[0].purchaseDetailsResponse.partnerName,
+                                            "slug": "404",
+                                            "partner_url": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                            "logo": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
+                                            "name_image": 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp'
+                                        },
                                         cover_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                         card_image: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
                                         card_image_mobile: 'https://d2lk14jtvqry1q.cloudfront.net/media/institutes_banner_c3b13631c1.webp',
