@@ -74,7 +74,6 @@ module.exports = class searchService {
                 institutes: []
             };
             if (result.length) {
-                result = await getlistPriceFromEcom(result,"learn_content",req.query['country'])
                 for (const hit of result) {
      
                     const cardData = await this.getCardData(hit._index, hit._source, req.query.currency);
