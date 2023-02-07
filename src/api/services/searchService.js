@@ -35,7 +35,7 @@ module.exports = class searchService {
             const query = decodeURIComponent(req.params.keyword).trim();
             const userId = (req.user && req.user.userId) ? req.user.userId : req.segmentId;
             const entity = req.query.entity;
-            const result = [];
+            let result = [];
 
             if (!entity || (entity == 'all')) {
                 const indices = [];
