@@ -2,6 +2,9 @@ const elasticService = require("./elasticService");
 const { getSearchTemplate } = require("../../utils/searchTemplates");
 const recommendationService = require("./recommendationService");
 let RecommendationService = new recommendationService();
+const {
+    getlistPriceFromEcom
+} = require('../utils/general');
 
 const courseFields = ["id","partner_name","total_duration_in_hrs","basePrice","images","total_duration","total_duration_unit","conditional_price","finalPrice","provider_name","partner_slug","sale_price","average_rating_actual","provider_slug","learn_content_pricing_currency","slug","partner_currency","level","pricing_type","medium","title","regular_price","partner_id","ratings","reviews", "display_price","schedule_of_sale_price","activity_count","cv_take","listing_image", "card_image", "card_image_mobile", "coupons","subscription_price","enquiry"]
 const articleFields = ["id","author_first_name","author_last_name","created_by_role","cover_image","slug","author_id","short_description","title","premium","author_slug","co_authors","partners","activity_count","section_name","section_slug", "listing_image", "card_image", "card_image_mobile"]
@@ -71,9 +74,9 @@ module.exports = class searchService {
                 institutes: []
             };
             if (result.length) {
-
+                result = await getlistPriceFromEcom(result,"learn_content",req.query['country'])
                 for (const hit of result) {
-
+     
                     const cardData = await this.getCardData(hit._index, hit._source, req.query.currency);
                     switch (cardData.index) {
 
