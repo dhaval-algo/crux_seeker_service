@@ -91,6 +91,9 @@ module.exports = class searchService {
 
                 }
 
+                data.courses = await getlistPriceFromEcom(data.courses,"learn_content",req.query['country'])
+                data['learn-paths'] = await getlistPriceFromEcom(data['learn-paths'],"learn_path",req.query['country'])
+
                 callback(null, { success: true, message: 'Fetched successfully!', data: data });
             } else {
                 callback(null, { success: true, message: 'No records found!', data: data });
