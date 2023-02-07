@@ -5,13 +5,14 @@ const cron = require('node-cron')
 const Sentry = require("@sentry/node");
 
 global.appRoot = path.resolve(__dirname);
-const { createSiteMap, copySiteMapS3ToFolder } = require('./src/services/v1/sitemap');
-const { storeActivity, learnpathActivity, articleActivity, providerActivity, setTrendingPopularityThreshold} = require('./src/utils/activityCron');
+const { createSiteMap, copySiteMapS3ToFolder , createNewsSiteMap} = require('./src/services/v1/sitemap');
+const { storeActivity, learnpathActivity, articleActivity, providerActivity, setTrendingPopularityThreshold,
+    newsActivity,} = require('./src/utils/activityCron');
 const { invalidateCategoryTree,invalidateEntityLabelCache,invalidateLearnTypeImages,
     invalidateCurrencies,invalidateFilterConfigs, invalidateRankingFilter,
     invalidatTopics, invalidateAboutUs, invalidateLeadership, invalidateTeam,
     invalidateCareer, invalidatePP, invalidateTNM, invalidatSkills,
-    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage, invalidateFacilities} = require('./src/utils/cacheInvalidationCron');
+    invalidPopularCategories, invalidatePartnerWithUs, invalidateLearnersPage, invalidateFacilities,invalidateFaqCategories, invalidateCountries, setLatestRankingYear,invalidateRankings } = require('./src/utils/cacheInvalidationCron');
 const { storeTopTenGoal } = require('./src/utils/topTenGoalCron');
 const PartnerService = require("./src/api/services/partnerService");
 let partnerService = new PartnerService();
@@ -88,6 +89,27 @@ if(ENABLE_SITEMAP_CRON)
     });
 }
 
+const ENABLE_NEWS_SITEMAP_CRON = process.env.ENABLE_NEWS_SITEMAP_CRON || false;
+if(ENABLE_NEWS_SITEMAP_CRON)
+{
+    cron.schedule(process.env.NEWS_SITEMAP_GENERATE_CRON_TIME, async function () {
+        try {        
+            await createNewsSiteMap()
+        } catch (error) {
+            console.log("Error in cron", error);
+        }
+    });
+
+    cron.schedule(process.env.NEWS_SITEMAP_COPY_CRON_TIME, async function () {
+        try {        
+            await copySiteMapS3ToFolder('news.xml')
+            await copySiteMapS3ToFolder('rss.xml')
+        } catch (error) {
+            console.log("Error in copying", error);
+        }
+    });
+}
+
 
 const ENABLE_ACTVITY_LOG_CRON = process.env.ENABLE_ACTVITY_LOG_CRON || false;
 if(ENABLE_ACTVITY_LOG_CRON)
@@ -98,6 +120,7 @@ if(ENABLE_ACTVITY_LOG_CRON)
             await learnpathActivity()       
             await storeActivity()
             await articleActivity()
+            await newsActivity();
             await setTrendingPopularityThreshold()
         } catch (error) {
             console.log("Error in cron", error);
@@ -112,6 +135,9 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
     cron.schedule( process.env.CACHE_INVALIDATION_CRON_TIME, async function () {
         try {    
             await invalidateCategoryTree()
+            await invalidateFaqCategories()
+            await invalidateCountries()
+            await setLatestRankingYear()
             await invalidateEntityLabelCache()
             await invalidateLearnTypeImages()
             await invalidateCurrencies()
@@ -127,10 +153,12 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
             await invalidatSkills()
             await invalidPopularCategories()
             await invalidatePartnerWithUs()
-            await invalidateLearnersPage()
-            await invalidateFacilities()
+            await invalidateLearnersPage()            
+            await invalidateFacilities();
+            await invalidateRankings();
             await partnerService.cachePartnersCourseImages();
             await setTrendingPopularityThreshold()
+           
         } catch (error) {
             console.log("Error in cron", error);
         }
@@ -141,17 +169,17 @@ if(ENABLE_CACHE_INVALIDATION_CRON)
 const CACHE_INVALIDATION_CONSUMER = process.env.CACHE_INVALIDATION_CONSUMER || false;
 if(CACHE_INVALIDATION_CONSUMER)
 {
-    const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
-    const rankingHome = new rankingHomeService();
-    rankingHome.rankingHomeSQSConsumer();
+    // const rankingHomeService = require('./src/services/v1/redis/rankingHomeService');
+    // const rankingHome = new rankingHomeService();
+    // rankingHome.rankingHomeSQSConsumer();
 
-    const blogHomeService = require('./src/services/v1/redis/blogHomeService');
-    const blogHome = new blogHomeService();
-    blogHome.blogHomeSQSConsumer();
+    // const blogHomeService = require('./src/services/v1/redis/blogHomeService');
+    // const blogHome = new blogHomeService();
+    // blogHome.blogHomeSQSConsumer();
 
-    const sectionPageService = require('./src/services/v1/redis/sectionPageService');
-    const sectionPage = new sectionPageService();
-    sectionPage.sectionSQSConsumer();
+    // const sectionPageService = require('./src/services/v1/redis/sectionPageService');
+    // const sectionPage = new sectionPageService();
+    // sectionPage.sectionSQSConsumer();
 
     const learnContentListService = require('./src/services/v1/redis/learnContentListService');
     const learnContentList = new learnContentListService();
@@ -161,13 +189,13 @@ if(CACHE_INVALIDATION_CONSUMER)
     const article = new articleService();
     article.articleSQSConsumer();
     
-    const FooterService = require('./src/services/v1/redis/footerService');
-    const footerService = new FooterService();
-    footerService.footerSQSConsumer();
+    // const FooterService = require('./src/services/v1/redis/footerService');
+    // const footerService = new FooterService();
+    // footerService.footerSQSConsumer();
 
-    const CustomPageService = require('./src/services/v1/redis/customPageService');
-    const customPageService = new CustomPageService();
-    customPageService.customPageSQSConsumer();
+    // const CustomPageService = require('./src/services/v1/redis/customPageService');
+    // const customPageService = new CustomPageService();
+    // customPageService.customPageSQSConsumer();
 
     // const CategoryTreeService = require('./src/services/v1/redis/categoryTreeService');
     // const categoryTreeService = new CategoryTreeService();

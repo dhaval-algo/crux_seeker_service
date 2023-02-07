@@ -16,6 +16,7 @@ router.post('/social-signin', userService.socialSignIn);
 router.post('/sign-up',rateLimiter, injectTokenPayload, userService.signUp);
 router.post('/user-exist',rateLimiter, userService.isUserEmailExist);
 router.post('/resend-verification-link',authenticateJWT, userService.resendVerificationLink);
+router.post('/resend-email-verification-OTP',authenticateJWT, userService.resendEmailVerificationOPT);
 router.post('/verify-account', userService.verifyAccount);
 router.post('/forgot-password', forgotPasswordLimiter, userService.forgotPassword);
 router.post('/reset-password', rateLimiter, userService.resetPassword);
@@ -50,6 +51,9 @@ router.get('/get-work-experiences',authenticateJWT, userService.getWorkExperienc
 router.post('/add-education',authenticateJWT, userService.addEducation);
 router.post('/edit-education',authenticateJWT, userService.editEducation);
 router.post('/delete-education',authenticateJWT, userService.deleteEducation);
+router.post('/add-address',authenticateJWT, userService.addAddress);
+router.post('/edit-address',authenticateJWT, userService.editAddress);
+router.get('/get-address',authenticateJWT, userService.getAddress);
 router.get('/get-user-profile',authenticateJWT, userService.getUserProfile);
 router.get('/get-skills',authenticateJWT, userService.getSkills);
 router.get('/get-key-skills',authenticateJWT, userService.getKeySkills);
@@ -83,6 +87,11 @@ router.post("/add-institute-wishlist", authenticateJWT, userService.addInstitute
 router.post("/fetch-institute-wishlist", authenticateJWT, userService.fetchInstituteWishList)
 router.post("/remove-institute-wishlist", authenticateJWT, userService.removeInstituteFromWishList)
 
+//news
+router.post('/add-news-to-wishlist',authenticateJWT, userService.addNewsToWishList);
+router.post('/remove-news-from-wishlist',authenticateJWT, userService.removeNewsFromWishList);
+router.get('/fetch-news-wishlist',authenticateJWT, userService.fetchNewsWishlist);
+router.post('/add-news-to-share',authenticateJWT, userService.addNewsToShare);
 
 //require.post()
 module.exports = router;            

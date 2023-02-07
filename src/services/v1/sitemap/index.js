@@ -1,6 +1,7 @@
 require('dotenv').config();
 const SitemapStream = require('sitemap').SitemapStream
 const streamToPromise = require('sitemap').streamToPromise
+const RSS = require('rss');
 const { default: Axios } = require('axios');
 const elasticService = require('../../../api/services/elasticService');
 const { uploadFileToS3 } = require('../AWS');
@@ -246,39 +247,90 @@ function createNews() {
     return new Promise(async (resolve) => {
         try {
 
-            const query = { 
-                "match_all": {}
+            let query = { 
+                "bool": {                   
+                    "must": [
+                        {term: { "status.keyword": 'approved' }} ,
+                        {
+                            "range": {
+                                "updated_at": {
+                                    "gte": "now-2d/d",
+                                    "lt": "now/d"
+                                }
+                            }
+                        }
+                    ]
+                }
             };
-            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at"] }
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at","title","summary","contents","author_names"] }
             
-            const result = await elasticService.search('in_the_news', query, payload);
+            const result = await elasticService.search('news', query, payload);
+            //start SiteMap Steram
             let smStream = new SitemapStream({
                 hostname: process.env.FRONTEND_URL,
+                xmlns: {
+                    news: true
+                }
             });
+
+            const today = new Date()
+            // RSS Feed
+            var feed = new RSS({
+                title: 'Carervira News',
+                description: 'This is the test description',
+                feed_url: 'https://www.careervira.com/rss.xml',
+                site_url: 'https://www.careervira.com/',
+                image_url: 'https://www.careervira.com/ogImage.png',
+                managingEditor: 'Careervira',
+                webMaster: 'Careervira',
+                copyright:today.getFullYear()+' Careervira',
+                language: 'en',
+               //categories: ['News'],
+                pubDate: today,
+                ttl: '60'                
+            });
+
             if (result.hits) {
                 if (result.hits && result.hits.length > 0) {
                     for (const hit of result.hits) {
+                        hit._source.updated_at =  hit._source.updated_at.split("T")[0];
                         smStream.write({
                             url: `/news/${hit._source.slug}`,
-                            lastmod: hit._source.updated_at,
-                            changefreq: 'daily', 
-                            priority: 0.9
+                            news: {
+                            publication: {
+                                name: `Careervira`,
+                                language: 'en'
+                            },
+                            publication_date:  hit._source.updated_at,
+                            title: hit._source.title
+                            }
+                        });
+
+                        // get author 
+                        feed.item({
+                            title:  hit._source.title,
+                            description:  (hit._source.summary && hit._source.summary.description)? hit._source.summary.description : hit._source.contents[0].description ,
+                            url: `${process.env.FRONTEND_URL}/news/${hit._source.slug}`,
+                            author: (hit._source.author_names && hit._source.author_names.length)?  hit._source.author_names[0] :'Careervira',
+                            date:hit._source.updated_at                             
+                           
                         });
                     }
                 }
-
-
-                // fetch category tree
-
-                //generate course url 
-
                 smStream.end();
+                
                 // generate a sitemap and add the XML feed to a url which will be used later on.
                 const sitemap = await streamToPromise(smStream).then((sm) => sm.toString());
                 //write to aws 
                 let path = 'sitemaps/news.xml'
                 let contentType = 'text/xml'
                 const res = await uploadFileToS3(path, sitemap, contentType)
+
+                //generate RSS file
+                var rssXml = feed.xml();
+                path = 'sitemaps/rss.xml'
+                contentType = 'text/xml'
+                await uploadFileToS3(path, rssXml, contentType)
                 resolve(sitemap)
             }
 
@@ -690,10 +742,9 @@ module.exports = {
                 await createCourse()
                 await createPartner()
                 await createProvider()
-                await createNews()
                 await createAdvice()
-                await createRanking()
-                await createTrendingNow()
+                // await createRanking()
+                // await createTrendingNow()
                 await createLearnPath()
                 resolve(result)
             } catch (error) {
@@ -703,8 +754,27 @@ module.exports = {
             }
         })
     },
-    copySiteMapS3ToFolder : async () => {
-        const sitemaps = ['advice.xml', 'course.xml','categories-subcategories.xml','institute.xml','news.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml','learn-paths.xml'];
+    createNewsSiteMap: () => {
+        return new Promise(async (resolve) => {
+            try {
+                const result = await createNews()
+            } catch (error) {
+                console.log(error);
+                resolve(false)
+
+            }
+        })
+    },
+
+    copySiteMapS3ToFolder : async (file) => {
+        let sitemaps = []
+        if(file){
+            sitemaps = [file]
+        }
+        else{
+            sitemaps = ['advice.xml', 'course.xml','categories-subcategories.xml','institute.xml','partner.xml','ranking.xml', 'topic.xml','trending-now.xml','learn-paths.xml'];
+        }
+
         const AWS_CDN_BUCKET = process.env.AWS_CDN_BUCKET || "crux-assets-dev";
         const FRONTEND_PUBLIC_DIR = process.env.FRONTEND_PUBLIC_DIR || "/home/ubuntu/apps/crux-frontend/public";
         for (const sitemap of sitemaps)

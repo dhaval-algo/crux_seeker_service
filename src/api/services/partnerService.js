@@ -50,6 +50,84 @@ const getMediaurl = (mediaUrl) => {
 
 module.exports = class partnerService {
 
+    async partnersByCourseId(req, callback)
+    {
+        let ids = req.query.ids, queryPayload = {}, sort = req.query['sort'];
+
+        if(!ids)
+            return callback(null, { success: false, message: 'Provide course Id(s) ..!', data: {} });
+        ids = ids.trim().split(',');
+
+        if(!sort)
+            sort = "name:asc";
+        if(sort){
+            let splitSort = sort.split(":");
+            if(keywordFields.includes(splitSort[0]))
+                sort = `${splitSort[0]}.keyword:${splitSort[1]}`;
+            queryPayload.sort = [sort];
+        }
+
+        let paginationQuery = await getPaginationQuery(req.query);
+        queryPayload.from = paginationQuery.from;
+        queryPayload.size = paginationQuery.size;
+        let pagination = {
+            page: paginationQuery.page,
+            count: 0,
+            perPage: paginationQuery.size,
+            totalCount: 0
+        }
+        let query = {
+            "bool": {
+                "should": [
+                    {
+                        "terms": {"_id": ids }
+                    }
+                ]
+            }
+        }
+
+        try{
+
+            let result = await elasticService.search('learn-content', query, {}, ["partner_id","partner_slug"]);
+            let partners = [];
+            if(result.hits && result.hits.length )
+            {
+                for(const hit of result.hits)
+                    partners.push(hit._source.partner_id)
+
+            }
+
+            if(partners.length)
+            {
+                query.bool.should[0].terms = {id: partners};
+
+                result = await elasticService.search('partner', query, queryPayload);
+
+                partners = [];
+                if(result.hits && result.hits.length)
+                    for(let hit of result.hits)
+                    {
+                        let partner = await this.generateSingleViewData(hit._source, false);
+                        partners.push(partner);
+                    }
+
+                pagination.totalCount  =  result.total.value;
+                pagination.count = partners.length;
+                return callback(null, {success: true, message: 'Fetched successfully!', data: { list: partners}, sort, pagination});
+            }
+
+            callback(null, {success: true, message: 'No Partner(s) Found!', data: [], sort, pagination});
+
+        }catch(err){
+
+            console.log("patners by course ids ",err.meta.body.error)
+            callback(null, {success: false, message: 'Unhandled condtion cause some error !', data: [], sort, pagination});
+
+        }
+
+
+    }
+
     async getPartnerList(req, callback){
         const query = { 
             "bool": {
@@ -87,7 +165,25 @@ module.exports = class partnerService {
                 }
             );            
         }
-        
+        if (req.query['partnerIds']) {
+            let partnerIds = req.query['partnerIds'].split(",");
+            partnerIds = partnerIds.map(id => {
+                
+                if(!id.includes("PTNR_"))
+                {
+                    id = 'PTNR_'+id
+                }
+
+                return id
+            })
+            let filter_object = {
+                "terms": {
+                    "_id": partnerIds
+                }
+            }
+
+            query.bool.must.push(filter_object)
+        }
 
         const result = await elasticService.search('partner', query, queryPayload, queryString);
         if(result.total && result.total.value > 0){
@@ -129,17 +225,29 @@ module.exports = class partnerService {
             //console.log("result <> ", result);
             if(result.hits && result.hits.length > 0){
                 const data = await this.generateSingleViewData(result.hits[0]._source, false, req.query.currency);
-                callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                if(callback)
+                    callback(null, {success: true, message: 'Fetched successfully!', data: data});
+                else
+                    return data
             }else{
                 let redirectUrl = await helperService.getRedirectUrl(req);
                 if (redirectUrl) {
-                    return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    if(callback)
+                        return callback(null, { success: false, redirectUrl: redirectUrl, message: 'Redirect' });
+                    else
+                        return null
                 }
-                return callback(null, { success: false, message: 'Not found!' });
+                if(callback)
+                    return callback(null, { success: false, message: 'Not found!' });
+                else
+                    return null
             }  
         } catch (error) {
                 console.log("partner erorr!!!!!!!!!!!!!!", error)
-                callback({success: false, message: 'Not found!'}, null);
+                if(callback)
+                    callback({success: false, message: 'Not found!'}, null);
+                else 
+                  return null
         }      
     }
 
@@ -160,6 +268,7 @@ module.exports = class partnerService {
             name: result.name,
             slug: result.slug,            
             id: `PTNR_${result.id}`,
+            numeric_id:result.id,
             short_description: result.short_description || null,
             introduction: (!isList) ? result.introduction : null,
             usp: (!isList) ? result.usp : null,
@@ -199,7 +308,9 @@ module.exports = class partnerService {
             accreditations: [],
             report: (result.report)? result.report : null,
             highlights: (result.highlights)? result.highlights : null,
-            facts: (result.facts)? result.facts : null
+            facts: (result.facts)? result.facts : null,
+            buy_on_careervira:(result.buy_on_careervira)? result.buy_on_careervira : false,
+            name_image:(result.name_image)? formatImageResponse(result.name_image): null,
         };
         if(!isList){
             // get course count 
@@ -283,7 +394,15 @@ module.exports = class partnerService {
                     data.corporate_partners.push(cpartner);
                 }
             }
-        }       
+        }
+        
+        if(result.partner_benefits && result.partner_benefits.length > 0){
+            data.partner_benefits = result.partner_benefits.map(partner_benefit => partner_benefit.benefit)
+        }
+        else
+        {
+            data.partner_benefits = null
+        }
 
         return data;
     }
@@ -314,4 +433,5 @@ module.exports = class partnerService {
         }
 
     }
+
 }

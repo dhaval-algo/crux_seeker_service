@@ -1,6 +1,9 @@
 const recommendationService = require("../services/recommendationService");
 let RecommendationService = new recommendationService();
 const userService = require("../../services/v1/users/user");
+
+const RecommendationArticles = require("../services/recommendationArticles");
+const recommendationArticles = new RecommendationArticles();
 const {formatResponseField } = require("../utils/general");
 
 module.exports = {   
@@ -135,6 +138,18 @@ module.exports = {
             break;
             case "related-articles":             
                 response = await RecommendationService.getRelatedArticle(req)
+                break;
+            case "related-cg-for-news":
+                req.query.section = 'Career Guide';
+                response = await recommendationArticles.getRelatedArticles(req);
+                break;
+            case "related-lg-for-news":
+                req.query.section = 'Learn Guide';
+                response = await recommendationArticles.getRelatedArticles(req);
+                break;
+            case "related-la-for-news":
+                req.query.section = 'Learn Advice';
+                response = await recommendationArticles.getRelatedArticles(req);
                 break;
             case "recommendation-for-article":             
                 response = await RecommendationService.getRecommendationForArticle(req)
@@ -290,6 +305,29 @@ module.exports = {
 
             case "popular-providers": 
                 response = await RecommendationService.getPopularProviders(req);
+                break;            
+            default:
+                res.status(200).send({success: false, message: 'Fetched successfully!', data: null});
+                break;           
+        }
+
+        let finalData = {}
+        if(req.query['fields']){                    
+            finalData =  formatResponseField(req.query['fields'], response.data )                    
+            res.status(200).send({success:true, message: 'Fetched successfully!', data: finalData});
+        }
+        else
+        {
+            res.status(200).send(response);
+        }
+    },
+    getRecommendedTrendingList : async (req, res) => {
+        const { type } = req.query;
+        let response
+        switch (type) {         
+
+            case "related-trending-list": 
+                response = await RecommendationService.getRelatedTrendingList(req);
                 break;            
             default:
                 res.status(200).send({success: false, message: 'Fetched successfully!', data: null});

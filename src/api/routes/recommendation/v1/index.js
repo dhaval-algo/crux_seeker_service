@@ -10,4 +10,5 @@ router.get('/featured-articles/',recommendationMiddleware, recommendationControl
 router.get('/article-advice/',recommendationMiddleware, recommendationController.getArticleAdvice);
 router.get('/popular-comparison/',recommendationMiddleware, recommendationController.getPopularComparison);
 router.get('/recommended-providers/',recommendationMiddleware, recommendationController.getRecommendedProviders);
+router.get('/recommended-trending-list/',recommendationMiddleware, recommendationController.getRecommendedTrendingList);
 module.exports = router;

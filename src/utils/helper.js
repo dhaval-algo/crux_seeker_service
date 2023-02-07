@@ -20,6 +20,9 @@ const categoryService = require("../api/services/categoryService");
 let CategoryService = new categoryService();
 const fetch = require("node-fetch");
 const apiBackendUrl = process.env.API_BACKEND_URL;
+const AES = require("crypto-js/aes");
+const encUtf8 = require("crypto-js/enc-utf8");
+const modeEcb = require("crypto-js/mode-ecb");
 
 const encryptStr = (str) => {
     return crypt.encrypt(str);
@@ -1171,6 +1174,17 @@ const logActvity = async (type, userId, resource) => {
         await models.activity_log.bulkCreate(dataToLog)
         return
     }
+    if (type=="NEWS_WISHLIST"){
+        const dataToLog = resource.map((newsId)=>{
+            return {
+                userId,
+                activityId:activity.id,
+                resource:newsId
+            }
+        })
+        await models.activity_log.bulkCreate(dataToLog)
+        return
+    }
     if(userId > 0)
     {
         const activity_log = await models.activity_log.create({
@@ -1311,6 +1325,24 @@ const getTreeUrl = async (type, label, onlySulg = false) => {
     }
    
 }
+
+const encryptUserId = async (userId) => {
+    let key = process.env.ECOM_USER_ENCRYPTION_KEY
+    let plaintext = encUtf8.parse(userId);
+    let secSpec = encUtf8.parse(key);
+    var encrypted = AES.encrypt(plaintext, secSpec, { mode: modeEcb });
+    return Buffer.from(encrypted.toString(), 'utf8').toString('hex');
+}
+
+const formatCount = (count) => {
+    if(count > 1000){
+        count = Math.floor(count/1000).toLocaleString('en-US')+'k';
+        }else 
+        {
+            count = count.toLocaleString('en-US')
+        }
+        return count
+    }
    
 module.exports = {
     validateIdsFromElastic,
@@ -1337,5 +1369,7 @@ module.exports = {
     logActvity,
     logPopularEntities,
     getRedirectUrl,
-    getTreeUrl
+    getTreeUrl,
+    encryptUserId,
+    formatCount
 }

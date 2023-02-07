@@ -74,21 +74,122 @@ const getSimilarCoursesDataML = async (courseId) => {
         if (!cacheData.noCacheData) {
 
             return cacheData;
-
         }
 
         else {
 
-            const url = `${process.env.ML_SERVICE_PUBLIC_V1}/get-similar-courses?course_id=${courseId}&count=${count}`;
+            const url = `${process.env.ML_SERVICE_PUBLIC_V1}/similar-course/${courseId}?count=${count}`;
             const response = await axios.get(url);
             if (response.status == 200) {
 
                 let scores = {};
                 const course_ids = [];
-                response.data["data"].forEach((course,i) => {
+                let courses_data = [];
 
-                    scores[`LRN_CNT_PUB_${course.course_id}`] = i;
-                    course_ids.push(`LRN_CNT_PUB_${course.course_id}`);
+                if (response.data.courses) {
+
+                    response.data.courses.forEach((course_id, i) => {
+
+                        scores[`LRN_CNT_PUB_${course_id}`] = i;
+                        course_ids.push(`LRN_CNT_PUB_${course_id}`);
+
+                    });
+
+                    let esQuery = {
+                        "from": 0,
+                        "size": count,
+                        "sort": [
+                            {
+                                "_script": {
+                                    "order": "asc",
+                                    "type": "number",
+                                    "script": {
+                                        "lang": "painless",
+                                        "inline": "return params.scores[doc['_id'].value];",
+                                        "params": {
+                                            "scores": scores
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        "query": {
+                            "bool": {
+                                "must_not": {
+                                    "term": {
+                                        "_id": `LRN_CNT_PUB_${courseId}`
+                                    }
+                                },
+                                "must": [
+                                    {
+                                        "term": {
+                                            "status.keyword": "published"
+                                        }
+                                    },
+                                    {
+                                        "ids": {
+                                            "values": course_ids
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    const result = await elasticService.plainSearch("learn-content", esQuery);
+                    if (result && result.hits && result.hits.hits && result.hits.hits.length) {
+                        courses_data = result.hits.hits;
+                    }
+
+                }
+
+                RedisConnection.set(cacheName, courses_data);
+                RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
+                return courses_data;
+            }
+        }
+
+        return [];
+
+    } catch (error) {
+        console.log("Error occured while fetching data from ML Server: ");
+        if (error.response) {
+            console.log(error.response.data);
+        }
+        else {
+            console.log(error);
+        }
+        return [];
+
+    }
+
+}
+
+
+const getUserCourseRecommendations = async (userId, recommendationType, count = 20) => {
+
+    try {
+
+        const cacheName = `ml-user-course-recommendation-${userId}-${recommendationType}`;
+        const cacheData = await RedisConnection.getValuesSync(cacheName);
+        if (!cacheData.noCacheData) {
+
+            return cacheData;
+        }
+
+        const url = `${process.env.ML_SERVICE_PUBLIC_V1}/user-course-recommendation/${userId}?recommendation_type=${recommendationType}&count=${count}`;
+        const response = await axios.get(url);
+        if (response.status == 200) {
+
+            let scores = {};
+            const course_ids = [];
+            let courses_data = [];
+
+            if (response.data.courses) {
+
+                response.data.courses.forEach((course_id, i) => {
+
+                    scores[`LRN_CNT_PUB_${course_id}`] = i;
+                    course_ids.push(`LRN_CNT_PUB_${course_id}`);
 
                 });
 
@@ -112,11 +213,6 @@ const getSimilarCoursesDataML = async (courseId) => {
                     ],
                     "query": {
                         "bool": {
-                            "must_not": {
-                                "term": {
-                                    "_id": `LRN_CNT_PUB_${courseId}`
-                                }
-                            },
                             "must": [
                                 {
                                     "term": {
@@ -134,19 +230,21 @@ const getSimilarCoursesDataML = async (courseId) => {
                 }
                 const result = await elasticService.plainSearch("learn-content", esQuery);
                 if (result && result.hits && result.hits.hits && result.hits.hits.length) {
-                    const data = result.hits.hits;
-                    RedisConnection.set(cacheName, data);
-                    RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_SIMILAR_COURSE || 86400);
-                    return data;
-
+                    courses_data = result.hits.hits;
                 }
+
             }
+
+            RedisConnection.set(cacheName, courses_data);
+            RedisConnection.expire(cacheName, process.env.CACHE_EXPIRE_ML_USER_COURSE || 120);
+            return courses_data;
+
         }
 
         return [];
 
     } catch (error) {
-        console.log("Error occured while fetching data from ML Server: ");
+        console.log("Error occured while fetching user course recommendations from ML Server: ");
         if (error.response) {
             console.log(error.response.data);
         }
@@ -154,12 +252,36 @@ const getSimilarCoursesDataML = async (courseId) => {
             console.log(error);
         }
         return [];
-
     }
 
 }
 
+const initiateUserCourseModelTraining = async (userId, recommendationType) => {
+
+    try {
+
+        const url = `${process.env.ML_SERVICE_PUBLIC_V1}/user-course-recommendation/train/${userId}?recommendation_type=${recommendationType}`;
+        const response = await axios.put(url)
+        if (response.status != 200) {
+
+            console.error(`Can't intiate model training for user ${userId} and recommendation type ${recommendationType} : `, response);
+        }
+
+    } catch (error) {
+
+        console.error(`Can't intiate model training for user ${userId} and recommendation type ${recommendationType} : `);
+        if (error.response) {
+            console.error(error.response.data);
+        }
+        else {
+            console.error(error);
+        }
+    }
+}
+
 module.exports = {
     getSimilarCoursesDataML,
+    getUserCourseRecommendations,
+    initiateUserCourseModelTraining,
     whetherShowMLCourses
 }

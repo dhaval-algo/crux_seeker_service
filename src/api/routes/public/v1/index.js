@@ -14,7 +14,6 @@ const sectionController = require('../../../controllers/sectionController');
 const homeController = require('../../../controllers/homeController');
 const rankingController = require('../../../controllers/rankingController');
 const footerController = require('../../../controllers/footerController');
-const trendingNowController = require('../../../controllers/trendingNowController');
 const learnPathController = require('../../../controllers/learnPathController');
 const injectTokenPayload = require("../../../../services/v1/middleware/injectTokenPayload");
 const enquiryController = require("../../../controllers/enquiryController")
@@ -24,6 +23,8 @@ const listUsersController = require("../../../controllers/listUsersController")
 const listEnquiriesController = require("../../../controllers/listEnquiriesController")
 const sessionKPIController = require("../../../controllers/sessionController")
 const graphController = require("../../../controllers/graphController")
+const faqController = require("../../../controllers/faqController");
+const trendingListController = require("../../../controllers/trendingListController")
 
 //course API
 router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
@@ -52,8 +53,10 @@ router.get('/popular-learnpaths/:type', learnPathController.getPopularLearnPaths
 router.get('/custom-pages/:slug', customPageController.getCustomPageContent);
 router.get('/get-top-categories/', learnContentController.getTopCategories);
 
-router.get('/news', newsController.getNewsContent);
-router.get('/news/:slug', newsController.getNewsBySlug);
+//news endpoints
+router.get('/news', injectTokenPayload, newsController.getNewsList);
+router.get('/news/:slug', injectTokenPayload, newsController.getNewsBySlug);
+router.get('/news-by-ids', newsController.getNewsByIds);
 
 // static content API
 router.get('/footer', footerController.getFooter);
@@ -65,18 +68,23 @@ router.get('/terms-and-conditions', footerController.termandcondition);
 router.get('/privacy-policy', footerController.privacypolicy);
 router.get('/partner-with-us', footerController.partnerWithUs);
 router.get('/learners-page', footerController.learners);
-router.get('/rankings', footerController.ranking)
 
 router.get('/categories/', learnContentController.getCategoryList);
 router.get('/courses-by-ids/', learnContentController.getCourseByIds);
 router.get('/learnpaths-by-ids/', learnPathController.getLearnPathByIds);
 router.get('/course-option-by-categories/', learnContentController.getCourseOptionByCategories);
 
+//api for providers
 router.get('/providers/', providerController.getProviderList);
 router.get('/providers/:slug', providerController.getSingleProvider);
+router.get('/rankings', providerController.ranking)
+router.get('/providers-ranking/:slug', providerController.getSingleProviderRanking);
+router.get('/providers-placements/:id', providerController.getProviderPlacements);
 
 router.get('/partners/', partnerController.getPartnerList);
 router.get('/partners/:slug', partnerController.getSinglePartner);
+router.get('/partners-by-ids', partnerController.partnersByCourseId);
+
 
 router.get('/categories/tree', categoryController.getCategoryTree);
 router.get('/topics', categoryController.getTopics);
@@ -92,12 +100,6 @@ router.get('/articles/',injectTokenPayload, ArticleController.getArticleList);
 router.get('/articles/:slug', injectTokenPayload, ArticleController.getSingleArticle);
 router.get('/section/blog/homepage',sectionController.getBlogHomePageContent)
 router.get('/ranking-homepage',rankingController.getHomePageContent)
-//trending now API
-router.get('/get-trending-now-categories',trendingNowController.getTrendingNowCategories);
-router.get('/get-trending-now-list',trendingNowController.getTrendingNowList);
-router.get('/get-trending-now-component',trendingNowController.getTrendingNowComponent);
-
-// Author api
 router.get('/author/:slug', ArticleController.getAuthor);
 router.get('/articles-by-author/:id', ArticleController.getArticlesByAuthor);
 
@@ -116,7 +118,8 @@ router.post('/enquiry', injectTokenPayload,enquiryController.createEnquiry);
 router.post('/learnpath-enquiry', injectTokenPayload,enquiryController.createLearnpathEnquiry);
 
 //listing all users for admin; temporarily added to this path 
-router.post('/listUsers', listUsersController.list)
+router.get('/listUsers', listUsersController.list)
+router.get('/usersByIds', listUsersController.usersByids)
 router.get("/detailedUser/:id", listUsersController.getDetailedUser)
 router.post("/listEnquiries", listEnquiriesController.list)
 router.get("/detailedEnquiry/:id", listEnquiriesController.getDetailedEnquiry)
@@ -141,14 +144,25 @@ router.get('/learn-path-learn-types', learnPathController.getLearnPathLearntypes
 router.get('/learn-path-topics', learnPathController.getLearnPathTopics)
 
 // graph / data tables api
-router.get('/bar-graph/:id', graphController.getBarGraph)
-router.get('/line-graph/:id', graphController.getlineGraph)
-router.get('/pie-chart/:id', graphController.getPieChart)
-router.get('/donut-chart/:id', graphController.getDonutChart)
+router.get('/graph/:id', graphController.getGraph)
 router.get('/data-table/:id', graphController.getDataTable)
 
 
 router.post('/save-session-kpi',injectTokenPayload,sessionKPIController.saveSessionKPIController);
 
+router.get('/faq', faqController.getFaq)
+router.get('/faq-categories', faqController.getFaqCategories)
+
+
 router.get('/getIpDetails', geoIpController.getIpDetails )
+router.get('/countries', geoIpController.getCountries )
+
+//Trending list API
+router.get('/trending-list',injectTokenPayload,trendingListController.getTrendingList);
+router.get('/trending-list/:slug',injectTokenPayload,trendingListController.getSingleTrendingList);
+router.get('/trending-list-top-learning-plateform/:slug',injectTokenPayload,trendingListController.getTopLearningplatform);
+router.get('/trending-list-synopsis/:slug',injectTokenPayload,trendingListController.getTrendingListSynopsis);
+router.get('/trending-list-courses/:slug',injectTokenPayload,trendingListController.getTrendingListCourses);
+router.get('/trending-list-navigation-dropdown/:slug',injectTokenPayload,trendingListController.getTrendingListNavigationDropdown);
+router.get('/navigate-to-trending-list',injectTokenPayload,trendingListController.navigateToTrendingList);
 module.exports = router;
