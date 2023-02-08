@@ -49,10 +49,7 @@ const countryToCurrency = {
         getIpDetails: async(ip) => {
 
             try {
-                if(request.params.ip)
-                {
-                    ip = request.params.ip
-                }
+               
                 //differntiating ipv4 and ipv6 address
                 if (ip.substr(0, 7) == "::ffff:") {
                     ip = ip.substr(7)
