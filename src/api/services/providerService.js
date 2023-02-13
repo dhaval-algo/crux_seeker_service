@@ -824,12 +824,12 @@ module.exports = class providerService {
                 let _source =  placements.hits[0]._source
                 if(_source.highlights_section.average_placement)
                 {
-                    if(!data.highlights) data.highlights = null
+                    if(!data.highlights) data.highlights = {}
                     data.highlights.average_placement = _source.highlights_section.currency.currency_symbol+helperService.formatCount( _source.highlights_section.average_placement)
                 }
                 if(_source.highlights_section.highest_placement)
                 {
-                    if(!data.highlights) data.highlights = null
+                    if(!data.highlights) data.highlights = {}
                     data.highlights.highest_placement = _source.highlights_section.currency.currency_symbol+helperService.formatCount( _source.highlights_section.highest_placement)
                 }
             }   
