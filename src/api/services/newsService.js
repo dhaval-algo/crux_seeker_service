@@ -383,7 +383,7 @@ const generateSingleViewData = async (result, isList = false, currency = process
 
 
 const courseFields = ['coupons', 'sale_price', 'regular_price', 'images','card_image','card_image_mobile','course_enrollment_end_date',
-                    'listing_image', 'partner_slug', "partner_name", "title", "slug", 'learn_content_pricing_currency']
+                    'listing_image', 'partner_slug', "partner_name", "title", "slug", 'learn_content_pricing_currency','subscription_price','id']
 
 const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
 {
@@ -414,7 +414,8 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
                 hit = hit._source;
                 let coupons = [], offerRange = {low:100, high:0}, price = hit.sale_price ? hit.sale_price: hit.regular_price;
                 let baseCurrency = hit.learn_content_pricing_currency? hit.learn_content_pricing_currency.iso_code : null;
-                let best_offer = 0, best_offer_index = 0, i = 0, daysLeft = -1;
+                let best_offer = 0, best_offer_index = 0, i = 0, daysLeft = -1;                
+                hit.display_price = true
 
                 if(hit.course_enrollment_end_date)                                                                   //converts 24 hrs into ms
                     daysLeft = Math.ceil((new Date(hit.course_enrollment_end_date).getTime() - new Date().getTime())/ (1000 * 3600 * 24))
@@ -462,15 +463,21 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
                 }
                 if(!singleCourse && !coupons.length )
                     continue;
-
+                
+                 let partner = hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null }
                  let course = {
+                    id: `LRN_CNT_PUB_${hit.id}`,
+                    numeric_id:hit.id,
                     title: hit.title,
                     slug: hit.slug,
+                    buy_on_careervira: (partner.buy_on_careervira)? partner.buy_on_careervira : null,
+                    display_price: hit.display_price,
+                    subscription_price: hit.subscription_price,
                     image: hit.images ? formatImageResponse(hit.images): null,
                     card_image: hit.card_image ? formatImageResponse(hit.card_image):  hit.images? formatImageResponse(hit.images) : null,
                     card_image_mobile: hit.card_image_mobile? formatImageResponse(hit.card_image_mobile): hit.images? formatImageResponse(hit.images) : null,
                     sidebar_listing_image: hit.sidebar_listing_image ? formatImageResponse(hit.sidebar_listing_image): hit.images? formatImageResponse(hit.images) : null,
-                    partner: hit.partner_slug ? await getPartnerDetails(hit.partner_slug): { name: hit.partner_name, slug: hit.partner_slug, logo: null },
+                    partner: partner,
                     enrollmentEndDate: hit.course_enrollment_end_date? hit.course_enrollment_end_date: null,
                     daysLeft: daysLeft,
                     sale_price: hit.sale_price? getCurrencyAmount(hit.sale_price, currencies, hit.learn_content_pricing_currency.iso_code, currency): null,
@@ -504,7 +511,7 @@ const getPartnerDetails = async (partnerSlug) =>
 
     try
     {
-        partner = await elasticService.search('partner', query, {}, ['name','logo']);
+        partner = await elasticService.search('partner', query, {}, ['name','logo', 'buy_on_careervira','name_image']);
     }
     catch(err)
     {
@@ -519,6 +526,8 @@ const getPartnerDetails = async (partnerSlug) =>
             name: partner.name,
             slug: partnerSlug,
             logo: partner.logo ? formatImageResponse(partner.logo) : null,
+            logo: partner.name_image ? formatImageResponse(partner.name_image) : null,
+            buy_on_careervira: partner.buy_on_careervira
         }
     }
     else
