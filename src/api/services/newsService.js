@@ -470,7 +470,7 @@ const getCourseCoupons = async (coursesIds, currency, singleCourse = false) =>
                     numeric_id:hit.id,
                     title: hit.title,
                     slug: hit.slug,
-                    buy_on_careervira: (partner.buy_on_careervira)? partner.buy_on_careervira : null,
+                    buy_on_careervira: (partner.buy_on_careervira)? partner.buy_on_careervira : false,
                     display_price: hit.display_price,
                     subscription_price: hit.subscription_price,
                     image: hit.images ? formatImageResponse(hit.images): null,
@@ -526,7 +526,7 @@ const getPartnerDetails = async (partnerSlug) =>
             name: partner.name,
             slug: partnerSlug,
             logo: partner.logo ? formatImageResponse(partner.logo) : null,
-            logo: partner.name_image ? formatImageResponse(partner.name_image) : null,
+            name_image: partner.name_image ? formatImageResponse(partner.name_image) : null,
             buy_on_careervira: partner.buy_on_careervira
         }
     }
