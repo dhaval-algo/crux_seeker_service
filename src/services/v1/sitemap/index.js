@@ -293,7 +293,7 @@ function createNews() {
             if (result.hits) {
                 if (result.hits && result.hits.length > 0) {
                     for (const hit of result.hits) {
-                        hit._source.updated_at =  hit._source.updated_at.split("T")[0];
+                        hit._source.created_at =  hit._source.created_at.split("T")[0];
                         smStream.write({
                             url: `/news/${hit._source.slug}`,
                             news: {
@@ -301,7 +301,7 @@ function createNews() {
                                 name: `Careervira`,
                                 language: 'en'
                             },
-                            publication_date:  hit._source.updated_at,
+                            publication_date:  hit._source.created_at,
                             title: hit._source.title
                             }
                         });
