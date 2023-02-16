@@ -309,7 +309,7 @@ function createNews() {
                         // get author 
                         feed.item({
                             title:  hit._source.title,
-                            description:  (hit._source.summary && hit._source.summary.description)? hit._source.summary.description : hit._source.contents[0].description ,
+                            description:  (hit._source.summary && hit._source.summary.description)? hit._source.summary.description : ((hit._source.contents && hit._source.contents.length > 0 && hit._source.contents[0].description)? hit._source.contents[0].description: "" ),
                             url: `${process.env.FRONTEND_URL}/news/${hit._source.slug}`,
                             author: (hit._source.author_names && hit._source.author_names.length)?  hit._source.author_names[0] :'Careervira',
                             date:hit._source.updated_at                             

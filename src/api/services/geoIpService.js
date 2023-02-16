@@ -2,6 +2,7 @@ const models = require("../../../models");
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const fetch = require("node-fetch");
+const { request } = require("express");
 const apiBackendUrl = process.env.API_BACKEND_URL;
 const regionToCurrency = {
     "India" : "INR",
@@ -48,11 +49,12 @@ const countryToCurrency = {
         getIpDetails: async(ip) => {
 
             try {
+               
                 //differntiating ipv4 and ipv6 address
                 if (ip.substr(0, 7) == "::ffff:") {
                     ip = ip.substr(7)
                 }
-                let details = await models.sequelize.query(`select latitude, longitude, accuracy_radius, continent_name, country_name,country_iso_code as country_code, subdivision_1_name, city_name
+                let details = await models.sequelize.query(`select continent_name, country_name,country_iso_code as country_code  
                 from geoip2_networks net
                 left join geoip2_locations location on (
                   net.geoname_id = location.geoname_id
@@ -110,7 +112,6 @@ const countryToCurrency = {
                 }
                 if (useCache != true) {
                     let response = await fetch(`${apiBackendUrl}/countries?_sort=order&_limit=-1`);
-                    console.log("response", response)
                     let data
                     if (response.ok) {
                         data = await response.json();
