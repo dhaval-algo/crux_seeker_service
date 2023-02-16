@@ -262,7 +262,7 @@ function createNews() {
                     ]
                 }
             };
-            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "updated_at","title","summary","contents","author_names"] }
+            const  payload= {from: 0, size: MAX_RESULT,_source:["slug", "created_at","updated_at","title","summary","contents","author_names"] }
             
             const result = await elasticService.search('news', query, payload);
             //start SiteMap Steram
