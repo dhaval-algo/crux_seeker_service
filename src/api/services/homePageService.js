@@ -1,5 +1,5 @@
 const elasticService = require("./elasticService");
-const { paginate } = require('../utils/general');
+const { paginate, getSubCategoriesByType} = require('../utils/general');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const recommendationService = require("./recommendationService");
@@ -367,5 +367,68 @@ module.exports = class homePageService {
       return { success: false, data: null }
     }
   }
+
+  async getCategoriesWithMostCourses(subCategoryType) {
+
+    const cacheName = `categories-with-most-courses-${subCategoryType}`;
+
+    const cacheData = await RedisConnection.getValuesSync(cacheName);
+    if (!cacheData.noCacheData) return cacheData;
+
+    const subCategories = getSubCategoriesByType(subCategoryType);
+
+    const elasticQuery = {
+
+      bool: {
+        should: subCategories.map((subCategory) => (
+          {
+            "term": {
+              "sub_categories.keyword": subCategory
+            }
+          })
+        )
+      }
+    }
+
+    const aggs = {
+      sub_categories_count: {
+        composite: {
+          size: 100,
+          sources: [
+            {
+              sub_categories: {
+                terms: {
+                  field: "sub_categories.keyword"
+                }
+              }
+            }
+          ]
+        },
+        aggs: {
+          doc_count: {
+            value_count: {
+              field: "_index"
+            }
+          },
+          sort_by_doc_count: {
+            bucket_sort: {
+              sort: [
+                {
+                  doc_count: {
+                    order: "desc"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+
+    const esResult = await elasticService.searchWithAggregate('learn-content', elasticQuery, { size: 0, aggs: aggs });
+    return esResult;
+
+  }
+
 }
 

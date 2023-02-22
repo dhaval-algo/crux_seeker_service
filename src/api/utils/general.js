@@ -999,6 +999,21 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
 
 }
 
+const getSubCategoriesByType = async (subCategoryType) => {
+
+    try {
+        const response = await axios.get(apiBackendUrl + `/sub-categories/by-type?type=${subCategoryType}`);
+        if (response.status == 200 && response.data.data) {
+
+            return response.data.data[subCategoryType];
+        }
+
+    } catch (error) {
+
+        console.log("Error Occured While getting sub categories by type" + error);
+    }
+}
+
 
   module.exports = {
     getAllFilters,
@@ -1026,7 +1041,8 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
     formatResponseField,
     formatImageResponse,
     formatCount,
-    getlistPriceFromEcom
+    getlistPriceFromEcom,
+    getSubCategoriesByType
 }
 
 

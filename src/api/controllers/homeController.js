@@ -65,5 +65,20 @@ module.exports = {
             res.status(200).send(result);
 
         }
+    },
+
+    getCategoriesWithMostCourses : async (req,res)=>{
+
+        try {
+
+            const subCategoryType = req.query.subCategoryType;
+            const data = HomePageService.getCategoriesWithMostCourses(subCategoryType);
+
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: data });
+        }
+        catch (error) {
+            console.log("Error Occured While getting catgeories with most courses " + error);
+            res.status(200).send({ success: false, message: 'Unable to get categories', data: [] });
+        }
     }
 }
