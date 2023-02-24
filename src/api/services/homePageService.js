@@ -1,5 +1,5 @@
 const elasticService = require("./elasticService");
-const { paginate, getSubCategoriesByType} = require('../utils/general');
+const { paginate, getTopicsByType,getCategoriesFromTopics} = require('../utils/general');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const recommendationService = require("./recommendationService");
@@ -368,37 +368,37 @@ module.exports = class homePageService {
     }
   }
 
-  async getCategoriesWithMostCourses(subCategoryType) {
+  async getCategoriesWithMostCourses(topicType) {
 
-    const cacheName = `categories-with-most-courses-${subCategoryType}`;
+    const cacheName = `categories-with-most-courses-${topicType}`;
 
     const cacheData = await RedisConnection.getValuesSync(cacheName);
     if (!cacheData.noCacheData) return cacheData;
 
-    const subCategories = getSubCategoriesByType(subCategoryType);
+    const topics = await getTopicsByType(topicType);
 
     const elasticQuery = {
-
       bool: {
-        should: subCategories.map((subCategory) => (
+        should: [
           {
-            "term": {
-              "sub_categories.keyword": subCategory
+            terms: {
+              "topics.keyword": topics
             }
-          })
-        )
+          }
+        ],
+        minimum_should_match: 1
       }
     }
 
     const aggs = {
-      sub_categories_count: {
+      topics_count: {
         composite: {
-          size: 100,
+          size: 300,
           sources: [
             {
-              sub_categories: {
+              topics: {
                 terms: {
-                  field: "sub_categories.keyword"
+                  field: "topics.keyword"
                 }
               }
             }
@@ -426,9 +426,24 @@ module.exports = class homePageService {
     }
 
     const esResult = await elasticService.searchWithAggregate('learn-content', elasticQuery, { size: 0, aggs: aggs });
-    return esResult;
+    const mostCoursesTopics = []
+    if (esResult && esResult.aggregations && esResult.aggregations.topics_count) {
+
+      const buckets = esResult.aggregations.topics_count.buckets;
+
+      for (const bucket of buckets) {
+        mostCoursesTopics.push(bucket.key.topics);
+      }
+    }
+
+    const categoriesObject = await getCategoriesFromTopics(mostCoursesTopics.splice(0,50));
+    await RedisConnection.set(cacheName, categoriesObject);
+    RedisConnection.expire(cacheName, process.env.CACHE_CATEGORIES_WITH_MOST_COURSES || 86400);
+
+    return categoriesObject;
 
   }
+  
 
 }
 

@@ -71,10 +71,11 @@ module.exports = {
 
         try {
 
-            const subCategoryType = req.query.subCategoryType;
-            const data = HomePageService.getCategoriesWithMostCourses(subCategoryType);
+            const topicType = req.query.topicType;
+            const categoriesObject = await HomePageService.getCategoriesWithMostCourses(topicType);
+            const result = Object.keys(categoriesObject).splice(0,5);
 
-            res.status(200).send({ success: true, message: 'Fetched successfully!', data: data });
+            res.status(200).send({ success: true, message: 'Fetched successfully!', data: result});
         }
         catch (error) {
             console.log("Error Occured While getting catgeories with most courses " + error);

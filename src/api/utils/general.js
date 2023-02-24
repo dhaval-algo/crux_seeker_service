@@ -999,18 +999,33 @@ const getlistPriceFromEcom = async (list, type, countryCode) => {
 
 }
 
-const getSubCategoriesByType = async (subCategoryType) => {
+const getTopicsByType = async (topicType) => {
 
     try {
-        const response = await axios.get(apiBackendUrl + `/sub-categories/by-type?type=${subCategoryType}`);
+        const response = await axios.get(apiBackendUrl + `/topics/by-type?type=${topicType}`);
         if (response.status == 200 && response.data.data) {
 
-            return response.data.data[subCategoryType];
+            return response.data.data[topicType];
         }
 
     } catch (error) {
 
-        console.log("Error Occured While getting sub categories by type" + error);
+        console.log("Error Occured While getting topics by type" + error);
+    }
+}
+
+const getCategoriesFromTopics = async(topics) =>{
+
+    try{
+        const response = await axios.post(apiBackendUrl + '/topics/get-categories?',topics);
+        if (response.status == 200 && response.data.data) {
+
+            return response.data.data;
+        }
+
+    }catch(error){
+        console.log("Error Occured While getting categories from topics "+error);
+
     }
 }
 
@@ -1042,7 +1057,8 @@ const getSubCategoriesByType = async (subCategoryType) => {
     formatImageResponse,
     formatCount,
     getlistPriceFromEcom,
-    getSubCategoriesByType
+    getTopicsByType,
+    getCategoriesFromTopics
 }
 
 
