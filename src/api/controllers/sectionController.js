@@ -19,8 +19,8 @@ module.exports = {
             }
         });    
     },
-    countPage: async(req, res) => {
-        SectionService.countPage(req, (err, data) => {
+    cvStats: async(req, res) => {
+        SectionService.cvStats(req, (err, data) => {
             if (data) {
                 res.status(200).send(data);
             } else {

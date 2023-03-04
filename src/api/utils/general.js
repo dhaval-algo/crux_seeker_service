@@ -1029,6 +1029,21 @@ const getCategoriesFromTopics = async(topics) =>{
     }
 }
 
+const roundNumberForDisplay = (num) => {
+
+    if (num < 100) {
+        return `${num}`;
+    } else if (num < 1000) {
+        const rounded = Math.round(num / 100) * 100;
+        if (rounded == 1000) return '1K';
+        return `${rounded}`;
+
+    } else {
+        const rounded = Math.round(num / 1000) * 1000;
+        return (rounded / 1000) + 'K';
+    }
+}
+
 
   module.exports = {
     getAllFilters,
@@ -1058,7 +1073,8 @@ const getCategoriesFromTopics = async(topics) =>{
     formatCount,
     getlistPriceFromEcom,
     getTopicsByType,
-    getCategoriesFromTopics
+    getCategoriesFromTopics,
+    roundNumberForDisplay
 }
 
 

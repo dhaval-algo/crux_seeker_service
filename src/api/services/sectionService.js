@@ -6,7 +6,7 @@ const recommendationService = require("./recommendationService");
 let RecommendationService = new recommendationService();
 const ArticleService = new articleService()
 const RedisConnection = new redisConnection();
-const {formatImageResponse} = require('../utils/general');
+const {formatImageResponse,roundNumberForDisplay} = require('../utils/general');
 const {generateMetaInfo} = require('../utils/metaInfo');
 const buildSectionView = (section) => {
   return new Promise(async (resolve) => {
@@ -185,67 +185,90 @@ module.exports = class sectionService {
     }
   }
 
-  async countPage(req, callback,useCache = true) {
-    const cacheKey = "count-page";
-    if(useCache){
+  async cvStats(req, callback, useCache = true) {
+    const cacheKey = "cv-stats";
+    if (useCache) {
       try {
-          let cacheData = await RedisConnection.getValuesSync(cacheKey);
-          if(cacheData.noCacheData != true) {
-              //console.log("cache found for footer: returning data");
-              return callback(null, {success: true, message: 'Fetched successfully!', data: cacheData});
-          }
-      }catch(error){
-          console.warn("Redis cache failed for count page: "+cacheKey,error);
+        let cacheData = await RedisConnection.getValuesSync(cacheKey);
+        if (cacheData.noCacheData != true) {
+
+          return callback(null, { success: true, message: 'Fetched successfully!', data: cacheData });
+        }
+      } catch (error) {
+        console.warn("Redis cache failed for cv stats: " + cacheKey, error);
       }
     }
 
-    let result = {
-      course:null,
-      partner:null,
-      institute:null
-    };
-    try{
-      const query_courses = await elasticService.count('learn-content')      
-      const query_partner = await elasticService.count('partner')  
-      const query_institute = await elasticService.count('provider')
-      if(query_courses.count){
-        if(query_courses.count < 100){
-          query_courses.count = Math.floor(query_courses.count/10)*10;
-        }else if(query_courses.count < 1000){
-          query_courses.count = Math.floor(query_courses.count/100)*100;
-        }else if(query_courses.count > 1000){
-          query_courses.count = Math.floor(query_courses.count/1000)+'k';
-        }
-        result['course'] = query_courses['count']+''
-      }
-      if(query_partner.count){
-        if(query_partner.count < 100){
-          query_partner.count = Math.floor(query_partner.count/10)*10;
-        }else if(query_partner.count < 1000){
-          query_partner.count = Math.floor(query_partner.count/100)*100;
-        }else if(query_partner.count > 1000){
-          query_partner.count = Math.floor(query_partner.count/1000)+'k';
-        }
-        result['partner'] = query_partner['count']+''
-      }
-      if(query_institute.count){
-        if(query_institute.count < 100){
-          query_institute.count = Math.floor(query_institute.count/10)*10;
-        }else if(query_institute.count < 1000){
-          query_institute.count = Math.floor(query_institute.count/100)*100;
-        }else if(query_institute.count > 1000){
-          query_institute.count = Math.floor(query_institute.count/1000)+'k';
-        }
-        result['institute'] = query_institute['count']+''
-      }
-        
-      RedisConnection.set('count-page', result);
-      //RedisConnection.expire('count-page', process.env.CACHE_EXPIRE_COUNT_PAGE);
+    const result = {
+      course: null,
+      topics: null,
+      sub_category: null,
+      category: null,
+      partner: null,
+      institute: null,
+      job_role: null,
+      job_family: null,
 
-      return callback(null, { success: true, data:result })
-    }catch(e){
-        return callback(null, { success: true, data:{} })
-        console.log('Error while retriving about us data',e);
+    };
+
+    try {
+      const query_courses = await elasticService.count('learn-content')
+      const query_partner = await elasticService.count('partner')
+      const query_institute = await elasticService.count('provider')
+      const query_job_role = await elasticService.count('job-role');
+
+      const agg_query = {
+
+        unique_topics_count: {
+          cardinality: {
+            field: "topics.keyword"
+          }
+        },
+        unique_sub_categories_count: {
+          cardinality: {
+            field: "sub_categories.keyword"
+          }
+        },
+        unique_categories_count: {
+          cardinality: {
+            field: "categories.keyword"
+          }
+        }
+
+      }
+
+      const agg_result = await elasticService.searchWithAggregate('learn-content', undefined, { aggs: agg_query, size: 0 });
+      if (query_courses.count) {
+
+        result.course = roundNumberForDisplay(query_courses.count);
+      }
+      if (query_partner.count) {
+
+        result.partner = roundNumberForDisplay(query_partner.count);
+      }
+      if (query_institute.count) {
+
+        result.institute = roundNumberForDisplay(query_institute.count);
+      }
+      if (query_job_role.count) {
+
+        result.job_role = roundNumberForDisplay(query_job_role.count);
+      }
+
+      if (agg_result.aggregations) {
+        const aggs = agg_result.aggregations;
+        result.topics = roundNumberForDisplay(aggs.unique_topics_count.value);
+        result.sub_category = roundNumberForDisplay(aggs.unique_sub_categories_count.value);
+        result.category = roundNumberForDisplay(aggs.unique_categories_count.value);
+      }
+
+      RedisConnection.set(cacheKey, result);
+
+      return callback(null, { success: true, data: result })
+    } catch (e) {
+      console.error('Error Occured While getting cv stats ', e);
+      return callback(null, { success: false, data: {} })
+
     }
   }
 
