@@ -134,7 +134,7 @@ router.get('/homepage-top-partners-categories', homeController.getHomePageTopPar
 router.get('/homepage-top-institutes-region', homeController.getHomePageTopInstitutesRegion)
 router.get('/homepage-top-partners-by-categories', homeController.getHomePageTopPartnersByCategories)
 router.get('/homepage-top-institutes-by-region', homeController.getHomePageTopInstitutesByRegion)
-router.get('/homepage-categories-with-most-courses',homeController.getCategoriesWithMostCourses);
+router.get('/homepage-categories-with-offer-buckets',homeController.getCategoriesWithOfferBuckets);
 
 
 //Category page API

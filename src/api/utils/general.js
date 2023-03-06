@@ -1044,6 +1044,17 @@ const roundNumberForDisplay = (num) => {
     }
 }
 
+//outputs current date in yy-mm-dd format
+const getCurrentDate = () => {
+
+    const currentDate = new Date();
+    const year = currentDate.getFullYear().toString();
+    const month = ("0" + (currentDate.getMonth() + 1)).slice(-2);
+    const day = ("0" + currentDate.getDate()).slice(-2);
+    const formattedDate = `${year}-${month}-${day}`;
+    return formattedDate;
+}
+
 
   module.exports = {
     getAllFilters,
@@ -1074,7 +1085,8 @@ const roundNumberForDisplay = (num) => {
     getlistPriceFromEcom,
     getTopicsByType,
     getCategoriesFromTopics,
-    roundNumberForDisplay
+    roundNumberForDisplay,
+    getCurrentDate
 }
 
 
