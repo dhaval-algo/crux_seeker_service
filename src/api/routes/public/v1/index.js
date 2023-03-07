@@ -25,6 +25,7 @@ const sessionKPIController = require("../../../controllers/sessionController")
 const graphController = require("../../../controllers/graphController")
 const faqController = require("../../../controllers/faqController");
 const trendingListController = require("../../../controllers/trendingListController")
+const commonlyUsedController = require('../../../controllers/commonlyUsedController');
 
 //course API
 router.get('/learn-content/', injectTokenPayload,learnContentController.getLearnContentList);
@@ -134,7 +135,6 @@ router.get('/homepage-top-partners-categories', homeController.getHomePageTopPar
 router.get('/homepage-top-institutes-region', homeController.getHomePageTopInstitutesRegion)
 router.get('/homepage-top-partners-by-categories', homeController.getHomePageTopPartnersByCategories)
 router.get('/homepage-top-institutes-by-region', homeController.getHomePageTopInstitutesByRegion)
-router.get('/homepage-categories-with-offer-buckets',homeController.getCategoriesWithOfferBuckets);
 
 
 //Category page API
@@ -167,4 +167,11 @@ router.get('/trending-list-synopsis/:slug',injectTokenPayload,trendingListContro
 router.get('/trending-list-courses/:slug',injectTokenPayload,trendingListController.getTrendingListCourses);
 router.get('/trending-list-navigation-dropdown/:slug',injectTokenPayload,trendingListController.getTrendingListNavigationDropdown);
 router.get('/navigate-to-trending-list',injectTokenPayload,trendingListController.navigateToTrendingList);
+
+// commonly used apis
+
+router.get('/categories-with-offer-buckets',commonlyUsedController.getCategoriesWithOfferBucketsController);
+
+
+
 module.exports = router;

@@ -65,20 +65,5 @@ module.exports = {
             res.status(200).send(result);
 
         }
-    },
-
-    getCategoriesWithOfferBuckets : async (req,res)=>{
-
-        try {
-
-            const topicType = req.query.topicType;
-            const result = await HomePageService.getCategoriesWithOfferBuckets(topicType);
-    
-            res.status(200).send({ success: true, message: 'Fetched successfully!', data: result});
-        }
-        catch (error) {
-            console.log("Error Occured While getting catgeories with offer buckets " + error);
-            res.status(200).send({ success: false, message: 'Unable to get categories with offer buckets', data: [] });
-        }
     }
 }
