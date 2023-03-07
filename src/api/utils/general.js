@@ -1055,6 +1055,22 @@ const getCurrentDate = () => {
     return formattedDate;
 }
 
+const getRandomValuesFromArray = (array, numElements) => {
+
+    const selectedIndices = new Set();
+    const result = [];
+
+    while (selectedIndices.size < numElements) {
+        const index = Math.floor(Math.random() * array.length);
+        if (!selectedIndices.has(index)) {
+            selectedIndices.add(index);
+            result.push(array[index]);
+        }
+    }
+
+    return result;
+}
+
 
   module.exports = {
     getAllFilters,
@@ -1086,7 +1102,8 @@ const getCurrentDate = () => {
     getTopicsByType,
     getCategoriesFromTopics,
     roundNumberForDisplay,
-    getCurrentDate
+    getCurrentDate,
+    getRandomValuesFromArray
 }
 
 

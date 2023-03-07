@@ -1,7 +1,13 @@
-const { getTopicsByType, getCategoriesFromTopics, getCurrentDate } = require('../utils/general');
+const { getTopicsByType, getCategoriesFromTopics, getCurrentDate, getRandomValuesFromArray } = require('../utils/general');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const elasticService = require("./elasticService");
+
+// constants
+const defaultOfferBucket_gte = process.env.DEFAULT_OFFER_BUCKET_GTE || 0;
+const defaultOfferBucket_lte = process.env.DEFAULT_OFFER_BUCKET_LTE || 20;
+const COURSES_WITH_OFFERS_COUNT = process.env.COURSES_WITH_OFFERS_COUNT || 27;
+
 
 const getCategoriesWithMostCourses = async (topicType) => {
 
@@ -11,7 +17,7 @@ const getCategoriesWithMostCourses = async (topicType) => {
     if (!cacheData.noCacheData) return cacheData;
 
     const topics = await getTopicsByType(topicType);
-    
+
     const elasticQuery = {
         bool: {
             should: [
@@ -190,7 +196,115 @@ const getCategoriesWithOfferBuckets = async (topicType, count) => {
 
 }
 
+
+const getCoursesWithOffers = async (topicType, category, offer_lte, offer_gte) => {
+
+    const cacheName = `courses-with-offers-${topicType}-${category}-${offer_gte}-${offer_lte}`;
+
+    let useCache = false;
+
+    if (offer_lte == defaultOfferBucket_lte && offer_gte == defaultOfferBucket_gte) useCache = true;
+
+    if (useCache) {
+        const cacheData = await RedisConnection.getValuesSync(cacheName);
+        if (!cacheData.noCacheData) return cacheData;
+    }
+
+    const categoriesObject = await getCategoriesWithMostCourses(topicType);
+    const topics = categoriesObject[category];
+
+    const esQuery = {
+        bool: {
+            must: [
+                {
+                    bool: {
+                        filter: [
+                            {
+                                bool: {
+                                    should: [
+                                        {
+                                            range: {
+                                                "coupons.validity_end_date": {
+                                                    gte: getCurrentDate()
+                                                }
+                                            }
+                                        },
+                                        {
+                                            bool: {
+                                                must_not: {
+                                                    exists: {
+                                                        field: "coupons.validity_end_date"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            },
+                            {
+                                range: {
+                                    "coupons.discount_percent": {
+                                        gte: offer_gte
+                                    }
+                                }
+                            },
+                            {
+                                range: {
+                                    "coupons.discount_percent": {
+                                        lte: offer_lte
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    terms: {
+                        "topics.keyword": topics
+                    }
+                }
+            ]
+        }
+    }
+
+    const esSort = [{ "activity_count.last_x_days.trending_score": "desc" }, { "ratings": "desc" }];
+    const result = await elasticService.search('learn-content', esQuery, { size: 500, sortObject: esSort }, ['title', 'slug', 'images', 'listing_image', 'card_image', 'card_image_mobile.url', 'coupons']);
+    let hits = [];
+    if (result.hits.length > COURSES_WITH_OFFERS_COUNT)
+        hits = getRandomValuesFromArray(result.hits, COURSES_WITH_OFFERS_COUNT);
+    else hits = result.hits;
+
+    const courses = [];
+
+    if (hits && hits.length) {
+
+        for (const data of hits) {
+
+            const course = data['_source'];
+            const validCoupons = [];
+            for (const coupon of course.coupons) {
+
+                if (coupon.discount_percent >= offer_gte && coupon.discount_percent <= offer_lte) validCoupons.push(coupon);
+            }
+
+            const sortedCoupons = validCoupons.sort((c1, c2) => (c2.discount_percent - c1.discount_percent));
+            course.coupons = undefined;
+            course.coupon = sortedCoupons[0];
+            courses.push(course);
+        }
+    }
+
+    if (courses.length && useCache) {
+        await RedisConnection.set(cacheName, courses);
+        RedisConnection.expire(cacheName, process.env.CACHE_COURSES_WITH_OFFERS || 600);
+    }
+
+    return courses;
+}
+
+
 module.exports = {
-    getCategoriesWithOfferBuckets
+    getCategoriesWithOfferBuckets,
+    getCoursesWithOffers
 
 }

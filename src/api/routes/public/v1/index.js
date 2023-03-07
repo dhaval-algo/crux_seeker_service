@@ -170,8 +170,8 @@ router.get('/navigate-to-trending-list',injectTokenPayload,trendingListControlle
 
 // commonly used apis
 
-router.get('/categories-with-offer-buckets',commonlyUsedController.getCategoriesWithOfferBucketsController);
-
+router.get('/categories-with-offer-buckets', commonlyUsedController.getCategoriesWithOfferBucketsController);
+router.get('/courses-with-offers', commonlyUsedController.getCoursesWithOffersController);
 
 
 module.exports = router;
