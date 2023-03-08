@@ -50,6 +50,7 @@ const oderDetails = async (req, res, next) => {
                             course_start_date: null,
                             course_end_date: null,
                             course_access_link: null,
+                            cv_take:null,
                             features: {
                                 accessibilities: null,
                                 level: null,
@@ -86,6 +87,7 @@ const oderDetails = async (req, res, next) => {
                                     course_start_date: courses[0].course_start_date,
                                     course_end_date: courses[0].course_end_date,
                                     course_access_link: courses[0].course_access_link || null,
+                                    cv_take:(courses[0].cv_take && courses[0].cv_take.display_cv_take)?courses[0].cv_take:null,
                                     features: {
                                         accessibilities: courses[0].course_details.accessibilities,
                                         level: courses[0].course_details.level,
@@ -128,6 +130,7 @@ const oderDetails = async (req, res, next) => {
                                 course_start_date: null,
                                 course_end_date: null,
                                 course_access_link: null,
+                                cv_take:null,
                                 features: {
                                     accessibilities: null,
                                     level: null,
@@ -168,7 +171,8 @@ const oderDetails = async (req, res, next) => {
                             description: "This Learn path is no longer available.",
                             faq: [],
                             course_count: 0,
-                            course_access_link: courses[0].course_access_link || null                               
+                            course_access_link: courses[0].course_access_link || null,
+                            cv_take:null                               
                         }
                         try {
                             let courses = await LearnPathService.getLearnpathByIds({ query: { ids: finalData.orderData.orderItems[0].purchaseDetailsResponse.itemId.toString(),"country" : req.query['country'], skipPrice:true } });
@@ -185,7 +189,8 @@ const oderDetails = async (req, res, next) => {
                                     description: courses[0].description,
                                     faq: courses[0].faq,
                                     course_count: (courses[0].courses)? courses[0].courses.length : null,
-                                    course_access_link: courses[0].course_access_link || null
+                                    course_access_link: courses[0].course_access_link || null,
+                                    cv_take:(courses[0].cv_take && courses[0].cv_take.display_cv_take)?courses[0].cv_take:null,
                                 }
                             }
                         } catch (error) {
@@ -208,7 +213,8 @@ const oderDetails = async (req, res, next) => {
                                 description: "This Learn path is no longer available.",
                                 faq: [],
                                 course_count: 0,
-                                course_access_link: courses[0].course_access_link || null                               
+                                course_access_link: courses[0].course_access_link || null,
+                                cv_take:null                               
                             }
                         }
                         break;
@@ -269,7 +275,8 @@ const cancellationDetails = async (req, res, next) => {
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
                                     course_access_link: courses[0].course_access_link || null,
-                                    course_details:courses[0].course_details                                
+                                    course_details:courses[0].course_details,
+                                    cv_take:(courses[0].cv_take && courses[0].cv_take.display_cv_take)?courses[0].cv_take:null,                                
                                 }
                             }
                         } catch (error) {
@@ -289,7 +296,8 @@ const cancellationDetails = async (req, res, next) => {
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
                                     course_count: (courses[0].courses)? courses[0].courses.length : null,
-                                    course_access_link: courses[0].course_access_link || null
+                                    course_access_link: courses[0].course_access_link || null,
+                                    cv_take:(courses[0].cv_take && courses[0].cv_take.display_cv_take)?courses[0].cv_take:null,
                                 }
                             }
                         } catch (error) {
@@ -368,7 +376,8 @@ const cancellationProgress = async (req, res, next) => {
                                     card_image_mobile: courses[0].card_image_mobile,
                                     course_start_date: courses[0].course_start_date,
                                     course_end_date: courses[0].course_end_date,
-                                    course_access_link: courses[0].course_access_link || null
+                                    course_access_link: courses[0].course_access_link || null,
+                                    cv_take:(courses[0].cv_take && courses[0].cv_take.display_cv_take)?courses[0].cv_take:null,
 
                                 }
                             }
@@ -389,7 +398,8 @@ const cancellationProgress = async (req, res, next) => {
                                     card_image: courses[0].card_image,
                                     card_image_mobile: courses[0].card_image_mobile,
                                     course_count: (courses[0].courses)? courses[0].courses.length : null,
-                                    course_access_link: courses[0].course_access_link || null
+                                    course_access_link: courses[0].course_access_link || null,
+                                    cv_take:(courses[0].cv_take && courses[0].cv_take.display_cv_take)?courses[0].cv_take:null,
                                 }
                             }
                         } catch (error) {
