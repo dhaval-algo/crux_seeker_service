@@ -1,4 +1,4 @@
-const { getTopicsByType, getCategoriesFromTopics, getCurrentDate, getRandomValuesFromArray } = require('../utils/general');
+const { getTopicsByType, getCategoriesFromTopics, getCurrentDate, getRandomValuesFromArray, handleCourseCardImageListing } = require('../utils/general');
 const redisConnection = require('../../services/v1/redis');
 const RedisConnection = new redisConnection();
 const elasticService = require("./elasticService");
@@ -268,7 +268,7 @@ const getCoursesWithOffers = async (topicType, category, offer_lte, offer_gte) =
     }
 
     const esSort = [{ "activity_count.last_x_days.trending_score": "desc" }, { "ratings": "desc" }];
-    const result = await elasticService.search('learn-content', esQuery, { size: 500, sortObject: esSort }, ['title', 'slug', 'images', 'listing_image', 'card_image', 'card_image_mobile.url', 'coupons']);
+    const result = await elasticService.search('learn-content', esQuery, { size: 500, sortObject: esSort }, ['title', 'slug', 'images', 'card_image', 'card_image_mobile', 'coupons','partner_slug']);
     let hits = [];
     if (result.hits.length > COURSES_WITH_OFFERS_COUNT)
         hits = getRandomValuesFromArray(result.hits, COURSES_WITH_OFFERS_COUNT);
@@ -281,6 +281,10 @@ const getCoursesWithOffers = async (topicType, category, offer_lte, offer_gte) =
         for (const data of hits) {
 
             const course = data['_source'];
+
+            // handle card listing images
+            course.card_listing_image = await handleCourseCardImageListing(course);
+            
             const validCoupons = [];
             for (const coupon of course.coupons) {
 

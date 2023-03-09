@@ -750,6 +750,59 @@ const formatImageResponse = (imageObject) => {
    else if(imageObject.url) image = imageObject.url;
    return image
 }
+
+const handleCourseCardImageListing = async (result) => {
+
+    let card_listing_image = {};
+
+    const partnerCourseImage = await RedisConnection.getValuesSync("partner-course-image-"+result.partner_slug);
+    let desktop_course_image = null, mobile_course_image = null, partner_logo = null, card_background = null;
+    if (partnerCourseImage.noCacheData != true) {
+        desktop_course_image = partnerCourseImage.desktop_course_image;
+        mobile_course_image = partnerCourseImage.mobile_course_image;
+        partner_logo = formatImageResponse(partnerCourseImage.logo);
+        card_background = partnerCourseImage.card_background;
+    }
+    else {
+        const query = {
+            bool: {
+                "must": [{ term: { "slug.keyword": result.partner_slug } }]
+            }
+        };
+
+        const imageResult = await elasticService.search('partner', query, { size: 1 }, ["mobile_course_image", "desktop_course_image", "logo", "card_background"]);
+
+        if (imageResult.hits && imageResult.hits.length) {
+            desktop_course_image = imageResult.hits[0]._source.desktop_course_image || null;
+            mobile_course_image = imageResult.hits[0]._source.mobile_course_image || null;
+            partner_logo = formatImageResponse(imageResult.hits[0]._source.logo) || null;
+            card_background = imageResult.hits[0]._source.card_background || null;
+            RedisConnection.set("partner-course-image-" + result.partner_slug, imageResult.hits[0]._source);
+        }
+    }
+
+
+    card_listing_image = { mobile: { image: formatImageResponse(result.card_image_mobile) || mobile_course_image || formatImageResponse(result.images) } };
+    card_listing_image.background = card_background || null;
+    if (result.card_Image) {
+        const { id, type, ...restCardImage } = result.card_Image;
+        card_listing_image.type = type;
+        card_listing_image.desktop = restCardImage;
+    }
+    else {
+        card_listing_image.desktop = { image: desktop_course_image || partner_logo || formatImageResponse(result.images) }
+        card_listing_image.type = "type-2";
+    }
+
+    // these fields are no loger required
+    result.card_image = undefined;
+    result.images = undefined;
+    result.card_image_mobile = undefined;
+
+    return card_listing_image;
+
+}
+
 const formatCount = (count) => {
 if(count > 1000){
     count = Math.floor(count/1000)+'k';
@@ -1103,7 +1156,8 @@ const getRandomValuesFromArray = (array, numElements) => {
     getCategoriesFromTopics,
     roundNumberForDisplay,
     getCurrentDate,
-    getRandomValuesFromArray
+    getRandomValuesFromArray,
+    handleCourseCardImageListing
 }
 
 
