@@ -3377,6 +3377,14 @@ module.exports = class recommendationService {
         currency = process.env.DEFAULT_CURRENCY,
         page = 1,
         limit = 6,
+        category,
+        sub_category,
+        topic,
+        provider,
+        partner,
+        skill,
+        subType = "Popular",
+        priceType = "Paid",
       } = req.query;
       const offset = (page - 1) * limit;
       let searchedCourses = [];
@@ -3400,6 +3408,62 @@ module.exports = class recommendationService {
           ],
         },
       };
+
+      if (category) {
+        esQuery.bool.must.push({
+          term: {
+            "categories.keyword": decodeURIComponent(category),
+          },
+        });
+      }
+      if (sub_category) {
+        esQuery.bool.must.push({
+          term: {
+            "sub_categories.keyword": decodeURIComponent(sub_category),
+          },
+        });
+      }
+      if (topic) {
+        esQuery.bool.must.push({
+          term: {
+            "topics.keyword": decodeURIComponent(topic),
+          },
+        });
+      }
+      if (provider) {
+        esQuery.bool.must.push({
+          term: {
+            "provider_name.keyword": decodeURIComponent(provider),
+          },
+        });
+      }
+
+      if (partner) {
+        esQuery.bool.must.push({
+          term: {
+            "partner_name.keyword": decodeURIComponent(partner),
+          },
+        });
+      }
+      if (skill) {
+        esQuery.bool.must.push({
+          term: {
+            "skills.keyword": skill,
+          },
+        });
+      }
+
+      if (priceType && priceType == "Free") {
+        esQuery.bool.must.push({
+          term: { "pricing_type.keyword": "Free" },
+        });
+      }
+      if (priceType && priceType == "Paid") {
+        esQuery.bool.must.push({
+          term: { "pricing_type.keyword": "Paid" },
+        });
+      }
+
       const courses = [];
       let result = await elasticService.search("learn-content", esQuery, {
         from: offset,
@@ -3443,6 +3507,14 @@ module.exports = class recommendationService {
         page = 1,
         limit = 20,
         currency = process.env.DEFAULT_CURRENCY,
+        category,
+        sub_category,
+        topic,
+        provider,
+        partner,
+        skill,
+        subType = "Popular",
+        priceType = "Paid",
       } = req.query;
       const offset = (page - 1) * limit;
       const categories = await models.recently_viewed_categories.findAll({
@@ -3467,6 +3539,61 @@ module.exports = class recommendationService {
             ],
           },
         };
+
+        if (category) {
+          esQuery.bool.must.push({
+            term: {
+              "categories.keyword": decodeURIComponent(category),
+            },
+          });
+        }
+        if (sub_category) {
+          esQuery.bool.must.push({
+            term: {
+              "sub_categories.keyword": decodeURIComponent(sub_category),
+            },
+          });
+        }
+        if (topic) {
+          esQuery.bool.must.push({
+            term: {
+              "topics.keyword": decodeURIComponent(topic),
+            },
+          });
+        }
+        if (provider) {
+          esQuery.bool.must.push({
+            term: {
+              "provider_name.keyword": decodeURIComponent(provider),
+            },
+          });
+        }
+
+        if (partner) {
+          esQuery.bool.must.push({
+            term: {
+              "partner_name.keyword": decodeURIComponent(partner),
+            },
+          });
+        }
+        if (skill) {
+          esQuery.bool.must.push({
+            term: {
+              "skills.keyword": skill,
+            },
+          });
+        }
+
+        if (priceType && priceType == "Free") {
+          esQuery.bool.must.push({
+            term: { "pricing_type.keyword": "Free" },
+          });
+        }
+        if (priceType && priceType == "Paid") {
+          esQuery.bool.must.push({
+            term: { "pricing_type.keyword": "Paid" },
+          });
+        }
 
         const sort = [
           { "activity_count.all_time.popularity_score": "desc" },
