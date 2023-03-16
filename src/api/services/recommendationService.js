@@ -3228,87 +3228,76 @@ module.exports = class recommendationService {
     let courses = [];
     let courseIds = [];
     try {
-      let cacheKey = `popular-courses-${subType}-${category || "category"}-${
-        sub_category || "sub_category"
-      }-${topic || "topic"}-${provider || "provider"}-${partner || "partner"}-${
-        priceType || "priceType"
-      }-${skill || "skill"}-${page}-${limit}`;
       let unsortedCourses = [];
       courseIds = await models.recently_viewed_course.findAll(query);
       courseIds = courseIds.map((course) => course.courseId);
 
-      console.log("courseIds", courseIds);
       let esQuery = {
         bool: {
-          must: [
+          filter: [
             {
-              match: {
-                categories: category,
+              ids: {
+                values: courseIds,
               },
             },
           ],
-          filter: {
-            ids: {
-              values: courseIds,
-            },
-          },
         },
       };
 
-      //   if (category) {
-      //     esQuery.bool.filter.push({
-      //       term: {
-      //         "categories.keyword": decodeURIComponent(category),
-      //       },
-      //     });
-      //   }
-      //   if (sub_category) {
-      //     esQuery.bool.filter.push({
-      //       term: {
-      //         "sub_categories.keyword": decodeURIComponent(sub_category),
-      //       },
-      //     });
-      //   }
-      //   if (topic) {
-      //     esQuery.bool.filter.push({
-      //       term: {
-      //         "topics.keyword": decodeURIComponent(topic),
-      //       },
-      //     });
-      //   }
-      //   if (provider) {
-      //     esQuery.bool.filter.push({
-      //       term: {
-      //         "provider_name.keyword": decodeURIComponent(provider),
-      //       },
-      //     });
-      //   }
+      if (category) {
+        esQuery.bool.filter.push({
+          term: {
+            "categories.keyword": decodeURIComponent(category),
+          },
+        });
+      }
+      if (sub_category) {
+        esQuery.bool.filter.push({
+          term: {
+            "sub_categories.keyword": decodeURIComponent(sub_category),
+          },
+        });
+      }
+      if (topic) {
+        esQuery.bool.filter.push({
+          term: {
+            "topics.keyword": decodeURIComponent(topic),
+          },
+        });
+      }
+      if (provider) {
+        esQuery.bool.filter.push({
+          term: {
+            "provider_name.keyword": decodeURIComponent(provider),
+          },
+        });
+      }
 
-      //   if (partner) {
-      //     esQuery.bool.filter.push({
-      //       term: {
-      //         "partner_name.keyword": decodeURIComponent(partner),
-      //       },
-      //     });
-      //   }
-      //   if (skill) {
-      //     esQuery.bool.filter.push({
-      //       term: {
-      //         "skills.keyword": skill,
-      //       },
-      //     });
-      //   }
+      if (partner) {
+        esQuery.bool.filter.push({
+          term: {
+            "partner_name.keyword": decodeURIComponent(partner),
+          },
+        });
+      }
+      if (skill) {
+        esQuery.bool.filter.push({
+          term: {
+            "skills.keyword": skill,
+          },
+        });
+      }
 
-      //   if (priceType && priceType == "Free") {
-      //     esQuery.bool.filter.push({
-      //       term: { "pricing_type.keyword": "Free" },
-      //     });
-      //   }
-      //   if (priceType && priceType == "Paid") {
-      //     esQuery.bool.filter.push({
-      //       term: { "pricing_type.keyword": "Paid" },
-      //     });
-      //   }
+      if (priceType && priceType == "Free") {
+        esQuery.bool.filter.push({
+          term: { "pricing_type.keyword": "Free" },
+        });
+      }
+      if (priceType && priceType == "Paid") {
+        esQuery.bool.filter.push({
+          term: { "pricing_type.keyword": "Paid" },
+        });
+      }
 
       let result = await elasticService.search("learn-content", esQuery, {
         form: 0,
